@@ -5,10 +5,11 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	PermissionFlagsBits,
 	ChannelType,
 	MessageFlags,
+	PermissionFlagsBits,
 } = require('discord.js');
 
 module.exports = {
@@ -18,6 +19,11 @@ module.exports = {
 			.setDescription('🤖 Automatically setup moderation channels and roles.'),
 	permissions: PermissionFlagsBits.Administrator,
 	botPermissions: PermissionFlagsBits.Administrator,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, models, kythiaConfig } = container;
 		const { createContainer, simpleContainer } = helpers.discord;

@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -25,7 +26,7 @@ module.exports = {
 		const { createContainer, simpleContainer } = helpers.discord;
 		const { User } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const targetUser = interaction.options.getUser('user');
 
@@ -83,7 +84,6 @@ module.exports = {
 			return interaction.editReply({
 				components: reply,
 				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
 			});
 		}
 	},

@@ -26,6 +26,11 @@ module.exports = {
 			),
 	permissions: PermissionFlagsBits.ManageMessages,
 	botPermissions: PermissionFlagsBits.ManageMessages,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, kythiaConfig } = container;
 		const { createContainer, simpleContainer } = helpers.discord;

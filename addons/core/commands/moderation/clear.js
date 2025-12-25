@@ -5,13 +5,14 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	ActionRowBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	ComponentType,
-	PermissionFlagsBits,
 	MessageFlags,
+	ButtonBuilder,
+	ComponentType,
+	ActionRowBuilder,
+	PermissionFlagsBits,
 } = require('discord.js');
 
 module.exports = {
@@ -28,8 +29,13 @@ module.exports = {
 
 	permissions: PermissionFlagsBits.ManageMessages,
 	botPermissions: PermissionFlagsBits.ManageMessages,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, logger, helpers } = container;
+		const { t, helpers } = container;
 		const { simpleContainer } = helpers.discord;
 
 		const amount = interaction.options.getInteger('amount');
@@ -38,7 +44,7 @@ module.exports = {
 			return await showClearOptions(interaction, t, container);
 		}
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		if (typeof interaction.channel.bulkDelete !== 'function') {
 			const reply = await simpleContainer(
@@ -46,7 +52,10 @@ module.exports = {
 				await t(interaction, 'core.moderation.clear.text.only'),
 				{ color: 'Orange' },
 			);
-			return interaction.editReply({ embeds: reply });
+			return interaction.editReply({
+				embeds: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		try {
@@ -59,7 +68,10 @@ module.exports = {
 					await t(interaction, 'core.moderation.clear.nothing.deleted'),
 					{ color: 'Orange' },
 				);
-				return interaction.editReply({ embeds: reply });
+				return interaction.editReply({
+					embeds: reply,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const reply = await simpleContainer(
@@ -69,8 +81,11 @@ module.exports = {
 				}),
 				{ color: 'Green' },
 			);
-			await interaction.editReply({ embeds: reply });
-		} catch (error) {
+			await interaction.editReply({
+				embeds: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (_e) {
 			const reply = await simpleContainer(
 				interaction,
 				await t(interaction, 'core.moderation.clear.error'),
@@ -79,7 +94,6 @@ module.exports = {
 			return interaction.editReply({
 				components: reply,
 				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
 			});
 		}
 	},
@@ -140,7 +154,6 @@ async function showClearOptions(interaction, t, container) {
 			return i.reply({
 				components: reply,
 				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
 			});
 		}
 
@@ -218,7 +231,6 @@ async function handleNuke(interaction, t, container) {
 async function handleBulkDelete(interaction, t, container) {
 	const { logger, helpers } = container;
 	const { simpleContainer } = helpers.discord;
-	const channel = interaction.channel;
 
 	try {
 		let totalDeleted = 0;
@@ -265,7 +277,6 @@ async function handleBulkDelete(interaction, t, container) {
 		await interaction.followUp({
 			components: reply,
 			flags: MessageFlags.IsComponentsV2,
-			ephemeral: true,
 		});
 	}
 }

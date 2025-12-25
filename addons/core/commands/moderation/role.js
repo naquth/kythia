@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -26,11 +27,16 @@ module.exports = {
 			),
 	permissions: PermissionFlagsBits.ManageRoles,
 	botPermissions: PermissionFlagsBits.ManageRoles,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, kythiaConfig } = container;
 		const { createContainer, simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const user = interaction.options.getUser('user');
 		const role = interaction.options.getRole('role');
@@ -84,7 +90,6 @@ module.exports = {
 			return interaction.editReply({
 				components: reply,
 				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
 			});
 		}
 	},

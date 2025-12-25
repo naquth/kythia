@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -26,11 +27,16 @@ module.exports = {
 			),
 	permissions: PermissionFlagsBits.ManageChannels,
 	botPermissions: PermissionFlagsBits.ManageChannels,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, kythiaConfig } = container;
 		const { createContainer, simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const seconds = interaction.options.getInteger('seconds');
 		const reason =
@@ -54,7 +60,10 @@ module.exports = {
 				),
 				thumbnail: interaction.guild.iconURL(),
 			});
-			await interaction.channel.send({ components: reply });
+			await interaction.channel.send({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
 
 			const confirmReply = await simpleContainer(
 				interaction,
@@ -76,7 +85,6 @@ module.exports = {
 			return interaction.editReply({
 				components: reply,
 				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
 			});
 		}
 	},

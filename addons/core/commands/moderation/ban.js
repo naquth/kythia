@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -26,6 +27,11 @@ module.exports = {
 			),
 	permissions: PermissionFlagsBits.BanMembers,
 	botPermissions: PermissionFlagsBits.BanMembers,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, kythiaConfig } = container;
 		const { createContainer, simpleContainer } = helpers.discord;

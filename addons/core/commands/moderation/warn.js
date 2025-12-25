@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -26,20 +27,24 @@ module.exports = {
 			),
 	permissions: PermissionFlagsBits.ModerateMembers,
 	botPermissions: PermissionFlagsBits.ModerateMembers,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, models, kythiaConfig } = container;
 		const { createContainer, simpleContainer, getTextChannelSafe } =
 			helpers.discord;
 		const { User } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const targetUser = interaction.options.getUser('user');
 		const reason =
 			interaction.options.getString('reason') ||
 			(await t(interaction, 'core.moderation.warn.default.reason'));
 
-		// Prevent self-warn
 		if (targetUser.id === interaction.user.id) {
 			const reply = await simpleContainer(
 				interaction,
@@ -49,12 +54,10 @@ module.exports = {
 			return interaction.editReply({
 				components: reply,
 				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
 			});
 		}
 
 		try {
-			// 1. Save to DB
 			const userRecord = await User.getCache({
 				userId: targetUser.id,
 				guildId: interaction.guild.id,
@@ -67,7 +70,6 @@ module.exports = {
 			});
 			await userRecord.saveAndUpdateCache();
 
-			// 2. DM the user
 			try {
 				const dmReply = await createContainer(interaction, {
 					color: 'Orange',
@@ -81,11 +83,8 @@ module.exports = {
 					thumbnail: interaction.guild.iconURL(),
 				});
 				await targetUser.send({ components: dmReply });
-			} catch (_) {
-				// Ignore DM errors
-			}
+			} catch (_) {}
 
-			// 3. Modlog
 			const modLogChannelId = await kythiaConfig.channels.modlog;
 			const modLogChannel = await getTextChannelSafe(
 				interaction.guild,
@@ -106,10 +105,12 @@ module.exports = {
 					),
 					thumbnail: targetUser.displayAvatarURL(),
 				});
-				await modLogChannel.send({ components: modLogReply });
+				await modLogChannel.send({
+					components: modLogReply,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
-			// 4. Reply to interaction
 			const reply = await createContainer(interaction, {
 				color: kythiaConfig.bot.color,
 				title: await t(interaction, 'core.moderation.warn.success.title'),
@@ -134,7 +135,6 @@ module.exports = {
 			return interaction.editReply({
 				components: reply,
 				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
 			});
 		}
 	},

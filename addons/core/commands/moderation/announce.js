@@ -5,43 +5,76 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('announce')
-			.setDescription('📢 Send an announcement to a specified channel.')
-			.addChannelOption((option) =>
+			.setDescription('📢 Sends an announcement to the current channel.')
+			.addStringOption((option) =>
 				option
-					.setName('channel')
-					.setDescription('Channel to send the announcement')
+					.setName('message')
+					.setDescription('The message to announce')
 					.setRequired(true),
 			)
 			.addStringOption((option) =>
 				option
-					.setName('message')
-					.setDescription('Announcement message')
-					.setRequired(true),
+					.setName('title')
+					.setDescription('Title for the announcement')
+					.setRequired(false),
 			),
 	permissions: PermissionFlagsBits.ManageMessages,
 	botPermissions: PermissionFlagsBits.ManageMessages,
 	async execute(interaction, container) {
-		const { t } = container;
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 
-		await interaction.deferReply();
-		const channel = interaction.options.getChannel('channel');
+		await interaction.deferReply({ ephemeral: true });
+
 		const message = interaction.options.getString('message');
+		const title =
+			interaction.options.getString('title') ||
+			(await t(interaction, 'core.moderation.announce.default.title'));
 
-		await channel.send(
-			await t(interaction, 'core.moderation.announce.message.format', {
-				message,
-			}),
-		);
-		return interaction.editReply(
-			await t(interaction, 'core.moderation.announce.success', {
-				channel: channel.name,
-			}),
-		);
+		try {
+			const announcement = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title,
+				description: message,
+				thumbnail: interaction.guild.iconURL(),
+				footer: {
+					text: await t(interaction, 'core.moderation.announce.footer', {
+						user: interaction.user.tag,
+					}),
+					iconURL: interaction.user.displayAvatarURL(),
+				},
+			});
+
+			await interaction.channel.send({ components: announcement });
+
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.announce.success'),
+				{ color: 'Green' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.announce.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
+		}
 	},
 };

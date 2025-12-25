@@ -364,7 +364,7 @@ function loadKythiaConfig() {
 				// and using user token is violation of discord's terms of service
 				// so it's dangerously to use it
 				active: false, // activate if u have setup the quest api
-				scheduler: '*/30 * * * *', // cron scheduler
+				scheduler: '*/30 * * * *', // cron scheduler https://crontab.guru/
 				apiUrls: 'http://.../quests,http://...', // seperate with comma
 			},
 		},

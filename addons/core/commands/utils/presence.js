@@ -9,6 +9,7 @@ const {
 	SlashCommandBuilder,
 	ActivityType,
 	InteractionContextType,
+	MessageFlags,
 } = require('discord.js');
 
 const STATUS_OPTIONS = [
@@ -18,7 +19,6 @@ const STATUS_OPTIONS = [
 	{ name: 'Invisible', value: 'invisible' },
 ];
 
-// ActivityType.Custom (nilai 4) tidak bisa di-set oleh bot, jadi kita filter
 const ACTIVITY_TYPE_OPTIONS = Object.entries(ActivityType)
 	.filter(([_k, v]) => typeof v === 'number')
 	.map(([k, _v]) => ({ name: k, value: k }));
@@ -46,68 +46,62 @@ module.exports = {
 		.addStringOption((opt) =>
 			opt.setName('activity').setDescription('Activity name').setRequired(true),
 		)
-		// TAMBAHKAN OPSI BARU UNTUK URL
-		.addStringOption(
-			(opt) =>
-				opt
-					.setName('url')
-					.setDescription(
-						'Streaming URL (Twitch/YouTube), wajib untuk tipe Streaming',
-					)
-					.setRequired(false), // Opsional untuk tipe lain
+		.addStringOption((opt) =>
+			opt
+				.setName('url')
+				.setDescription(
+					'Streaming URL (Twitch/YouTube), required for streaming',
+				)
+				.setRequired(false),
 		)
 		.setContexts(InteractionContextType.BotDM),
 	ownerOnly: true,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t } = container;
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ ephemeral: true });
 
 		const status = interaction.options.getString('status');
 		const type = interaction.options.getString('type');
 		const activityName = interaction.options.getString('activity');
-		const url = interaction.options.getString('url'); // Ambil URL
+		const url = interaction.options.getString('url');
 
 		const activityPayload = {
 			name: activityName,
 			type: ActivityType[type],
 		};
 
-		// LOGIKA SPESIAL UNTUK STREAMING
 		if (activityPayload.type === ActivityType.Streaming) {
-			// Validasi URL
 			if (
 				!url ||
 				(!url.startsWith('https://www.twitch.tv/') &&
 					!url.startsWith('https://www.youtube.com/'))
 			) {
 				return interaction.editReply({
-					content: await t(interaction, 'core.utils.presence.invalid.url'), // Buat terjemahan baru
+					content: await t(interaction, 'core.utils.presence.invalid.url'),
 					ephemeral: true,
 				});
 			}
-			activityPayload.url = url; // Tambahkan URL ke payload
+			activityPayload.url = url;
 		}
 
-		try {
-			await interaction.client.user.setPresence({
-				activities: [activityPayload], // Gunakan payload yang sudah kita siapkan
-				status: status,
-			});
+		await interaction.client.user.setPresence({
+			activities: [activityPayload],
+			status: status,
+		});
 
-			return interaction.editReply({
-				content: await t(interaction, 'core.utils.presence.success', {
-					type,
-					activity: activityName,
-					status,
-				}),
-			});
-		} catch (err) {
-			console.error(err);
-			return interaction.editReply({
-				content: await t(interaction, 'core.utils.presence.error'),
-				ephemeral: true,
-			});
-		}
+		return interaction.editReply({
+			components: simpleContainer(
+				interaction,
+				await t(interaction, 'core.utils.presence.success'),
+			),
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

@@ -8,9 +8,9 @@
 
 const {
 	SlashCommandBuilder,
-	ContextMenuCommandBuilder,
-	ApplicationCommandType,
 	PermissionFlagsBits,
+	ApplicationCommandType,
+	ContextMenuCommandBuilder,
 } = require('discord.js');
 
 function parseCustomEmoji(str) {
@@ -220,6 +220,35 @@ module.exports = {
 				} catch (_e) {
 					return interaction.editReply({
 						content: await t(interaction, 'core.utils.grab.emoji.manual'),
+						files: [url],
+					});
+				}
+			}
+
+			// Opsi 3: Cek Attachment (Image)
+			const attachment = message?.attachments?.find((a) =>
+				a.contentType?.startsWith('image/'),
+			);
+			if (attachment) {
+				const url = attachment.url;
+				try {
+					if (!interaction.guild?.stickers?.create)
+						throw new Error('No permission');
+
+					const created = await interaction.guild.stickers.create({
+						file: url,
+						name: `grabbed_${attachment.name.split('.')[0]}`.slice(0, 30),
+						tags: 'grabbed',
+					});
+
+					return interaction.editReply({
+						content: await t(interaction, 'core.utils.grab.sticker.success', {
+							name: created.name,
+						}),
+					});
+				} catch (_e) {
+					return interaction.editReply({
+						content: await t(interaction, 'core.utils.grab.sticker.manual'),
 						files: [url],
 					});
 				}

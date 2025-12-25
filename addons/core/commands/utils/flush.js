@@ -6,7 +6,11 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
+const {
+	SlashCommandBuilder,
+	InteractionContextType,
+	MessageFlags,
+} = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -15,47 +19,62 @@ module.exports = {
 		.setContexts(InteractionContextType.BotDM),
 	ownerOnly: true,
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { logger, redis } = container;
+		const { logger, redis, helpers } = container;
+		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		if (!redis || redis.status !== 'ready') {
-			return interaction.editReply(
-				'❌ Redis is not connected or is currently down. Unable to flush.',
-			);
+			const msg =
+				'❌ Redis is not connected or is currently down. Unable to flush.';
+
+			return interaction.editReply({
+				components: simpleContainer(interaction, msg, {
+					color: 'Red',
+				}),
+			});
 		}
 
-		try {
-			logger.debug(
-				'[REDIS FLUSH] Using existing shared container connection...',
-			);
+		logger.debug('[REDIS FLUSH] Using existing shared container connection...');
 
-			const pong = await redis.ping();
-			logger.debug(`[REDIS FLUSH] Redis ping response: ${pong}`);
+		const pong = await redis.ping();
+		logger.debug(`[REDIS FLUSH] Redis ping response: ${pong}`);
 
-			logger.debug('[REDIS FLUSH] Attempting to FLUSHALL...');
+		logger.debug('[REDIS FLUSH] Attempting to FLUSHALL...');
 
-			const sizeBefore = await redis.dbsize();
+		const sizeBefore = await redis.dbsize();
 
-			const result = await redis.flushall();
-			logger.debug(`[REDIS FLUSH] FLUSHALL result: ${result}`);
+		const result = await redis.flushall();
+		logger.debug(`[REDIS FLUSH] FLUSHALL result: ${result}`);
 
-			const dbsize = await redis.dbsize();
-			logger.debug(`[REDIS FLUSH] dbsize after FLUSHALL: ${dbsize}`);
+		const dbsize = await redis.dbsize();
+		logger.debug(`[REDIS FLUSH] dbsize after FLUSHALL: ${dbsize}`);
 
-			if (result === 'OK' && dbsize === 0) {
-				await interaction.editReply(
-					`✅ **Redis flush successful!**\n🧹 Cleared ${sizeBefore} keys.`,
-				);
-			} else {
-				await interaction.editReply(
-					`⚠️ FLUSHALL command sent, but DB size is still: ${dbsize}.`,
-				);
-			}
-		} catch (e) {
-			logger.error('[REDIS FLUSH] Flush failed:', e);
-			await interaction.editReply(`❌ Failed to flush cache: \`${e.message}\``);
+		if (result === 'OK' && dbsize === 0) {
+			await interaction.editReply({
+				components: simpleContainer(
+					interaction,
+					`## ✅ **Redis flush successful!**\n🧹 Cleared ${sizeBefore} keys.`,
+					{
+						color: 'Green',
+					},
+				),
+			});
+		} else {
+			await interaction.editReply({
+				components: simpleContainer(
+					interaction,
+					`## ⚠️ REDIS FLUSHALL\ncommand sent, but DB size is still: ${dbsize}.`,
+					{
+						color: 'Orange',
+					},
+				),
+			});
 		}
 	},
 };

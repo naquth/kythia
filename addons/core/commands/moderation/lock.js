@@ -5,73 +5,73 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('lock')
-			.setDescription('🔒 Locks a channel to prevent messages.')
-			.addChannelOption((option) =>
+			.setDescription('🔒 Locks the current channel.')
+			.addStringOption((option) =>
 				option
-					.setName('channel')
-					.setDescription('Channel to lock')
+					.setName('reason')
+					.setDescription('Reason for locking the channel')
 					.setRequired(false),
 			),
 	permissions: PermissionFlagsBits.ManageChannels,
 	botPermissions: PermissionFlagsBits.ManageChannels,
 	async execute(interaction, container) {
-		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ ephemeral: true });
 
-		const channel =
-			interaction.options.getChannel('channel') || interaction.channel;
+		const reason =
+			interaction.options.getString('reason') ||
+			(await t(interaction, 'core.moderation.lock.default.reason'));
 
-		// Try to lock the channel (set @everyone SEND_MESSAGES to false)
 		try {
-			await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
-				SendMessages: false,
-				SendMessagesInThreads: false,
-				AddReactions: false,
+			await interaction.channel.permissionOverwrites.edit(
+				interaction.guild.roles.everyone,
+				{
+					SendMessages: false,
+				},
+				{ reason },
+			);
+
+			const reply = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title: await t(interaction, 'core.moderation.lock.success.title'),
+				description: await t(interaction, 'core.moderation.lock.success.desc', {
+					channel: interaction.channel.toString(),
+					reason,
+				}),
+				thumbnail: interaction.guild.iconURL(),
 			});
-		} catch (_e) {
+			await interaction.channel.send({ components: reply });
+
+			const confirmReply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.lock.confirm'),
+				{ color: 'Green' },
+			);
 			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.lock.failed'),
+				components: confirmReply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.lock.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
 				ephemeral: true,
 			});
 		}
-
-		// Embed to notify the channel
-		try {
-			const lockEmbed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'core.moderation.lock.embed.channel.locked', {
-						user: `<@${interaction.user.id}>`,
-					}),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
-			await channel.send({ embeds: [lockEmbed] });
-		} catch (_) {
-			// ignore error if can't send
-		}
-
-		// Embed reply to the user
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(
-				await t(interaction, 'core.moderation.lock.embed.reply', {
-					channel: `<#${channel.id}>`,
-				}),
-			)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-
-		return interaction.editReply({ embeds: [embed] });
 	},
 };

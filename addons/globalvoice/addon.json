@@ -1,0 +1,8 @@
+{
+	"name": "Global Voice",
+	"featureName": "Global Voice",
+	"featureFlag": "globalVoiceOn",
+	"version": "1.0.0-rc1",
+	"description": "Global Voice is a feature that allows users to create and manage global voice channels in their server.",
+	"author": "kenndeclouv"
+}

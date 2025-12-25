@@ -6,15 +6,15 @@
  * @version 0.11.0-beta
  */
 const {
-	SlashCommandBuilder,
-	ActionRowBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 	MessageFlags,
+	ButtonBuilder,
+	ContainerBuilder,
+	ActionRowBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SlashCommandBuilder,
+	SeparatorSpacingSize,
 	InteractionContextType,
 } = require('discord.js');
 
@@ -39,6 +39,11 @@ module.exports = {
 				),
 		),
 	ownerOnly: true,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;

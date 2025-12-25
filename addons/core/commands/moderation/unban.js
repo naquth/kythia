@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
@@ -14,38 +14,50 @@ module.exports = {
 			.setDescription('🔓 Unbans a user from the server.')
 			.addStringOption((option) =>
 				option
-					.setName('userid')
-					.setDescription('User ID to unban')
+					.setName('user_id')
+					.setDescription('The ID of the user to unban')
 					.setRequired(true),
 			),
 	permissions: PermissionFlagsBits.BanMembers,
 	botPermissions: PermissionFlagsBits.BanMembers,
 	async execute(interaction, container) {
-		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ ephemeral: true });
-		const userId = interaction.options.getString('userid');
+
+		const userId = interaction.options.getString('user_id');
 
 		try {
 			await interaction.guild.members.unban(userId);
-			const embed = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'core.moderation.unban.embed.title')}\n` +
-						(await t(interaction, 'core.moderation.unban.embed.desc', {
-							user: `<@${userId}>`,
-						})),
-				)
-				.setThumbnail(interaction.client.user.displayAvatarURL())
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
-		} catch (error) {
+			const reply = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title: await t(interaction, 'core.moderation.unban.success.title'),
+				description: await t(
+					interaction,
+					'core.moderation.unban.success.desc',
+					{
+						userId,
+					},
+				),
+				thumbnail: interaction.client.user.displayAvatarURL(),
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.unban.failed', {
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.unban.failed', {
 					error: error.message,
 				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
 			});
 		}
 	},

@@ -294,6 +294,7 @@ async function updateStats(client, activeSettings) {
 				}
 
 				const newName = await resolvePlaceholders(
+					container,
 					stat.format,
 					data,
 					guild.preferredLocale,

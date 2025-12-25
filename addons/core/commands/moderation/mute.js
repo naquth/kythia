@@ -5,67 +5,44 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('mute')
-			.setDescription('🔇 Mute a user in a voice channel.')
+			.setDescription('🔇 Mutes a user in voice channels.')
 			.addUserOption((option) =>
-				option.setName('user').setDescription('User to mute').setRequired(true),
+				option
+					.setName('user')
+					.setDescription('The user to mute')
+					.setRequired(true),
+			)
+			.addStringOption((option) =>
+				option
+					.setName('reason')
+					.setDescription('Reason for the mute')
+					.setRequired(false),
 			),
 	permissions: PermissionFlagsBits.MuteMembers,
 	botPermissions: PermissionFlagsBits.MuteMembers,
 	async execute(interaction, container) {
-		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ ephemeral: true });
 
 		const user = interaction.options.getUser('user');
-		let member;
-		try {
-			member = await interaction.guild.members.fetch(user.id);
-		} catch (_e) {
-			member = null;
-		}
 
-		if (!member) {
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.mute.user.not.found'),
-			});
-		}
+		const reply = await createContainer(interaction, {
+			color: 'Red',
+			description: await t(interaction, 'core.moderation.mute.embed.desc', {
+				tag: user.tag,
+				moderator: interaction.user.tag,
+			}),
+			thumbnail: interaction.client.user.displayAvatarURL(),
+		});
 
-		if (!member.voice.channel) {
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.mute.user.not.in.voice'),
-			});
-		}
-
-		try {
-			await member.voice.setMute(
-				true,
-				await t(interaction, 'core.moderation.mute.reason'),
-			);
-		} catch (_e) {
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.mute.failed'),
-			});
-		}
-
-		const embed = new EmbedBuilder()
-			.setColor('Red')
-			.setDescription(
-				await t(interaction, 'core.moderation.mute.embed.desc', {
-					tag: user.tag,
-					moderator: interaction.user.tag,
-				}),
-			)
-			.setThumbnail(interaction.client.user.displayAvatarURL())
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-
-		return interaction.editReply({ embeds: [embed] });
+		return interaction.editReply({ embeds: reply });
 	},
 };

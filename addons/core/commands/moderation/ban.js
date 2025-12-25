@@ -5,68 +5,65 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('ban')
-			.setDescription('⚠️ Ban a user from the server.')
+			.setDescription('🔨 Bans a user from the server.')
 			.addUserOption((option) =>
-				option.setName('user').setDescription('User to ban').setRequired(true),
+				option
+					.setName('user')
+					.setDescription('The user to ban')
+					.setRequired(true),
 			)
 			.addStringOption((option) =>
 				option
 					.setName('reason')
-					.setDescription('Reason for ban (optional)')
+					.setDescription('Reason for the ban')
 					.setRequired(false),
 			),
 	permissions: PermissionFlagsBits.BanMembers,
 	botPermissions: PermissionFlagsBits.BanMembers,
 	async execute(interaction, container) {
-		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 
-		await interaction.deferReply();
+		await interaction.deferReply({ ephemeral: true });
 
 		const user = interaction.options.getUser('user');
 		const reason =
 			interaction.options.getString('reason') ||
 			(await t(interaction, 'core.moderation.ban.default.reason'));
 
-		let member;
 		try {
-			member = await interaction.guild.members.fetch(user.id);
-		} catch (_e) {
-			member = null;
-		}
-
-		// Prevent self-ban
-		if (user.id === interaction.user.id) {
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.ban.cannot.self'),
-				ephemeral: true,
+			await interaction.guild.members.ban(user, { reason });
+			const reply = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title: await t(interaction, 'core.moderation.ban.success.title'),
+				description: await t(interaction, 'core.moderation.ban.success.desc', {
+					user: user.tag,
+					reason,
+				}),
+				thumbnail: interaction.client.user.displayAvatarURL(),
 			});
-		}
-
-		if (member) {
-			await member.ban({ reason });
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setTitle(await t(interaction, 'core.moderation.ban.embed.title'))
-				.setDescription(
-					await t(interaction, 'core.moderation.ban.embed.desc', {
-						tag: user.tag,
-						reason,
-					}),
-				)
-				.setThumbnail(interaction.client.user.displayAvatarURL())
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
-		} else {
 			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.ban.user.not.found'),
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.ban.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
 			});
 		}
 	},

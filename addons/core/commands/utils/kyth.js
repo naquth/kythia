@@ -13,6 +13,7 @@ const {
 } = require('discord.js');
 
 module.exports = {
+	mainGuildOnly: true,
 	slashCommand: new SlashCommandBuilder()
 		.setName('kyth')
 		.setDescription('🛠️ Manage All Kythia related config')

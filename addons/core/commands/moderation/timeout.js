@@ -5,74 +5,76 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('timeout')
-			.setDescription('⏰ Puts a user in timeout for a specified duration.')
+			.setDescription('⏳ Timeouts a user.')
 			.addUserOption((option) =>
 				option
 					.setName('user')
-					.setDescription('User to timeout')
+					.setDescription('The user to timeout')
 					.setRequired(true),
 			)
 			.addIntegerOption((option) =>
 				option
 					.setName('duration')
-					.setDescription('Duration in seconds')
+					.setDescription('Duration in minutes')
 					.setRequired(true),
+			)
+			.addStringOption((option) =>
+				option
+					.setName('reason')
+					.setDescription('Reason for the timeout')
+					.setRequired(false),
 			),
 	permissions: PermissionFlagsBits.ModerateMembers,
 	botPermissions: PermissionFlagsBits.ModerateMembers,
 	async execute(interaction, container) {
-		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ ephemeral: true });
 
 		const user = interaction.options.getUser('user');
-		const duration = interaction.options.getInteger('duration') * 1000;
+		const duration = interaction.options.getInteger('duration');
+		const reason =
+			interaction.options.getString('reason') ||
+			(await t(interaction, 'core.moderation.timeout.default.reason'));
 
-		let member;
 		try {
-			member = await interaction.guild.members.fetch(user.id);
-		} catch (_e) {
-			member = null;
-		}
-
-		if (member) {
-			try {
-				await member.timeout(
-					duration,
-					await t(interaction, 'core.moderation.timeout.reason'),
-				);
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						`## ${await t(interaction, 'core.moderation.timeout.embed.title')}\n` +
-							(await t(interaction, 'core.moderation.timeout.embed.desc', {
-								user: `<@${user.id}>`,
-								duration: duration / 1000,
-								moderator: `<@${interaction.user.id}>`,
-							})),
-					)
-					.setThumbnail(interaction.client.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
-			} catch (error) {
-				console.error('Error during timeout:', error);
-				return interaction.editReply({
-					content: await t(interaction, 'core.moderation.timeout.failed', {
-						error: error.message,
-					}),
-				});
-			}
-		} else {
+			const member = await interaction.guild.members.fetch(user.id);
+			await member.timeout(duration * 60 * 1000, reason);
+			const reply = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title: await t(interaction, 'core.moderation.timeout.success.title'),
+				description: await t(
+					interaction,
+					'core.moderation.timeout.success.desc',
+					{
+						user: user.tag,
+						duration,
+						reason,
+					},
+				),
+				thumbnail: user.displayAvatarURL(),
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.timeout.user.not.found'),
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.timeout.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				embeds: reply,
 			});
 		}
 	},

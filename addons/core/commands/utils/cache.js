@@ -6,16 +6,20 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('cache')
 		.setDescription('Shows cache statistics.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { kythiaConfig, helpers, models } = container;
-		const { embedFooter } = helpers.discord;
+		const { helpers, models } = container;
+		const { simpleContainer } = helpers.discord;
 
 		const anyModelKey = models ? Object.keys(models)[0] : undefined;
 		const KythiaModel = anyModelKey
@@ -23,11 +27,15 @@ module.exports = {
 			: null;
 
 		if (!KythiaModel || !KythiaModel.cacheStats) {
-			await interaction.reply({
-				content: '❌ No cache stats are available for this model.',
-				ephemeral: true,
+			const components = await simpleContainer(
+				interaction,
+				'❌ No cache stats are available for this model.',
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 			});
-			return;
 		}
 
 		const stats = KythiaModel.cacheStats;
@@ -58,38 +66,22 @@ module.exports = {
 			cacheStatus = '### `❌` **DISABLED (Sharding)**';
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(`## 📊 Cache Engine Statistics\n${cacheStatus}`)
-			.addFields(
-				{
-					name: 'Redis Hits',
-					value: `\`\`\`\n${String(stats.redisHits || 0)}\n\`\`\``,
-					inline: false,
-				},
-				{
-					name: 'In-Memory Hits',
-					value: `\`\`\`\n${String(stats.mapHits || 0)}\n\`\`\``,
-					inline: false,
-				},
-				{
-					name: 'Cache Misses',
-					value: `\`\`\`\n${String(stats.misses || 0)}\n\`\`\``,
-					inline: false,
-				},
-				{
-					name: 'Cache Sets',
-					value: `\`\`\`\n${String(stats.sets || 0)}\n\`\`\``,
-					inline: false,
-				},
-				{
-					name: 'Cache Clears',
-					value: `\`\`\`\n${String(stats.clears || 0)}\n\`\`\``,
-					inline: false,
-				},
-			)
-			.setFooter(await embedFooter(interaction));
+		const desc = [
+			'## 📊 Cache Engine Statistics',
+			cacheStatus,
+			'',
+			`**Redis Hits:** \`${stats.redisHits || 0}\``,
+			`**In-Memory Hits:** \`${stats.mapHits || 0}\``,
+			`**Cache Misses:** \`${stats.misses || 0}\``,
+			`**Cache Sets:** \`${stats.sets || 0}\``,
+			`**Cache Clears:** \`${stats.clears || 0}\``,
+		].join('\n');
 
-		await interaction.reply({ embeds: [embed] });
+		const components = await simpleContainer(interaction, desc);
+
+		await interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

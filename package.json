@@ -22,10 +22,12 @@
 		]
 	},
 	"dependencies": {
+		"@discordjs/voice": "^0.19.0",
 		"@dotenvx/dotenvx": "^1.51.1",
 		"@google/genai": "^1.20.0",
 		"@hono/node-server": "^1.19.6",
 		"@sentry/node": "^10.10.0",
+		"@snazzah/davey": "^0.1.9",
 		"async-mutex": "^0.5.0",
 		"axios": "^1.12.2",
 		"canvas": "^3.2.0",
@@ -35,7 +37,7 @@
 		"figlet": "^1.9.3",
 		"hono": "^4.10.7",
 		"javascript-obfuscator": "^4.1.1",
-		"kythia-core": "^0.12.5-beta",
+		"kythia-core": "file:.yalc/kythia-core",
 		"luxon": "^3.7.2",
 		"marked": "^4.3.0",
 		"module-alias": "^2.2.3",
@@ -53,6 +55,7 @@
 		"uuid": "^13.0.0",
 		"winston": "^3.17.0",
 		"winston-daily-rotate-file": "^5.0.0",
+		"ws": "^8.18.3",
 		"youtube-transcript": "^1.2.1"
 	},
 	"devDependencies": {

@@ -5,31 +5,54 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('say')
-			.setDescription('💬 Make the bot send a message')
+			.setDescription('🗣️ Makes the bot say something.')
 			.addStringOption((option) =>
 				option
 					.setName('message')
-					.setDescription('Message to send')
+					.setDescription('The message to say')
 					.setRequired(true),
 			),
-	permissions: PermissionFlagsBits.ManageGuild,
-	botPermissions: PermissionFlagsBits.ManageGuild,
+	permissions: PermissionFlagsBits.ManageMessages,
+	botPermissions: PermissionFlagsBits.ManageMessages,
 	async execute(interaction, container) {
-		const { t } = container;
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ ephemeral: true });
 
 		const message = interaction.options.getString('message');
 
-		await interaction.channel.send(message);
-		return interaction.editReply(
-			await t(interaction, 'core.moderation.say.success', { message }),
-		);
+		try {
+			await interaction.channel.send(message);
+
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.say.success'),
+				{ color: 'Green' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.say.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
+		}
 	},
 };

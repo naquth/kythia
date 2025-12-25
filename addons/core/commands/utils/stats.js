@@ -7,17 +7,17 @@
  */
 const {
 	version,
-	SlashCommandBuilder,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 	MessageFlags,
-	MediaGalleryItemBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SlashCommandBuilder,
+	SeparatorSpacingSize,
 	MediaGalleryBuilder,
+	MediaGalleryItemBuilder,
 } = require('discord.js');
-const fs = require('node:fs');
 const path = require('node:path');
+const fs = require('node:fs');
 const os = require('node:os');
 
 function getKythiaCoreVersion() {
@@ -69,6 +69,11 @@ module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('stats')
 		.setDescription(`📊 Displays kythia statistics.`),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers, models } = container;
 		const { formatDuration } = helpers.time;

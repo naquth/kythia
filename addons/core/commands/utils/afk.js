@@ -6,7 +6,11 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
+const {
+	MessageFlags,
+	SlashCommandBuilder,
+	InteractionContextType,
+} = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -19,49 +23,49 @@ module.exports = {
 				.setRequired(false),
 		)
 		.setContexts(InteractionContextType.Guild),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, models } = container;
+		const { t, models, helpers } = container;
 		const { UserAFK } = models;
+		const { simpleContainer } = helpers.discord;
 
 		const reason =
 			interaction.options.getString('reason') ||
 			(await t(interaction, 'core.utils.afk.no.reason'));
 
-		try {
-			const afkData = await UserAFK.getCache({
-				userId: interaction.user.id,
-			});
+		const afkData = await UserAFK.getCache({
+			userId: interaction.user.id,
+		});
 
-			if (afkData) {
-				await interaction.reply({
-					content: await t(interaction, 'core.utils.afk.already.afk'),
-					ephemeral: true,
-				});
-				return;
-			}
-
-			await UserAFK.create(
-				{
-					userId: interaction.user.id,
-					reason: reason,
-					timestamp: new Date(),
-				},
-				{ individualHooks: true },
-			);
-
-			const replyMessage = await t(interaction, 'core.utils.afk.set.success', {
-				reason: reason,
-			});
-			await interaction.reply({
-				content: replyMessage,
-				ephemeral: true,
-			});
-		} catch (error) {
-			console.error('Error executing AFK command:', error);
-			await interaction.reply({
-				content: await t(interaction, 'core.utils.afk.error'),
-				ephemeral: true,
+		if (afkData) {
+			const msg = await t(interaction, 'core.utils.afk.already.afk');
+			const components = await simpleContainer(interaction, msg);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
+
+		await UserAFK.create(
+			{
+				userId: interaction.user.id,
+				reason: reason,
+				timestamp: new Date(),
+			},
+			{ individualHooks: true },
+		);
+
+		const replyMessage = await t(interaction, 'core.utils.afk.set.success', {
+			reason: reason,
+		});
+		const components = await simpleContainer(interaction, replyMessage);
+		await interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

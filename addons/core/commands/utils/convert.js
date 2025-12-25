@@ -6,8 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { DateTime } = require('luxon');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const fetch = require('node-fetch');
 
 const lengthUnits = {
@@ -130,8 +129,11 @@ function convertVolume(value, from, to) {
 	return value * (volumeUnits[from] / volumeUnits[to]);
 }
 
-async function convertCurrency(amount, from, to) {
-	const accessKey = kythia?.addons?.core?.exchangerateApi;
+async function convertCurrency(container, amount, from, to) {
+	const { kythiaConfig } = container;
+	const accessKey = kythiaConfig?.addons?.core?.exchangerateApi;
+	if (!accessKey) return null;
+
 	const url = `https://api.exchangerate.host/convert?access_key=${encodeURIComponent(accessKey)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${amount}`;
 	let res, data;
 	try {
@@ -145,13 +147,6 @@ async function convertCurrency(amount, from, to) {
 		console.error('Currency API error:', err);
 		return null;
 	}
-}
-
-function convertTimezone(time, from, to) {
-	let dt = DateTime.fromFormat(time, 'HH:mm', { zone: from });
-	if (!dt.isValid) dt = DateTime.fromISO(time, { zone: from });
-	if (!dt.isValid) return null;
-	return dt.setZone(to);
 }
 
 const lengthChoices = [
@@ -221,31 +216,10 @@ const volumeChoices = [
 	{ name: 'Teaspoon (tsp)', value: 'tsp' },
 ];
 
-const timezoneChoices = [
-	{ name: 'WIB (Asia/Jakarta)', value: 'Asia/Jakarta' },
-	{ name: 'WITA (Asia/Makassar)', value: 'Asia/Makassar' },
-	{ name: 'WIT (Asia/Jayapura)', value: 'Asia/Jayapura' },
-	{ name: 'UTC', value: 'UTC' },
-	{ name: 'EST (America/New_York)', value: 'America/New_York' },
-	{ name: 'PST (America/Los_Angeles)', value: 'America/Los_Angeles' },
-	{ name: 'CET (Europe/Berlin)', value: 'Europe/Berlin' },
-	{ name: 'JST (Asia/Tokyo)', value: 'Asia/Tokyo' },
-];
-
-const currencyChoices = [
-	{ name: 'IDR', value: 'IDR' },
-	{ name: 'USD', value: 'USD' },
-	{ name: 'EUR', value: 'EUR' },
-	{ name: 'JPY', value: 'JPY' },
-	{ name: 'GBP', value: 'GBP' },
-	{ name: 'SGD', value: 'SGD' },
-	{ name: 'AUD', value: 'AUD' },
-];
-
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('convert')
-		.setDescription('🔄 Convert between units, currencies, timezones, etc.')
+		.setDescription('🔄 Convert between units, currencies, etc.')
 
 		.addSubcommand((sub) =>
 			sub
@@ -256,45 +230,21 @@ module.exports = {
 						.setName('from')
 						.setDescription('Currency code (e.g. USD)')
 						.setRequired(true)
-						.addChoices(...currencyChoices),
+						.setMinLength(3)
+						.setMaxLength(3),
 				)
 				.addStringOption((opt) =>
 					opt
 						.setName('to')
 						.setDescription('Currency code to convert to (e.g. IDR)')
 						.setRequired(true)
-						.addChoices(...currencyChoices),
+						.setMinLength(3)
+						.setMaxLength(3),
 				)
 				.addNumberOption((opt) =>
 					opt
 						.setName('amount')
 						.setDescription('Amount to convert')
-						.setRequired(true),
-				),
-		)
-
-		.addSubcommand((sub) =>
-			sub
-				.setName('timezone')
-				.setDescription('⏰ Convert time between timezones')
-				.addStringOption((opt) =>
-					opt
-						.setName('from')
-						.setDescription('From timezone')
-						.setRequired(true)
-						.addChoices(...timezoneChoices),
-				)
-				.addStringOption((opt) =>
-					opt
-						.setName('to')
-						.setDescription('To timezone')
-						.setRequired(true)
-						.addChoices(...timezoneChoices),
-				)
-				.addStringOption((opt) =>
-					opt
-						.setName('time')
-						.setDescription('Time (e.g. 10:00 or 2024-06-01 10:00)')
 						.setRequired(true),
 				),
 		)
@@ -454,241 +404,258 @@ module.exports = {
 						.setRequired(true),
 				),
 		),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
 
 		const sub = interaction.options.getSubcommand();
 		await interaction.deferReply();
 
 		if (sub === 'currency') {
 			const amount = interaction.options.getNumber('amount');
-			const from = interaction.options.getString('from');
-			const to = interaction.options.getString('to');
+			const from = interaction.options.getString('from').toUpperCase();
+			const to = interaction.options.getString('to').toUpperCase();
 			try {
-				const result = await convertCurrency(amount, from, to);
+				const result = await convertCurrency(container, amount, from, to);
 				if (result == null) {
-					const embed = new EmbedBuilder()
-						.setDescription(
-							'## ' +
-								(await t(interaction, 'core.utils.convert.currency.failed')),
-						)
-						.setColor('Red');
-					return interaction.editReply({ embeds: [embed] });
-				}
-				const embed = new EmbedBuilder()
-					.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						'## ' +
-							(await t(interaction, 'core.utils.convert.currency.title')) +
-							'\n' +
-							(await t(interaction, 'core.utils.convert.currency.result', {
-								amount: amount,
-								from: from,
-								result: result.toLocaleString(undefined, {
-									maximumFractionDigits: 4,
-								}),
-								to: to,
-							})),
-					)
-					.setColor(kythiaConfig.bot.color)
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+							(await t(interaction, 'core.utils.convert.currency.failed')),
+						{ color: 'Red' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
+				}
+
+				const desc =
+					'## ' +
+					(await t(interaction, 'core.utils.convert.currency.title')) +
+					'\n' +
+					(await t(interaction, 'core.utils.convert.currency.result', {
+						amount: amount,
+						from: from,
+						result: result.toLocaleString(undefined, {
+							maximumFractionDigits: 4,
+						}),
+						to: to,
+					}));
+
+				const components = await simpleContainer(interaction, desc);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} catch (e) {
 				console.error('Currency convert error:', e);
-				const embed = new EmbedBuilder()
-					.setDescription(
-						await t(interaction, 'core.utils.convert.currency.error'),
-					)
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.utils.convert.currency.error'),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
-		} else if (sub === 'timezone') {
-			const time = interaction.options.getString('time');
-			const from = interaction.options.getString('from');
-			const to = interaction.options.getString('to');
-			const converted = convertTimezone(time, from, to);
-			if (!converted) {
-				const embed = new EmbedBuilder()
-					.setDescription(
-						'## ' +
-							(await t(interaction, 'core.utils.convert.timezone.failed')),
-					)
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
-			}
-			const embed = new EmbedBuilder()
-				.setDescription(
-					'## ' +
-						(await t(interaction, 'core.utils.convert.timezone.title')) +
-						'\n' +
-						(await t(interaction, 'core.utils.convert.timezone.result', {
-							time: time,
-							from: from,
-							converted: converted.toFormat('yyyy-MM-dd HH:mm'),
-							to: to,
-						})),
-				)
-				.setColor(kythiaConfig.bot.color);
-			return interaction.editReply({ embeds: [embed] });
 		} else if (sub === 'length') {
 			const value = interaction.options.getNumber('value');
 			const from = interaction.options.getString('from');
 			const to = interaction.options.getString('to');
 			const result = convertLength(value, from, to);
 			if (result == null) {
-				const embed = new EmbedBuilder()
-					.setDescription(
-						`## ${await t(interaction, 'core.utils.convert.length.failed')}`,
-					)
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
+				const components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'core.utils.convert.length.failed')}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
-			const embed = new EmbedBuilder()
-				.setDescription(
-					'## ' +
-						(await t(interaction, 'core.utils.convert.length.title')) +
-						'\n' +
-						(await t(interaction, 'core.utils.convert.length.result', {
-							value: value,
-							from: from,
-							result: result,
-							to: to,
-						})),
-				)
-				.setColor(kythiaConfig.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+
+			const desc =
+				'## ' +
+				(await t(interaction, 'core.utils.convert.length.title')) +
+				'\n' +
+				(await t(interaction, 'core.utils.convert.length.result', {
+					value: value,
+					from: from,
+					result: result,
+					to: to,
+				}));
+
+			const components = await simpleContainer(interaction, desc);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else if (sub === 'mass') {
 			const value = interaction.options.getNumber('value');
 			const from = interaction.options.getString('from');
 			const to = interaction.options.getString('to');
 			const result = convertMass(value, from, to);
 			if (result == null) {
-				const embed = new EmbedBuilder()
-					.setDescription(
-						`## ${await t(interaction, 'core.utils.convert.mass.failed')}`,
-					)
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
+				const components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'core.utils.convert.mass.failed')}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
-			const embed = new EmbedBuilder()
-				.setDescription(
-					'## ' +
-						(await t(interaction, 'core.utils.convert.mass.title')) +
-						'\n' +
-						(await t(interaction, 'core.utils.convert.mass.result', {
-							value: value,
-							from: from,
-							result: result,
-							to: to,
-						})),
-				)
-				.setColor(kythiaConfig.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+
+			const desc =
+				'## ' +
+				(await t(interaction, 'core.utils.convert.mass.title')) +
+				'\n' +
+				(await t(interaction, 'core.utils.convert.mass.result', {
+					value: value,
+					from: from,
+					result: result,
+					to: to,
+				}));
+
+			const components = await simpleContainer(interaction, desc);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else if (sub === 'temperature') {
 			const value = interaction.options.getNumber('value');
 			const from = interaction.options.getString('from');
 			const to = interaction.options.getString('to');
 			const result = convertTemperature(value, from, to);
 			if (result == null) {
-				const embed = new EmbedBuilder()
-					.setDescription(
-						'## ' +
-							(await t(interaction, 'core.utils.convert.temperature.failed')),
-					)
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
-			}
-			const embed = new EmbedBuilder()
-				.setDescription(
+				const components = await simpleContainer(
+					interaction,
 					'## ' +
-						(await t(interaction, 'core.utils.convert.temperature.title')) +
-						'\n' +
-						(await t(interaction, 'core.utils.convert.temperature.result', {
-							value: value,
-							from: from.toUpperCase(),
-							result: result,
-							to: to.toUpperCase(),
-						})),
-				)
-				.setColor(kythiaConfig.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+						(await t(interaction, 'core.utils.convert.temperature.failed')),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+
+			const desc =
+				'## ' +
+				(await t(interaction, 'core.utils.convert.temperature.title')) +
+				'\n' +
+				(await t(interaction, 'core.utils.convert.temperature.result', {
+					value: value,
+					from: from.toUpperCase(),
+					result: result,
+					to: to.toUpperCase(),
+				}));
+
+			const components = await simpleContainer(interaction, desc);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else if (sub === 'data') {
 			const value = interaction.options.getNumber('value');
 			const from = interaction.options.getString('from');
 			const to = interaction.options.getString('to');
 			const result = convertData(value, from, to);
 			if (result == null) {
-				const embed = new EmbedBuilder()
-					.setDescription(
-						`## ${await t(interaction, 'core.utils.convert.data.failed')}`,
-					)
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
+				const components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'core.utils.convert.data.failed')}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
-			const embed = new EmbedBuilder()
-				.setDescription(
-					'## ' +
-						(await t(interaction, 'core.utils.convert.data.title')) +
-						'\n' +
-						(await t(interaction, 'core.utils.convert.data.result', {
-							value: value,
-							from: from.toUpperCase(),
-							result: result,
-							to: to.toUpperCase(),
-						})),
-				)
-				.setColor(kythiaConfig.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+
+			const desc =
+				'## ' +
+				(await t(interaction, 'core.utils.convert.data.title')) +
+				'\n' +
+				(await t(interaction, 'core.utils.convert.data.result', {
+					value: value,
+					from: from.toUpperCase(),
+					result: result,
+					to: to.toUpperCase(),
+				}));
+
+			const components = await simpleContainer(interaction, desc);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else if (sub === 'area') {
 			const value = interaction.options.getNumber('value');
 			const from = interaction.options.getString('from');
 			const to = interaction.options.getString('to');
 			const result = convertArea(value, from, to);
 			if (result == null) {
-				const embed = new EmbedBuilder()
-					.setDescription('## Area conversion failed. Please check your units.')
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
+				const components = await simpleContainer(
+					interaction,
+					'## Area conversion failed. Please check your units.',
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## Area Conversion\n${value} ${from} = ${result} ${to}`,
-				)
-				.setColor(kythiaConfig.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+
+			const desc = `## Area Conversion\n${value} ${from} = ${result} ${to}`;
+
+			const components = await simpleContainer(interaction, desc);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else if (sub === 'volume') {
 			const value = interaction.options.getNumber('value');
 			const from = interaction.options.getString('from');
 			const to = interaction.options.getString('to');
 			const result = convertVolume(value, from, to);
 			if (result == null) {
-				const embed = new EmbedBuilder()
-					.setDescription(
-						'## Volume conversion failed. Please check your units.',
-					)
-					.setColor('Red');
-				return interaction.editReply({ embeds: [embed] });
+				const components = await simpleContainer(
+					interaction,
+					'## Volume conversion failed. Please check your units.',
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## Volume Conversion\n${value} ${from} = ${result} ${to}`,
-				)
-				.setColor(kythiaConfig.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+
+			const desc = `## Volume Conversion\n${value} ${from} = ${result} ${to}`;
+
+			const components = await simpleContainer(interaction, desc);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					'## ' +
-						(await t(interaction, 'core.utils.convert.unknown.subcommand')),
-				)
-				.setColor('Red');
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'core.utils.convert.unknown.subcommand')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

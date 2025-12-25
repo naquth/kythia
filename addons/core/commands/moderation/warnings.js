@@ -5,74 +5,86 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('warnings')
-			.setDescription('🔖 Show user warnings.')
+			.setDescription('⚠️ View warnings for a user.')
 			.addUserOption((option) =>
 				option
 					.setName('user')
-					.setDescription('User to check')
-					.setRequired(false),
+					.setDescription('The user to view warnings for')
+					.setRequired(true),
 			),
-
 	permissions: PermissionFlagsBits.ModerateMembers,
 	botPermissions: PermissionFlagsBits.ModerateMembers,
 	async execute(interaction, container) {
-		const { t, helpers, models } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, models, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 		const { User } = models;
+
 		await interaction.deferReply({ ephemeral: true });
 
-		const user = interaction.options.getUser('user') || interaction.user;
-		const userRecord = await User.getCache({
-			userId: user.id,
-			guildId: interaction.guild.id,
-		});
+		const targetUser = interaction.options.getUser('user');
 
-		if (
-			!userRecord ||
-			!Array.isArray(userRecord.warnings) ||
-			userRecord.warnings.length === 0
-		) {
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.warnings.none', {
-					user: user.tag,
+		try {
+			const userRecord = await User.getCache({
+				userId: targetUser.id,
+				guildId: interaction.guild.id,
+			});
+
+			if (
+				!userRecord ||
+				!userRecord.warnings ||
+				userRecord.warnings.length === 0
+			) {
+				const reply = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.moderation.warnings.none', {
+						user: targetUser.tag,
+					}),
+					{ color: 'Green' },
+				);
+				return interaction.editReply({
+					components: reply,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+
+			const warningsList = userRecord.warnings
+				.map(
+					(w, i) =>
+						`**${i + 1}.** ${w.reason} - <@${w.moderator}> (${new Date(w.date).toLocaleDateString()})`,
+				)
+				.join('\n');
+
+			const reply = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title: await t(interaction, 'core.moderation.warnings.title', {
+					user: targetUser.tag,
 				}),
+				description: warningsList,
+				thumbnail: targetUser.displayAvatarURL(),
+			});
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.warnings.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
 			});
 		}
-
-		const warningsList = (
-			await Promise.all(
-				userRecord.warnings.map(async (warning, idx) => {
-					return await t(interaction, 'core.moderation.warnings.item', {
-						number: idx + 1,
-						reason:
-							warning.reason ||
-							(await t(interaction, 'core.moderation.warnings.unknown.reason')),
-						date: warning.date
-							? new Date(warning.date).toLocaleString()
-							: await t(interaction, 'core.moderation.warnings.unknown.date'),
-					});
-				}),
-			)
-		).join('\n');
-
-		const embed = new EmbedBuilder()
-			.setColor('Red')
-			.setDescription(
-				await t(interaction, 'core.moderation.warnings.embed.description', {
-					user: `<@${user.id}>`,
-					warnings: warningsList,
-				}),
-			)
-			.setThumbnail(interaction.client.user.displayAvatarURL())
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-
-		return interaction.editReply({ embeds: [embed] });
 	},
 };

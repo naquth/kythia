@@ -5,7 +5,11 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
+const {
+	MessageFlags,
+	SlashCommandBuilder,
+	InteractionContextType,
+} = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -19,10 +23,16 @@ module.exports = {
 		)
 		.setContexts(InteractionContextType.BotDM),
 	ownerOnly: true,
-	async execute(interaction, container) {
-		const { t } = container;
 
-		await interaction.deferReply({ ephemeral: true });
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply();
 
 		const input = interaction.options.getString('name');
 		const parts = input.trim().split(/\s+/);
@@ -34,10 +44,14 @@ module.exports = {
 		);
 
 		if (!cmd) {
-			return interaction.editReply({
+			const components = await simpleContainer(interaction, {
 				content: await t(interaction, 'core.utils.commandid.not.found', {
 					commandName,
 				}),
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 

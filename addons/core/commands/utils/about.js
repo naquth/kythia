@@ -6,17 +6,17 @@
  * @version 0.11.0-beta
  */
 const {
-	SlashCommandBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	ActionRowBuilder,
-	SeparatorSpacingSize,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	MessageFlags,
-	MediaGalleryItemBuilder,
+	ButtonBuilder,
+	ContainerBuilder,
+	ActionRowBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SlashCommandBuilder,
 	MediaGalleryBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryItemBuilder,
 } = require('discord.js');
 
 module.exports = {
@@ -24,6 +24,11 @@ module.exports = {
 		.setName('about')
 		.setDescription(`😋 A brief introduction about kythia`),
 	aliases: ['abt', '🌸'],
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;

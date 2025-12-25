@@ -5,201 +5,137 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const {
-	EmbedBuilder,
-	PermissionFlagsBits,
-	MessageFlags,
-} = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
 			.setName('warn')
-			.setDescription('⚠️ Warn a user.')
+			.setDescription('⚠️ Warns a user.')
 			.addUserOption((option) =>
-				option.setName('user').setDescription('User to warn').setRequired(true),
+				option
+					.setName('user')
+					.setDescription('The user to warn')
+					.setRequired(true),
 			)
 			.addStringOption((option) =>
 				option
 					.setName('reason')
 					.setDescription('Reason for the warning')
-					.setRequired(true),
+					.setRequired(false),
 			),
-
 	permissions: PermissionFlagsBits.ModerateMembers,
 	botPermissions: PermissionFlagsBits.ModerateMembers,
 	async execute(interaction, container) {
-		const { t, helpers, models, logger } = container;
-		const { embedFooter, getTextChannelSafe } = helpers.discord;
-		const { User, ServerSetting } = models;
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+		const { t, helpers, models, kythiaConfig } = container;
+		const { createContainer, simpleContainer, getTextChannelSafe } =
+			helpers.discord;
+		const { User } = models;
 
-		const setting = await ServerSetting.getCache({
-			guildId: interaction.guild.id,
-		});
+		await interaction.deferReply({ ephemeral: true });
+
 		const targetUser = interaction.options.getUser('user');
-		const reason = interaction.options.getString('reason');
+		const reason =
+			interaction.options.getString('reason') ||
+			(await t(interaction, 'core.moderation.warn.default.reason'));
 
-		let member;
-		try {
-			member = await interaction.guild.members.fetch(targetUser.id);
-		} catch (_err) {
-			member = null;
-		}
-		if (!member) {
+		// Prevent self-warn
+		if (targetUser.id === interaction.user.id) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.warn.cannot.self'),
+				{ color: 'Red' },
+			);
 			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.warn.user.not.in.guild'),
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
 			});
 		}
-
-		const userRecord = await User.getCache({
-			userId: targetUser.id,
-			guildId: interaction.guild.id,
-		});
-		if (!userRecord) {
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.warn.user.not.in.db'),
-			});
-		}
-
-		if (!Array.isArray(userRecord.warnings)) {
-			userRecord.warnings = [];
-		}
-		userRecord.warnings.push({ reason, date: new Date() });
 
 		try {
-			userRecord.changed('warnings', true);
-			await userRecord.saveAndUpdateCache('userId');
-		} catch (err) {
-			logger.error('Error while saving user record:', err);
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.warn.db.save.failed'),
+			// 1. Save to DB
+			const userRecord = await User.getCache({
+				userId: targetUser.id,
+				guildId: interaction.guild.id,
 			});
-		}
+			if (!userRecord.warnings) userRecord.warnings = [];
+			userRecord.warnings.push({
+				moderator: interaction.user.id,
+				reason,
+				date: new Date(),
+			});
+			await userRecord.saveAndUpdateCache();
 
-		// If user has 3 or more warnings, timeout for 1 day
-		let timeoutApplied = false;
-		if (userRecord.warnings.length >= 3) {
-			if (member.moderatable && member.permissions.has('SEND_MESSAGES')) {
-				try {
-					await member.timeout(
-						86400000,
-						await t(interaction, 'core.moderation.warn.timeout.reason'),
-					);
-					timeoutApplied = true;
-				} catch (err) {
-					logger.warn(
-						'Failed to timeout member after 3 warnings:',
-						err.message,
-					);
-				}
-			} else {
-				logger.warn(
-					'Bot does not have MODERATE_MEMBERS permission to timeout member.',
-				);
+			// 2. DM the user
+			try {
+				const dmReply = await createContainer(interaction, {
+					color: 'Orange',
+					title: await t(interaction, 'core.moderation.warn.dm.title', {
+						guild: interaction.guild.name,
+					}),
+					description: await t(interaction, 'core.moderation.warn.dm.desc', {
+						reason,
+						moderator: interaction.user.tag,
+					}),
+					thumbnail: interaction.guild.iconURL(),
+				});
+				await targetUser.send({ components: dmReply });
+			} catch (_) {
+				// Ignore DM errors
 			}
-		}
 
-		if (setting?.modLogChannelId) {
+			// 3. Modlog
+			const modLogChannelId = await kythiaConfig.channels.modlog;
 			const modLogChannel = await getTextChannelSafe(
 				interaction.guild,
-				setting.modLogChannelId,
+				modLogChannelId,
 			);
-
-			if (!modLogChannel) {
-				return interaction.editReply({
-					content: await t(
+			if (modLogChannel) {
+				const modLogReply = await createContainer(interaction, {
+					color: 'Orange',
+					title: 'Warn',
+					description: await t(
 						interaction,
-						'core.moderation.warn.modlog.not.found',
-					),
-				});
-			}
-
-			if (
-				!modLogChannel
-					.permissionsFor(interaction.client.user)
-					.has('SEND_MESSAGES')
-			) {
-				return interaction.editReply({
-					content: await t(
-						interaction,
-						'core.moderation.warn.modlog.no.permission',
-					),
-				});
-			}
-
-			try {
-				const channelEmbed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await t(interaction, 'core.moderation.warn.modlog.embed', {
-							user: `<@${targetUser.id}>`,
-							moderator: `<@${interaction.user.id}>`,
+						'core.moderation.warn.modlog.desc',
+						{
+							user: `${targetUser.tag} (${targetUser.id})`,
+							moderator: interaction.user.tag,
 							reason,
-						}),
-					)
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-
-				await modLogChannel.send({ embeds: [channelEmbed] });
-
-				if (timeoutApplied) {
-					const timeoutEmbed = new EmbedBuilder()
-						.setColor(kythia.bot.color)
-						.setDescription(
-							await t(
-								interaction,
-								'core.moderation.warn.modlog.timeout.embed',
-								{
-									user: `<@${targetUser.id}>`,
-								},
-							),
-						)
-						.setTimestamp()
-						.setFooter(await embedFooter(interaction));
-					await modLogChannel.send({ embeds: [timeoutEmbed] });
-				}
-			} catch (err) {
-				logger.warn('Failed to send log to modLogChannel:', err.message);
+						},
+					),
+					thumbnail: targetUser.displayAvatarURL(),
+				});
+				await modLogChannel.send({ components: modLogReply });
 			}
-		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythia.bot.color)
-			.setDescription(
-				await t(interaction, 'core.moderation.warn.success.embed', {
-					user: `<@${targetUser.id}>`,
+			// 4. Reply to interaction
+			const reply = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title: await t(interaction, 'core.moderation.warn.success.title'),
+				description: await t(interaction, 'core.moderation.warn.success.desc', {
+					user: targetUser.tag,
 					reason,
-					timeout: timeoutApplied
-						? `\n\n${await t(interaction, 'core.moderation.warn.timeout.notice')}`
-						: '',
 				}),
-			)
-			.setThumbnail(interaction.client.user.displayAvatarURL())
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-
-		const warnEmbed = new EmbedBuilder()
-			.setColor('Red')
-			.setDescription(
-				await t(interaction, 'core.moderation.warn.dm.embed', {
-					user: `<@${targetUser.id}>`,
-					moderator: `<@${interaction.user.id}>`,
-					reason,
-					timeout: timeoutApplied
-						? `\n\n${await t(interaction, 'core.moderation.warn.dm.timeout.notice')}`
-						: '',
+				thumbnail: targetUser.displayAvatarURL(),
+			});
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.warn.failed', {
+					error: error.message,
 				}),
-			)
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-
-		try {
-			await targetUser.send({ embeds: [warnEmbed] });
-		} catch (_err) {
-			// DM failed, ignore or log if needed
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
 		}
-
-		return interaction.editReply({ embeds: [embed] });
 	},
 };

@@ -7,13 +7,13 @@
  */
 
 const {
-	SlashCommandBuilder,
-	ModalBuilder,
-	TextInputBuilder,
-	TextInputStyle,
-	ActionRowBuilder,
 	EmbedBuilder,
+	ModalBuilder,
+	TextInputStyle,
+	TextInputBuilder,
+	ActionRowBuilder,
 	PermissionFlagsBits,
+	SlashCommandBuilder,
 	InteractionContextType,
 } = require('discord.js');
 
@@ -135,11 +135,6 @@ module.exports = {
 		}
 	},
 
-	/**
-	 * Handles the logic of sending a payload to all guilds.
-	 * @param {Interaction} interaction - The interaction to reply to.
-	 * @param {object} payload - The message payload to send.
-	 */
 	async sendToAllGuilds(interaction, payload) {
 		const container = interaction.container;
 		const { models, logger } = container;

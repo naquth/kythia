@@ -6,21 +6,21 @@
  * @version 0.11.0-beta
  */
 const {
-	SlashCommandBuilder,
-	ActionRowBuilder,
-	ButtonBuilder,
 	ButtonStyle,
 	ChannelType,
-	InteractionContextType,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 	MessageFlags,
-	MediaGalleryItemBuilder,
-	MediaGalleryBuilder,
+	ButtonBuilder,
 	SectionBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
 	ThumbnailBuilder,
+	ActionRowBuilder,
+	TextDisplayBuilder,
+	SlashCommandBuilder,
+	MediaGalleryBuilder,
+	SeparatorSpacingSize,
+	InteractionContextType,
+	MediaGalleryItemBuilder,
 } = require('discord.js');
 
 module.exports = {
@@ -29,6 +29,11 @@ module.exports = {
 		.setDescription('📰 Displays detailed information about the server.')
 		.setContexts(InteractionContextType.Guild),
 	guildOnly: true,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, kythiaConfig } = container;
 		const { convertColor } = helpers.color;

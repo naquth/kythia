@@ -338,6 +338,11 @@ module.exports = {
 			"🔍 Checks the bot's, Discord API's, database and cache/redis connection speed.",
 		),
 	aliases: ['p', 'pong', '🏓'],
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;

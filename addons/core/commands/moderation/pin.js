@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
@@ -15,53 +15,74 @@ module.exports = {
 			.addStringOption((option) =>
 				option
 					.setName('message_id')
-					.setDescription('ID of the message to pin')
+					.setDescription('The ID of the message to pin')
 					.setRequired(true),
 			),
-	permissions: PermissionFlagsBits.PinMessages,
-	botPermissions: PermissionFlagsBits.PinMessages,
+	permissions: PermissionFlagsBits.ManageMessages,
+	botPermissions: PermissionFlagsBits.ManageMessages,
 	async execute(interaction, container) {
-		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ ephemeral: true });
+
 		const messageId = interaction.options.getString('message_id');
 
-		let message;
 		try {
-			message = await interaction.channel.messages.fetch(messageId);
-		} catch (_e) {
-			message = null;
-		}
+			const message = await interaction.channel.messages.fetch(messageId);
+			if (!message) {
+				const reply = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.moderation.pin.not.found'),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components: reply,
+					flags: MessageFlags.IsComponentsV2,
+					ephemeral: true,
+				});
+			}
 
-		if (!message) {
-			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.pin.not.found'),
-				ephemeral: true,
-			});
-		}
+			if (message.pinned) {
+				const reply = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.moderation.pin.already.pinned'),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components: reply,
+					flags: MessageFlags.IsComponentsV2,
+					ephemeral: true,
+				});
+			}
 
-		try {
 			await message.pin();
-		} catch (_e) {
+
+			const reply = await createContainer(interaction, {
+				color: kythiaConfig.bot.color,
+				title: await t(interaction, 'core.moderation.pin.success.title'),
+				description: await t(interaction, 'core.moderation.pin.success.desc', {
+					messageUrl: message.url,
+				}),
+				thumbnail: interaction.guild.iconURL(),
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.moderation.pin.failed'),
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.pin.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
 				ephemeral: true,
 			});
 		}
-
-		const embed = new EmbedBuilder()
-			.setColor(kythia.bot.color)
-			.setDescription(
-				await t(interaction, 'core.moderation.pin.success', {
-					content:
-						message.content ||
-						(await t(interaction, 'core.moderation.pin.no.content')),
-				}),
-			)
-			.setThumbnail(interaction.client.user.displayAvatarURL())
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-		return interaction.editReply({ embeds: [embed] });
 	},
 };

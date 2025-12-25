@@ -260,6 +260,13 @@ function loadKythiaConfig() {
 				healthCheckDelay: 1000,
 				apiKey: process.env.GLOBAL_CHAT_API_KEY,
 			},
+			globalvoice: {
+				// ! WARN
+				// this feature is kythia's internal only
+				active: false,
+				apiUrl: process.env.GLOBAL_VOICE_API_URL,
+				apiKey: process.env.GLOBAL_VOICE_API_KEY,
+			},
 			invite: {
 				active: true,
 			},

@@ -6,12 +6,8 @@
  * @version 0.11.0-beta
  */
 
-const {
-	getChecklistAndItems,
-	getScopeMeta,
-	safeReply,
-} = require('../../helpers');
-const { EmbedBuilder } = require('discord.js');
+const { getChecklistAndItems, getScopeMeta } = require('../../helpers');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -26,10 +22,14 @@ module.exports = {
 					.setRequired(true),
 			),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		// Dependency
 		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		const guildId = interaction.guild?.id;
 		const userId = interaction.user.id; // Personal scope
@@ -37,19 +37,22 @@ module.exports = {
 
 		const item = interaction.options.getString('item');
 		if (!item || typeof item !== 'string' || !item.trim()) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setTitle(
-					await t(interaction, 'checklist.server.add.invalid.item.title'),
-				)
-				.setDescription(
-					await t(interaction, 'checklist.server.add.invalid.item.desc'),
-				)
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral: true });
+			await interaction.deferReply({ ephemeral: true });
+			const msg =
+				(await t(interaction, 'checklist.server.add.invalid.item.title')) +
+				'\n' +
+				(await t(interaction, 'checklist.server.add.invalid.item.desc'));
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const { checklist, items } = await getChecklistAndItems({
+			container,
 			guildId,
 			userId,
 			createIfNotExist: true,
@@ -57,40 +60,52 @@ module.exports = {
 
 		if (items.length >= 100) {
 			// Limit checklist size
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setTitle(await t(interaction, 'checklist.server.add.full.title'))
-				.setDescription(await t(interaction, 'checklist.server.add.full.desc'))
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral: true });
+			await interaction.deferReply({ ephemeral: true });
+			const msg =
+				(await t(interaction, 'checklist.server.add.full.title')) +
+				'\n' +
+				(await t(interaction, 'checklist.server.add.full.desc'));
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		items.push({ text: item, checked: false });
 		try {
 			await checklist.update({ items: JSON.stringify(items) });
 		} catch (_e) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setTitle('Checklist Error')
-				.setDescription('Failed to update checklist. Please try again.')
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral: true });
+			await interaction.deferReply({ ephemeral: true });
+			const msg =
+				'Checklist Error\nFailed to update checklist. Please try again.';
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
-		const { scopeKey, color, ephemeral } = getScopeMeta(userId, group);
-		const embed = new EmbedBuilder()
-			.setTitle(
-				await t(interaction, 'checklist.server.add.add.success.title', {
-					scope: await t(interaction, scopeKey),
-				}),
-			)
-			.setDescription(
-				await t(interaction, 'checklist.server.add.add.success.desc', { item }),
-			)
-			.setColor(color)
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
-
-		await safeReply(interaction, { embeds: [embed], ephemeral });
+		const { scopeKey, color, ephemeral } = getScopeMeta(
+			container,
+			userId,
+			group,
+		);
+		await interaction.deferReply({ ephemeral });
+		const msg =
+			(await t(interaction, 'checklist.server.add.add.success.title', {
+				scope: await t(interaction, scopeKey),
+			})) +
+			'\n' +
+			(await t(interaction, 'checklist.server.add.add.success.desc', { item }));
+		const components = await simpleContainer(interaction, msg, { color });
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

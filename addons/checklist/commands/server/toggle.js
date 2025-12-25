@@ -6,12 +6,8 @@
  * @version 0.11.0-beta
  */
 
-const {
-	getChecklistAndItems,
-	getScopeMeta,
-	safeReply,
-} = require('../../helpers');
-const { EmbedBuilder } = require('discord.js');
+const { getChecklistAndItems, getScopeMeta } = require('../../helpers');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -26,9 +22,13 @@ module.exports = {
 					.setRequired(true),
 			),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
 		const { convertColor } = helpers.color;
 
 		const guildId = interaction.guild?.id;
@@ -37,62 +37,77 @@ module.exports = {
 
 		const index = interaction.options.getInteger('index');
 		if (!index || typeof index !== 'number' || index < 1) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setTitle(
-					await t(interaction, 'checklist.server.toggle.invalid.index.title'),
-				)
-				.setDescription(
-					await t(interaction, 'checklist.server.toggle.invalid.index.desc'),
-				)
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral: true });
+			await interaction.deferReply({ ephemeral: true });
+			const msg =
+				(await t(interaction, 'checklist.server.toggle.invalid.index.title')) +
+				'\n' +
+				(await t(interaction, 'checklist.server.toggle.invalid.index.desc'));
+			const components = await createContainer(interaction, {
+				description: msg,
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const { checklist, items } = await getChecklistAndItems({
+			container,
 			guildId,
 			userId,
 		});
-		const { scopeKey, ephemeral } = getScopeMeta(userId, group);
+		const { scopeKey, ephemeral } = getScopeMeta(container, userId, group);
 
 		if (!checklist || !Array.isArray(items) || items.length === 0) {
-			const embed = new EmbedBuilder()
-				.setTitle(
-					await t(interaction, 'checklist.server.toggle.empty.title', {
-						scope: await t(interaction, scopeKey),
-					}),
-				)
-				.setDescription(
-					await t(interaction, 'checklist.server.toggle.toggle.empty.desc'),
-				)
-				.setColor('Red')
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral });
+			await interaction.deferReply({ ephemeral });
+			const msg =
+				(await t(interaction, 'checklist.server.toggle.empty.title', {
+					scope: await t(interaction, scopeKey),
+				})) +
+				'\n' +
+				(await t(interaction, 'checklist.server.toggle.toggle.empty.desc'));
+			const components = await createContainer(interaction, {
+				description: msg,
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (index < 1 || index > items.length) {
-			const embed = new EmbedBuilder()
-				.setTitle(
-					await t(interaction, 'checklist.server.toggle.invalid.index.title'),
-				)
-				.setDescription(
-					await t(interaction, 'checklist.server.toggle.invalid.index.desc'),
-				)
-				.setColor('Red')
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral });
+			await interaction.deferReply({ ephemeral });
+			const msg =
+				(await t(interaction, 'checklist.server.toggle.invalid.index.title')) +
+				'\n' +
+				(await t(interaction, 'checklist.server.toggle.invalid.index.desc'));
+			const components = await createContainer(interaction, {
+				description: msg,
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		items[index - 1].checked = !items[index - 1].checked;
 		try {
 			await checklist.update({ items: JSON.stringify(items) });
 		} catch (_e) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setTitle('Checklist Error')
-				.setDescription('Failed to update checklist. Please try again.')
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral });
+			await interaction.deferReply({ ephemeral });
+			const msg =
+				'Checklist Error\nFailed to update checklist. Please try again.';
+			const components = await createContainer(interaction, {
+				description: msg,
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const checked = items[index - 1].checked;
@@ -103,28 +118,26 @@ module.exports = {
 			? 'checklist.status.done'
 			: 'checklist.status.undone';
 
-		const embed = new EmbedBuilder()
-			.setTitle(
-				await t(interaction, 'checklist.server.toggle.toggle.success.title', {
-					scope: await t(interaction, scopeKey),
-				}),
-			)
-			.addFields(
-				{
-					name: await t(interaction, 'checklist.server.toggle.item.field'),
-					value: `\`${items[index - 1].text}\``,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'checklist.server.toggle.status.field'),
-					value: await t(interaction, statusKey),
-					inline: true,
-				},
-			)
-			.setColor(color)
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
+		await interaction.deferReply({ ephemeral });
+		const title = await t(
+			interaction,
+			'checklist.server.toggle.toggle.success.title',
+			{
+				scope: await t(interaction, scopeKey),
+			},
+		);
+		const description =
+			`**${await t(interaction, 'checklist.server.toggle.item.field')}:** \`${items[index - 1].text}\`\n` +
+			`**${await t(interaction, 'checklist.server.toggle.status.field')}:** ${await t(interaction, statusKey)}`;
 
-		await safeReply(interaction, { embeds: [embed], ephemeral });
+		const components = await createContainer(interaction, {
+			title,
+			description,
+			color,
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

@@ -6,16 +6,22 @@
  * @version 0.11.0-beta
  */
 
-const Checklist = require('../database/models/Checklist');
-const { convertColor } = require('kythia-core').utils;
 /**
  * Helper: Get checklist (with cache) and parse items array safely.
+ * @param {Object} options
+ * @param {KythiaDI.Container} options.container
+ * @param {string} options.guildId
+ * @param {string} options.userId
+ * @param {boolean} options.createIfNotExist
  */
 async function getChecklistAndItems({
+	container,
 	guildId,
 	userId,
 	createIfNotExist = false,
 }) {
+	const { models } = container;
+	const { Checklist } = models;
 	let checklist;
 	if (createIfNotExist) {
 		[checklist] = await Checklist.findOrCreateWithCache({
@@ -48,8 +54,13 @@ async function getChecklistAndItems({
 
 /**
  * Helper: Get scope key, color, and ephemeral flag based on userId/group.
+ * @param {KythiaDI.Container} container
+ * @param {string} userId
+ * @param {string} group
+ * @param {Object} items
  */
-function getScopeMeta(userId, group, items = null) {
+function getScopeMeta(container, userId, group, items = null) {
+	const { convertColor } = container.helpers.color;
 	const isPersonal = !!userId;
 	return {
 		scopeKey: isPersonal
@@ -69,6 +80,8 @@ function getScopeMeta(userId, group, items = null) {
 
 /**
  * Helper: Reply with embed (catch error if already replied).
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {Object} options
  */
 async function safeReply(interaction, options) {
 	try {

@@ -6,89 +6,74 @@
  * @version 0.11.0-beta
  */
 
-const {
-	getChecklistAndItems,
-	getScopeMeta,
-	safeReply,
-} = require('../../helpers');
-const { EmbedBuilder } = require('discord.js');
+const { getChecklistAndItems, getScopeMeta } = require('../../helpers');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand.setName('list').setDescription('View all server checklist'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
 
 		const guildId = interaction.guild?.id;
 		const userId = null; // Server scope
 		const group = 'server';
 
 		const { checklist, items } = await getChecklistAndItems({
+			container,
 			guildId,
 			userId,
 		});
-		const { scopeKey, colorName, ephemeral } = getScopeMeta(userId, group);
+		const { scopeKey, colorName, ephemeral } = getScopeMeta(
+			container,
+			userId,
+			group,
+		);
 
 		if (!checklist || !Array.isArray(items) || items.length === 0) {
-			const embed = new EmbedBuilder()
-				.setTitle(
-					await t(interaction, 'checklist.server.toggle.empty.title', {
-						scope: await t(interaction, scopeKey),
-					}),
-				)
-				.setDescription(
-					await t(interaction, 'checklist.server.list.list.empty.desc'),
-				)
-				.setColor('Red')
-				.setTimestamp();
-			return safeReply(interaction, { embeds: [embed], ephemeral });
-		}
-
-		// Split into fields if too long
-		const maxFieldLength = 1024;
-		const descArr = [];
-		let current = '';
-		for (let i = 0; i < items.length; i++) {
-			const item = items[i];
-			const line = `${item.checked ? '✅' : '⬜'} \`${i + 1}\` ${item.text}\n`;
-			if ((current + line).length > maxFieldLength) {
-				descArr.push(current);
-				current = '';
-			}
-			current += line;
-		}
-		if (current) descArr.push(current);
-
-		const embed = new EmbedBuilder()
-			.setTitle(
-				await t(interaction, 'checklist.server.list.list.title', {
+			await interaction.deferReply({ ephemeral });
+			const msg =
+				(await t(interaction, 'checklist.server.toggle.empty.title', {
 					scope: await t(interaction, scopeKey),
-				}),
-			)
-			.setColor(colorName)
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-
-		for (let idx = 0; idx < descArr.length; idx++) {
-			embed.addFields({
-				name:
-					descArr.length > 1
-						? await t(
-								interaction,
-								'checklist.server.list.list.field.title.multi',
-								{ index: idx + 1 },
-							)
-						: await t(
-								interaction,
-								'checklist.server.list.list.field.title.single',
-							),
-				value: descArr[idx],
+				})) +
+				'\n' +
+				(await t(interaction, 'checklist.server.list.list.empty.desc'));
+			const components = await createContainer(interaction, {
+				description: msg,
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
-		await safeReply(interaction, { embeds: [embed], ephemeral });
+		// Build checklist description
+		let description = '';
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			description += `${item.checked ? '✅' : '⬜'} \`${i + 1}\` ${item.text}\n`;
+		}
+
+		await interaction.deferReply({ ephemeral });
+		const title = await t(interaction, 'checklist.server.list.list.title', {
+			scope: await t(interaction, scopeKey),
+		});
+		const components = await createContainer(interaction, {
+			title,
+			description: description.trim(),
+			color: colorName,
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

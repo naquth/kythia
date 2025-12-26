@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/events/channelUpdate.js
+ * @namespace: addons/core/events/webhooksUpdate.js
  * @type: Event Handler
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -15,23 +15,8 @@ const {
 	SeparatorSpacingSize,
 } = require('discord.js');
 
-function formatChanges(changes) {
-	if (!changes || changes.length === 0) return 'No changes detected.';
-	return changes
-		.map((change) => {
-			const key = change.key
-				.replace(/_/g, ' ')
-				.replace(/\b\w/g, (l) => l.toUpperCase());
-			const oldValue = change.old ?? 'Nothing';
-			const newValue = change.new ?? 'Nothing';
-
-			return `**${key}**: \`${oldValue}\` ➔ \`${newValue}\``;
-		})
-		.join('\n');
-}
-
-module.exports = async (bot, _oldChannel, newChannel) => {
-	if (!newChannel.guild) return;
+module.exports = async (bot, channel) => {
+	if (!channel.guild) return;
 	const container = bot.client.container;
 	const { models, helpers } = container;
 	const { ServerSetting } = models;
@@ -39,39 +24,68 @@ module.exports = async (bot, _oldChannel, newChannel) => {
 
 	try {
 		const settings = await ServerSetting.getCache({
-			guildId: newChannel.guild.id,
+			guildId: channel.guild.id,
 		});
 		if (!settings || !settings.auditLogChannelId) return;
 
-		const logChannel = await newChannel.guild.channels
+		const logChannel = await channel.guild.channels
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
 
-		const audit = await newChannel.guild.fetchAuditLogs({
-			type: AuditLogEvent.ChannelUpdate,
+		// Check for webhook creation, update, or deletion
+		const createAudit = await channel.guild.fetchAuditLogs({
+			type: AuditLogEvent.WebhookCreate,
 			limit: 1,
 		});
 
-		const entry = audit.entries.find(
+		const updateAudit = await channel.guild.fetchAuditLogs({
+			type: AuditLogEvent.WebhookUpdate,
+			limit: 1,
+		});
+
+		const deleteAudit = await channel.guild.fetchAuditLogs({
+			type: AuditLogEvent.WebhookDelete,
+			limit: 1,
+		});
+
+		const createEntry = createAudit.entries.find(
 			(e) =>
-				e.target?.id === newChannel.id &&
+				e.extra?.channel?.id === channel.id &&
 				e.createdTimestamp > Date.now() - 5000,
 		);
 
+		const updateEntry = updateAudit.entries.find(
+			(e) =>
+				e.extra?.channel?.id === channel.id &&
+				e.createdTimestamp > Date.now() - 5000,
+		);
+
+		const deleteEntry = deleteAudit.entries.find(
+			(e) =>
+				e.extra?.channel?.id === channel.id &&
+				e.createdTimestamp > Date.now() - 5000,
+		);
+
+		const entry = createEntry || updateEntry || deleteEntry;
 		if (!entry) return;
 
+		const action = createEntry
+			? 'Created'
+			: updateEntry
+				? 'Updated'
+				: 'Deleted';
+		const color = createEntry ? 'Green' : updateEntry ? 'Blurple' : 'Red';
 		const executor = entry.executor;
+
 		const components = [
 			new ContainerBuilder()
-				.setAccentColor(
-					convertColor('Blurple', { from: 'discord', to: 'decimal' }),
-				)
+				.setAccentColor(convertColor(color, { from: 'discord', to: 'decimal' }))
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`🔄 **Channel Updated** by <@${executor?.id || 'Unknown'}>\n\n` +
-							`**Channel:** <#${newChannel.id}>\n\n` +
-							`**Changes:**\n${formatChanges(entry.changes)}` +
+						`🪝 **Webhook ${action}** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Channel:** <#${channel.id}>\n` +
+							`**Webhook Name:** ${entry.target?.name || 'Unknown'}` +
 							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
 					),
 				)
@@ -96,6 +110,6 @@ module.exports = async (bot, _oldChannel, newChannel) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in channelUpdate audit log:', err);
+		console.error('Error in webhooksUpdate audit log:', err);
 	}
 };

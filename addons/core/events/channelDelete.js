@@ -6,7 +6,15 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder, ChannelType } = require('discord.js');
+const {
+	AuditLogEvent,
+	ChannelType,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 const Sentry = require('@sentry/node');
 
 /**
@@ -86,8 +94,9 @@ async function handleAntiNuke(bot, channel, entry) {
 module.exports = async (bot, channel) => {
 	if (!channel.guild) return;
 	const container = bot.client.container;
-	const { models } = container;
+	const { models, helpers } = container;
 	const { ServerSetting } = models;
+	const { convertColor } = helpers.color;
 
 	try {
 		const audit = await channel.guild.fetchAuditLogs({
@@ -120,9 +129,7 @@ module.exports = async (bot, channel) => {
 		const logChannel = await channel.guild.channels
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
-		if (!logChannel || !logChannel.isTextBased() || !entry) return;
-
-		// Humanize channel type (simple version)
+		const executor = entry.executor;
 		const channelTypeNames = {
 			[ChannelType.GuildText]: 'Text Channel',
 			[ChannelType.GuildVoice]: 'Voice Channel',
@@ -139,52 +146,43 @@ module.exports = async (bot, channel) => {
 			[ChannelType.DM]: 'Direct Message',
 			[ChannelType.GroupDM]: 'Group DM',
 		};
-		function humanChannelType(type) {
-			return (
-				channelTypeNames[type] ||
-				(typeof type === 'number' ? `Unknown (${type})` : 'Unknown')
-			);
-		}
+		const channelTypeName =
+			channelTypeNames[channel.type] || `Unknown (${channel.type})`;
 
-		// Use the typical color utility if available, else fallback
-		let color;
-		try {
-			color = require('@utils/color')('Red', {
-				from: 'discord',
-				to: 'decimal',
-			});
-		} catch (_e) {
-			color = 0xed4245; // default Discord red
-		}
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🗑️ **Channel Deleted** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Channel Name:** ${channel.name || 'Unknown'}\n` +
+							`**Type:** ${channelTypeName}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		const embed = new EmbedBuilder()
-			.setColor(color)
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🗑️ **Channel Deleted** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{
-					name: 'Channel Name',
-					value: channel.name || 'Unknown',
-					inline: true,
-				},
-				{ name: 'Type', value: humanChannelType(channel.type), inline: true },
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
-
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error fetching audit logs for channelDelete:', err);
-		if (kythia.sentry.dsn) {
+		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}
 	}

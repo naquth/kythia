@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, sticker) => {
 	if (!sticker.guild) return;
@@ -38,47 +45,43 @@ module.exports = async (bot, sticker) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Green', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🏷️ **Sticker Created** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{
-					name: 'Sticker',
-					value: `<:${sticker.name}:${sticker.id}>`,
-					inline: true,
-				},
-				{ name: 'Name', value: sticker.name, inline: true },
-				{
-					name: 'Description',
-					value: sticker.description || 'No description',
-					inline: false,
-				},
-				{
-					name: 'Available',
-					value: sticker.available ? 'Yes' : 'No',
-					inline: true,
-				},
-				{
-					name: 'Managed',
-					value: sticker.managed ? 'Yes' : 'No',
-					inline: true,
-				},
-			)
-			.setThumbnail(sticker.url)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Green', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🏷️ **Sticker Created** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Sticker:** <:${sticker.name}:${sticker.id}>\n` +
+							`**Name:** ${sticker.name}\n` +
+							`**Description:** ${sticker.description || 'No description'}\n` +
+							`**Available:** ${sticker.available ? 'Yes' : 'No'}\n` +
+							`**Managed:** ${sticker.managed ? 'Yes' : 'No'}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Un known'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildStickerCreate audit log:', err);
 	}

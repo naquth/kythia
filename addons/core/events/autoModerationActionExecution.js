@@ -6,12 +6,19 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder } = require('discord.js');
+const {
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, execution) => {
 	const container = bot.container;
-	const { t, models } = container;
+	const { t, models, helpers } = container;
 	const { ServerSetting } = models;
+	const { convertColor } = helpers.color;
 
 	const guildId = execution.guild.id;
 	const ruleName = execution.ruleTriggerType.toString();
@@ -31,52 +38,43 @@ module.exports = async (bot, execution) => {
 		.catch(() => null);
 
 	if (logChannel?.isTextBased()) {
-		const embed = new EmbedBuilder()
-			.setColor('Red')
-			.setDescription(
-				await t(
-					execution.guild,
-					'common.automod',
-					{
-						ruleName: ruleName,
-					},
-					locale,
-				),
-			)
-			.addFields(
-				{
-					name: await t(
-						execution.guild,
-						'common.automod.field.user',
-						{},
-						locale,
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						(await t(
+							execution.guild,
+							'common.automod',
+							{
+								ruleName: ruleName,
+							},
+							locale,
+						)) +
+							'\n\n' +
+							`**${await t(execution.guild, 'common.automod.field.user', {}, locale)}:** ${execution.user?.tag} (<@${execution.userId}>)\n` +
+							`**${await t(execution.guild, 'common.automod.field.rule.trigger', {}, locale)}:** \`${ruleName}\``,
 					),
-					value: `${execution.user?.tag} (${execution.userId})`,
-					inline: true,
-				},
-				{
-					name: await t(
-						execution.guild,
-						'common.automod.field.rule.trigger',
-						{},
-						locale,
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **User ID:** ${execution.userId}\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
-					value: `\`${ruleName}\``,
-					inline: true,
-				},
-			)
-			.setFooter({
-				text: await t(
-					execution.guild,
-					'common.embed.footer',
-					{
-						username: execution.guild.client.user.username,
-					},
-					locale,
 				),
-			})
-			.setTimestamp();
+		];
 
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	}
 };

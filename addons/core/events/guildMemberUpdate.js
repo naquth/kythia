@@ -6,24 +6,16 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
-function formatChanges(changes) {
-	if (!changes || changes.length === 0) return 'No changes detected.';
-	return changes
-		.map((change) => {
-			const key = change.key
-				.replace(/_/g, ' ')
-				.replace(/\b\w/g, (l) => l.toUpperCase());
-			const oldValue = change.old ?? 'Nothing';
-			const newValue = change.new ?? 'Nothing';
-
-			return `**${key}**: \`${oldValue}\` ➔ \`${newValue}\``;
-		})
-		.join('\n');
-}
-
-module.exports = async (bot, _oldMember, newMember) => {
+module.exports = async (bot, oldMember, newMember) => {
 	if (!newMember.guild) return;
 	const container = bot.client.container;
 	const { models, helpers } = container;
@@ -31,13 +23,13 @@ module.exports = async (bot, _oldMember, newMember) => {
 	const { convertColor } = helpers.color;
 
 	try {
-		const setting = await ServerSetting.getCache({
+		const settings = await ServerSetting.getCache({
 			guildId: newMember.guild.id,
 		});
-		if (!setting || !setting.auditLogChannelId) return;
+		if (!settings || !settings.auditLogChannelId) return;
 
 		const logChannel = await newMember.guild.channels
-			.fetch(setting.auditLogChannelId)
+			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
 
@@ -53,28 +45,50 @@ module.exports = async (bot, _oldMember, newMember) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Blurple', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`📝 **Member Updated** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Member', value: `<@${newMember.id}>`, inline: true },
-				{ name: 'Changes', value: formatChanges(entry.changes) },
-			)
-			.setThumbnail(newMember.user.displayAvatarURL())
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const changes = [];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
+		if (oldMember.nickname !== newMember.nickname) {
+			changes.push(
+				`**Nickname**: \`${oldMember.nickname || 'None'}\` ➔ \`${newMember.nickname || 'None'}\``,
+			);
 		}
 
-		await logChannel.send({ embeds: [embed] });
+		if (changes.length === 0) return;
+
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Blurple', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Member Updated** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**User:** ${newMember.user.tag} (<@${newMember.id}>)\n\n` +
+							`**Changes:**\n${changes.join('\n')}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
+
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildMemberUpdate audit log:', err);
 	}

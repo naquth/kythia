@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, ban) => {
 	if (!ban.guild) return;
@@ -36,41 +43,40 @@ module.exports = async (bot, ban) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🔨 **Member Banned** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{
-					name: 'User',
-					value: `${ban.user.tag} (${ban.user.id})`,
-					inline: true,
-				},
-				{
-					name: 'Account Created',
-					value: `<t:${Math.floor(ban.user.createdTimestamp / 1000)}:F>`,
-					inline: true,
-				},
-				{
-					name: 'Reason',
-					value: ban.reason || 'No reason provided',
-					inline: false,
-				},
-			)
-			.setThumbnail(ban.user.displayAvatarURL())
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🔨 **Member Banned** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**User:** ${ban.user.tag} (<@${ban.user.id}>)\n` +
+							`**User ID:** ${ban.user.id}\n` +
+							`**Account Created:** <t:${Math.floor(ban.user.createdTimestamp / 1000)}:F>\n` +
+							`**Ban Reason:** ${ban.reason || 'No reason provided'}` +
+							(entry.reason ? `\n**Audit Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Audit Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildBanAdd audit log:', err);
 	}

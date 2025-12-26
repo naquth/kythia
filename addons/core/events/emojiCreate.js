@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, emoji) => {
 	if (!emoji.guild) return;
@@ -36,39 +43,43 @@ module.exports = async (bot, emoji) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Green', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`**Emoji Created** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Emoji', value: `<:${emoji.name}:${emoji.id}>`, inline: true },
-				{ name: 'Name', value: emoji.name, inline: true },
-				{
-					name: 'Animated',
-					value: emoji.animated ? 'Yes' : 'No',
-					inline: true,
-				},
-				{
-					name: 'Available',
-					value: emoji.available ? 'Yes' : 'No',
-					inline: true,
-				},
-				{ name: 'Managed', value: emoji.managed ? 'Yes' : 'No', inline: true },
-			)
-			.setThumbnail(emoji.url)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Green', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`😃 **Emoji Created** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Emoji:** <:${emoji.name}:${emoji.id}>\n` +
+							`**Name:** ${emoji.name}\n` +
+							`**Animated:** ${emoji.animated ? 'Yes' : 'No'}\n` +
+							`**Available:** ${emoji.available ? 'Yes' : 'No'}\n` +
+							`**Managed:** ${emoji.managed ? 'Yes' : 'No'}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildEmojiCreate audit log:', err);
 	}

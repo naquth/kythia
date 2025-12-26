@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, messages, channel) => {
 	if (!channel.guild) return;
@@ -39,38 +46,40 @@ module.exports = async (bot, messages, channel) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🗑️ **Bulk Message Delete** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Channel', value: `<#${channel.id}>`, inline: true },
-				{
-					name: 'Messages Deleted',
-					value: messages.size.toString(),
-					inline: true,
-				},
-				{
-					name: 'Message IDs',
-					value:
-						Array.from(messages.keys()).slice(0, 10).join(', ') +
-						(messages.size > 10 ? '...' : ''),
-					inline: false,
-				},
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const messageIds = Array.from(messages.keys()).slice(0, 10).join(', ');
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🗑️ **Bulk Message Delete** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Channel:** <#${channel.id}>\n` +
+							`**Messages Deleted:** ${messages.size}\n` +
+							`**Message IDs:** ${messageIds}${messages.size > 10 ? '...' : ''}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in messageBulkDelete audit log:', err);
 	}

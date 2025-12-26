@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/events/emojiDelete.js
+ * @namespace: addons/core/events/stageInstanceDelete.js
  * @type: Event Handler
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -15,30 +15,33 @@ const {
 	SeparatorSpacingSize,
 } = require('discord.js');
 
-module.exports = async (bot, emoji) => {
-	if (!emoji.guild) return;
+module.exports = async (bot, stageInstance) => {
+	if (!stageInstance.guild) return;
 	const container = bot.client.container;
 	const { models, helpers } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
 
 	try {
-		const settings = await ServerSetting.getCache({ guildId: emoji.guild.id });
+		const settings = await ServerSetting.getCache({
+			guildId: stageInstance.guild.id,
+		});
 		if (!settings || !settings.auditLogChannelId) return;
 
-		const logChannel = await emoji.guild.channels
+		const logChannel = await stageInstance.guild.channels
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
 
-		const audit = await emoji.guild.fetchAuditLogs({
-			type: AuditLogEvent.EmojiDelete,
+		const audit = await stageInstance.guild.fetchAuditLogs({
+			type: AuditLogEvent.StageInstanceDelete,
 			limit: 1,
 		});
 
 		const entry = audit.entries.find(
 			(e) =>
-				e.target?.id === emoji.id && e.createdTimestamp > Date.now() - 5000,
+				e.target?.id === stageInstance.id &&
+				e.createdTimestamp > Date.now() - 5000,
 		);
 
 		if (!entry) return;
@@ -49,11 +52,9 @@ module.exports = async (bot, emoji) => {
 				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`😃 **Emoji Deleted** by <@${executor?.id || 'Unknown'}>\n\n` +
-							`**Emoji Name:** ${emoji.name}\n` +
-							`**Animated:** ${emoji.animated ? 'Yes' : 'No'}\n` +
-							`**Available:** ${emoji.available ? 'Yes' : 'No'}\n` +
-							`**Managed:** ${emoji.managed ? 'Yes' : 'No'}` +
+						`🎤 **Stage Ended** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Topic:** ${stageInstance.topic}\n` +
+							`**Channel:** <#${stageInstance.channelId}>` +
 							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
 					),
 				)
@@ -78,6 +79,6 @@ module.exports = async (bot, emoji) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in guildEmojiDelete audit log:', err);
+		console.error('Error in stageInstanceDelete audit log:', err);
 	}
 };

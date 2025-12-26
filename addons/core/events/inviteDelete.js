@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, invite) => {
 	if (!invite.guild) return;
@@ -37,47 +44,42 @@ module.exports = async (bot, invite) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🔗 **Invite Deleted** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Invite Code', value: invite.code, inline: true },
-				{
-					name: 'Channel',
-					value: invite.channel ? `<#${invite.channel.id}>` : 'Unknown',
-					inline: true,
-				},
-				{ name: 'Uses', value: `${invite.uses || 0}`, inline: true },
-				{
-					name: 'Max Uses',
-					value: invite.maxUses ? invite.maxUses.toString() : 'Unlimited',
-					inline: true,
-				},
-				{
-					name: 'Max Age',
-					value: invite.maxAge ? `${invite.maxAge} seconds` : 'Never expires',
-					inline: true,
-				},
-				{
-					name: 'Temporary',
-					value: invite.temporary ? 'Yes' : 'No',
-					inline: true,
-				},
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🔗 **Invite Deleted** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Invite Code:** ${invite.code}\n` +
+							`**Channel:** ${invite.channel ? `<#${invite.channel.id}>` : 'Unknown'}\n` +
+							`**Uses:** ${invite.uses || 0}\n` +
+							`**Max Uses:** ${invite.maxUses ? invite.maxUses.toString() : 'Unlimited'}\n` +
+							`**Max Age:** ${invite.maxAge ? `${invite.maxAge} seconds` : 'Never expires'}\n` +
+							`**Temporary:** ${invite.temporary ? 'Yes' : 'No'}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in inviteDelete audit log:', err);
 	}

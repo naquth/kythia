@@ -6,28 +6,40 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder, ChannelType } = require('discord.js');
+const {
+	AuditLogEvent,
+	ChannelType,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
+const Sentry = require('@sentry/node');
 
+/**
+ * Handle anti-nuke system for channel creation spam.
+ */
 async function handleAntiNuke(bot, channel, entry) {
+	if (!entry || !entry.executor || entry.executor.bot) return;
+
 	const container = bot.client.container;
 	const { t, models } = container;
 	const { ServerSetting } = models;
 
-	if (!entry || !entry.executor || entry.executor.bot) return;
-
 	if (!bot.client.channelCreateTracker) {
 		bot.client.channelCreateTracker = new Map();
 	}
-	const userCreateMap = bot.client.channelCreateTracker;
+	const userActionMap = bot.client.channelCreateTracker;
 
-	const MAX_CREATES = 3;
+	const MAX_ACTIONS = 3;
 	const TIME_WINDOW = 10000;
 	const userId = entry.executor.id;
 	const guildId = channel.guild.id;
 	const now = Date.now();
 
-	if (!userCreateMap.has(guildId)) userCreateMap.set(guildId, new Map());
-	const guildData = userCreateMap.get(guildId);
+	if (!userActionMap.has(guildId)) userActionMap.set(guildId, new Map());
+	const guildData = userActionMap.get(guildId);
 
 	const userData = guildData.get(userId) || { count: 0, last: 0 };
 
@@ -37,7 +49,7 @@ async function handleAntiNuke(bot, channel, entry) {
 
 	guildData.set(userId, userData);
 
-	if (userData.count >= MAX_CREATES) {
+	if (userData.count >= MAX_ACTIONS) {
 		const member = await channel.guild.members.fetch(userId).catch(() => null);
 		if (!member || !member.kickable) return;
 
@@ -62,13 +74,16 @@ async function handleAntiNuke(bot, channel, entry) {
 					channel.guild,
 					'core.events.channelCreate.events.channel.create.antinuke.kick.log',
 					{
-						user: member.user,
+						user: member.user.tag,
 					},
 				);
 				await logChannel.send(message);
 			}
 		} catch (err) {
-			console.error(`Failed to kick member for anti-nuke:`, err);
+			console.error(
+				`Failed to kick member for anti-nuke (channelCreate):`,
+				err,
+			);
 		}
 
 		userData.count = 0;
@@ -77,19 +92,11 @@ async function handleAntiNuke(bot, channel, entry) {
 }
 
 module.exports = async (bot, channel) => {
+	if (!channel.guild) return;
 	const container = bot.client.container;
-	const { models } = container;
+	const { models, helpers } = container;
 	const { ServerSetting } = models;
-
-	if (
-		!channel.guild ||
-		![
-			ChannelType.GuildText,
-			ChannelType.GuildVoice,
-			ChannelType.GuildCategory,
-		].includes(channel.type)
-	)
-		return;
+	const { convertColor } = helpers.color;
 
 	try {
 		const audit = await channel.guild.fetchAuditLogs({
@@ -97,14 +104,21 @@ module.exports = async (bot, channel) => {
 			limit: 1,
 		});
 
-		const entry = audit.entries.find(
+		let entry = audit.entries.find(
 			(e) =>
 				e.target?.id === channel.id && e.createdTimestamp > Date.now() - 5000,
 		);
 
+		if (!entry) {
+			entry = audit.entries.find(
+				(e) =>
+					e.changes?.some((c) => c.key === 'name' && c.new === channel.name) &&
+					e.createdTimestamp > Date.now() - 5000,
+			);
+		}
+
 		await handleAntiNuke(bot, channel, entry);
 
-		// Send audit log embed if audit entry found and server configured
 		const settings = await ServerSetting.getCache({
 			guildId: channel.guild.id,
 		});
@@ -115,43 +129,63 @@ module.exports = async (bot, channel) => {
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased() || !entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor('Blurple')
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`📢 **Channel Created** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{
-					name: 'Channel',
-					value: `<#${channel.id}> (${channel.name})`,
-					inline: true,
-				},
-				{
-					name: 'Type',
-					value:
-						channel.type === ChannelType.GuildText
-							? 'Text Channel'
-							: channel.type === ChannelType.GuildVoice
-								? 'Voice Channel'
-								: channel.type === ChannelType.GuildCategory
-									? 'Category'
-									: `Unknown (${channel.type})`,
-					inline: true,
-				},
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const channelTypeNames = {
+			[ChannelType.GuildText]: 'Text Channel',
+			[ChannelType.GuildVoice]: 'Voice Channel',
+			[ChannelType.GuildCategory]: 'Category',
+			[ChannelType.GuildAnnouncement]: 'Announcement Channel',
+			[ChannelType.AnnouncementThread]: 'Announcement Thread',
+			[ChannelType.PublicThread]: 'Public Thread',
+			[ChannelType.PrivateThread]: 'Private Thread',
+			[ChannelType.GuildStageVoice]: 'Stage Channel',
+			[ChannelType.GuildForum]: 'Forum Channel',
+			[ChannelType.GuildMedia]: 'Media Channel',
+			[ChannelType.GuildDirectory]: 'Directory Channel',
+			[ChannelType.GuildStore]: 'Store Channel',
+			[ChannelType.DM]: 'Direct Message',
+			[ChannelType.GroupDM]: 'Group DM',
+		};
+		const channelTypeName =
+			channelTypeNames[channel.type] || `Unknown (${channel.type})`;
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Green', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`➕ **Channel Created** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Channel:** <#${channel.id}>\n` +
+							`**Type:** ${channelTypeName}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error fetching audit logs for channelCreate:', err);
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

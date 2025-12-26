@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/events/emojiDelete.js
+ * @namespace: addons/core/events/guildScheduledEventUpdate.js
  * @type: Event Handler
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -15,45 +15,64 @@ const {
 	SeparatorSpacingSize,
 } = require('discord.js');
 
-module.exports = async (bot, emoji) => {
-	if (!emoji.guild) return;
+module.exports = async (bot, oldEvent, newEvent) => {
+	if (!newEvent.guild) return;
 	const container = bot.client.container;
 	const { models, helpers } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
 
 	try {
-		const settings = await ServerSetting.getCache({ guildId: emoji.guild.id });
+		const settings = await ServerSetting.getCache({
+			guildId: newEvent.guild.id,
+		});
 		if (!settings || !settings.auditLogChannelId) return;
 
-		const logChannel = await emoji.guild.channels
+		const logChannel = await newEvent.guild.channels
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
 
-		const audit = await emoji.guild.fetchAuditLogs({
-			type: AuditLogEvent.EmojiDelete,
+		const audit = await newEvent.guild.fetchAuditLogs({
+			type: AuditLogEvent.GuildScheduledEventUpdate,
 			limit: 1,
 		});
 
 		const entry = audit.entries.find(
 			(e) =>
-				e.target?.id === emoji.id && e.createdTimestamp > Date.now() - 5000,
+				e.target?.id === newEvent.id && e.createdTimestamp > Date.now() - 5000,
 		);
 
 		if (!entry) return;
 
 		const executor = entry.executor;
+		const changes = [];
+		if (oldEvent.name !== newEvent.name) {
+			changes.push(`**Name**: \`${oldEvent.name}\` ➔ \`${newEvent.name}\``);
+		}
+		if (oldEvent.description !== newEvent.description) {
+			changes.push(
+				`**Description**: \`${oldEvent.description || 'None'}\` ➔ \`${newEvent.description || 'None'}\``,
+			);
+		}
+		if (oldEvent.status !== newEvent.status) {
+			changes.push(
+				`**Status**: \`${oldEvent.status}\` ➔ \`${newEvent.status}\``,
+			);
+		}
+
+		if (changes.length === 0) return;
+
 		const components = [
 			new ContainerBuilder()
-				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.setAccentColor(
+					convertColor('Blurple', { from: 'discord', to: 'decimal' }),
+				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`😃 **Emoji Deleted** by <@${executor?.id || 'Unknown'}>\n\n` +
-							`**Emoji Name:** ${emoji.name}\n` +
-							`**Animated:** ${emoji.animated ? 'Yes' : 'No'}\n` +
-							`**Available:** ${emoji.available ? 'Yes' : 'No'}\n` +
-							`**Managed:** ${emoji.managed ? 'Yes' : 'No'}` +
+						`📅 **Scheduled Event Updated** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Event:** ${newEvent.name}\n\n` +
+							`**Changes:**\n${changes.join('\n')}` +
 							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
 					),
 				)
@@ -78,6 +97,6 @@ module.exports = async (bot, emoji) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in guildEmojiDelete audit log:', err);
+		console.error('Error in guildScheduledEventUpdate audit log:', err);
 	}
 };

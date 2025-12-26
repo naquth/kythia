@@ -6,7 +6,15 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder, ChannelType } = require('discord.js');
+const {
+	AuditLogEvent,
+	ChannelType,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 const channelTypeNames = {
 	[ChannelType.GuildText]: 'Text Channel',
@@ -63,43 +71,44 @@ module.exports = async (bot, thread) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Green', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🧵 **Thread Created** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Thread', value: `<#${thread.id}>`, inline: true },
-				{ name: 'Type', value: humanChannelType(thread.type), inline: true },
-				{
-					name: 'Parent Channel',
-					value: thread.parent ? `<#${thread.parent.id}>` : 'None',
-					inline: true,
-				},
-				{
-					name: 'Archived',
-					value: thread.archived ? 'Yes' : 'No',
-					inline: true,
-				},
-				{ name: 'Locked', value: thread.locked ? 'Yes' : 'No', inline: true },
-				{
-					name: 'Auto Archive Duration',
-					value: `${thread.autoArchiveDuration} minutes`,
-					inline: true,
-				},
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Green', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🧵 **Thread Created** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Thread:** <#${thread.id}>\n` +
+							`**Type:** ${humanChannelType(thread.type)}\n` +
+							`**Parent Channel:** ${thread.parent ? `<#${thread.parent.id}>` : 'None'}\n` +
+							`**Archived:** ${thread.archived ? 'Yes' : 'No'}\n` +
+							`**Locked:** ${thread.locked ? 'Yes' : 'No'}\n` +
+							`**Auto Archive Duration:** ${thread.autoArchiveDuration} minutes` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in threadCreate audit log:', err);
 	}

@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, role) => {
 	if (!role.guild) return;
@@ -35,35 +42,42 @@ module.exports = async (bot, role) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`➖ **Role Deleted** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Role Name', value: role.name, inline: true },
-				{ name: 'Color', value: role.hexColor || 'Default', inline: true },
-				{ name: 'Position', value: role.position.toString(), inline: true },
-				{
-					name: 'Mentionable',
-					value: role.mentionable ? 'Yes' : 'No',
-					inline: true,
-				},
-				{ name: 'Hoisted', value: role.hoist ? 'Yes' : 'No', inline: true },
-				{ name: 'Managed', value: role.managed ? 'Yes' : 'No', inline: true },
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`➖ **Role Deleted** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Role Name:** ${role.name}\n` +
+							`**Color:** ${role.hexColor || 'Default'}\n` +
+							`**Position:** ${role.position}\n` +
+							`**Mentionable:** ${role.mentionable ? 'Yes' : 'No'}\n` +
+							`**Hoisted:** ${role.hoist ? 'Yes' : 'No'}\n` +
+							`**Managed:** ${role.managed ? 'Yes' : 'No'}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildRoleDelete audit log:', err);
 	}

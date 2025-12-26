@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/events/emojiDelete.js
+ * @namespace: addons/core/events/channelPinsUpdate.js
  * @type: Event Handler
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -15,45 +15,66 @@ const {
 	SeparatorSpacingSize,
 } = require('discord.js');
 
-module.exports = async (bot, emoji) => {
-	if (!emoji.guild) return;
+module.exports = async (bot, channel, _time) => {
+	if (!channel.guild) return;
 	const container = bot.client.container;
 	const { models, helpers } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
 
 	try {
-		const settings = await ServerSetting.getCache({ guildId: emoji.guild.id });
+		const settings = await ServerSetting.getCache({
+			guildId: channel.guild.id,
+		});
 		if (!settings || !settings.auditLogChannelId) return;
 
-		const logChannel = await emoji.guild.channels
+		const logChannel = await channel.guild.channels
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
 
-		const audit = await emoji.guild.fetchAuditLogs({
-			type: AuditLogEvent.EmojiDelete,
+		// Try to determine if it was a pin or unpin
+		const pinAudit = await channel.guild.fetchAuditLogs({
+			type: AuditLogEvent.MessagePin,
 			limit: 1,
 		});
 
-		const entry = audit.entries.find(
+		const unpinAudit = await channel.guild.fetchAuditLogs({
+			type: AuditLogEvent.MessageUnpin,
+			limit: 1,
+		});
+
+		const pinEntry = pinAudit.entries.find(
 			(e) =>
-				e.target?.id === emoji.id && e.createdTimestamp > Date.now() - 5000,
+				e.extra?.channel?.id === channel.id &&
+				e.createdTimestamp > Date.now() - 5000,
 		);
 
+		const unpinEntry = unpinAudit.entries.find(
+			(e) =>
+				e.extra?.channel?.id === channel.id &&
+				e.createdTimestamp > Date.now() - 5000,
+		);
+
+		const entry = pinEntry || unpinEntry;
 		if (!entry) return;
 
+		const isPinned = !!pinEntry;
 		const executor = entry.executor;
+
 		const components = [
 			new ContainerBuilder()
-				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.setAccentColor(
+					convertColor(isPinned ? 'Green' : 'Orange', {
+						from: 'discord',
+						to: 'decimal',
+					}),
+				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`😃 **Emoji Deleted** by <@${executor?.id || 'Unknown'}>\n\n` +
-							`**Emoji Name:** ${emoji.name}\n` +
-							`**Animated:** ${emoji.animated ? 'Yes' : 'No'}\n` +
-							`**Available:** ${emoji.available ? 'Yes' : 'No'}\n` +
-							`**Managed:** ${emoji.managed ? 'Yes' : 'No'}` +
+						`📌 **Message ${isPinned ? 'Pinned' : 'Unpinned'}** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Channel:** <#${channel.id}>\n` +
+							`**Message ID:** ${entry.extra?.messageId || 'Unknown'}` +
 							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
 					),
 				)
@@ -78,6 +99,6 @@ module.exports = async (bot, emoji) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in guildEmojiDelete audit log:', err);
+		console.error('Error in channelPinsUpdate audit log:', err);
 	}
 };

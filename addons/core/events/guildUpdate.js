@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 function formatChanges(changes) {
 	if (!changes || changes.length === 0) return 'No changes detected.';
@@ -29,8 +36,6 @@ module.exports = async (bot, _oldGuild, newGuild) => {
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
 
-	if (!newGuild) return;
-
 	try {
 		const settings = await ServerSetting.getCache({ guildId: newGuild.id });
 		if (!settings || !settings.auditLogChannelId) return;
@@ -46,34 +51,44 @@ module.exports = async (bot, _oldGuild, newGuild) => {
 		});
 
 		const entry = audit.entries.find(
-			(e) =>
-				e.target?.id === newGuild.id && e.createdTimestamp > Date.now() - 5000,
+			(e) => e.createdTimestamp > Date.now() - 5000,
 		);
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Blurple', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🛠️ **Guild Updated** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Guild', value: newGuild.name, inline: true },
-				{ name: 'Changes', value: formatChanges(entry.changes) },
-			)
-			.setThumbnail(newGuild.iconURL())
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Blurple', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🏰 **Server Updated** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Changes:**\n${formatChanges(entry.changes)}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildUpdate audit log:', err);
 	}

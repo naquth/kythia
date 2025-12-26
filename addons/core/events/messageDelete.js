@@ -6,13 +6,27 @@
  * @version 0.11.0-beta
  */
 
-// addons/core/events/messageDelete.js
+const {
+	AuditLogEvent,
+	AttachmentBuilder,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
+const Sentry = require('@sentry/node');
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+/**
+ * Helper delay biar audit log sempet ke-generate
+ */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 module.exports = async (bot, message) => {
+	// 1. Basic Checks
 	if (!message.guild || !message.channelId) return;
 	if (message.author?.bot) return;
+
 	const container = bot.client.container;
 	const { models, helpers } = container;
 	const { ServerSetting } = models;
@@ -22,156 +36,136 @@ module.exports = async (bot, message) => {
 		const settings = await ServerSetting.getCache({
 			guildId: message.guild.id,
 		});
-		const logChannelId =
-			settings?.auditLogChannelId || settings?.modLogChannelId;
-		if (!settings || !logChannelId) return;
 
-		// Fetch channel log dulu (lebih efisien fetch sekali)
+		if (!settings || !settings.auditLogChannelId) return;
+
 		const logChannel = await message.guild.channels
-			.fetch(logChannelId)
+			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
+
 		if (!logChannel || !logChannel.isTextBased()) return;
 
-		// --- Fetch Audit Log Langsung (TANPA JEDA) ---
-		let executor = null;
-		let reason = null;
-		let auditEntryTimestamp = null;
+		// 2. Prepare Attachments (Re-upload logic)
+		// Kita siapin ini DULUAN sebelum sleep, mumpung link-nya masih hidup.
+		const filesToUpload = [];
+		if (message.attachments && message.attachments.size > 0) {
+			message.attachments.forEach((attachment) => {
+				// Filter: Hanya upload ulang jika size < 8MB (Batas aman bot non-nitro)
+				// dan maksimal 4 file biar log gak berantakan.
+				if (attachment.size <= 8 * 1024 * 1024 && filesToUpload.length < 4) {
+					const file = new AttachmentBuilder(attachment.url, {
+						name: attachment.name,
+						description: 'Recovered attachment from deleted message',
+					});
+					filesToUpload.push(file);
+				}
+			});
+		}
 
+		// 3. TUNGGU Audit Log (900ms)
+		await sleep(900);
+
+		// 4. Fetch Audit Logs
 		const audit = await message.guild
 			.fetchAuditLogs({
 				type: AuditLogEvent.MessageDelete,
-				limit: 1, // Tetap limit 1
+				limit: 1,
 			})
-			.catch((err) => {
-				console.error(`[AuditLog Fetch Error] Guild ${message.guild.id}:`, err);
-				return null;
-			});
+			.catch(() => null);
 
-		const entry = audit?.entries?.first();
+		// 5. Determine Executor
+		let executor = null;
+		let logReason = null;
 
-		// Validasi: Entry ada, channel cocok, waktu sangat dekat (misal 5 detik), DAN Executor BUKAN Author (jika author ada)
-		// Ini fokus untuk nangkep aksi moderasi, bukan self-delete
-		if (
-			entry &&
-			entry.extra?.channel?.id === message.channelId &&
-			entry.createdTimestamp > Date.now() - 10000 && // Jendela waktu lebih sempit lagi
-			message.author && // Kita perlu author untuk cek ini
-			entry.executor?.id !== message.author.id // Pastikan BUKAN self-delete
-		) {
+		const entry = audit?.entries.find(
+			(e) =>
+				e.target?.id === message.author?.id &&
+				e.extra?.channel?.id === message.channelId &&
+				e.createdTimestamp > Date.now() - 20000,
+		);
+
+		if (entry) {
 			executor = entry.executor;
-			reason = entry.reason;
-			auditEntryTimestamp = entry.createdAt;
-			console.log(
-				`[AuditLog Debug] Found MODERATOR delete entry ${entry.id} by ${executor?.tag}`,
-			);
-		} else if (
-			entry &&
-			entry.extra?.channel?.id === message.channelId &&
-			entry.createdTimestamp > Date.now() - 5000
-		) {
-			// Kalau entry cocok channel & waktu, TAPI executor = author (atau author undefined), anggap self-delete/unknown
-			console.log(
-				`[AuditLog Debug] Found recent entry ${entry.id} in channel, but likely self-delete or author unknown. Logging without executor.`,
-			);
+			logReason = entry.reason;
 		} else {
-			// Kalau nggak ada entry baru yang cocok sama sekali
-			console.log(
-				`[AuditLog Debug] No recent matching MessageDelete entry found for channel ${message.channelId}. Logging without executor.`,
-			);
+			// Fallback: Self Delete
+			if (message.author) {
+				executor = message.author;
+			}
 		}
 
-		// --- Buat Embed (Lebih Tahan Error) ---
-		const embed = new EmbedBuilder()
-			// Warna Orange jika executor tidak diketahui, Merah jika diketahui
-			.setColor(
-				executor
-					? convertColor('Red', { from: 'discord', to: 'decimal' })
-					: convertColor('Orange', { from: 'discord', to: 'decimal' }),
-			)
-			// Pakai timestamp audit log jika ada, fallback ke waktu pesan dibuat (jika ada), atau waktu sekarang
-			.setTimestamp(
-				auditEntryTimestamp || message.createdTimestamp || Date.now(),
-			);
+		const executorId = executor?.id || 'Unknown';
+		const executorTag = executor?.tag || 'Unknown User';
+		const isSelfDelete = message.author && executor?.id === message.author.id;
 
-		// Author embed = Pelaku (jika diketahui)
-		if (executor) {
-			embed.setAuthor({
-				name: `${executor.tag} (${executor.id})`,
-				iconURL: executor.displayAvatarURL(),
-			});
-			embed.setDescription(
-				`🗑️ **Message deleted in <#${message.channelId}>** by ${executor}`,
-			);
-		} else {
-			embed.setAuthor({ name: 'Message Deleted' }); // Judul generik
-			embed.setDescription(
-				`🗑️ **Message deleted in <#${message.channelId}>** (Executor unknown)`,
-			);
+		// 6. Build Components V2
+		let contentText = '';
+		if (message.content) {
+			const displayContent =
+				message.content.length > 1024
+					? `${message.content.substring(0, 1021)}...`
+					: message.content;
+			contentText = `\n**Content:** ${displayContent}`;
+		} else if (message.partial) {
+			contentText = '\n**Content:** *(Message not cached)*';
 		}
 
-		embed.addFields(
-			// Field Author asli pesan (handle jika tidak ada)
-			{
-				name: 'Author',
-				value: message.author
-					? `${message.author.tag} (${message.author.id})`
-					: 'Unknown (Not Cached)',
-				inline: true,
+		let attachmentText = '';
+		if (message.attachments.size > 0) {
+			const fileNames = message.attachments
+				.map((a) => `\`${a.name}\``)
+				.join(', ');
+			attachmentText = `\n**Attachments (${message.attachments.size}):** ${fileNames.length > 200 ? `${fileNames.substring(0, 197)}...` : fileNames}`;
+		}
+
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor(isSelfDelete ? 'Orange' : 'Red', {
+						from: 'discord',
+						to: 'decimal',
+					}),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🗑️ **Message Deleted** in <#${message.channelId}>\n\n` +
+							`**Author:** ${message.author ? `<@${message.author.id}>` : 'Unknown (Partial)'}\n` +
+							`**Executor:** <@${executorId}> ${isSelfDelete ? '(Self)' : '🔨'}` +
+							contentText +
+							attachmentText +
+							(logReason ? `\n\n**Reason:** ${logReason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executorTag}${isSelfDelete ? ' (Self Delete)' : ''}\n` +
+							`� **Message ID:** ${message.id}\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
+
+		// 7. Send Log (Include Files!)
+		await logChannel.send({
+			components,
+			files: filesToUpload, // Re-uploaded attachments
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
 			},
-			{ name: 'Channel', value: `<#${message.channelId}>`, inline: true },
-			// Field Executor (hanya jika diketahui & BEDA dari author asli)
-			executor && (!message.author || executor.id !== message.author.id)
-				? {
-						name: 'Deleted By',
-						value: `${executor.tag} (${executor.id})`,
-						inline: true,
-					}
-				: { name: '\u200B', value: '\u200B', inline: true }, // Field kosong untuk layout
-			{
-				name: 'Message ID',
-				value: message.id || 'Unknown (Not Cached)',
-				inline: true,
-			},
-			// Konten (handle jika tidak ada & potong jika panjang)
-			{
-				name: 'Content',
-				value:
-					(message.content?.substring(0, 1020) || '(No Content / Not Cached)') +
-					(message.content?.length > 1020 ? '...' : ''),
-				inline: false,
-			},
-		);
-
-		// Attachments (handle jika partial)
-		if (message.attachments && message.attachments.size > 0) {
-			embed.addFields({
-				name: 'Attachments',
-				value:
-					message.attachments
-						.map((a) => a.name || 'Unknown Attachment')
-						.join(', ') || 'None',
-			});
-		} else if (message.partial || typeof message.attachments === 'undefined') {
-			// Cek eksplisit undefined kalau-kalau bukan partial tapi attachment hilang
-			embed.addFields({
-				name: 'Attachments',
-				value: '(Could not fetch attachments)',
-			});
-		}
-
-		// Reason (jika ada dari audit log)
-		if (reason) {
-			embed.addFields({ name: 'Reason (from Audit Log)', value: reason });
-		}
-
-		embed.setFooter({ text: `Author ID: ${message.author?.id || 'Unknown'}` });
-
-		await logChannel.send({ embeds: [embed] });
+		});
 	} catch (err) {
-		const logger = bot.container?.logger || console;
-		logger.error(
-			`Error in messageDelete handler for guild ${message.guild?.id}:`,
-			err,
-		);
+		// Ignore permission errors
+		if (err.code === 50013 || err.code === 50001) return;
+
+		console.error('Error in messageDelete handler:', err);
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

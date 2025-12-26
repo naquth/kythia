@@ -6,34 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder, ChannelType } = require('discord.js');
-
-const channelTypeNames = {
-	[ChannelType.GuildText]: 'Text Channel',
-	[ChannelType.GuildVoice]: 'Voice Channel',
-	[ChannelType.GuildCategory]: 'Category',
-	[ChannelType.GuildAnnouncement]: 'Announcement Channel',
-	[ChannelType.AnnouncementThread]: 'Announcement Thread',
-	[ChannelType.PublicThread]: 'Public Thread',
-	[ChannelType.PrivateThread]: 'Private Thread',
-	[ChannelType.GuildStageVoice]: 'Stage Channel',
-	[ChannelType.GuildForum]: 'Forum Channel',
-	[ChannelType.GuildMedia]: 'Media Channel',
-	[ChannelType.GuildDirectory]: 'Directory Channel',
-	[ChannelType.GuildStore]: 'Store Channel',
-	[ChannelType.DM]: 'Direct Message',
-	[ChannelType.GroupDM]: 'Group DM',
-};
-
-function humanChannelType(type) {
-	if (typeof type === 'string' && channelTypeNames[type])
-		return channelTypeNames[type];
-	if (typeof type === 'number' && channelTypeNames[type])
-		return channelTypeNames[type];
-	if (typeof type === 'string') return type;
-	if (typeof type === 'number') return `Unknown (${type})`;
-	return 'Unknown';
-}
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 function formatChanges(changes) {
 	if (!changes || changes.length === 0) return 'No changes detected.';
@@ -42,14 +22,8 @@ function formatChanges(changes) {
 			const key = change.key
 				.replace(/_/g, ' ')
 				.replace(/\b\w/g, (l) => l.toUpperCase());
-			let oldValue = change.old ?? 'Nothing';
-			let newValue = change.new ?? 'Nothing';
-
-			// Humanize channel type
-			if (change.key === 'type') {
-				oldValue = humanChannelType(oldValue);
-				newValue = humanChannelType(newValue);
-			}
+			const oldValue = change.old ?? 'Nothing';
+			const newValue = change.new ?? 'Nothing';
 
 			return `**${key}**: \`${oldValue}\` ➔ \`${newValue}\``;
 		})
@@ -86,28 +60,40 @@ module.exports = async (bot, _oldThread, newThread) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Blurple', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`🧵 **Thread Updated** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Thread', value: `<#${newThread.id}>`, inline: true },
-				{ name: 'Type', value: humanChannelType(newThread.type), inline: true },
-				{ name: 'Changes', value: formatChanges(entry.changes) },
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Blurple', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🧵 **Thread Updated** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Thread:** <#${newThread.id}>\n\n` +
+							`**Changes:**\n${formatChanges(entry.changes)}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in threadUpdate audit log:', err);
 	}

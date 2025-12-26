@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/events/emojiDelete.js
+ * @namespace: addons/core/events/stageInstanceUpdate.js
  * @type: Event Handler
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -15,45 +15,59 @@ const {
 	SeparatorSpacingSize,
 } = require('discord.js');
 
-module.exports = async (bot, emoji) => {
-	if (!emoji.guild) return;
+module.exports = async (bot, oldStage, newStage) => {
+	if (!newStage.guild) return;
 	const container = bot.client.container;
 	const { models, helpers } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
 
 	try {
-		const settings = await ServerSetting.getCache({ guildId: emoji.guild.id });
+		const settings = await ServerSetting.getCache({
+			guildId: newStage.guild.id,
+		});
 		if (!settings || !settings.auditLogChannelId) return;
 
-		const logChannel = await emoji.guild.channels
+		const logChannel = await newStage.guild.channels
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
 
-		const audit = await emoji.guild.fetchAuditLogs({
-			type: AuditLogEvent.EmojiDelete,
+		const audit = await newStage.guild.fetchAuditLogs({
+			type: AuditLogEvent.StageInstanceUpdate,
 			limit: 1,
 		});
 
 		const entry = audit.entries.find(
 			(e) =>
-				e.target?.id === emoji.id && e.createdTimestamp > Date.now() - 5000,
+				e.target?.id === newStage.id && e.createdTimestamp > Date.now() - 5000,
 		);
 
 		if (!entry) return;
 
+		const changes = [];
+		if (oldStage.topic !== newStage.topic) {
+			changes.push(`**Topic**: \`${oldStage.topic}\` ➔ \`${newStage.topic}\``);
+		}
+		if (oldStage.privacyLevel !== newStage.privacyLevel) {
+			const oldPrivacy = oldStage.privacyLevel === 1 ? 'Public' : 'Guild Only';
+			const newPrivacy = newStage.privacyLevel === 1 ? 'Public' : 'Guild Only';
+			changes.push(`**Privacy**: \`${oldPrivacy}\` ➔ \`${newPrivacy}\``);
+		}
+
+		if (changes.length === 0) return;
+
 		const executor = entry.executor;
 		const components = [
 			new ContainerBuilder()
-				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.setAccentColor(
+					convertColor('Blurple', { from: 'discord', to: 'decimal' }),
+				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`😃 **Emoji Deleted** by <@${executor?.id || 'Unknown'}>\n\n` +
-							`**Emoji Name:** ${emoji.name}\n` +
-							`**Animated:** ${emoji.animated ? 'Yes' : 'No'}\n` +
-							`**Available:** ${emoji.available ? 'Yes' : 'No'}\n` +
-							`**Managed:** ${emoji.managed ? 'Yes' : 'No'}` +
+						`🎤 **Stage Updated** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Channel:** <#${newStage.channelId}>\n\n` +
+							`**Changes:**\n${changes.join('\n')}` +
 							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
 					),
 				)
@@ -78,6 +92,6 @@ module.exports = async (bot, emoji) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in guildEmojiDelete audit log:', err);
+		console.error('Error in stageInstanceUpdate audit log:', err);
 	}
 };

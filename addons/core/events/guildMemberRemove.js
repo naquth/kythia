@@ -6,7 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, member) => {
 	if (!member.guild) return;
@@ -36,73 +43,81 @@ module.exports = async (bot, member) => {
 		);
 
 		if (kickEntry) {
-			const embed = new EmbedBuilder()
-				.setColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
-				.setAuthor({
-					name: kickEntry.executor?.tag || 'Unknown',
-					iconURL: kickEntry.executor?.displayAvatarURL?.(),
-				})
-				.setDescription(
-					`👢 **Member Kicked** by <@${kickEntry.executor?.id || 'Unknown'}>`,
-				)
-				.addFields(
-					{
-						name: 'User',
-						value: `${member.user.tag} (${member.user.id})`,
-						inline: true,
-					},
-					{
-						name: 'Account Created',
-						value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:F>`,
-						inline: true,
-					},
-					{
-						name: 'Joined Server',
-						value: member.joinedAt
-							? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:F>`
-							: 'Unknown',
-						inline: true,
-					},
-				)
-				.setThumbnail(member.user.displayAvatarURL())
-				.setFooter({ text: `User ID: ${kickEntry.executor?.id || 'Unknown'}` })
-				.setTimestamp();
+			const executor = kickEntry.executor;
+			const components = [
+				new ContainerBuilder()
+					.setAccentColor(
+						convertColor('Red', { from: 'discord', to: 'decimal' }),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							`👢 **Member Kicked** by <@${executor?.id || 'Unknown'}>\n\n` +
+								`**User:** ${member.user.tag} (<@${member.user.id}>)\n` +
+								`**User ID:** ${member.user.id}\n` +
+								`**Account Created:** <t:${Math.floor(member.user.createdTimestamp / 1000)}:F>\n` +
+								`**Joined Server:** ${member.joinedAt ? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:F>` : 'Unknown'}` +
+								(kickEntry.reason ? `\n\n**Reason:** ${kickEntry.reason}` : ''),
+						),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+								`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+						),
+					),
+			];
 
-			if (kickEntry.reason) {
-				embed.addFields({ name: 'Reason', value: kickEntry.reason });
-			}
-
-			await logChannel.send({ embeds: [embed] });
+			await logChannel.send({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+				allowedMentions: {
+					parse: [],
+				},
+			});
 			return;
 		}
 
 		// Regular leave (not kicked)
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Orange', { from: 'discord', to: 'decimal' }))
-			.setDescription(`👋 **Member Left**`)
-			.addFields(
-				{
-					name: 'User',
-					value: `${member.user.tag} (${member.user.id})`,
-					inline: true,
-				},
-				{
-					name: 'Account Created',
-					value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:F>`,
-					inline: true,
-				},
-				{
-					name: 'Joined Server',
-					value: member.joinedAt
-						? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:F>`
-						: 'Unknown',
-					inline: true,
-				},
-			)
-			.setThumbnail(member.user.displayAvatarURL())
-			.setTimestamp();
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Orange', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👋 **Member Left**\n\n` +
+							`**User:** ${member.user.tag} (<@${member.user.id}>)\n` +
+							`**User ID:** ${member.user.id}\n` +
+							`**Account Created:** <t:${Math.floor(member.user.createdTimestamp / 1000)}:F>\n` +
+							`**Joined Server:**  ${member.joinedAt ? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:F>` : 'Unknown'}\n` +
+							`**Member Count:** ${member.guild.memberCount}`,
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **User:** ${member.user.tag}\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildMemberRemove audit log:', err);
 	}

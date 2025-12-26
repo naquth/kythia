@@ -6,9 +6,31 @@
  * @version 0.11.0-beta
  */
 
-const { AuditLogEvent, EmbedBuilder } = require('discord.js');
+const {
+	AuditLogEvent,
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
-module.exports = async (bot, oldRole, newRole) => {
+function formatChanges(changes) {
+	if (!changes || changes.length === 0) return 'No changes detected.';
+	return changes
+		.map((change) => {
+			const key = change.key
+				.replace(/_/g, ' ')
+				.replace(/\b\w/g, (l) => l.toUpperCase());
+			const oldValue = change.old ?? 'Nothing';
+			const newValue = change.new ?? 'Nothing';
+
+			return `**${key}**: \`${oldValue}\` ➔ \`${newValue}\``;
+		})
+		.join('\n');
+}
+
+module.exports = async (bot, _oldRole, newRole) => {
 	if (!newRole.guild) return;
 	const container = bot.client.container;
 	const { models, helpers } = container;
@@ -16,11 +38,13 @@ module.exports = async (bot, oldRole, newRole) => {
 	const { convertColor } = helpers.color;
 
 	try {
-		const setting = await ServerSetting.getCache({ guildId: newRole.guild.id });
-		if (!setting || !setting.auditLogChannelId) return;
+		const settings = await ServerSetting.getCache({
+			guildId: newRole.guild.id,
+		});
+		if (!settings || !settings.auditLogChannelId) return;
 
 		const logChannel = await newRole.guild.channels
-			.fetch(setting.auditLogChannelId)
+			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
 
@@ -36,59 +60,40 @@ module.exports = async (bot, oldRole, newRole) => {
 
 		if (!entry) return;
 
-		const embed = new EmbedBuilder()
-			.setColor(convertColor('Yellow', { from: 'discord', to: 'decimal' }))
-			.setAuthor({
-				name: entry.executor?.tag || 'Unknown',
-				iconURL: entry.executor?.displayAvatarURL?.(),
-			})
-			.setDescription(
-				`✏️ **Role Updated** by <@${entry.executor?.id || 'Unknown'}>`,
-			)
-			.addFields(
-				{ name: 'Role', value: `<@&${newRole.id}>`, inline: true },
-				{ name: 'Old Name', value: oldRole.name, inline: true },
-				{ name: 'New Name', value: newRole.name, inline: true },
-				{
-					name: 'Old Color',
-					value: oldRole.hexColor || 'Default',
-					inline: true,
-				},
-				{
-					name: 'New Color',
-					value: newRole.hexColor || 'Default',
-					inline: true,
-				},
-				{
-					name: 'Old Position',
-					value: oldRole.position.toString(),
-					inline: true,
-				},
-				{
-					name: 'New Position',
-					value: newRole.position.toString(),
-					inline: true,
-				},
-				{
-					name: 'Mentionable',
-					value: newRole.mentionable ? 'Yes' : 'No',
-					inline: true,
-				},
-				{ name: 'Hoisted', value: newRole.hoist ? 'Yes' : 'No', inline: true },
-				{
-					name: 'Managed',
-					value: newRole.managed ? 'Yes' : 'No',
-					inline: true,
-				},
-			)
-			.setFooter({ text: `User ID: ${entry.executor?.id || 'Unknown'}` })
-			.setTimestamp();
+		const executor = entry.executor;
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(
+					convertColor('Blurple', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`🔄 **Role Updated** by <@${executor?.id || 'Unknown'}>\n\n` +
+							`**Role:** <@&${newRole.id}>\n\n` +
+							`**Changes:**\n${formatChanges(entry.changes)}` +
+							(entry.reason ? `\n\n**Reason:** ${entry.reason}` : ''),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				),
+		];
 
-		if (entry.reason) {
-			embed.addFields({ name: 'Reason', value: entry.reason });
-		}
-
-		await logChannel.send({ embeds: [embed] });
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 	} catch (err) {
 		console.error('Error in guildRoleUpdate audit log:', err);
 	}

@@ -7,17 +7,18 @@
  */
 
 const {
-	SlashCommandBuilder,
-	ContextMenuCommandBuilder,
-	ApplicationCommandType,
-	InteractionContextType,
-	ContainerBuilder,
-	TextDisplayBuilder,
+	MessageFlags,
 	SectionBuilder,
+	ContainerBuilder,
 	SeparatorBuilder,
 	ThumbnailBuilder,
-	MessageFlags,
+	TextDisplayBuilder,
+	SlashCommandBuilder,
+	ApplicationCommandType,
+	InteractionContextType,
+	ContextMenuCommandBuilder,
 } = require('discord.js');
+
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -38,6 +39,11 @@ module.exports = {
 		.setContexts(InteractionContextType.Guild),
 
 	contextMenuDescription: '📄 Displays information about a user.',
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers, models } = container;
 		const { convertColor } = helpers.color;

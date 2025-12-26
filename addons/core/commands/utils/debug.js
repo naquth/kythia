@@ -6,7 +6,11 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
+const {
+	MessageFlags,
+	SlashCommandBuilder,
+	InteractionContextType,
+} = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -22,7 +26,8 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { models } = container;
+		const { logger, models, helpers } = container;
+		const { simpleContainer } = helpers;
 		const Playlist = models.Playlist;
 		const PlaylistTrack = models.PlaylistTrack;
 
@@ -48,9 +53,6 @@ module.exports = {
 		let playlistId = null;
 
 		try {
-			// ---------------------------------------------------------
-			// 0. DIAGNOSTIC HEADER
-			// ---------------------------------------------------------
 			const isRedis = Playlist.isRedisConnected;
 			const isShard = Playlist.isShardMode;
 
@@ -63,9 +65,6 @@ module.exports = {
 			addLog('📦', `Cache Version: \`${Playlist.CACHE_VERSION}\``);
 			logs.push('-------------------------------------------');
 
-			// ---------------------------------------------------------
-			// 1. CREATE PARENT (Playlist) - DB Write + Cache Set
-			// ---------------------------------------------------------
 			const startInit = Date.now();
 			const [playlist, created] = await Playlist.findOrCreateWithCache({
 				where: { userId: userId, name: testName },
@@ -86,9 +85,6 @@ module.exports = {
 				`Time: ${tInit}ms | ID: \`${playlistId}\` | Created: ${created}`,
 			);
 
-			// ---------------------------------------------------------
-			// 2. CREATE CHILD (Track) - Testing Relations & BigInt
-			// ---------------------------------------------------------
 			await PlaylistTrack.create({
 				playlistId: playlist.id,
 				title: 'Kythia Anthem (Cache Ver)',
@@ -99,15 +95,9 @@ module.exports = {
 			});
 			addLog('🎵', `**Step ${step++}: Track Added** (BigInt length tested)`);
 
-			// ---------------------------------------------------------
-			// 3. CLEAR CACHE (Force Cold State)
-			// ---------------------------------------------------------
 			await Playlist.clearCache({ where: { id: playlistId } });
 			addLog('🧹', `**Step ${step++}: Cache Cleared** (Force DB Hit next)`);
 
-			// ---------------------------------------------------------
-			// 4. COLD FETCH (DB HIT) - Expecting Associations
-			// ---------------------------------------------------------
 			const startCold = Date.now();
 
 			const coldResult = await Playlist.getCache({
@@ -135,9 +125,6 @@ module.exports = {
 				`Tracks found: ${tracksCold.length} | Type: ${coldResult.constructor.name}`,
 			);
 
-			// ---------------------------------------------------------
-			// 5. WARM FETCH (CACHE HIT) - The Critical Test
-			// ---------------------------------------------------------
 			const startWarm = Date.now();
 			const warmResult = await Playlist.getCache({
 				where: { id: playlistId },
@@ -184,9 +171,6 @@ module.exports = {
 				);
 			}
 
-			// ---------------------------------------------------------
-			// 6. SAVE & UPDATE (Write-Through Test)
-			// ---------------------------------------------------------
 			warmResult.name = `${testName} [UPDATED]`;
 
 			const startSave = Date.now();
@@ -195,9 +179,6 @@ module.exports = {
 
 			addLog('💾', `**Step ${step++}: saveAndUpdateCache** -> ${tSave}ms`);
 
-			// ---------------------------------------------------------
-			// 7. VERIFY WRITE-THROUGH
-			// ---------------------------------------------------------
 			const startVerify = Date.now();
 			const verifyResult = await Playlist.getCache({
 				where: { id: playlistId },
@@ -217,29 +198,22 @@ module.exports = {
 				);
 			}
 
-			// ---------------------------------------------------------
-			// FINISH
-			// ---------------------------------------------------------
-			const embed = {
-				title: '🛠️ Kythia Cache Debugger',
-				description: logs.join('\n'),
-				color: isHydrated && isNameUpdated ? 0x00ff00 : 0xffaa00,
-				footer: { text: `Kythia System v${Playlist.CACHE_VERSION}` },
-			};
-
-			await interaction.editReply({ embeds: [embed] });
+			const msg = `## 🛠️ Kythia Cache Debugger\n\n${logs.join('\n')}`;
+			const components = await simpleContainer(interaction, msg);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
-			console.error(error);
-			const errorEmbed = {
-				title: '💥 CRITICAL FAILURE',
-				description: `${logs.join('\n')}\n\n**ERROR at Step ${step}:**\n\`\`\`js\n${error.message}\n\`\`\``,
-				color: 0xff0000,
-			};
-			await interaction.editReply({ embeds: [errorEmbed] });
+			logger.error(error);
+
+			const errorMsg = `## 💥 CRITICAL FAILURE\n\n${logs.join('\n')}\n\n**ERROR at Step ${step}:**\n\`\`\`js\n${error.message}\n\`\`\``;
+			const components = await simpleContainer(interaction, errorMsg);
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} finally {
-			// ---------------------------------------------------------
-			// CLEANUP (Always Run)
-			// ---------------------------------------------------------
 			if (playlistId) {
 				await Playlist.destroy({ where: { id: playlistId } }).catch(() => {});
 				if (Playlist.isRedisConnected) {

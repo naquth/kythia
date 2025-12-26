@@ -8,7 +8,7 @@
 
 const {
 	SlashCommandBuilder,
-	EmbedBuilder,
+	MessageFlags,
 	ApplicationCommandType,
 	ContextMenuCommandBuilder,
 } = require('discord.js');
@@ -29,9 +29,16 @@ module.exports = {
 		.setType(ApplicationCommandType.User),
 
 	contextMenuDescription: '🖼️ Show user avatar.',
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
+
+		await interaction.deferReply();
 
 		const user =
 			interaction.options.getUser('user') ||
@@ -40,18 +47,18 @@ module.exports = {
 
 		const avatarURL = user.displayAvatarURL({ dynamic: true, size: 1024 });
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setAuthor({ name: user.tag, iconURL: user.displayAvatarURL() })
-			.setDescription(
-				await t(interaction, 'core.tools.avatar.embed.desc', {
-					url: avatarURL,
-				}),
-			)
-			.setImage(avatarURL)
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
+		const components = await createContainer(interaction, {
+			title: user.tag,
+			description: await t(interaction, 'core.tools.avatar.embed.desc', {
+				url: avatarURL,
+			}),
+			media: [avatarURL],
+			color: kythiaConfig.bot.color,
+		});
 
-		await interaction.reply({ embeds: [embed] });
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

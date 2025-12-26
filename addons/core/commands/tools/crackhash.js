@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const axios = require('axios');
 
 const SUPPORTED_HASHES = [
@@ -35,19 +35,24 @@ module.exports = {
 				.setDescription('The hash to try to lookup')
 				.setRequired(true),
 		),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const algorithm = interaction.options.getString('algorithm');
 		const hash = interaction.options.getString('hash').toLowerCase();
 
 		const hashLengths = { md5: 32, sha1: 40, sha256: 64, sha512: 128 };
 		if (hash.length !== hashLengths[algorithm]) {
-			return interaction.editReply({
-				content: await t(
+			const components = await createContainer(interaction, {
+				description: await t(
 					interaction,
 					'core.tools.crackhash.invalid.hash.length',
 					{
@@ -55,6 +60,11 @@ module.exports = {
 						hashLength: hashLengths[algorithm],
 					},
 				),
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -88,26 +98,21 @@ module.exports = {
 			resultText = await t(interaction, 'core.tools.crackhash.api.error');
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(await t(interaction, 'core.tools.crackhash.result.desc'))
-			.addFields(
-				{
-					name: await t(interaction, 'core.tools.crackhash.algorithm'),
-					value: algoObj.name,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'core.tools.crackhash.hash'),
-					value: `\`\`\`${hash}\`\`\``,
-				},
-				{
-					name: await t(interaction, 'core.tools.crackhash.result.text'),
-					value: resultText,
-				},
-			)
-			.setFooter(await embedFooter(interaction));
+		const description =
+			(await t(interaction, 'core.tools.crackhash.result.desc')) +
+			'\n\n' +
+			`**${await t(interaction, 'core.tools.crackhash.algorithm')}:** ${algoObj.name}\n\n` +
+			`**${await t(interaction, 'core.tools.crackhash.hash')}:**\n\`\`\`${hash}\`\`\`\n\n` +
+			`**${await t(interaction, 'core.tools.crackhash.result.text')}:**\n${resultText}`;
 
-		await interaction.editReply({ embeds: [embed] });
+		const components = await createContainer(interaction, {
+			description,
+			color: kythiaConfig.bot.color,
+		});
+
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

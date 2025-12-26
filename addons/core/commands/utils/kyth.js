@@ -7,13 +7,12 @@
  */
 
 const {
+	MessageFlags,
 	SlashCommandBuilder,
-	EmbedBuilder,
 	PermissionFlagsBits,
 } = require('discord.js');
 
 module.exports = {
-	mainGuildOnly: true,
 	slashCommand: new SlashCommandBuilder()
 		.setName('kyth')
 		.setDescription('🛠️ Manage All Kythia related config')
@@ -55,7 +54,12 @@ module.exports = {
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	ownerOnly: true,
+	mainGuildOnly: true,
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		await interaction.deferReply();
 
@@ -74,8 +78,9 @@ module.exports = {
 	},
 
 	async handleAdd(interaction, container) {
-		const { models, logger } = container;
+		const { models, logger, helpers } = container;
 		const { KythiaTeam } = models;
+		const { createContainer } = helpers.discord;
 
 		const user = interaction.options.getUser('user');
 		const name = interaction.options.getString('name') || null;
@@ -83,9 +88,13 @@ module.exports = {
 		try {
 			const existing = await KythiaTeam.getCache({ userId: user.id });
 			if (existing) {
+				const components = await createContainer(interaction, {
+					description: `❌ **${user.tag}** is already in the Kythia Team!`,
+					color: 'Red',
+				});
 				return interaction.editReply({
-					content: `❌ **${user.tag}** is already in the Kythia Team!`,
-					ephemeral: true,
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 
@@ -94,89 +103,109 @@ module.exports = {
 				name: name,
 			});
 
-			const embed = new EmbedBuilder()
-				.setTitle('✅ Team Member Added')
-				.setColor('Green')
-				.setDescription(`Successfully added **${user.tag}** to Kythia Team!`)
-				.addFields(
-					{ name: 'User ID', value: user.id, inline: true },
-					{ name: 'Name/Role', value: name || 'Not specified', inline: true },
-				)
-				.setTimestamp();
+			const description =
+				`Successfully added **${user.tag}** to Kythia Team!\n\n` +
+				`**User ID:** ${user.id}\n` +
+				`**Name/Role:** ${name || 'Not specified'}`;
 
-			await interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await createContainer(interaction, {
+				title: '✅ Team Member Added',
+				description,
+				color: 'Green',
+			});
+
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 			logger.info(
 				`Added ${user.tag} (${user.id}) to Kythia Team by ${interaction.user.tag}`,
 			);
 		} catch (error) {
 			logger.error('Failed to add team member:', error);
+			const components = await createContainer(interaction, {
+				description: `❌ Failed to add team member: ${error.message}`,
+				color: 'Red',
+			});
 			await interaction.editReply({
-				content: `❌ Failed to add team member: ${error.message}`,
-				ephemeral: true,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},
 
 	async handleDelete(interaction, container) {
-		const { models, logger } = container;
+		const { models, logger, helpers } = container;
 		const { KythiaTeam } = models;
+		const { createContainer } = helpers.discord;
 
 		const user = interaction.options.getUser('user');
 
 		try {
 			const existing = await KythiaTeam.getCache({ userId: user.id });
 			if (!existing) {
+				const components = await createContainer(interaction, {
+					description: `❌ **${user.tag}** is not in the Kythia Team!`,
+					color: 'Red',
+				});
 				return interaction.editReply({
-					content: `❌ **${user.tag}** is not in the Kythia Team!`,
-					ephemeral: true,
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 
 			await KythiaTeam.destroy({ where: { userId: user.id } });
 
-			const embed = new EmbedBuilder()
-				.setTitle('✅ Team Member Removed')
-				.setColor('Red')
-				.setDescription(
-					`Successfully removed **${user.tag}** from Kythia Team!`,
-				)
-				.addFields({ name: 'User ID', value: user.id, inline: true })
-				.setTimestamp();
+			const description =
+				`Successfully removed **${user.tag}** from Kythia Team!\n\n` +
+				`**User ID:** ${user.id}`;
 
-			await interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await createContainer(interaction, {
+				title: '✅ Team Member Removed',
+				description,
+				color: 'Red',
+			});
+
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 			logger.info(
 				`Removed ${user.tag} (${user.id}) from Kythia Team by ${interaction.user.tag}`,
 			);
 		} catch (error) {
 			logger.error('Failed to remove team member:', error);
+			const components = await createContainer(interaction, {
+				description: `❌ Failed to remove team member: ${error.message}`,
+				color: 'Red',
+			});
 			await interaction.editReply({
-				content: `❌ Failed to remove team member: ${error.message}`,
-				ephemeral: true,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},
 
 	async handleList(interaction, container) {
-		const { models, logger } = container;
+		const { models, logger, helpers } = container;
 		const { KythiaTeam } = models;
+		const { createContainer } = helpers.discord;
 
 		try {
 			const teamMembers = await KythiaTeam.getAllCache();
 
 			if (teamMembers.length === 0) {
+				const components = await createContainer(interaction, {
+					description: '📋 The Kythia Team is currently empty.',
+					color: 'Blurple',
+				});
 				return interaction.editReply({
-					content: '📋 The Kythia Team is currently empty.',
-					ephemeral: true,
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 
-			const embed = new EmbedBuilder()
-				.setTitle('👥 Kythia Team Members')
-				.setColor('Blurple')
-				.setDescription(`Total members: **${teamMembers.length}**`)
-				.setTimestamp();
-
-			const fields = [];
+			const memberList = [];
 			for (const member of teamMembers) {
 				try {
 					const user = await interaction.client.users
@@ -184,56 +213,42 @@ module.exports = {
 						.catch(() => null);
 					const userName = user ? user.tag : `Unknown User (${member.userId})`;
 					const nameRole = member.name || 'No role specified';
-					fields.push({
-						name: `${userName}`,
-						value: `**ID:** ${member.userId}\n**Role:** ${nameRole}`,
-						inline: false,
-					});
+					memberList.push(
+						`**${userName}**\n**ID:** ${member.userId}\n**Role:** ${nameRole}`,
+					);
 				} catch (err) {
 					logger.warn(`Failed to fetch user ${member.userId}:`, err);
-					fields.push({
-						name: `Unknown User`,
-						value: `**ID:** ${member.userId}\n**Role:** ${member.name || 'No role specified'}`,
-						inline: false,
-					});
+					memberList.push(
+						`**Unknown User**\n**ID:** ${member.userId}\n**Role:** ${member.name || 'No role specified'}`,
+					);
 				}
 			}
 
-			if (fields.length > 25) {
-				const chunks = [];
-				for (let i = 0; i < fields.length; i += 25) {
-					chunks.push(fields.slice(i, i + 25));
-				}
+			const description =
+				`Total members: **${teamMembers.length}**\n\n` +
+				memberList.join('\n\n');
 
-				const embeds = chunks.map((chunk, index) => {
-					const chunkEmbed = new EmbedBuilder()
-						.setTitle(
-							index === 0
-								? '👥 Kythia Team Members'
-								: `👥 Kythia Team Members (continued ${index + 1})`,
-						)
-						.setColor('Blurple')
-						.addFields(chunk);
-					if (index === 0) {
-						chunkEmbed.setDescription(
-							`Total members: **${teamMembers.length}**`,
-						);
-					}
-					return chunkEmbed;
-				});
+			const components = await createContainer(interaction, {
+				title: '👥 Kythia Team Members',
+				description,
+				color: 'Blurple',
+			});
 
-				await interaction.editReply({ embeds: embeds, ephemeral: true });
-			} else {
-				embed.addFields(fields);
-				await interaction.editReply({ embeds: [embed], ephemeral: true });
-			}
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 
 			logger.info(`Kythia Team list viewed by ${interaction.user.tag}`);
 		} catch (error) {
 			logger.error('Failed to list team members:', error);
+			const components = await createContainer(interaction, {
+				description: `❌ Failed to list team members: ${error.message}`,
+				color: 'Red',
+			});
 			await interaction.editReply({
-				content: `❌ Failed to list team members: ${error.message}`,
-				ephemeral: true,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},

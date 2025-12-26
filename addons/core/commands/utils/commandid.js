@@ -5,10 +5,12 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
 	MessageFlags,
 	SlashCommandBuilder,
 	InteractionContextType,
+	PermissionFlagsBits,
 } = require('discord.js');
 
 module.exports = {
@@ -21,8 +23,10 @@ module.exports = {
 				.setDescription('The name of the command to look up')
 				.setRequired(true),
 		)
-		.setContexts(InteractionContextType.BotDM),
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setContexts(InteractionContextType.Guild),
 	ownerOnly: true,
+	mainGuildOnly: true,
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

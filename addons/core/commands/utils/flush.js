@@ -59,7 +59,7 @@ module.exports = {
 			await interaction.editReply({
 				components: simpleContainer(
 					interaction,
-					`## ✅ **Redis flush successful!**\n🧹 Cleared ${sizeBefore} keys.`,
+					`## ✅ Redis flush successful!\n🧹 Cleared ${sizeBefore} keys.`,
 					{
 						color: 'Green',
 					},

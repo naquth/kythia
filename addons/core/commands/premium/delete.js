@@ -17,11 +17,16 @@ module.exports = {
 					.setDescription('User to remove premium from')
 					.setRequired(true),
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models } = container;
 		const { KythiaUser } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const user = interaction.options.getUser('user');
 

@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const crypto = require('node:crypto');
 
 const SUPPORTED_ALGOS = [
@@ -40,25 +40,40 @@ module.exports = {
 				.setDescription('The text to hash')
 				.setRequired(true),
 		),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const algorithm = interaction.options.getString('algorithm');
 		const text = interaction.options.getString('text');
 
 		if (!text || text.length > 1024) {
+			const components = await createContainer(interaction, {
+				description: await t(interaction, 'core.tools.hash.invalid.text'),
+				color: 'Red',
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.tools.hash.invalid.text'),
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
 		const algoObj = SUPPORTED_ALGOS.find((a) => a.value === algorithm);
 		if (!algoObj) {
+			const components = await createContainer(interaction, {
+				description: await t(interaction, 'core.tools.hash.invalid.algorithm'),
+				color: 'Red',
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.tools.hash.invalid.algorithm'),
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -66,31 +81,30 @@ module.exports = {
 		try {
 			hash = crypto.createHash(algorithm).update(text, 'utf8').digest('hex');
 		} catch (_e) {
+			const components = await createContainer(interaction, {
+				description: await t(interaction, 'core.tools.hash.failed.hash'),
+				color: 'Red',
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.tools.hash.failed.hash'),
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(await t(interaction, 'core.tools.hash.result'))
-			.addFields(
-				{
-					name: await t(interaction, 'core.tools.hash.algorithm'),
-					value: algoObj.name,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'core.tools.hash.input'),
-					value: `\`\`\`${text}\`\`\``,
-				},
-				{
-					name: await t(interaction, 'core.tools.hash.hash'),
-					value: `\`\`\`${hash}\`\`\``,
-				},
-			)
-			.setFooter(await embedFooter(interaction));
+		const description =
+			`**${await t(interaction, 'core.tools.hash.algorithm')}:** ${algoObj.name}\n\n` +
+			`**${await t(interaction, 'core.tools.hash.input')}:**\n\`\`\`${text}\`\`\`\n` +
+			`**${await t(interaction, 'core.tools.hash.hash')}:**\n\`\`\`${hash}\`\`\``;
 
-		await interaction.editReply({ embeds: [embed] });
+		const components = await createContainer(interaction, {
+			title: await t(interaction, 'core.tools.hash.result'),
+			description,
+			color: kythiaConfig.bot.color,
+		});
+
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

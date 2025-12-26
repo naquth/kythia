@@ -5,17 +5,23 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { Op } = require('sequelize');
+
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand.setName('list').setDescription('View list of premium users'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers, models } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
 		const { KythiaUser } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const now = new Date();
 		const list = await KythiaUser.getAllCache({
@@ -28,30 +34,38 @@ module.exports = {
 		});
 
 		if (!list.length) {
-			return interaction.editReply(
-				await t(interaction, 'core.premium.premium.list.empty'),
-			);
+			const components = await createContainer(interaction, {
+				description: await t(interaction, 'core.premium.premium.list.empty'),
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setTitle(await t(interaction, 'core.premium.premium.list.title'))
-			.setDescription(
-				(
-					await Promise.all(
-						list.map(
-							async (p, i) =>
-								await t(interaction, 'core.premium.premium.list.item', {
-									index: i + 1,
-									user: `<@${p.userId}>`,
-									expires: `<t:${Math.floor(new Date(p.premiumExpiresAt).getTime() / 1000)}:R>`,
-								}),
-						),
-					)
-				).join('\n'),
+		const description = (
+			await Promise.all(
+				list.map(
+					async (p, i) =>
+						await t(interaction, 'core.premium.premium.list.item', {
+							index: i + 1,
+							user: `<@${p.userId}>`,
+							expires: `<t:${Math.floor(new Date(p.premiumExpiresAt).getTime() / 1000)}:R>`,
+						}),
+				),
 			)
-			.setFooter(await embedFooter(interaction));
+		).join('\n');
 
-		return interaction.editReply({ embeds: [embed] });
+		const components = await createContainer(interaction, {
+			title: await t(interaction, 'core.premium.premium.list.title'),
+			description,
+			color: kythiaConfig.bot.color,
+		});
+
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

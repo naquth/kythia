@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
 	ButtonStyle,
 	MessageFlags,
@@ -24,7 +25,7 @@ module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('restart')
 		.setDescription('🔁 Restarts the bot with optional scheduler.')
-		.setContexts(InteractionContextType.BotDM)
+		.setContexts(InteractionContextType.Guild)
 		.addIntegerOption((option) =>
 			option
 				.setName('minutes')
@@ -39,7 +40,7 @@ module.exports = {
 				),
 		),
 	ownerOnly: true,
-
+	mainGuildOnly: true,
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container
@@ -47,6 +48,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;
+		const { simpleContainer } = helpers.container;
 
 		const minutes = interaction.options.getInteger('minutes');
 		const timeStr = interaction.options.getString('time');
@@ -64,9 +66,13 @@ module.exports = {
 					hours > 23 ||
 					mins > 59
 				) {
-					return interaction.reply({
-						content: '❌ Invalid time format! Use HH:mm (e.g. 23:59)',
-						flags: MessageFlags.Ephemeral,
+					const msg = '❌ Invalid time format! Use HH:mm (e.g. 23:59)';
+					const components = await simpleContainer(interaction, msg, {
+						color: 'Red',
+					});
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 
@@ -137,9 +143,13 @@ module.exports = {
 
 				interaction.client.kythiaRestartTimestamp = null;
 
+				const msg = '✅ **Scheduled restart cancelled.**';
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Green',
+				});
 				await i.update({
-					content: '✅ **Scheduled restart cancelled.**',
-					components: [],
+					components: components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 				collector.stop();
 			});

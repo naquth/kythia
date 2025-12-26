@@ -32,10 +32,15 @@ module.exports = {
 	guildOnly: true,
 	permissions: PermissionFlagsBits.ManageNicknames,
 	botPermissions: PermissionFlagsBits.ManageNicknames,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t } = container;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const subcommand = interaction.options.getSubcommand();
 		let updated = 0;

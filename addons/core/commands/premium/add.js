@@ -23,11 +23,16 @@ module.exports = {
 					.setDescription('Number of premium days (default 30)')
 					.setRequired(false),
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models } = container;
 		const { KythiaUser } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const user = interaction.options.getUser('user');
 		const days = interaction.options.getInteger('days') ?? 30;

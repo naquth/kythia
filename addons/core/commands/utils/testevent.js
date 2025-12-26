@@ -5,33 +5,15 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { createMockEventArgs } = require('@coreHelpers/events');
-const { SlashCommandBuilder } = require('discord.js');
 
-const ALL_EVENTS = [
-	'messageCreate',
-	'guildMemberAdd',
-	'guildMemberRemove',
-	'guildCreate',
-	'guildDelete',
-	'interactionCreate',
-	'clientReady',
-	'channelCreate',
-	'channelDelete',
-	'roleCreate',
-	'roleDelete',
-	'guildBanAdd',
-	'guildBanRemove',
-	'guildUpdate',
-	'guildMemberUpdate',
-	'messageUpdate',
-	'messageDelete',
-	'voiceStateUpdate',
-	'presenceUpdate',
-	'userUpdate',
-	'inviteCreate',
-	'inviteDelete',
-];
+const { getEventScenarios } = require('@coreHelpers/events');
+
+const {
+	Events,
+	SlashCommandBuilder,
+	PermissionFlagsBits,
+	InteractionContextType,
+} = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -42,24 +24,67 @@ module.exports = {
 				.setName('event')
 				.setDescription('The event to trigger')
 				.setRequired(true)
-				.addChoices(...ALL_EVENTS.map((ev) => ({ name: ev, value: ev }))),
+				.setAutocomplete(true),
 		)
 		.addStringOption((option) =>
 			option
 				.setName('type')
-				.setDescription(
-					'The specific scenario to test for the event (e.g., boost)',
-				)
+				.setDescription('The specific scenario to test for the event')
 				.setRequired(false)
-				.addChoices(
-					{ name: 'boost', value: 'boost' },
-					{ name: 'unboost', value: 'unboost' },
-					{ name: 'nickname', value: 'nickname' },
-				),
-		),
+				.setAutocomplete(true),
+		)
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setContexts(InteractionContextType.Guild),
 	ownerOnly: true,
+	mainGuildOnly: true,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 */
+	async autocomplete(interaction) {
+		const focusedOption = interaction.options.getFocused(true);
+
+		if (focusedOption.name === 'event') {
+			const focused = focusedOption.value.toLowerCase();
+			const allEvents = Object.values(Events);
+
+			const filtered = allEvents
+				.filter((event) => event.toLowerCase().includes(focused))
+				.slice(0, 25)
+				.map((event) => ({ name: event, value: event }));
+
+			await interaction.respond(filtered);
+		} else if (focusedOption.name === 'type') {
+			const selectedEvent = interaction.options.getString('event');
+			const focused = focusedOption.value.toLowerCase();
+
+			if (!selectedEvent) {
+				return interaction.respond([
+					{ name: 'Please select an event first', value: 'default' },
+				]);
+			}
+
+			const availableScenarios = getEventScenarios(selectedEvent);
+			const filtered = availableScenarios
+				.filter((scenario) => scenario.toLowerCase().includes(focused))
+				.slice(0, 25)
+				.map((scenario) => ({ name: scenario, value: scenario }));
+
+			await interaction.respond(
+				filtered.length > 0
+					? filtered
+					: [{ name: 'default', value: 'default' }],
+			);
+		}
+	},
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { logger } = container;
+		const { logger, helpers } = container;
+		const { createMockEventArgs } = helpers.events;
 
 		await interaction.deferReply({ ephemeral: true });
 
@@ -72,10 +97,7 @@ module.exports = {
 		);
 
 		try {
-			// 1. Minta "Tim Dapur" untuk siapkan argumennya
 			const args = await createMockEventArgs(eventName, interaction, type);
-
-			// 2. "Koki Utama" tinggal berteriak
 			client.emit(eventName, ...args);
 
 			await interaction.editReply({

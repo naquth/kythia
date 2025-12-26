@@ -7,11 +7,11 @@
  */
 
 const {
+	MessageFlags,
 	SlashCommandBuilder,
-	EmbedBuilder,
-	ContextMenuCommandBuilder,
 	ApplicationCommandType,
 	InteractionContextType,
+	ContextMenuCommandBuilder,
 } = require('discord.js');
 
 module.exports = {
@@ -36,12 +36,18 @@ module.exports = {
 
 	contextMenuDescription: '🚨 Report a user to the moderators.',
 	guildOnly: true,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, models } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
 		const { ServerSetting } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
+
 		const user =
 			interaction.options.getUser('user') ||
 			interaction.targetUser ||
@@ -53,30 +59,46 @@ module.exports = {
 
 		const setting = await ServerSetting.getCache({ guildId });
 		if (!setting.modLogChannelId && !interaction.guild) {
+			const components = await createContainer(interaction, {
+				description: await t(interaction, 'core.utils.report.no.channel'),
+				color: 'Red',
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.utils.report.no.channel'),
-				ephemeral: true,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
 		const reportChannel = interaction.guild?.channels.cache.get(
 			setting.modLogChannelId,
 		);
-		const embed = new EmbedBuilder()
-			.setColor('Red')
-			.setDescription(
-				await t(interaction, 'core.utils.report.embed.desc', {
-					reported: user.tag,
-					reporter: interaction.user?.tag,
-					reason,
-				}),
-			)
-			.setThumbnail(interaction.client.user.displayAvatarURL())
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
-		await reportChannel?.send({ embeds: [embed] });
-		return interaction.editReply(
-			await t(interaction, 'core.utils.report.success', { user: user.tag }),
-		);
+
+		// Send report to mod channel (still using embed for mod channel)
+		const reportComponents = await createContainer(interaction, {
+			description: await t(interaction, 'core.utils.report.embed.desc', {
+				reported: user.tag,
+				reporter: interaction.user?.tag,
+				reason,
+			}),
+			color: 'Red',
+		});
+
+		await reportChannel?.send({
+			components: reportComponents,
+			flags: MessageFlags.IsComponentsV2,
+		});
+
+		// Confirm to user
+		const confirmComponents = await createContainer(interaction, {
+			description: await t(interaction, 'core.utils.report.success', {
+				user: user.tag,
+			}),
+			color: 'Green',
+		});
+
+		return interaction.editReply({
+			components: confirmComponents,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

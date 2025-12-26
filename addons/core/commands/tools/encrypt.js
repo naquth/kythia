@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const crypto = require('node:crypto');
 
 const ALGORITHM = 'aes-256-gcm';
@@ -29,18 +29,31 @@ module.exports = {
 				.setDescription('A 32-character secret key for encryption')
 				.setRequired(true),
 		),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { createContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply();
 
 		const text = interaction.options.getString('text');
 		const secretKey = interaction.options.getString('secret-key');
 
 		if (secretKey.length !== 32) {
+			const components = await createContainer(interaction, {
+				description: await t(
+					interaction,
+					'core.tools.encrypt.invalid.key.length',
+				),
+				color: 'Red',
+			});
 			return interaction.editReply({
-				content: await t(interaction, 'core.tools.encrypt.invalid.key.length'),
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -60,27 +73,31 @@ module.exports = {
 
 			const encryptedData = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
 
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setTitle(await t(interaction, 'core.tools.encrypt.success'))
-				.setDescription(await t(interaction, 'core.tools.encrypt.embed.desc'))
-				.addFields(
-					{
-						name: await t(interaction, 'core.tools.encrypt.secret.key.used'),
-						value: `\`\`\`${'*'.repeat(32)}\`\`\``,
-					},
-					{
-						name: await t(interaction, 'core.tools.encrypt.encrypted.data'),
-						value: `\`\`\`${encryptedData}\`\`\``,
-					},
-				)
-				.setFooter(await embedFooter(interaction));
+			const description =
+				(await t(interaction, 'core.tools.encrypt.embed.desc')) +
+				'\n\n' +
+				`**${await t(interaction, 'core.tools.encrypt.secret.key.used')}:**\n\`\`\`${'*'.repeat(32)}\`\`\`\n\n` +
+				`**${await t(interaction, 'core.tools.encrypt.encrypted.data')}:**\n\`\`\`${encryptedData}\`\`\``;
 
-			await interaction.editReply({ embeds: [embed] });
+			const components = await createContainer(interaction, {
+				title: await t(interaction, 'core.tools.encrypt.success'),
+				description,
+				color: kythiaConfig.bot.color,
+			});
+
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			console.error(error);
+			const components = await createContainer(interaction, {
+				description: await t(interaction, 'core.tools.encrypt.error'),
+				color: 'Red',
+			});
 			await interaction.editReply({
-				content: await t(interaction, 'core.tools.encrypt.error'),
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},

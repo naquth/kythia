@@ -9,6 +9,7 @@
 const {
 	EmbedBuilder,
 	ModalBuilder,
+	MessageFlags,
 	TextInputStyle,
 	TextInputBuilder,
 	ActionRowBuilder,
@@ -35,10 +36,16 @@ module.exports = {
 					'Send a complex announcement by pasting a JSON payload.',
 				),
 		)
-		.setContexts(InteractionContextType.BotDM),
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setContexts(InteractionContextType.Guild),
 	ownerOnly: true,
+	mainGuildOnly: true,
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { logger } = container;
+		const { logger, kythiaConfig } = container;
 
 		const subcommand = interaction.options.getSubcommand();
 
@@ -85,7 +92,7 @@ module.exports = {
 					new EmbedBuilder()
 						.setTitle(`📢 ${title}`)
 						.setDescription(content)
-						.setColor('Blurple')
+						.setColor(kythiaConfig.bot.color)
 						.setTimestamp()
 						.setFooter({
 							text: `Announcement from Developer ${interaction.client.user.username}`,
@@ -204,31 +211,27 @@ module.exports = {
 			await sleep(1000);
 		}
 
-		const reportEmbed = new EmbedBuilder()
-			.setTitle('✅ Announcement Delivery Report')
-			.setColor('Green')
-			.addFields(
-				{
-					name: 'Successfully Sent',
-					value: `${successCount} server(s)`,
-					inline: true,
-				},
-				{
-					name: 'Failed to Send',
-					value: `${failCount} server(s)`,
-					inline: true,
-				},
-			);
-		if (failedServers.length > 0) {
-			reportEmbed.addFields({
-				name: 'Failed Server List',
-				value: `\`\`\`${failedServers.slice(0, 10).join('\n')}\`\`\``,
-			});
-		}
+		const failList =
+			failedServers.length > 0
+				? `\n\n**Failed Server List:**\n\`\`\`${failedServers.slice(0, 10).join('\n')}\`\`\``
+				: '';
+
+		const description =
+			`**Successfully Sent:** ${successCount} server(s)\n` +
+			`**Failed to Send:** ${failCount} server(s)` +
+			failList;
+
+		const { createContainer } = container.helpers.discord;
+
+		const components = await createContainer(interaction, {
+			title: '✅ Announcement Delivery Report',
+			description,
+			color: 'Green',
+		});
+
 		await interaction.editReply({
-			content: 'Announcement delivery finished!',
-			embeds: [reportEmbed],
-			ephemeral: true,
+			components,
+			flags: MessageFlags.IsComponentsV2,
 		});
 	},
 };

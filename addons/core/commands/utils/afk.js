@@ -6,11 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const {
-	MessageFlags,
-	SlashCommandBuilder,
-	InteractionContextType,
-} = require('discord.js');
+const { MessageFlags, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -21,8 +17,7 @@ module.exports = {
 				.setName('reason')
 				.setDescription('The reason for being AFK.')
 				.setRequired(false),
-		)
-		.setContexts(InteractionContextType.Guild),
+		),
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

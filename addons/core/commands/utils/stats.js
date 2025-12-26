@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
 	version,
 	MessageFlags,
@@ -16,6 +17,7 @@ const {
 	MediaGalleryBuilder,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
+
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');

@@ -6,302 +6,9 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const figletFonts = require('@coreHelpers/figlet-fonts');
 const figlet = require('figlet');
-
-const figletFonts = [
-	...new Set([
-		'1Row',
-		'3-D',
-		'3D Diagonal',
-		'3D-ASCII',
-		'3x5',
-		'4Max',
-		'5 Line Oblique',
-		'AMC 3 Line',
-		'AMC 3 Liv1',
-		'AMC AAA01',
-		'AMC Neko',
-		'AMC Razor',
-		'AMC Razor2',
-		'AMC Slash',
-		'AMC Slider',
-		'AMC Thin',
-		'AMC Tubes',
-		'AMC Untitled',
-		'ANSI Regular',
-		'ANSI Shadow',
-		'ASCII New Roman',
-		'Acrobatic',
-		'Alligator',
-		'Alligator2',
-		'Alpha',
-		'Alphabet',
-		'Arrows',
-		'Avatar',
-		'B1FF',
-		'Banner',
-		'Banner3-D',
-		'Banner3',
-		'Banner4',
-		'Barbwire',
-		'Basic',
-		'Bear',
-		'Bell',
-		'Benjamin',
-		'Big Chief',
-		'Big Money-ne',
-		'Big Money-nw',
-		'Big Money-se',
-		'Big Money-sw',
-		'Big',
-		'Bigfig',
-		'Binary',
-		'Block',
-		'Blocks',
-		'Bloody',
-		'Bolger',
-		'Braced',
-		'Bright',
-		'Broadway KB',
-		'Broadway',
-		'Bubble',
-		'Bulbhead',
-		'Caligraphy',
-		'Caligraphy2',
-		'Calvin S',
-		'Cards',
-		'Catwalk',
-		'Chiseled',
-		'Chunky',
-		'Coinstak',
-		'Cola',
-		'Colossal',
-		'Computer',
-		'Contessa',
-		'Contrast',
-		'Cosmike',
-		'Crawford',
-		'Crawford2',
-		'Crazy',
-		'Cricket',
-		'Cursive',
-		'Cyberlarge',
-		'Cybermedium',
-		'Cybersmall',
-		'Cygnet',
-		'DANC4',
-		'DOS Rebel',
-		'DWhistled',
-		'Dancing Font',
-		'Decimal',
-		'Def Leppard',
-		'Delta Corps Priest 1',
-		'Diamond',
-		'Diet Cola',
-		'Digital',
-		'Doh',
-		'Doom',
-		'Dot Matrix',
-		'Double Shorts',
-		'Double',
-		'Dr Pepper',
-		'Efti Chess',
-		'Efti Font',
-		'Efti Italic',
-		'Efti Piti',
-		'Efti Robot',
-		'Efti Wall',
-		'Efti Water',
-		'Electronic',
-		'Elite',
-		'Epic',
-		'Fender',
-		'Filter',
-		'Fire Font-k',
-		'Fire Font-s',
-		'Flipped',
-		'Flower Power',
-		'Four Tops',
-		'Fraktur',
-		'Fun Face',
-		'Fun Faces',
-		'Fuzzy',
-		'Georgi16',
-		'Georgia11',
-		'Ghost',
-		'Ghoulish',
-		'Glenyn',
-		'Goofy',
-		'Gothic',
-		'Graceful',
-		'Gradient',
-		'Graffiti',
-		'Greek',
-		'Heart Left',
-		'Heart Right',
-		'Henry 3D',
-		'Hex',
-		'Hieroglyphs',
-		'Hollywood',
-		'Horizontal Left',
-		'Horizontal Right',
-		'ICL-1900',
-		'Impossible',
-		'Invita',
-		'Isometric1',
-		'Isometric2',
-		'Isometric3',
-		'Isometric4',
-		'Italic',
-		'Ivrit',
-		'JS Block Letters',
-		'JS Bracket Letters',
-		'JS Capital Curves',
-		'JS Cursive',
-		'JS Stick Letters',
-		'Jacky',
-		'Jazmine',
-		'Jerusalem',
-		'Katakana',
-		'Kban',
-		'Keyboard',
-		'Knob',
-		'Konto Slant',
-		'Konto',
-		'LCD',
-		'Larry 3D 2',
-		'Larry 3D',
-		'Lean',
-		'Letters',
-		'Lil Devil',
-		'Line Blocks',
-		'Linux',
-		'Lockergnome',
-		'Madrid',
-		'Marquee',
-		'Maxfour',
-		'Merlin1',
-		'Merlin2',
-		'Mike',
-		'Mini',
-		'Mirror',
-		'Mnemonic',
-		'Modular',
-		'Morse',
-		'Morse2',
-		'Moscow',
-		'Mshebrew210',
-		'Muzzle',
-		'NScript',
-		'NT Greek',
-		'NV Script',
-		'Nancyj-Fancy',
-		'Nancyj-Improved',
-		'Nancyj-Underlined',
-		'Nancyj',
-		'Nipples',
-		'O8',
-		'OS2',
-		'Octal',
-		'Ogre',
-		'Old Banner',
-		'Pagga',
-		"Patorjk's Cheese",
-		'Patorjk-HeX',
-		'Pawp',
-		'Peaks Slant',
-		'Peaks',
-		'Pebbles',
-		'Pepper',
-		'Poison',
-		'Puffy',
-		'Puzzle',
-		'Pyramid',
-		'Rammstein',
-		'Rectangles',
-		'Red Phoenix',
-		'Relief',
-		'Relief2',
-		'Reverse',
-		'Roman',
-		'Rot13',
-		'Rotated',
-		'Rounded',
-		'Rowan Cap',
-		'Rozzo',
-		'Runic',
-		'Runyc',
-		'S Blood',
-		'SL Script',
-		'Santa Clara',
-		'Script',
-		'Serifcap',
-		'Shadow',
-		'Shimrod',
-		'Short',
-		'Slant Relief',
-		'Slant',
-		'Slide',
-		'Small Caps',
-		'Small Isometric1',
-		'Small Keyboard',
-		'Small Poison',
-		'Small Script',
-		'Small Shadow',
-		'Small Slant',
-		'Small Tengwar',
-		'Small',
-		'Soft',
-		'Speed',
-		'Spliff',
-		'Stacey',
-		'Stampate',
-		'Stampatello',
-		'Standard',
-		'Star Strips',
-		'Star Wars',
-		'Stellar',
-		'Stforek',
-		'Stick Letters',
-		'Stop',
-		'Straight',
-		'Stronger Than All',
-		'Sub-Zero',
-		'Swamp Land',
-		'Swan',
-		'Sweet',
-		'THIS',
-		'Tanja',
-		'Tengwar',
-		'Term',
-		'Test1',
-		'The Edge',
-		'Thick',
-		'Thin',
-		'Thorned',
-		'Three Point',
-		'Ticks Slant',
-		'Ticks',
-		'Tiles',
-		'Tinker-Toy',
-		'Tombstone',
-		'Train',
-		'Trek',
-		'Tsalagi',
-		'Tubular',
-		'Twisted',
-		'Two Point',
-		'USA Flag',
-		'Univers',
-		'Varsity',
-		'Wavy',
-		'Weird',
-		'Wet Letter',
-		'Whimsy',
-		'Wow',
-	]),
-];
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -340,9 +47,13 @@ module.exports = {
 		);
 	},
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers } = container;
+		const { simpleContainer, createContainer } = helpers.discord;
 
 		await interaction.deferReply();
 
@@ -351,19 +62,25 @@ module.exports = {
 		const allFonts = interaction.options.getBoolean('allfonts') || false;
 
 		if (!text || text.length > 20) {
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.tools.ascii.invalid.text.allfonts'),
+				{ color: 'Red' },
+			);
 			return interaction.editReply({
-				content: await t(interaction, 'core.tools.ascii.invalid.text.allfonts'),
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
 		if (allFonts) {
+			const msg = `🎨 Generating ASCII art for "${text}" with ${figletFonts.length} fonts... this might take a moment!`;
 			await interaction.editReply({
-				content: `🎨 Generating ASCII art for "${text}" with ${figletFonts.length} fonts... this might take a moment!`,
+				components: await simpleContainer(interaction, msg),
+				flags: MessageFlags.IsComponentsV2,
 			});
 
-			let embedsForCurrentMessage = [];
-			let totalCharsInCurrentMessage = 0;
-			const _isFirstMessage = true;
+			const containers = [];
 
 			for (const f of figletFonts) {
 				const data = await new Promise((resolve) => {
@@ -379,55 +96,74 @@ module.exports = {
 
 					if (block.length > 4000) continue;
 
-					if (
-						embedsForCurrentMessage.length === 10 ||
-						totalCharsInCurrentMessage + block.length > 5500
-					) {
-						if (embedsForCurrentMessage.length > 0) {
-							await interaction.followUp({ embeds: embedsForCurrentMessage });
-						}
+					// Create container for each font
+					const container = await createContainer(interaction, {
+						description: block,
+					});
 
-						embedsForCurrentMessage = [];
-						totalCharsInCurrentMessage = 0;
+					containers.push(...container);
+
+					// Send in batches of 5 to avoid hitting message limits
+					if (containers.length >= 5) {
+						await interaction.followUp({
+							components: containers.splice(0, 5),
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
-
-					const embed = new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setDescription(block)
-						.setFooter(await embedFooter(interaction));
-
-					embedsForCurrentMessage.push(embed);
-					totalCharsInCurrentMessage += block.length;
 				}
 			}
 
-			if (embedsForCurrentMessage.length > 0) {
-				await interaction.followUp({ embeds: embedsForCurrentMessage });
+			// Send remaining containers
+			if (containers.length > 0) {
+				await interaction.followUp({
+					components: containers,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 		} else {
 			figlet.text(text, { font }, async (err, data) => {
 				if (err || !data) {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.tools.ascii.failed'),
+						{ color: 'Red' },
+					);
 					return interaction.editReply({
-						content: await t(interaction, 'core.tools.ascii.failed'),
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 				const asciiArt = `\`\`\`${data}\`\`\``;
 
 				if (asciiArt.length > 4096) {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.tools.ascii.too.long'),
+						{ color: 'Red' },
+					);
 					return interaction.editReply({
-						content: await t(interaction, 'core.tools.ascii.too.long'),
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'core.tools.ascii.embed.desc', {
-							asciiArt,
-							font,
-						}),
-					)
-					.setFooter(await embedFooter(interaction));
-				await interaction.editReply({ embeds: [embed] });
+
+				const description = await t(
+					interaction,
+					'core.tools.ascii.embed.desc',
+					{
+						asciiArt,
+						font,
+					},
+				);
+
+				const components = await createContainer(interaction, {
+					description,
+				});
+
+				await interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			});
 		}
 	},

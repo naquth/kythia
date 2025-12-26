@@ -5,18 +5,19 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	SlashCommandBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	ActionRowBuilder,
-	SeparatorSpacingSize,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	MessageFlags,
-	MediaGalleryItemBuilder,
+	ButtonBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
 	MediaGalleryBuilder,
+	SlashCommandBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryItemBuilder,
 } = require('discord.js');
 
 module.exports = {
@@ -24,6 +25,11 @@ module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('vote')
 		.setDescription(`❤️ Vote for kythia on top.gg!`),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;

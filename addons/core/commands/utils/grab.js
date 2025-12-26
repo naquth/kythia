@@ -7,6 +7,7 @@
  */
 
 const {
+	MessageFlags,
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	ApplicationCommandType,
@@ -58,8 +59,14 @@ module.exports = {
 	permissions: PermissionFlagsBits.ManageGuildExpressions,
 	botPermissions: PermissionFlagsBits.ManageGuildExpressions,
 	voteLocked: true,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t } = container;
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
 
 		if (
 			interaction.isChatInputCommand?.() &&
@@ -67,29 +74,44 @@ module.exports = {
 		) {
 			const sub = interaction.options.getSubcommand();
 			if (sub === 'sticker') {
-				await interaction.deferReply({ ephemeral: true });
+				await interaction.deferReply();
 				const stickerId = interaction.options.getString('sticker_id');
 				try {
 					const sticker = await interaction.client.fetchSticker(stickerId);
 					if (!sticker) {
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.utils.grab.sticker.not.found'),
+							{ color: 'Red' },
+						);
 						return interaction.editReply({
-							content: await t(
-								interaction,
-								'core.utils.grab.sticker.not.found',
-							),
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 
 					if (!interaction.guild?.stickers?.create) {
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.utils.grab.no.perm.sticker'),
+							{ color: 'Red' },
+						);
 						return interaction.editReply({
-							content: await t(interaction, 'core.utils.grab.no.perm.sticker'),
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 
 					const url = sticker.url || sticker.asset;
 					if (!url) {
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.utils.grab.sticker.no.url'),
+							{ color: 'Red' },
+						);
 						return interaction.editReply({
-							content: await t(interaction, 'core.utils.grab.sticker.no.url'),
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 
@@ -99,10 +121,16 @@ module.exports = {
 							name: sticker.name || `stolen_sticker_${sticker.id}`,
 							tags: sticker.tags || 'stolen',
 						});
-						return interaction.editReply({
-							content: await t(interaction, 'core.utils.grab.sticker.success', {
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.utils.grab.sticker.success', {
 								name: created.name,
 							}),
+							{ color: 'Green' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					} catch (_e) {
 						return interaction.editReply({
@@ -116,13 +144,19 @@ module.exports = {
 					});
 				}
 			} else if (sub === 'emoji') {
-				await interaction.deferReply({ ephemeral: true });
+				await interaction.deferReply();
 				const emojiInput = interaction.options.getString('emoji');
 
 				const match = emojiInput.match(/<?a?:?(\w+):(\d+)>?/);
 				if (!match) {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.emoji.invalid'),
+						{ color: 'Red' },
+					);
 					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.emoji.invalid'),
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 				const [, name, id] = match;
@@ -138,10 +172,16 @@ module.exports = {
 						attachment: url,
 						name,
 					});
-					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.emoji.success', {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.emoji.success', {
 							name: created.name,
 						}),
+						{ color: 'Green' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				} catch (_e) {
 					return interaction.editReply({
@@ -159,14 +199,26 @@ module.exports = {
 			if (message?.stickers && message.stickers.size > 0) {
 				const sticker = message.stickers.first();
 				if (!sticker) {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.sticker.not.found'),
+						{ color: 'Red' },
+					);
 					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.sticker.not.found'),
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 				const url = sticker.url || sticker.asset;
 				if (!url) {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.sticker.no.url'),
+						{ color: 'Red' },
+					);
 					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.sticker.no.url'),
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 
@@ -178,10 +230,16 @@ module.exports = {
 						name: sticker.name || `stolen_sticker_${sticker.id}`,
 						tags: sticker.tags || 'stolen',
 					});
-					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.sticker.success', {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.sticker.success', {
 							name: created.name,
 						}),
+						{ color: 'Green' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				} catch (_e) {
 					return interaction.editReply({
@@ -196,8 +254,14 @@ module.exports = {
 			if (found && found.length > 0) {
 				const emojiData = parseCustomEmoji(found[0]);
 				if (!emojiData) {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.emoji.invalid'),
+						{ color: 'Red' },
+					);
 					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.emoji.invalid'),
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 				const { name, id, isAnimated } = emojiData;
@@ -212,10 +276,16 @@ module.exports = {
 						attachment: url,
 						name,
 					});
-					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.emoji.success', {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.emoji.success', {
 							name: created.name,
 						}),
+						{ color: 'Green' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				} catch (_e) {
 					return interaction.editReply({
@@ -241,10 +311,16 @@ module.exports = {
 						tags: 'grabbed',
 					});
 
-					return interaction.editReply({
-						content: await t(interaction, 'core.utils.grab.sticker.success', {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.sticker.success', {
 							name: created.name,
 						}),
+						{ color: 'Green' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				} catch (_e) {
 					return interaction.editReply({
@@ -254,11 +330,14 @@ module.exports = {
 				}
 			}
 
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.utils.grab.sticker.or.emoji.not.found'),
+				{ color: 'Red' },
+			);
 			return interaction.editReply({
-				content: await t(
-					interaction,
-					'core.utils.grab.sticker.or.emoji.not.found',
-				),
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},

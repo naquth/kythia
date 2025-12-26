@@ -5,16 +5,17 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	SlashCommandBuilder,
-	ActionRowBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	ComponentType,
 	MessageFlags,
+	ButtonBuilder,
+	ComponentType,
+	ActionRowBuilder,
+	SeparatorBuilder,
 	ContainerBuilder,
 	TextDisplayBuilder,
-	SeparatorBuilder,
+	SlashCommandBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
 

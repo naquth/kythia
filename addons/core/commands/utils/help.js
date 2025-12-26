@@ -7,20 +7,21 @@
  */
 
 const {
-	SlashCommandBuilder,
-	ActionRowBuilder,
-	StringSelectMenuBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	ApplicationCommandOptionType,
+	MessageFlags,
+	ButtonBuilder,
+	ActionRowBuilder,
+	SeparatorBuilder,
 	ContainerBuilder,
 	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
-	MessageFlags,
 	MediaGalleryBuilder,
+	SlashCommandBuilder,
+	SeparatorSpacingSize,
+	StringSelectMenuBuilder,
 	MediaGalleryItemBuilder,
+	ApplicationCommandOptionType,
 } = require('discord.js');
+
 const fs = require('node:fs');
 const path = require('node:path');
 

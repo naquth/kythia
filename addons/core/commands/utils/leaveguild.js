@@ -51,6 +51,7 @@ module.exports = {
 				),
 		)
 		.setContexts(InteractionContextType.Guild),
+
 	/**
 	 * @param {import('discord.js').AutocompleteInteraction} interaction
 	 */
@@ -73,6 +74,7 @@ module.exports = {
 
 		await interaction.respond(choices);
 	},
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

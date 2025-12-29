@@ -8,7 +8,6 @@
 
 const { getAndUseNextAvailableToken } = require('../helpers/gemini');
 const { GoogleGenAI } = require('@google/genai');
-const cron = require('node-cron');
 
 async function findMainChannel(guild, client) {
 	const { getTextChannelSafe } = client.container.helpers.discord;
@@ -35,69 +34,61 @@ async function findMainChannel(guild, client) {
 	return mainChannel;
 }
 
-function initializeAiTasks(bot) {
-	const client = bot.client;
-	const logger = client.container.logger;
-	const kythiaConfig = client.container.kythiaConfig;
+module.exports = {
+	taskName: 'daily-greeter',
+	schedule: '0 7 * * *', // Every day at 7 AM
+	active: false,
+	execute: async (container) => {
+		const { logger, client, kythiaConfig } = container;
 
-	const schedule = kythiaConfig.addons.ai.dailyGreeterSchedule || '0 7 * * *';
-	cron.schedule(
-		schedule,
-		async () => {
-			if (kythiaConfig.addons.ai.geminiApiKeys.length === 0) return;
+		if (kythiaConfig.addons.ai.geminiApiKeys.length === 0) return;
 
-			try {
-				const guilds = client.guilds.cache;
+		try {
+			const guilds = client.guilds.cache;
 
-				for (const [guildId, guild] of guilds) {
-					try {
-						const mainChannel = await findMainChannel(guild, client);
-						if (!mainChannel) continue;
+			for (const [guildId, guild] of guilds) {
+				try {
+					const mainChannel = await findMainChannel(guild, client);
+					if (!mainChannel) continue;
 
-						const personaPrompt = kythiaConfig.addons.ai.personaPrompt;
-						const morningPrompt = kythiaConfig.addons.ai.dailyGreeterPrompt;
+					const personaPrompt = kythiaConfig.addons.ai.personaPrompt;
+					const morningPrompt = kythiaConfig.addons.ai.dailyGreeterPrompt;
 
-						const guildInfo = `FYI: Nama Server ${guild.name}\n
+					const guildInfo = `FYI: Nama Server ${guild.name}\n
                     Jumlah Member Online ${guild.members.cache.filter((m) => !m.user.bot).size}`;
 
-						const prompt = `${personaPrompt}\n\n${morningPrompt}\n${guildInfo}`;
+					const prompt = `${personaPrompt}\n\n${morningPrompt}\n${guildInfo}`;
 
-						const tokenIdx = await getAndUseNextAvailableToken();
-						if (tokenIdx === -1) {
-							logger.info(
-								`❌ No AI tokens available for daily greeter. Skipping.`,
-							);
-							return;
-						}
-
-						const GEMINI_API_KEY =
-							kythiaConfig.addons.ai.geminiApiKeys.split(',')[tokenIdx];
-						const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-
-						const response = await genAI.models.generateContent({
-							model: kythiaConfig.addons.ai.model,
-							contents: prompt,
-						});
-
-						const greeting = response.text
-							? response.text.trim()
-							: '❌ Failed to generate greeting';
-						await mainChannel.send(greeting);
-					} catch (err) {
-						logger.error(
-							`❌ Failed to process greeting for guild ${guildId}:`,
-							err.message,
+					const tokenIdx = await getAndUseNextAvailableToken();
+					if (tokenIdx === -1) {
+						logger.info(
+							`❌ No AI tokens available for daily greeter. Skipping.`,
 						);
+						return;
 					}
-				}
-			} catch (err) {
-				logger.error('❌ Failed to run daily greeter task:', err);
-			}
-		},
-		{
-			timezone: kythiaConfig.bot.timezone,
-		},
-	);
-}
 
-module.exports = { initializeAiTasks };
+					const GEMINI_API_KEY =
+						kythiaConfig.addons.ai.geminiApiKeys.split(',')[tokenIdx];
+					const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+					const response = await genAI.models.generateContent({
+						model: kythiaConfig.addons.ai.model,
+						contents: prompt,
+					});
+
+					const greeting = response.text
+						? response.text.trim()
+						: '❌ Failed to generate greeting';
+					await mainChannel.send(greeting);
+				} catch (err) {
+					logger.error(
+						`❌ Failed to process greeting for guild ${guildId}:`,
+						err.message,
+					);
+				}
+			}
+		} catch (err) {
+			logger.error('❌ Failed to run daily greeter task:', err);
+		}
+	},
+};

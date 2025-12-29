@@ -6,12 +6,14 @@
  * @version 0.11.0-beta
  */
 
-const cron = require('node-cron');
-const { cleanupUserCache } = require('./helpers/index.js');
-const setupTopGGPoster = require('./tasks/topggPoster.js');
-const { userCache } = require('./helpers/automod.js');
+// const { cleanupUserCache } = require('./helpers/index.js');
+const setupTopGGPoster = require('./helpers/topgg-poster.js');
 const { runStatsUpdater } = require('./helpers/stats.js');
-const loadFonts = require('./helpers/fonts.js');
+// const { userCache } = require('./helpers/automod.js');
+const { loadFonts } = require('kythia-arts');
+
+const cron = require('node-cron');
+const path = require('node:path');
 
 const initialize = (bot) => {
 	const container = bot.client.container;
@@ -36,14 +38,16 @@ const initialize = (bot) => {
 		});
 	}
 
-	cron.schedule('0 * * * *', () => cleanupUserCache(userCache));
-	summary.push('  └─ Cron: cleanup user cache (per day at 00:00)');
+	// cron.schedule('0 * * * *', () => cleanupUserCache(container, userCache));
+	// summary.push('  └─ Cron: cleanup user cache (per day at 00:00)');
 
 	cron.schedule('*/5 * * * *', () => runStatsUpdater(bot.client));
 	summary.push('  └─ Cron: cleanup user cache (every 5 minutes)');
 
 	bot.addClientReadyHook(() => {
-		loadFonts(logger);
+		logger.info(
+			`🔠 Total Fonts Loaded: ${loadFonts(path.join(__dirname, 'assets', 'fonts'))}`,
+		);
 	});
 	return summary;
 };

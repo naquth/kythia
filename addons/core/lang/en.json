@@ -556,6 +556,33 @@
 						"desc": "❌ An error occurred while processing the TikTok link."
 					}
 				}
+			},
+			"instagram": {
+				"default_title": "Instagram Media",
+				"error": {
+					"invalid": {
+						"url": {
+							"title": "Invalid Instagram Link",
+							"desc": "❌ Please provide a valid Instagram post/reel link. Example: https://www.instagram.com/p/ABC123/ or https://www.instagram.com/reel/XYZ456/"
+						}
+					},
+					"too": {
+						"large": {
+							"title": "Media Too Large",
+							"desc": "The media file is too large to be sent via Discord! 😭\n\n[Click here to view the media]({url})"
+						}
+					},
+					"no": {
+						"media": {
+							"title": "Failed to Get Media",
+							"desc": "❌ Failed to fetch the media. The post may be private, deleted, or the API is down."
+						}
+					},
+					"unknown": {
+						"title": "Error Processing Instagram Link",
+						"desc": "❌ An error occurred while processing the Instagram link."
+					}
+				}
 			}
 		},
 		"setting": {

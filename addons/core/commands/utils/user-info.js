@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/userinfo.js
+ * @namespace: addons/core/commands/utils/user-info.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa

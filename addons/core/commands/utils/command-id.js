@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/commandid.js
+ * @namespace: addons/core/commands/utils/command-id.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -23,8 +23,8 @@ module.exports = {
 				.setDescription('The name of the command to look up')
 				.setRequired(true),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-		.setContexts(InteractionContextType.Guild),
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	ownerOnly: true,
 	mainGuildOnly: true,
 

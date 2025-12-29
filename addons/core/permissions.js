@@ -9,7 +9,6 @@
 const { PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
-	// Nama properti = nama folder kategori di dalam addon ini
 	autosetup: {
 		guildOnly: true,
 		permissions: [

@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/globalannouncement.js
+ * @namespace: addons/core/commands/utils/global-announcement.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -36,10 +36,11 @@ module.exports = {
 					'Send a complex announcement by pasting a JSON payload.',
 				),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-		.setContexts(InteractionContextType.Guild),
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	ownerOnly: true,
 	mainGuildOnly: true,
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

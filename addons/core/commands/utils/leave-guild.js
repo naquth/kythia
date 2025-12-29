@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/leaveguild.js
+ * @namespace: addons/core/commands/utils/leave-guild.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa

@@ -10,14 +10,24 @@ const {
 	resolvePlaceholders,
 	safeResolvePlaceholder,
 } = require('../helpers/stats');
-const { generateBanner } = require('../helpers/canvas');
-const { EmbedBuilder } = require('discord.js');
+
+const { welcomeBanner } = require('kythia-arts');
+const {
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryBuilder,
+	MediaGalleryItemBuilder,
+	MessageFlags,
+} = require('discord.js');
 
 module.exports = async (bot, member) => {
 	const container = bot.client.container;
 	const { models, helpers, kythiaConfig } = container;
 	const { ServerSetting, User } = models;
 	const { embedFooter, getTextChannelSafe } = helpers.discord;
+	const { convertColor } = helpers.color;
 
 	let user = await User.getCache({
 		userId: member.user.id,
@@ -132,80 +142,58 @@ module.exports = async (bot, member) => {
 		welcomeText = `${member.user.username} has joined the server!`;
 	}
 
-	const welcomeInImage = await generateBanner({
-		width: setting.welcomeInBannerWidth,
-		height: setting.welcomeInBannerHeight,
-		backgroundURL: setting.welcomeInBackgroundUrl,
-		foregroundURL: setting.welcomeInForegroundUrl,
-		overlay: { color: setting.welcomeInOverlayColor },
-		avatar: {
-			enabled: true,
-			url: member.user.displayAvatarURL({ extension: 'png', size: 512 }),
-			size: setting.welcomeInAvatarSize,
-			round: (setting.welcomeInAvatarShape || 'circle') === 'circle',
-			yOffset: setting.welcomeInAvatarYOffset,
-			border: {
-				color: setting.welcomeInAvatarBorderColor,
-				width: setting.welcomeInAvatarBorderWidth,
-			},
+	/**
+	 * welcomeInBannerWidth/Height,		customWidth, customHeight
+	 * welcomeInBackgroundUrl,			customBackground
+	 * welcomeInOverlayColor,			overlayColor
+	 * welcomeInAvatarSize,				avatarSize
+	 * welcomeInAvatarYOffset,			avatarY
+	 * welcomeInAvatarBorderWidth,		avatarBorder.width
+	 * welcomeInAvatarBorderColor,		avatarBorder.color
+	 * welcomeInMainTextContent,		welcomeText
+	 * welcomeInMainTextColor,			welcomeColor
+	 * welcomeInMainTextFontFamily,		customFont
+	 *
+	 */
+
+	const welcomeInImage = await welcomeBanner(member.user.id, {
+		//
+		customUsername: member.user.username,
+		botToken: process.env.DISCORD_BOT_TOKEN,
+
+		customWidth: setting.welcomeInBannerWidth || 1024,
+		customHeight: setting.welcomeInBannerHeight || 450,
+
+		customBackground: setting.welcomeInBackgroundUrl || null,
+		overlayColor: setting.welcomeInOverlayColor || null,
+
+		avatarSize: setting.welcomeInAvatarSize || null,
+		avatarY: setting.welcomeInAvatarYOffset || null,
+		avatarBorder: {
+			width: setting.welcomeInAvatarBorderWidth || 6,
+			color: setting.welcomeInAvatarBorderColor || '#FFFFFF',
 		},
-		texts: [
-			{
-				text: await safeResolvePlaceholder(
-					member,
-					setting.welcomeInMainTextContent,
-					statsData,
-					'',
-				),
-				font: setting.welcomeInMainTextFont,
-				color: setting.welcomeInMainTextColor,
-				align: 'center',
-				baseline: 'middle',
-				x: (setting.welcomeInBannerWidth || 800) / 2,
-				y:
-					(setting.welcomeInBannerHeight || 300) / 2 +
-					(setting.welcomeInMainTextYOffset || -80),
-				shadow: {
-					color: setting.welcomeInShadowColor,
-					blur: setting.welcomeInShadowBlur,
-				},
-				maxWidth: (setting.welcomeInBannerWidth || 800) * 0.9,
-				uppercase: false,
-			},
-			{
-				text: await safeResolvePlaceholder(
-					member,
-					setting.welcomeInSubTextContent,
-					statsData,
-					'',
-				),
-				font: setting.welcomeInSubTextFont,
-				color: setting.welcomeInSubTextColor,
-				align: 'center',
-				baseline: 'middle',
-				x: (setting.welcomeInBannerWidth || 800) / 2,
-				y:
-					(setting.welcomeInBannerHeight || 300) / 2 +
-					(setting.welcomeInSubTextYOffset || 100),
-				shadow: {
-					color: setting.welcomeInShadowColor,
-					blur: setting.welcomeInShadowBlur,
-				},
-				maxWidth: (setting.welcomeInBannerWidth || 800) * 0.8,
-				uppercase: false,
-			},
-		],
-		fontFamily: guild.welcomeInMainTextFontFamily,
-		subTextFontFamily: guild.welcomeInSubTextFontFamily,
-		memberCount: guild.memberCount,
-		username: member.user.username,
-		guildName: guild.name,
-		interaction: member,
-		border: {
-			color: setting.welcomeInBorderColor,
-			width: setting.welcomeInBorderWidth,
-		},
-		extraDraw: setting.welcomeInExtraDraw,
+
+		welcomeText:
+			(await safeResolvePlaceholder(
+				member,
+				setting.welcomeInMainTextContent || 'WELCOME',
+				statsData,
+				'WELCOME',
+			)) || 'WELCOME',
+
+		customFont: setting.welcomeInMainTextFontFamily || null,
+		fontWeight: setting.welcomeInMainTextFontWeight || null,
+
+		welcomeColor: setting.welcomeInMainTextColor || null,
+
+		usernameColor: setting.welcomeInSubTextColor || null,
+
+		textOffsetY: setting.welcomeInMainTextYOffset || null,
+
+		textShadow: !!setting.welcomeInShadowColor,
+
+		type: 'welcome',
 	});
 
 	let safeWelcomeText;
@@ -230,11 +218,93 @@ module.exports = async (bot, member) => {
 		embedImageUrl = 'attachment://welcome.png';
 	}
 
-	const welcomeEmbed = new EmbedBuilder()
-		.setColor(kythiaConfig.bot.color)
-		.setDescription(safeWelcomeText)
-		.setImage(embedImageUrl)
-		.setFooter(await embedFooter(member));
+	const footerObj = await embedFooter(member);
+	const footerContent = footerObj?.text || '';
 
-	channel.send({ embeds: [welcomeEmbed], files });
+	const accentColor = convertColor(
+		setting.welcomeInEmbedColor || kythiaConfig.bot.color,
+		{
+			from: 'hex',
+			to: 'decimal',
+		},
+	);
+
+	const welcomeContainer = new ContainerBuilder()
+		.setAccentColor(accentColor)
+		.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(safeWelcomeText),
+		)
+		.addSeparatorComponents(
+			new SeparatorBuilder()
+				.setSpacing(SeparatorSpacingSize.Small)
+				.setDivider(true),
+		)
+		.addMediaGalleryComponents(
+			new MediaGalleryBuilder().addItems([
+				new MediaGalleryItemBuilder().setURL(embedImageUrl),
+			]),
+		)
+		.addSeparatorComponents(
+			new SeparatorBuilder()
+				.setSpacing(SeparatorSpacingSize.Small)
+				.setDivider(true),
+		)
+		.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(footerContent),
+		);
+
+	channel.send({
+		components: [welcomeContainer],
+		files,
+		flags: MessageFlags.IsComponentsV2,
+	});
+
+	if (setting.auditLogChannelId) {
+		const logChannel = await member.guild.channels
+			.fetch(setting.auditLogChannelId)
+			.catch(() => null);
+
+		if (logChannel?.isTextBased()) {
+			try {
+				// Regular leave log
+				const components = [
+					new ContainerBuilder()
+						.setAccentColor(
+							convertColor('Green', { from: 'discord', to: 'decimal' }),
+						)
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(
+								`## Member Join\n\n` +
+									`**User:** ${member.user.tag} (<@${member.user.id}>)\n` +
+									`**User ID:** ${member.user.id}\n` +
+									`**Account Created:** <t:${Math.floor(member.user.createdTimestamp / 1000)}:F>\n` +
+									`**Joined Server:**  ${member.joinedAt ? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:F>` : 'Unknown'}\n` +
+									`**Member Count:** ${member.guild.memberCount}`,
+							),
+						)
+						.addSeparatorComponents(
+							new SeparatorBuilder()
+								.setSpacing(SeparatorSpacingSize.Small)
+								.setDivider(true),
+						)
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(
+								`👤 **User:** ${member.user.tag}\n` +
+									`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+							),
+						),
+				];
+
+				await logChannel.send({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+					allowedMentions: {
+						parse: [],
+					},
+				});
+			} catch (err) {
+				console.error('Error in guildMemberAdd audit log:', err);
+			}
+		}
+	}
 };

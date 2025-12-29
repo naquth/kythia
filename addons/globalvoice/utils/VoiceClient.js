@@ -1,3 +1,11 @@
+/**
+ * @namespace: addons/globalvoice/utils/VoiceClient.js
+ * @type: Module
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
 const WebSocket = require('ws');
 const { EventEmitter } = require('node:events');
 

@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/tasks/topggPoster.js
+ * @namespace: addons/core/tasks/topgg-poster.js
  * @type: Scheduled Task
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa

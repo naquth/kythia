@@ -46,14 +46,14 @@ module.exports = {
 		let updated = 0;
 
 		if (subcommand === 'add') {
-			updated = await rolePrefix(interaction.guild);
+			updated = await rolePrefix(interaction.guild, container);
 			await interaction.editReply({
 				content: await t(interaction, 'core.tools.prefix.add.success', {
 					count: updated,
 				}),
 			});
 		} else if (subcommand === 'remove') {
-			updated = await roleUnprefix(interaction.guild);
+			updated = await roleUnprefix(interaction.guild, container);
 			await interaction.editReply({
 				content: await t(interaction, 'core.tools.prefix.remove.success', {
 					count: updated,

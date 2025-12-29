@@ -10,6 +10,7 @@ const {
 	MessageFlags,
 	SlashCommandBuilder,
 	PermissionFlagsBits,
+	InteractionContextType,
 } = require('discord.js');
 
 module.exports = {
@@ -52,6 +53,7 @@ module.exports = {
 					sub.setName('list').setDescription('Show all Kythia Team members'),
 				),
 		)
+		.setContexts(InteractionContextType.Guild)
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	ownerOnly: true,
 	mainGuildOnly: true,

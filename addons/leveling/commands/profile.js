@@ -14,7 +14,9 @@ const {
 	MediaGalleryItemBuilder,
 	MessageFlags,
 } = require('discord.js');
-const { generateLevelImage, levelUpXp } = require('../helpers');
+const { levelUpXp } = require('../helpers');
+
+const { profileImage } = require('kythia-arts');
 
 module.exports = {
 	subcommand: true,
@@ -90,15 +92,46 @@ module.exports = {
 			});
 		}
 
-		// Generate Image
+		// 🎨 Generate profile card dengan kythia-arts (Direct - No Helper!)
 		const imageName = 'level-profile.png';
-		const buffer = await generateLevelImage({
-			username: targetUser.username,
-			avatarURL: targetUser.displayAvatarURL({ extension: 'png', size: 256 }),
-			level: user.level,
-			xp: user.xp,
-			nextLevelXp: levelUpXp(user.level),
-			backgroundURL: kythiaConfig.addons.leveling.backgroundUrl,
+
+		// Get member untuk presence status
+		const member = interaction.guild.members.cache.get(targetUser.id);
+
+		// 🎨 kythia-arts Configuration (Mudah diutak-atik!)
+		const buffer = await profileImage(targetUser.id, {
+			// botToken: kythiaConfig.bot.token,
+			customWidth: 1024,
+			customHeight: 450,
+			customTag: `Level ${user.level}`, // Text di bawah username
+			customSubtitle: `XP Progress`, // Text paling bawah
+
+			customBackground: kythiaConfig.addons.leveling.backgroundUrl || null,
+
+			usernameColor: '#FFFFFF',
+			tagColor: kythiaConfig.bot.color || '#5865F2',
+			borderColor: kythiaConfig.bot.color || '#5865F2',
+
+			rankData: {
+				currentXp: user.xp,
+				requiredXp: levelUpXp(user.level),
+				level: user.level,
+				barColor: kythiaConfig.bot.color || '#5865F2',
+				levelColor: kythiaConfig.bot.color || '#5865F2',
+				// autoColorRank: true, // Gold/Silver/Bronze untuk rank 1-3
+			},
+
+			customFont: 'BagelFatOne-Regular',
+			fontWeight: 'normal',
+			// ⚙️ Options
+			badgesFrame: false, // Frame di belakang badges
+			// presenceStatus: member?.presence?.status || 'offline', // online/idle/dnd/offline
+			disabledBadges: false, // Disable badges
+			squareAvatar: false, // false = circle, true = square
+			moreBackgroundBlur: false, // Triple background blur
+			// backgroundBrightness: 100, // 1-100%
+			// customDate: 'Kythia',
+			// hideDate: true,
 		});
 
 		// 🔥 BUILD PROFILE CONTAINER

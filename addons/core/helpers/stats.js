@@ -94,13 +94,8 @@ async function resolvePlaceholders(container, str, data, locale) {
 	};
 
 	/**
-	 * ===== INI YANG DIRAPIIN =====
+	 * ===== AVAILBLE PLACEHOLDERS =====
 	 *
-	 * Placeholder yang TIDAK didukung (karena hemat RAM):
-	 * {online}, {idle}, {dnd}, {offline}, {bots}, {humans},
-	 * {online_bots}, {online_humans}
-	 *
-	 * Placeholder yang DIDUKUNG:
 	 * {user}
 	 * {user_id}
 	 * {tag}

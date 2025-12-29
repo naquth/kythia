@@ -10,7 +10,7 @@ const GiveawayManager = require('./helpers/GiveawayManager');
 const giveawayJoinButton = require('./buttons/giveaway-join');
 
 module.exports = {
-	async initialize(bot) {
+	initialize(bot) {
 		const container = bot.client.container;
 		const summary = [];
 

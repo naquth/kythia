@@ -5,17 +5,11 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { initializeQuestScheduler } = require('./tasks/questScheduler');
 
 module.exports = {
-	async initialize(bot) {
+	initialize() {
 		const summary = [];
 
-		bot.addClientReadyHook(() => {
-			initializeQuestScheduler(bot);
-		});
-
-		summary.push(' └─ ⏰ Quest Notifier cron task registered.');
 		return summary;
 	},
 };

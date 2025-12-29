@@ -7,7 +7,7 @@
  */
 
 const { generateCommandSchema } = require('./helpers/command-schema');
-const { initializeAiTasks } = require('./tasks/daily-greeter');
+// const { initializeAiTasks } = require('./tasks/daily-greeter');
 const promptBuilder = require('./helpers/prompt-builder');
 const geminiHelper = require('./helpers/gemini');
 
@@ -28,13 +28,6 @@ module.exports = {
 			logger.info(
 				`✅ Successfully loaded ${bot.aiCommandSchema.length} command schema for AI.`,
 			);
-
-			if (bot.container.kythiaConfig.addons.ai.dailyGreeter === true) {
-				initializeAiTasks(bot);
-				summery.push('   └─ Task: Daily Greeter (Cron Job) On');
-			} else {
-				summery.push('   └─ Task: Daily Greeter (Cron Job) Off');
-			}
 		});
 
 		return summery;

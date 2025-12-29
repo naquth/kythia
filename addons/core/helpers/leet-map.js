@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/helpers/leetMap.js
+ * @namespace: addons/core/helpers/leet-map.js
  * @type: Helper Script
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa

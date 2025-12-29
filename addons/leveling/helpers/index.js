@@ -6,9 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { createCanvas, loadImage } = require('canvas');
-const path = require('node:path');
-const axios = require('axios');
+const { profileImage } = require('kythia-arts');
 
 const {
 	ContainerBuilder,
@@ -18,24 +16,6 @@ const {
 	MediaGalleryBuilder,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
-
-function _drawRoundedRect(ctx, x, y, width, height, radius, fillStyle) {
-	ctx.save();
-	ctx.beginPath();
-	ctx.moveTo(x + radius, y);
-	ctx.lineTo(x + width - radius, y);
-	ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-	ctx.lineTo(x + width, y + height - radius);
-	ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-	ctx.lineTo(x + radius, y + height);
-	ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-	ctx.lineTo(x, y + radius);
-	ctx.quadraticCurveTo(x, y, x + radius, y);
-	ctx.closePath();
-	ctx.fillStyle = fillStyle;
-	ctx.fill();
-	ctx.restore();
-}
 
 const levelUpXp = (level) => level * level * 50;
 
@@ -106,26 +86,39 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		}
 	}
 
-	// 5. Generate Image
+	// 5. Generate Image (Level Up)
 	let buffer;
-	const imageName = 'level-profile.png';
+	const imageName = 'level-up.png';
 	try {
-		buffer = await generateLevelImage({
-			username: message.author.username,
-			avatarURL: message.author.displayAvatarURL({
-				extension: 'png',
-				size: 256,
-			}),
-			level: user.level,
-			xp: user.xp,
-			nextLevelXp: levelUpXp(user.level),
-			backgroundURL: kythiaConfig.addons.leveling.backgroundUrl,
+		buffer = await profileImage(userId, {
+			botToken: kythiaConfig.bot.token,
+			customTag: `Level Up!`,
+			customSubtitle: `New Level: ${user.level}`,
+			customBackground: kythiaConfig.addons.leveling.backgroundUrl || null,
+			font: 'NOTO_SANS',
+			usernameColor: '#FFFFFF',
+			tagColor: kythiaConfig.bot.color || '#5865F2',
+			borderColor: kythiaConfig.bot.color || '#5865F2',
+			rankData: {
+				currentXp: user.xp,
+				requiredXp: levelUpXp(user.level),
+				level: user.level,
+				barColor: kythiaConfig.bot.color || '#5865F2',
+				levelColor: kythiaConfig.bot.color || '#5865F2',
+			},
+			customFont: 'BagelFatOne-Regular',
+			fontWeight: 'normal',
+			badgesFrame: false,
+			disabledBadges: false,
+			squareAvatar: false,
+			moreBackgroundBlur: false,
 		});
-	} catch (_err) {
+	} catch (err) {
+		console.error('Failed to generate level up image:', err);
 		buffer = null;
 	}
 
-	// 6. 🔥 BUILD CONTAINER MANUAL
+	// 6. 🔥 BUILD CONTAINER
 	const accentColor = convertColor(kythia.bot.color, {
 		from: 'hex',
 		to: 'decimal',
@@ -209,7 +202,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 	if (channel) {
 		const payload = {
 			content: message.author.toString(),
-			components: [containerBuilder], // Masukin container builder disini
+			components: [containerBuilder],
 		};
 
 		// Attach file fisiknya kalau ada buffer
@@ -240,182 +233,8 @@ function calculateLevelAndXp(totalXp) {
 	return { newLevel: level, newXp: xp };
 }
 
-/**
- * generateLevelImage
- *
- * Fungsi ini membuat gambar profil level user dengan berbagai elemen visual.
- * Semua angka/posisi di-comment penjelasannya, termasuk efek jika diubah (naik/turun, kanan/kiri).
- */
-async function generateLevelImage({
-	username,
-	avatarURL,
-	level,
-	xp,
-	nextLevelXp,
-	backgroundURL,
-}) {
-	const width = 800;
-	const height = 250;
-
-	const borderWidth = 5;
-
-	const borderRadius = 25;
-
-	const canvas = createCanvas(width, height);
-	const ctx = canvas.getContext('2d');
-
-	ctx.fillStyle = kythia.bot.color;
-	ctx.beginPath();
-	ctx.roundRect(0, 0, width, height, borderRadius);
-	ctx.fill();
-	ctx.save();
-
-	ctx.beginPath();
-	ctx.roundRect(
-		borderWidth,
-		borderWidth,
-		width - borderWidth * 2,
-		height - borderWidth * 2,
-		borderRadius - 5,
-	);
-	ctx.clip();
-
-	try {
-		if (backgroundURL) {
-			let bgImage;
-			if (backgroundURL.startsWith('http')) {
-				const response = await axios.get(backgroundURL, {
-					responseType: 'arraybuffer',
-				});
-				const buffer = Buffer.from(response.data, 'binary');
-				bgImage = await loadImage(buffer);
-			} else {
-				bgImage = await loadImage(path.resolve(backgroundURL));
-			}
-
-			ctx.drawImage(bgImage, 0, 0, width, height);
-		} else {
-			const gradient = ctx.createLinearGradient(0, 0, 0, height);
-			gradient.addColorStop(0, '#23272a');
-			gradient.addColorStop(1, '#2c2f33');
-			ctx.fillStyle = gradient;
-			ctx.fillRect(0, 0, width, height);
-		}
-	} catch (bgError) {
-		console.error('Error loading background:', bgError);
-		ctx.fillStyle = '#23272a';
-		ctx.fillRect(0, 0, width, height);
-	}
-
-	let avatar;
-	try {
-		const processedAvatarURL = avatarURL.replace(/\.webp\b/i, '.png');
-		avatar = await loadImage(processedAvatarURL);
-	} catch (avatarError) {
-		console.error('Error loading avatar:', avatarError);
-	}
-
-	if (avatar) {
-		const avatarSize = height - borderWidth * 2 - 80;
-
-		const avatarX = borderWidth + 40;
-
-		const avatarY = borderWidth + 40;
-
-		ctx.save();
-		ctx.beginPath();
-		ctx.arc(
-			avatarX + avatarSize / 2,
-			avatarY + avatarSize / 2,
-			avatarSize / 2,
-			0,
-			Math.PI * 2,
-			true,
-		);
-		ctx.closePath();
-		ctx.clip();
-		ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
-		ctx.restore();
-
-		ctx.save();
-		ctx.beginPath();
-		ctx.arc(
-			avatarX + avatarSize / 2,
-			avatarY + avatarSize / 2,
-			avatarSize / 2 + 2.5,
-			0,
-			Math.PI * 2,
-			true,
-		);
-		ctx.lineWidth = 5;
-		ctx.strokeStyle = kythia.bot.color;
-		ctx.stroke();
-		ctx.restore();
-	}
-
-	ctx.restore();
-
-	const contentX = 250;
-
-	ctx.font = 'bold 40px "Poppins-Medium", sans-serif';
-	ctx.fillStyle = '#ffffff';
-	ctx.fillText(username, contentX, 90);
-
-	ctx.font = '28px "Poppins-Bold", sans-serif';
-	ctx.fillStyle = kythia.bot.color;
-	ctx.fillText(`Level ${level}`, contentX, 130);
-
-	const progressWidth = width - contentX - 40;
-
-	const progressHeight = 30;
-
-	const progressX = contentX;
-
-	const progressY = 180;
-
-	const barRadius = progressHeight / 2;
-
-	ctx.fillStyle = '#444';
-	ctx.beginPath();
-	ctx.roundRect(progressX, progressY, progressWidth, progressHeight, barRadius);
-	ctx.fill();
-
-	const percent = Math.min(Math.max(xp / nextLevelXp, 0), 1);
-	if (percent > 0) {
-		ctx.save();
-
-		ctx.beginPath();
-		ctx.roundRect(
-			progressX,
-			progressY,
-			progressWidth,
-			progressHeight,
-			barRadius,
-		);
-		ctx.clip();
-
-		ctx.fillStyle = kythia.bot.color;
-		ctx.fillRect(progressX, progressY, progressWidth * percent, progressHeight);
-
-		ctx.restore();
-	}
-
-	ctx.fillStyle = '#FFFFFF';
-	ctx.font = 'bold 18px "Poppins-Medium", sans-serif';
-	const xpText = `${xp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP`;
-	const textWidth = ctx.measureText(xpText).width;
-	ctx.fillText(
-		xpText,
-		progressX + (progressWidth - textWidth) / 2,
-		progressY + progressHeight / 2 + 7,
-	);
-
-	return canvas.toBuffer();
-}
-
 module.exports = {
 	levelUpXp,
 	calculateLevelAndXp,
 	addXp,
-	generateLevelImage,
 };

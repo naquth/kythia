@@ -17,6 +17,7 @@ const {
 	SlashCommandBuilder,
 	SeparatorSpacingSize,
 	InteractionContextType,
+	PermissionFlagsBits,
 } = require('discord.js');
 
 let restartTimer = null;
@@ -25,7 +26,6 @@ module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('restart')
 		.setDescription('🔁 Restarts the bot with optional scheduler.')
-		.setContexts(InteractionContextType.Guild)
 		.addIntegerOption((option) =>
 			option
 				.setName('minutes')
@@ -38,9 +38,12 @@ module.exports = {
 				.setDescription(
 					'⏰ Restart at specific time (Format HH:mm, e.g. 23:59)',
 				),
-		),
+		)
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	ownerOnly: true,
 	mainGuildOnly: true,
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

@@ -6,15 +6,22 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
+const {
+	SlashCommandBuilder,
+	InteractionContextType,
+	PermissionFlagsBits,
+} = require('discord.js');
 const { reloadLavalinkNodes } = require('../helpers/reload-node');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('reloadnode')
 		.setDescription('🔄️ Reload Lavalink nodes and configuration')
-		.setContexts(InteractionContextType.BotDM),
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	ownerOnly: true,
+	mainGuildOnly: true,
+
 	async execute(interaction, container) {
 		const { logger } = container;
 		await interaction.deferReply({ ephemeral: true });

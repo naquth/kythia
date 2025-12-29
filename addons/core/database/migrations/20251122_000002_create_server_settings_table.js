@@ -127,175 +127,127 @@ module.exports = {
 
 			// WELCOME IN
 			welcomeInEmbedText: { type: DataTypes.TEXT, allowNull: true },
-			welcomeInBannerWidth: { type: DataTypes.INTEGER, defaultValue: 800 },
-			welcomeInBannerHeight: { type: DataTypes.INTEGER, defaultValue: 300 },
+			welcomeInEmbedColor: { type: DataTypes.STRING, allowNull: true },
+			welcomeInBannerWidth: { type: DataTypes.INTEGER, allowNull: true },
+			welcomeInBannerHeight: { type: DataTypes.INTEGER, allowNull: true },
 			welcomeInBackgroundUrl: { type: DataTypes.STRING, allowNull: true },
 			welcomeInForegroundUrl: { type: DataTypes.STRING, allowNull: true },
 			welcomeInOverlayColor: {
 				type: DataTypes.STRING,
-				defaultValue: 'rgba(0,0,0,0.4)',
+				allowNull: true,
 			},
 
 			welcomeInAvatarEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-			welcomeInAvatarSize: { type: DataTypes.INTEGER, defaultValue: 128 },
+			welcomeInAvatarSize: { type: DataTypes.INTEGER, allowNull: true },
 			welcomeInAvatarShape: {
 				type: DataTypes.ENUM('circle', 'square'),
-				defaultValue: 'circle',
+				allowNull: true,
 			},
-			welcomeInAvatarYOffset: { type: DataTypes.INTEGER, defaultValue: -20 },
-			welcomeInAvatarBorderWidth: {
-				type: DataTypes.INTEGER,
-				defaultValue: 4,
-			},
+			welcomeInAvatarYOffset: { type: DataTypes.INTEGER, allowNull: true },
+			welcomeInAvatarBorderWidth: { type: DataTypes.INTEGER, allowNull: true },
 			welcomeInAvatarBorderColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
 
 			welcomeInMainTextContent: {
 				type: DataTypes.TEXT,
-				defaultValue: 'WELCOMEIn, {username}!',
-			},
-			welcomeInMainTextFont: {
-				type: DataTypes.STRING,
-				defaultValue: 'bold 42px Poppins-Bold',
+				allowNull: true,
 			},
 			welcomeInMainTextFontFamily: {
 				type: DataTypes.STRING,
-				defaultValue: 'Poppins-Bold',
+				allowNull: true,
+			},
+			welcomeInMainTextFontWeight: {
+				type: DataTypes.STRING,
+				allowNull: true,
 			},
 			welcomeInMainTextColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
 			welcomeInMainTextYOffset: {
 				type: DataTypes.INTEGER,
-				defaultValue: -80,
+				allowNull: true,
 			},
 
 			welcomeInSubTextContent: {
 				type: DataTypes.TEXT,
-				defaultValue: 'You are the #{memberCount} member',
-			},
-			welcomeInSubTextFont: {
-				type: DataTypes.STRING,
-				defaultValue: '32px Poppins-Bold',
-			},
-			welcomeInSubTextFontFamily: {
-				type: DataTypes.STRING,
-				defaultValue: 'Poppins-Bold',
+				allowNull: true,
 			},
 			welcomeInSubTextColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
-			welcomeInSubTextYOffset: { type: DataTypes.INTEGER, defaultValue: 100 },
-
-			welcomeInShadowColor: {
-				type: DataTypes.STRING,
-				defaultValue: 'rgba(0,0,0,0.5)',
-			},
-			welcomeInShadowBlur: { type: DataTypes.INTEGER, defaultValue: 5 },
+			welcomeInSubTextYOffset: { type: DataTypes.INTEGER, allowNull: true },
 
 			welcomeInBorderColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
-			welcomeInBorderWidth: { type: DataTypes.INTEGER, defaultValue: 4 },
-
-			welcomeInExtraDraw: {
-				type: DataTypes.STRING,
-				defaultValue: 'classicCentered',
-			},
+			welcomeInBorderWidth: { type: DataTypes.INTEGER, allowNull: true },
 
 			// WELCOME OUT (mirror of WELCOME IN)
 			welcomeOutEmbedText: { type: DataTypes.TEXT, allowNull: true },
-			welcomeOutBannerWidth: { type: DataTypes.INTEGER, defaultValue: 800 },
-			welcomeOutBannerHeight: { type: DataTypes.INTEGER, defaultValue: 300 },
+			welcomeOutEmbedColor: { type: DataTypes.STRING, allowNull: true },
+			welcomeOutBannerWidth: { type: DataTypes.INTEGER, allowNull: true },
+			welcomeOutBannerHeight: { type: DataTypes.INTEGER, allowNull: true },
 			welcomeOutBackgroundUrl: { type: DataTypes.STRING, allowNull: true },
 			welcomeOutForegroundUrl: { type: DataTypes.STRING, allowNull: true },
 			welcomeOutOverlayColor: {
 				type: DataTypes.STRING,
-				defaultValue: 'rgba(0,0,0,0.4)',
+				allowNull: true,
 			},
 
-			welcomeOutAvatarEnabled: {
-				type: DataTypes.BOOLEAN,
-				defaultValue: true,
-			},
-			welcomeOutAvatarSize: { type: DataTypes.INTEGER, defaultValue: 128 },
+			welcomeOutAvatarEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
+			welcomeOutAvatarSize: { type: DataTypes.INTEGER, allowNull: true },
 			welcomeOutAvatarShape: {
 				type: DataTypes.ENUM('circle', 'square'),
-				defaultValue: 'circle',
+				allowNull: true,
 			},
-			welcomeOutAvatarYOffset: { type: DataTypes.INTEGER, defaultValue: -20 },
-			welcomeOutAvatarBorderWidth: {
-				type: DataTypes.INTEGER,
-				defaultValue: 4,
-			},
+			welcomeOutAvatarYOffset: { type: DataTypes.INTEGER, allowNull: true },
+			welcomeOutAvatarBorderWidth: { type: DataTypes.INTEGER, allowNull: true },
 			welcomeOutAvatarBorderColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
 
 			welcomeOutMainTextContent: {
 				type: DataTypes.TEXT,
-				defaultValue: 'Goodbye, {username}!',
-			},
-			welcomeOutMainTextFont: {
-				type: DataTypes.STRING,
-				defaultValue: 'bold 42px Poppins-Bold',
+				allowNull: true,
 			},
 			welcomeOutMainTextFontFamily: {
 				type: DataTypes.STRING,
-				defaultValue: 'Poppins-Bold',
+				allowNull: true,
+			},
+			welcomeOutMainTextFontWeight: {
+				type: DataTypes.STRING,
+				allowNull: true,
 			},
 			welcomeOutMainTextColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
 			welcomeOutMainTextYOffset: {
 				type: DataTypes.INTEGER,
-				defaultValue: -80,
+				allowNull: true,
 			},
 
 			welcomeOutSubTextContent: {
 				type: DataTypes.TEXT,
-				defaultValue: 'We hope to see you again',
-			},
-			welcomeOutSubTextFont: {
-				type: DataTypes.STRING,
-				defaultValue: '32px Poppins-Bold',
-			},
-			welcomeOutSubTextFontFamily: {
-				type: DataTypes.STRING,
-				defaultValue: 'Poppins-Bold',
+				allowNull: true,
 			},
 			welcomeOutSubTextColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
-			welcomeOutSubTextYOffset: {
-				type: DataTypes.INTEGER,
-				defaultValue: 100,
-			},
-
-			welcomeOutShadowColor: {
-				type: DataTypes.STRING,
-				defaultValue: 'rgba(0,0,0,0.5)',
-			},
-			welcomeOutShadowBlur: { type: DataTypes.INTEGER, defaultValue: 5 },
+			welcomeOutSubTextYOffset: { type: DataTypes.INTEGER, allowNull: true },
 
 			welcomeOutBorderColor: {
 				type: DataTypes.STRING,
-				defaultValue: '#FFFFFF',
+				allowNull: true,
 			},
-			welcomeOutBorderWidth: { type: DataTypes.INTEGER, defaultValue: 4 },
-
-			welcomeOutExtraDraw: {
-				type: DataTypes.STRING,
-				defaultValue: 'classicCentered',
-			},
+			welcomeOutBorderWidth: { type: DataTypes.INTEGER, allowNull: true },
 
 			// MINECRAFT
 			minecraftIp: { type: DataTypes.STRING, allowNull: true },

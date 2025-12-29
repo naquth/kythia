@@ -7,8 +7,8 @@
  */
 
 const { Collection, PermissionsBitField } = require('discord.js');
-const { sendLogsWarning } = require('./system');
-const leetMap = require('./leetMap');
+const sendLogsWarning = require('./send-logs');
+const leetMap = require('./leet-map');
 const kythiaConfig = require('../../../kythia.config');
 
 const userCache = new Collection();

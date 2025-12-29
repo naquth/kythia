@@ -5,18 +5,18 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
 	ContainerBuilder,
-	TextDisplayBuilder,
 	SeparatorBuilder,
-	SeparatorSpacingSize,
+	TextDisplayBuilder,
 	MediaGalleryBuilder,
+	SeparatorSpacingSize,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
 
 const axios = require('axios');
-const { KythiaTeam } = require('../database/models/KythiaTeam');
-const { KythiaUser } = require('../database/models/KythiaUser');
+
 /**
  * Builds a consistent embed footer with bot username and avatar based on the context.
  * Works for `Interaction`, `Message`, and `GuildMember` sources.
@@ -262,7 +262,9 @@ async function getMemberSafe(guild, userId) {
 
 async function isTeam(container, userId) {
 	console.log(container);
-	const { helpers } = container;
+	const { helpers, models } = container;
+	const { KythiaTeam } = models;
+
 	if (helpers.discord.isOwner(userId)) return true;
 
 	if (!KythiaTeam) return false;
@@ -272,7 +274,9 @@ async function isTeam(container, userId) {
 }
 
 async function isPremium(container, userId) {
-	const { helpers } = container;
+	const { helpers, models } = container;
+	const { KythiaUser } = models;
+
 	if (helpers.discord.isOwner(userId)) return true;
 
 	if (!KythiaUser) return false;

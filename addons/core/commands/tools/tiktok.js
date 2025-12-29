@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { MessageFlags, SlashCommandBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 
 module.exports = {
@@ -20,8 +20,13 @@ module.exports = {
 				.setRequired(true),
 		),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const t = container.t;
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
 		const tiktokUrl = interaction.options.getString('link');
 
 		const invalidUrlTitle = await t(
@@ -37,15 +42,14 @@ module.exports = {
 			!/^https?:\/\/(www\.)?tiktok\.com\/.+/.test(tiktokUrl) &&
 			!/^https?:\/\/vt\.tiktok\.com\/.+/.test(tiktokUrl)
 		) {
-			await interaction.reply({
-				embeds: [
-					new EmbedBuilder().setDescription(
-						`## ${invalidUrlTitle}\n${invalidUrlDesc}`,
-					),
-				],
-				ephemeral: true,
+			const msg = `## ${invalidUrlTitle}\n${invalidUrlDesc}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
 			});
-			return;
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		await interaction.deferReply();
@@ -90,13 +94,13 @@ module.exports = {
 					fileError.code === 40005 ||
 					fileError.message?.includes('Request entity too large')
 				) {
+					const msg = `## ${tooLargeTitle}\n${tooLargeDesc}`;
+					const components = await simpleContainer(interaction, msg, {
+						color: 'Red',
+					});
 					await interaction.editReply({
-						embeds: [
-							new EmbedBuilder().setDescription(
-								`## ${tooLargeTitle}\n${tooLargeDesc}`,
-							),
-						],
-						files: [],
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				} else {
 					throw fileError;
@@ -113,8 +117,13 @@ module.exports = {
 				desc = await t(interaction, 'core.tools.tiktok.error.unknown.desc');
 			}
 
+			const msg = `## ${title}\n${desc}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
 			await interaction.editReply({
-				embeds: [new EmbedBuilder().setDescription(`## ${title}\n${desc}`)],
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},

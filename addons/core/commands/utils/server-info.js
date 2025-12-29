@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/serverinfo.js
+ * @namespace: addons/core/commands/utils/server-info.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa

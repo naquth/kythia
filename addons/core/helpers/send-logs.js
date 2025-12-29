@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/helpers/system.js
+ * @namespace: addons/core/helpers/send-logs.js
  * @type: Helper Script
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -125,4 +125,4 @@ async function sendLogsWarning(
 	}
 }
 
-module.exports = { sendLogsWarning };
+module.exports = sendLogsWarning;

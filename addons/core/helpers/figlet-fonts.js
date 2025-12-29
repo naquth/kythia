@@ -1,3 +1,11 @@
+/**
+ * @namespace: addons/core/helpers/figlet-fonts.js
+ * @type: Helper Script
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
 const figletFonts = [
 	...new Set([
 		'1Row',

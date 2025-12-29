@@ -11,7 +11,7 @@ const cooldown = new Map();
 
 /**
  * Auto-claim streak on any message in a guild (except bots).
- * @param {import('../../src/Bot')} bot - Instance of main Bot class.
+ * @param {import('kythia-core').Kythia} bot - Instance of main Bot class.
  * @param {import('discord.js').Message} message - The message object.
  */
 module.exports = async (bot, message) => {

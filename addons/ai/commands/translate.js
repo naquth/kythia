@@ -7,10 +7,10 @@
  */
 
 const {
-	EmbedBuilder,
 	SlashCommandBuilder,
 	ApplicationCommandType,
 	ContextMenuCommandBuilder,
+	MessageFlags,
 } = require('discord.js');
 const { getAndUseNextAvailableToken } = require('../helpers/gemini');
 const { GoogleGenAI } = require('@google/genai');
@@ -45,7 +45,7 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers, logger } = container;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		const text =
 			interaction.options?.getString('text') ||
@@ -64,11 +64,14 @@ module.exports = {
 
 			const tokenIdx = await getAndUseNextAvailableToken();
 			if (tokenIdx === -1) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(await t(interaction, 'ai.translate.limit'))
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(interaction, 'ai.translate.limit');
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const GEMINI_API_KEY =
@@ -118,27 +121,24 @@ module.exports = {
 				finalResponse.text ||
 				finalResponse.response?.text ||
 				(await t(interaction, 'ai.translate.no.result'));
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'ai.translate.success', {
-						lang,
-						text,
-						translated,
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
+			const msg = await t(interaction, 'ai.translate.success', {
+				lang,
+				text,
+				translated,
+			});
+			const components = await simpleContainer(interaction, msg);
 			await interaction.editReply({
-				embeds: [embed],
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		} else {
 			logger.error('Error in /translate:', lastError);
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'ai.translate.error'))
-				.setFooter(await embedFooter(interaction));
+			const msg = await t(interaction, 'ai.translate.error');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
 			await interaction.editReply({
-				embeds: [embed],
+				components,
 			});
 		}
 	},

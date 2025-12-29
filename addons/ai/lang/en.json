@@ -54,6 +54,22 @@
 				"unknown": {
 					"subcommand": "❌ Unknown subcommand. Use `/ai enable` or `/ai disable`."
 				}
+			},
+			"list": {
+				"empty": "🤖 There are no AI-enabled channels in this server yet.",
+				"title": "AI-Enabled Channels",
+				"footer": "Page {page} of {totalPages} • Total AI Channels: {totalChannels}",
+				"nav": {
+					"first": "⏪️ First",
+					"prev": "◀️ Prev",
+					"next": "Next ▶️",
+					"last": "Last ⏩️"
+				},
+				"not": {
+					"your": {
+						"interaction": "❌ This is not your interaction! Use the command yourself to view the AI channel list."
+					}
+				}
 			}
 		}
 	}

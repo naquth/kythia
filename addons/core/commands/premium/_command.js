@@ -8,11 +8,12 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
-	ownerOnly: true,
 	slashCommand: new SlashCommandBuilder()
 		.setName('premium')
 		.setDescription(
 			'💰 Manage premium user status (add, delete, edit, list, info)',
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+	ownerOnly: true,
+	mainGuildOnly: true,
 };

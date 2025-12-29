@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/premium/list.js
+ * @namespace: addons/ai/commands/ai/list.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -16,9 +16,8 @@ const {
 	SeparatorBuilder,
 	MessageFlags,
 } = require('discord.js');
-const { Op } = require('sequelize');
 
-const USERS_PER_PAGE = 10;
+const CHANNELS_PER_PAGE = 10;
 
 async function buildNavButtons(
 	interaction,
@@ -29,61 +28,55 @@ async function buildNavButtons(
 	const { t } = interaction.client.container;
 	return [
 		new ButtonBuilder()
-			.setCustomId('premium_list_first')
-			.setLabel(await t(interaction, 'core.premium.premium.list.nav.first'))
+			.setCustomId('ai_list_first')
+			.setLabel(await t(interaction, 'ai.ai.list.nav.first'))
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(allDisabled || page <= 1),
 		new ButtonBuilder()
-			.setCustomId('premium_list_prev')
-			.setLabel(await t(interaction, 'core.premium.premium.list.nav.prev'))
+			.setCustomId('ai_list_prev')
+			.setLabel(await t(interaction, 'ai.ai.list.nav.prev'))
 			.setStyle(ButtonStyle.Primary)
 			.setDisabled(allDisabled || page <= 1),
 		new ButtonBuilder()
-			.setCustomId('premium_list_next')
-			.setLabel(await t(interaction, 'core.premium.premium.list.nav.next'))
+			.setCustomId('ai_list_next')
+			.setLabel(await t(interaction, 'ai.ai.list.nav.next'))
 			.setStyle(ButtonStyle.Primary)
 			.setDisabled(allDisabled || page >= totalPages),
 		new ButtonBuilder()
-			.setCustomId('premium_list_last')
-			.setLabel(await t(interaction, 'core.premium.premium.list.nav.last'))
+			.setCustomId('ai_list_last')
+			.setLabel(await t(interaction, 'ai.ai.list.nav.last'))
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(allDisabled || page >= totalPages),
 	];
 }
 
-async function generatePremiumListContainer(
+async function generateAIListContainer(
 	interaction,
 	page,
-	allPremiumUsers,
-	totalUsers,
+	allChannelIds,
+	totalChannels,
 	navDisabled = false,
 ) {
 	const { t, kythiaConfig, helpers } = interaction.client.container;
 	const { convertColor } = helpers.color;
 
-	const totalPages = Math.max(1, Math.ceil(totalUsers / USERS_PER_PAGE));
+	const totalPages = Math.max(1, Math.ceil(totalChannels / CHANNELS_PER_PAGE));
 	page = Math.max(1, Math.min(page, totalPages));
 
-	const startIndex = (page - 1) * USERS_PER_PAGE;
-	const pageUsers = allPremiumUsers.slice(
+	const startIndex = (page - 1) * CHANNELS_PER_PAGE;
+	const pageChannelIds = allChannelIds.slice(
 		startIndex,
-		startIndex + USERS_PER_PAGE,
+		startIndex + CHANNELS_PER_PAGE,
 	);
 
 	let listText = '';
-	if (pageUsers.length === 0) {
-		listText = await t(interaction, 'core.premium.premium.list.empty');
+	if (pageChannelIds.length === 0) {
+		listText = await t(interaction, 'ai.ai.list.empty');
 	} else {
-		const entries = await Promise.all(
-			pageUsers.map(async (p, index) => {
-				const globalIndex = startIndex + index + 1;
-				return await t(interaction, 'core.premium.premium.list.item', {
-					index: globalIndex,
-					user: `<@${p.userId}>`,
-					expires: `<t:${Math.floor(new Date(p.premiumExpiresAt).getTime() / 1000)}:R>`,
-				});
-			}),
-		);
+		const entries = pageChannelIds.map((channelId, index) => {
+			const globalIndex = startIndex + index + 1;
+			return `${globalIndex}. <#${channelId}>`;
+		});
 		listText = entries.join('\n');
 	}
 
@@ -94,13 +87,13 @@ async function generatePremiumListContainer(
 		navDisabled,
 	);
 
-	const premiumListContainer = new ContainerBuilder()
+	const aiListContainer = new ContainerBuilder()
 		.setAccentColor(
 			convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 		)
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				`## ${await t(interaction, 'core.premium.premium.list.title')}`,
+				`## ${await t(interaction, 'ai.ai.list.title')}`,
 			),
 		)
 		.addSeparatorComponents(
@@ -116,10 +109,10 @@ async function generatePremiumListContainer(
 		)
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				await t(interaction, 'core.premium.premium.list.footer', {
+				await t(interaction, 'ai.ai.list.footer', {
 					page,
 					totalPages,
-					totalUsers,
+					totalChannels,
 				}),
 			),
 		)
@@ -127,12 +120,15 @@ async function generatePremiumListContainer(
 			new ActionRowBuilder().addComponents(...navButtons),
 		);
 
-	return { premiumListContainer, page, totalPages };
+	return { aiListContainer, page, totalPages };
 }
 
 module.exports = {
+	subcommand: true,
 	slashCommand: (subcommand) =>
-		subcommand.setName('list').setDescription('View list of premium users'),
+		subcommand
+			.setName('list')
+			.setDescription('View list of AI-enabled channels'),
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
@@ -140,25 +136,27 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { t, models } = container;
-		const { KythiaUser } = models;
+		const { ServerSetting } = models;
 
 		await interaction.deferReply();
 
-		const now = new Date();
-		const allPremiumUsers = await KythiaUser.getAllCache({
-			where: {
-				isPremium: true,
-				premiumExpiresAt: { [Op.gt]: now },
+		const [setting] = await ServerSetting.findOrCreateWithCache({
+			where: { guildId: interaction.guild.id },
+			defaults: {
+				guildId: interaction.guild.id,
+				guildName: interaction.guild.name,
 			},
-			order: [['premiumExpiresAt', 'ASC']],
-			cacheTags: ['KythiaUser:premium:list'],
 		});
 
-		const totalUsers = allPremiumUsers.length;
+		const aiChannelIds = Array.isArray(setting?.aiChannelIds)
+			? [...setting.aiChannelIds]
+			: [];
+
+		const totalChannels = aiChannelIds.length;
 		let currentPage = 1;
 
-		if (totalUsers === 0) {
-			const { premiumListContainer } = await generatePremiumListContainer(
+		if (totalChannels === 0) {
+			const { aiListContainer } = await generateAIListContainer(
 				interaction,
 				1,
 				[],
@@ -166,7 +164,7 @@ module.exports = {
 				/*navDisabled*/ true,
 			);
 			return interaction.editReply({
-				components: [premiumListContainer],
+				components: [aiListContainer],
 				flags: MessageFlags.IsComponentsV2,
 				allowedMentions: {
 					parse: [],
@@ -174,16 +172,15 @@ module.exports = {
 			});
 		}
 
-		const { premiumListContainer, totalPages } =
-			await generatePremiumListContainer(
-				interaction,
-				currentPage,
-				allPremiumUsers,
-				totalUsers,
-			);
+		const { aiListContainer, totalPages } = await generateAIListContainer(
+			interaction,
+			currentPage,
+			aiChannelIds,
+			totalChannels,
+		);
 
 		const message = await interaction.editReply({
-			components: [premiumListContainer],
+			components: [aiListContainer],
 			flags: MessageFlags.IsComponentsV2,
 			fetchReply: true,
 			allowedMentions: {
@@ -198,43 +195,43 @@ module.exports = {
 		collector.on('collect', async (i) => {
 			if (i.user.id !== interaction.user.id) {
 				return i.reply({
-					content: await t(i, 'core.premium.premium.list.not.your.interaction'),
+					content: await t(i, 'ai.ai.list.not.your.interaction'),
 					flags: MessageFlags.Ephemeral,
 				});
 			}
 
-			if (i.customId === 'premium_list_first') {
+			if (i.customId === 'ai_list_first') {
 				currentPage = 1;
-			} else if (i.customId === 'premium_list_prev') {
+			} else if (i.customId === 'ai_list_prev') {
 				currentPage = Math.max(1, currentPage - 1);
-			} else if (i.customId === 'premium_list_next') {
+			} else if (i.customId === 'ai_list_next') {
 				currentPage = Math.min(totalPages, currentPage + 1);
-			} else if (i.customId === 'premium_list_last') {
+			} else if (i.customId === 'ai_list_last') {
 				currentPage = totalPages;
 			}
 
-			const { premiumListContainer: newPremiumListContainer } =
-				await generatePremiumListContainer(
+			const { aiListContainer: newAIListContainer } =
+				await generateAIListContainer(
 					i,
 					currentPage,
-					allPremiumUsers,
-					totalUsers,
+					aiChannelIds,
+					totalChannels,
 				);
 
 			await i.update({
-				components: [newPremiumListContainer],
+				components: [newAIListContainer],
 				flags: MessageFlags.IsComponentsV2,
 			});
 		});
 
 		collector.on('end', async () => {
 			try {
-				const { premiumListContainer: finalContainer } =
-					await generatePremiumListContainer(
+				const { aiListContainer: finalContainer } =
+					await generateAIListContainer(
 						interaction,
 						currentPage,
-						allPremiumUsers,
-						totalUsers,
+						aiChannelIds,
+						totalChannels,
 						true,
 					);
 

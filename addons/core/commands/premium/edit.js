@@ -6,6 +6,8 @@
  * @version 0.11.0-beta
  */
 
+const { MessageFlags } = require('discord.js');
+
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
@@ -23,8 +25,9 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, models } = container;
+		const { t, models, helpers } = container;
 		const { KythiaUser } = models;
+		const { simpleContainer } = helpers;
 
 		await interaction.deferReply();
 
@@ -40,12 +43,18 @@ module.exports = {
 		const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 		kythiaUser.premiumExpiresAt = expiresAt;
 		await kythiaUser.save();
-		return interaction.editReply(
-			await t(interaction, 'core.premium.premium.edit.success', {
-				user: `<@${user.id}>`,
-				days,
-				expires: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`,
-			}),
-		);
+
+		const msg = await t(interaction, 'core.premium.premium.edit.success', {
+			user: `<@${user.id}>`,
+			days,
+			expires: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`,
+		});
+		const components = await simpleContainer(interaction, msg, {
+			color: 'Red',
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

@@ -875,7 +875,19 @@
 				"list": {
 					"empty": "There are currently no premium users.",
 					"title": "Premium Users",
-					"item": "{index}. {user} - expires {expires}"
+					"item": "{index}. {user} - expires {expires}",
+					"footer": "Page {page} of {totalPages} • Total Premium Users: {totalUsers}",
+					"nav": {
+						"first": "⏪️ First",
+						"prev": "◀️ Prev",
+						"next": "Next ▶️",
+						"last": "Last ⏩️"
+					},
+					"not": {
+						"your": {
+							"interaction": "❌ This is not your interaction! Use the command yourself to view the premium list."
+						}
+					}
 				},
 				"info": {
 					"not": {

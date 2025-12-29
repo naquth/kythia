@@ -7,7 +7,6 @@
  */
 
 const { generateCommandSchema } = require('./helpers/command-schema');
-// const { initializeAiTasks } = require('./tasks/daily-greeter');
 const promptBuilder = require('./helpers/prompt-builder');
 const geminiHelper = require('./helpers/gemini');
 

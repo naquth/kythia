@@ -61,16 +61,36 @@ function init({ isOwner, config }) {
  * @param {string} context.guildName - Name of the server (or 'Direct Message').
  * @param {string} context.channelName - Name of the channel (or 'Direct Message').
  * @param {string} [context.userFactsString] - Optional string of remembered facts about the user.
+ * @param {string} [context.userPersonality] - Optional personality/conversation style.
  * @returns {string} The fully constructed system instruction prompt.
  */
 function buildSystemInstruction(context) {
 	const isOwnerUser = _isOwner(context.userId);
 
-	const instructionParts = [
-		_personaPrompt,
-		toolRulesPrompt,
-		discordRulesPrompt,
-	];
+	const instructionParts = [];
+
+	// Add personality prompt if specified
+	if (context.userPersonality) {
+		const personalityPrompts = {
+			friendly:
+				'Be warm, friendly, and approachable. Use casual language and show empathy. Be encouraging and supportive.',
+			professional:
+				'Be professional, formal, and to the point. Use proper grammar and maintain a business-like tone.',
+			humorous:
+				'Be witty, playful, and entertaining. Use humor appropriately and make conversations fun.',
+			technical:
+				'Be detailed, precise, and technical. Provide in-depth information and explanations.',
+			casual:
+				'Be relaxed, casual, and laid-back. Use informal language and keep things chill.',
+		};
+
+		const personalityPrompt = personalityPrompts[context.userPersonality];
+		if (personalityPrompt) {
+			instructionParts.push(`--- PERSONALITY ---\n${personalityPrompt}\n`);
+		}
+	}
+
+	instructionParts.push(_personaPrompt, toolRulesPrompt, discordRulesPrompt);
 
 	if (isOwnerUser && _ownerInteractionPrompt) {
 		instructionParts.push(_ownerInteractionPrompt);

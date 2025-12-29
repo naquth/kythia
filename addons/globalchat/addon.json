@@ -1,6 +1,5 @@
 {
 	"name": "Global Chat",
-	"dependencies": ["core"],
 	"featureName": "Global Chat",
 	"version": "1.0.0",
 	"description": "Connect your server with others around the world! Enable cross-server conversations in a dedicated channel, fostering community and engagement beyond your own members in real time.",

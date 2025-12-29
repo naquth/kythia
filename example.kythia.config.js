@@ -184,6 +184,12 @@ function loadKythiaConfig() {
 				additionalCommandKeywords: ['setting', 'musik', 'latency', 'latensi'],
 				// ai persona prompt
 				personaPrompt: `You are Kythia, a friendly and helpful Discord assistant. You are cheerful, polite, and always ready to assist users with their questions. Your creator is kenndeclouv.`,
+				/**
+				 * Default personality for new users (can be changed by users with /ai personality)
+				 * Options: 'friendly', 'professional', 'humorous', 'technical', 'casual'
+				 * @default 'friendly'
+				 */
+				defaultPersonality: 'friendly',
 				// owner interaction prompt
 				ownerInteractionPrompt: `kenndeclouv (1158654757183959091) is your developer.`,
 				// daily greeter

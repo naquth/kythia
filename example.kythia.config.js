@@ -270,6 +270,14 @@ function loadKythiaConfig() {
 			invite: {
 				active: true,
 			},
+			image: {
+				// ! WARN
+				// Need to add your own image storage
+				// you can use https://github.com/kenndeclouv/kythia-storage
+				active: false,
+				storageUrl: process.env.KYTHIA_IMAGE_STORAGE_URL,
+				apiKey: process.env.KYTHIA_IMAGE_STROAGE_API_KEY,
+			},
 			leveling: {
 				active: true,
 				backgroundUrl: 'https://placehold.co/800x250.png',

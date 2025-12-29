@@ -7,8 +7,6 @@
  */
 
 const { EmbedBuilder, MessageFlags } = require('discord.js');
-const fs = require('node:fs').promises;
-const path = require('node:path');
 
 module.exports = {
 	subcommand: true,
@@ -44,26 +42,58 @@ module.exports = {
 			return await interaction.editReply({ embeds: [embed], ephemeral: true });
 		}
 
-		const filePath = path.join(process.cwd(), 'storage', image.storagePath);
-		try {
-			await fs.unlink(filePath);
-		} catch (err) {
-			if (err.code !== 'ENOENT') {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(`${await t(interaction, 'image.delete.error.desc')}`);
-				return await interaction.editReply({
-					embeds: [embed],
-					ephemeral: true,
-				});
-			}
+		// Get storage server configuration
+		const storageUrl =
+			kythiaConfig.addons.image?.storageUrl ||
+			process.env.KYTHIA_IMAGE_STORAGE_URL ||
+			'http://localhost:3000';
+		const apiKey =
+			kythiaConfig.addons.image?.apiKey ||
+			process.env.KYTHIA_IMAGE_STORAGE_API_KEY ||
+			'';
+
+		if (!apiKey) {
+			const embed = new EmbedBuilder()
+				.setColor(kythiaConfig.bot.color)
+				.setDescription(
+					'❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment or configure `kythiaConfig.addons.image.apiKey`.',
+				);
+			return interaction.editReply({ embeds: [embed], ephemeral: true });
 		}
 
-		await image.destroy();
+		try {
+			// Delete from Kythia Storage Server
+			const deleteResponse = await fetch(
+				`${storageUrl}/api/files/${image.fileId}`,
+				{
+					method: 'DELETE',
+					headers: {
+						Authorization: `Bearer ${apiKey}`,
+					},
+				},
+			);
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(`${await t(interaction, 'image.delete.success.desc')}`);
-		await interaction.editReply({ embeds: [embed], ephemeral: true });
+			if (!deleteResponse.ok && deleteResponse.status !== 404) {
+				const errorText = await deleteResponse.text();
+				throw new Error(
+					`Storage server error (${deleteResponse.status}): ${errorText}`,
+				);
+			}
+
+			// Delete from database
+			await image.destroy();
+
+			const embed = new EmbedBuilder()
+				.setColor(kythiaConfig.bot.color)
+				.setDescription(`${await t(interaction, 'image.delete.success.desc')}`);
+			await interaction.editReply({ embeds: [embed], ephemeral: true });
+		} catch (err) {
+			const embed = new EmbedBuilder()
+				.setColor(kythiaConfig.bot.color)
+				.setDescription(
+					`❌ **Failed to delete image:** ${err instanceof Error ? err.message : 'Unknown error'}`,
+				);
+			return await interaction.editReply({ embeds: [embed], ephemeral: true });
+		}
 	},
 };

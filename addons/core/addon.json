@@ -1,6 +1,6 @@
 {
 	"name": "Core",
-	"priority": 0,
+	"priority": 1,
 	"featureName": "Core",
 	"featureFlag": "coreOn",
 	"version": "1.0.0",

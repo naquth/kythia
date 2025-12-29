@@ -37,12 +37,10 @@ module.exports = {
 				await t(interaction, 'image.commands.list.empty'),
 			);
 		}
-		const baseUrl =
-			kythiaConfig.addons.dashboard.url || 'https://localhost:3000';
 
 		const items = images.map((img) => ({
 			code: img.filename,
-			url: `${baseUrl}/files/${img.storagePath}`,
+			url: img.storageUrl,
 		}));
 		const color = convertColor(kythiaConfig.bot.color, {
 			from: 'hex',

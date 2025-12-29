@@ -6,9 +6,6 @@
  * @version 0.11.0-beta
  */
 
-const fs = require('node:fs').promises;
-const path = require('node:path');
-const { v4: uuidv4 } = require('uuid');
 const { EmbedBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -39,38 +36,81 @@ module.exports = {
 			return interaction.editReply({ embeds: [embed], ephemeral: true });
 		}
 
-		const storageDir = path.join(process.cwd(), 'storage', 'images');
-		await fs.mkdir(storageDir, { recursive: true });
+		// Get storage server configuration
+		const storageUrl =
+			kythiaConfig.addons.image?.storageUrl ||
+			process.env.KYTHIA_IMAGE_STORAGE_URL ||
+			'http://localhost:3000';
+		const apiKey =
+			kythiaConfig.addons.image?.apiKey ||
+			process.env.KYTHIA_IMAGE_STORAGE_API_KEY ||
+			'';
 
-		const fileExt = path.extname(attachment.name);
-		const filename = `${uuidv4()}${fileExt}`;
-		const filePath = path.join(storageDir, filename);
+		if (!apiKey) {
+			const embed = new EmbedBuilder()
+				.setColor(kythiaConfig.bot.color)
+				.setDescription(
+					'❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment or configure `kythiaConfig.addons.image.apiKey`.',
+				);
+			return interaction.editReply({ embeds: [embed], ephemeral: true });
+		}
 
-		const response = await fetch(attachment.url);
-		const buffer = await response.arrayBuffer();
+		try {
+			// Download the image from Discord
+			const response = await fetch(attachment.url);
+			const buffer = await response.arrayBuffer();
 
-		await fs.writeFile(filePath, Buffer.from(buffer));
+			// Create FormData for file upload
+			const formData = new FormData();
+			const blob = new Blob([buffer], { type: attachment.contentType });
+			formData.append('file', blob, attachment.name);
 
-		const savedImage = await Image.create({
-			userId: interaction.user.id,
-			filename: filename,
-			originalUrl: attachment.url,
-			storagePath: `images/${filename}`,
-			mimetype: attachment.contentType,
-		});
+			// Upload to Kythia Storage Server
+			const uploadResponse = await fetch(`${storageUrl}/api/upload`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+				},
+				body: formData,
+			});
 
-		const baseUrl =
-			kythiaConfig.addons.dashboard.url || 'https://localhost:3000';
+			if (!uploadResponse.ok) {
+				const errorText = await uploadResponse.text();
+				throw new Error(
+					`Storage server error (${uploadResponse.status}): ${errorText}`,
+				);
+			}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(
-				await t(interaction, 'image.add.success.desc', {
-					url: `${baseUrl}/files/images/${savedImage.filename}`,
-				}),
-			)
-			.setFooter(await embedFooter(interaction));
+			const uploadData = await uploadResponse.json();
 
-		await interaction.editReply({ embeds: [embed] });
+			// Save metadata to database
+			const savedImage = await Image.create({
+				userId: interaction.user.id,
+				filename: uploadData.metadata.stored_name,
+				originalName: uploadData.metadata.original_name,
+				fileId: uploadData.file_id,
+				storageUrl: uploadData.url,
+				mimetype: uploadData.metadata.mime_type,
+				fileSize: uploadData.metadata.file_size,
+			});
+
+			const embed = new EmbedBuilder()
+				.setColor(kythiaConfig.bot.color)
+				.setDescription(
+					await t(interaction, 'image.add.success.desc', {
+						url: savedImage.storageUrl,
+					}),
+				)
+				.setFooter(await embedFooter(interaction));
+
+			await interaction.editReply({ embeds: [embed] });
+		} catch (err) {
+			const embed = new EmbedBuilder()
+				.setColor(kythiaConfig.bot.color)
+				.setDescription(
+					`❌ **Failed to upload image:** ${err instanceof Error ? err.message : 'Unknown error'}`,
+				);
+			return interaction.editReply({ embeds: [embed], ephemeral: true });
+		}
 	},
 };

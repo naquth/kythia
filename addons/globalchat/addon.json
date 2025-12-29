@@ -1,6 +1,5 @@
 {
 	"name": "Global Chat",
-	"priority": 1,
 	"dependencies": ["core"],
 	"featureName": "Global Chat",
 	"version": "1.0.0",

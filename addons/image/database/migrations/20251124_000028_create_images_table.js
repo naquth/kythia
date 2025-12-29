@@ -16,15 +16,18 @@ module.exports = {
 			},
 			userId: { type: DataTypes.STRING, allowNull: false },
 			filename: { type: DataTypes.STRING, allowNull: false, unique: true },
-			originalUrl: { type: DataTypes.TEXT, allowNull: false },
-			storagePath: { type: DataTypes.STRING, allowNull: false },
+			originalName: { type: DataTypes.STRING, allowNull: false },
+			fileId: { type: DataTypes.STRING, allowNull: false, unique: true },
+			storageUrl: { type: DataTypes.TEXT, allowNull: false },
 			mimetype: { type: DataTypes.STRING, allowNull: false },
+			fileSize: { type: DataTypes.INTEGER, allowNull: false },
 			createdAt: { type: DataTypes.DATE, allowNull: false },
 			updatedAt: { type: DataTypes.DATE, allowNull: false },
 		});
 
 		await queryInterface.addIndex('images', ['userId']);
 		await queryInterface.addIndex('images', ['filename']);
+		await queryInterface.addIndex('images', ['fileId']);
 	},
 	async down(queryInterface) {
 		await queryInterface.dropTable('images');

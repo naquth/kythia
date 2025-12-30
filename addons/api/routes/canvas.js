@@ -6,11 +6,10 @@
  * @version 0.11.0-beta
  */
 
-const { Hono } = require('hono');
 const { welcomeBanner } = require('kythia-arts');
+const { Hono } = require('hono');
 const app = new Hono();
 
-// Helper biar code lebih bersih: Kalau kosong/NaN -> undefined
 const intOrUndefined = (val) => {
 	if (val === null || val === undefined || val === '') return undefined;
 	const parsed = parseInt(val, 10);
@@ -19,7 +18,6 @@ const intOrUndefined = (val) => {
 
 const strOrUndefined = (val) => (!val ? undefined : val);
 
-// Simple Placeholder Resolver
 const resolvePreviewText = (text, _type) => {
 	if (!text) return undefined;
 
@@ -51,22 +49,16 @@ app.post('/preview', async (c) => {
 		const mockUserId = '000000000000000000';
 		const mockUsername = 'Kythia Preview';
 
-		// MAPPING: Kirim undefined kalau kosong, biar Library yang handle defaultnya.
 		const options = {
 			customUsername: mockUsername,
 			botToken: process.env.DISCORD_BOT_TOKEN,
 
-			// Dimensions
 			customWidth: intOrUndefined(body[`${prefix}BannerWidth`]),
 			customHeight: intOrUndefined(body[`${prefix}BannerHeight`]),
 
-			// Background & Overlay
 			customBackground: strOrUndefined(body[`${prefix}BackgroundUrl`]),
 			overlayColor: strOrUndefined(body[`${prefix}OverlayColor`]),
 
-			// Avatar
-			// Note: Kalau explisit didisable di UI, kita set 0 (assuming library hide avatar kalau size 0)
-			// Kalau enabled tapi gak ada size, kita kirim undefined biar library pake default size.
 			avatarSize:
 				body[`${prefix}AvatarEnabled`] === false
 					? 0
@@ -78,18 +70,14 @@ app.post('/preview', async (c) => {
 				color: strOrUndefined(body[`${prefix}AvatarBorderColor`]),
 			},
 
-			// Texts
 			welcomeText: resolvePreviewText(body[`${prefix}MainTextContent`], type),
 			welcomeColor: strOrUndefined(body[`${prefix}MainTextColor`]),
 			customFont: strOrUndefined(body[`${prefix}MainTextFontFamily`]),
 			fontWeight: strOrUndefined(body[`${prefix}MainTextFontWeight`]),
 			textOffsetY: intOrUndefined(body[`${prefix}MainTextYOffset`]),
 
-			// Subtext / Username Color
 			usernameColor: strOrUndefined(body[`${prefix}SubTextColor`]),
 
-			// Shadows
-			// Kalau string kosong ("") dianggap false, kalau ada warna dianggap true (atau kirim warnanya kalau library support)
 			textShadow: !!body[`${prefix}ShadowColor`],
 
 			type: 'welcome',
@@ -105,7 +93,7 @@ app.post('/preview', async (c) => {
 			image: dataUri,
 		});
 	} catch (e) {
-		logger.error('[API] Error generating canvas preview:', e);
+		logger.error('Error generating canvas preview:', e, { label: 'api' });
 		return c.json(
 			{
 				success: false,

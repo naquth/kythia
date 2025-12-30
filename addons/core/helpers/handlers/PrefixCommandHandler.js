@@ -1,0 +1,374 @@
+/**
+ * @namespace: addons/core/helpers/handlers/PrefixCommandHandler.js
+ * @type: Handler
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const { utils } = require('kythia-core');
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	Collection,
+} = require('discord.js');
+
+class PrefixCommandHandler {
+	/**
+	 * Handle prefix command execution
+	 * @param {Message} message - Discord message
+	 * @param {KythiaDI.Container} container - Kythia container
+	 * @returns {Promise<boolean>} - true if command was handled
+	 */
+	async handle(message, container) {
+		const { kythiaConfig, models } = container;
+		const { ServerSetting } = models;
+
+		const contentLower = message.content.toLowerCase();
+		const serverSetting = message.guild
+			? await ServerSetting.getCache({ guildId: message.guild.id })
+			: null;
+		const customPrefix = serverSetting?.prefix;
+
+		const allPrefixes = [...kythiaConfig.bot.prefixes];
+		if (customPrefix) {
+			allPrefixes.push(customPrefix);
+		}
+
+		const matchedPrefix = this.findMatchedPrefix(contentLower, allPrefixes);
+		if (!matchedPrefix) return false;
+
+		if (message.author?.bot) return false;
+
+		const contentAfterPrefix = message.content
+			.slice(matchedPrefix.length)
+			.trim();
+		const args = contentAfterPrefix.split(/ +/);
+		const commandName = args.shift().toLowerCase();
+
+		const baseCommand = this.findCommand(commandName, message.client);
+		if (!baseCommand) return false;
+
+		const remainingArgsString = args.join(' ');
+		const fakeInteraction = utils.InteractionFactory.create(
+			message,
+			commandName,
+			remainingArgsString,
+		);
+
+		const subcommand = fakeInteraction.options.getSubcommand();
+		const subcommandGroup = fakeInteraction.options.getSubcommandGroup();
+
+		let finalCommandKey = commandName;
+		if (subcommandGroup)
+			finalCommandKey = `${commandName} ${subcommandGroup} ${subcommand}`;
+		else if (subcommand) finalCommandKey = `${commandName} ${subcommand}`;
+
+		const finalCommand =
+			message.client.commands.get(finalCommandKey) ||
+			[...message.client.commands.values()].find(
+				(cmd) =>
+					Array.isArray(cmd.aliases) &&
+					(cmd.aliases.map((a) => a.toLowerCase()).includes(finalCommandKey) ||
+						cmd.aliases.map((a) => a.toLowerCase()).includes(commandName)),
+			) ||
+			baseCommand;
+
+		if (!finalCommand) return false;
+
+		// Validate permissions
+		const permissionCheck = await this.validatePermissions(
+			finalCommand,
+			message,
+			container,
+		);
+		if (!permissionCheck.allowed) {
+			if (permissionCheck.response) {
+				await message.reply(permissionCheck.response);
+			}
+			return true;
+		}
+
+		// Check cooldown
+		const cooldownCheck = await this.checkCooldown(
+			finalCommand,
+			finalCommandKey,
+			message,
+			container,
+		);
+		if (!cooldownCheck.allowed) {
+			if (cooldownCheck.response) {
+				await cooldownCheck.response;
+			}
+			return true;
+		}
+
+		// Execute command
+		await this.executeCommand(
+			finalCommand,
+			fakeInteraction,
+			finalCommandKey,
+			commandName,
+			container,
+		);
+
+		return true;
+	}
+
+	findMatchedPrefix(contentLower, allPrefixes) {
+		return allPrefixes.find((prefix) =>
+			contentLower.startsWith(prefix.toLowerCase()),
+		);
+	}
+
+	findCommand(commandName, client) {
+		return (
+			client.commands.get(commandName) ||
+			[...client.commands.values()].find(
+				(cmd) =>
+					Array.isArray(cmd.aliases) &&
+					cmd.aliases.map((a) => a.toLowerCase()).includes(commandName),
+			)
+		);
+	}
+
+	async validatePermissions(command, message, container) {
+		const { kythiaConfig, helpers, t, logger, models } = container;
+		const { isOwner } = helpers.discord;
+		const { convertColor } = helpers.color;
+		const { KythiaVoter } = models;
+
+		// Guild-only check
+		if (command.guildOnly && !message.guild) {
+			return { allowed: false };
+		}
+
+		// Owner-only check
+		if (command.ownerOnly && !isOwner(message.author.id)) {
+			return { allowed: false };
+		}
+
+		// User permissions
+		if (command.permissions && message.member) {
+			if (message.member.permissions.missing(command.permissions).length > 0) {
+				return { allowed: false };
+			}
+		}
+
+		// Bot permissions
+		if (command.botPermissions && message.guild) {
+			if (
+				message.guild.members.me.permissions.missing(command.botPermissions)
+					.length > 0
+			) {
+				return { allowed: false };
+			}
+		}
+
+		// Main guild check
+		if (command.isInMainGuild) {
+			const mainGuild = message.client.guilds.cache.get(
+				kythiaConfig.bot.mainGuildId,
+			);
+			if (!mainGuild) {
+				logger.error(
+					`Bot is not a member of the main guild specified in config: ${kythiaConfig.bot.mainGuildId}`,
+					{ label: 'PrefixCommandHandler' },
+				);
+			}
+			try {
+				await mainGuild.members.fetch(message.author.id);
+			} catch (_error) {
+				const container = new ContainerBuilder()
+					.setAccentColor(
+						convertColor(kythiaConfig.bot.color, {
+							from: 'hex',
+							to: 'decimal',
+						}),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							await t(message, 'common.error.not.in.main.guild.text', {
+								name: mainGuild.name,
+							}),
+						),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addActionRowComponents(
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder()
+								.setLabel(
+									await t(
+										message,
+										'common.error.not.in.main.guild.button.join',
+									),
+								)
+								.setStyle(ButtonStyle.Link)
+								.setURL(kythiaConfig.settings.supportServer),
+						),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							await t(message, 'common.container.footer', {
+								username: message.client.user.username,
+							}),
+						),
+					);
+
+				return {
+					allowed: false,
+					response: {
+						components: [container],
+						flags: MessageFlags.IsComponentsV2,
+					},
+				};
+			}
+		}
+
+		// Vote lock check
+		if (command.voteLocked && !isOwner(message.author.id)) {
+			const voter = await KythiaVoter.getCache({ userId: message.author.id });
+			const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+			if (!voter || voter.votedAt < twelveHoursAgo) {
+				const container = new ContainerBuilder()
+					.setAccentColor(
+						convertColor(kythiaConfig.bot.color, {
+							from: 'hex',
+							to: 'decimal',
+						}),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							await t(message, 'common.error.vote.locked.text'),
+						),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addActionRowComponents(
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder()
+								.setLabel(
+									await t(message, 'common.error.vote.locked.button', {
+										botName: message.client.user.username,
+									}),
+								)
+								.setStyle(ButtonStyle.Link)
+								.setURL(`https://top.gg/bot/${kythiaConfig.bot.clientId}/vote`),
+						),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							await t(message, 'common.container.footer'),
+						),
+					);
+
+				return {
+					allowed: false,
+					response: {
+						components: [container],
+						ephemeral: true,
+						flags: MessageFlags.IsComponentsV2,
+					},
+				};
+			}
+		}
+
+		return { allowed: true };
+	}
+
+	async checkCooldown(command, commandKey, message, container) {
+		const { kythiaConfig, helpers, t } = container;
+		const { isOwner } = helpers.discord;
+
+		const cooldownDuration =
+			command.cooldown ?? kythiaConfig.bot.globalCommandCooldown ?? 0;
+		if (cooldownDuration <= 0 || isOwner(message.author.id)) {
+			return { allowed: true };
+		}
+
+		const { cooldowns } = message.client;
+		if (!cooldowns.has(commandKey)) {
+			cooldowns.set(commandKey, new Collection());
+		}
+
+		const now = Date.now();
+		const timestamps = cooldowns.get(commandKey);
+		const cooldownAmount = cooldownDuration * 1000;
+
+		if (timestamps.has(message.author.id)) {
+			const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
+			if (now < expirationTime) {
+				const timeLeft = (expirationTime - now) / 1000;
+				const reply = await t(message, 'common.error.cooldown', {
+					time: timeLeft.toFixed(1),
+				});
+
+				return {
+					allowed: false,
+					response: message
+						.reply(reply)
+						.then((msg) => setTimeout(() => msg.delete().catch(() => {}), 5000))
+						.catch(() => {}),
+				};
+			}
+		}
+
+		timestamps.set(message.author.id, now);
+		setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
+
+		return { allowed: true };
+	}
+
+	async executeCommand(
+		command,
+		fakeInteraction,
+		commandKey,
+		commandName,
+		container,
+	) {
+		const { t, logger } = container;
+
+		try {
+			if (typeof command.execute === 'function') {
+				await command.execute(fakeInteraction, container);
+			} else {
+				const helpMessage = await t(
+					fakeInteraction,
+					'core.events.messageCreate.subcommand.required',
+					{ command: commandName },
+				);
+				await fakeInteraction.reply(helpMessage);
+			}
+		} catch (err) {
+			logger.error(`❌ Error executing prefix command '${commandKey}':`, err);
+			await fakeInteraction
+				.reply(
+					await t(fakeInteraction, 'core.events.messageCreate.error', {
+						command: commandKey,
+					}),
+				)
+				.catch(() => {});
+		}
+	}
+}
+
+module.exports = PrefixCommandHandler;

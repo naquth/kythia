@@ -5,9 +5,10 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
+	MessageFlags,
 	SlashCommandBuilder,
-	EmbedBuilder,
 	PermissionFlagsBits,
 	InteractionContextType,
 } = require('discord.js');
@@ -38,9 +39,14 @@ module.exports = {
 	guildOnly: true,
 	permissions: PermissionFlagsBits.ManageMessages,
 	botPermissions: PermissionFlagsBits.ManageMessages,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, kythiaConfig, helpers, models } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, helpers, models } = container;
+		const { simpleContainer } = helpers.discord;
 		const { StickyMessage } = models;
 
 		const sub = interaction.options.getSubcommand();
@@ -48,7 +54,7 @@ module.exports = {
 
 		switch (sub) {
 			case 'set': {
-				const pesan = interaction.options.getString('message');
+				const messageContent = interaction.options.getString('message');
 				const existingSticky = await StickyMessage.getCache({ channelId });
 
 				if (existingSticky) {
@@ -58,20 +64,19 @@ module.exports = {
 					});
 				}
 
-				const stickyEmbed = new EmbedBuilder()
-					.setTitle(await t(interaction, 'core.tools.sticky.embed.title'))
-					.setDescription(pesan)
-					.setColor(kythiaConfig.bot.color)
-					.setFooter(await embedFooter(interaction));
-
+				const msg = `${await t(interaction, 'core.tools.sticky.embed.title')}\n${messageContent}`;
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
+				});
 				const message = await interaction.channel.send({
-					embeds: [stickyEmbed],
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 
 				await StickyMessage.create(
 					{
 						channelId,
-						message: pesan,
+						message: messageContent,
 						messageId: message.id,
 					},
 					{ individualHooks: true },
@@ -87,12 +92,17 @@ module.exports = {
 				const sticky = await StickyMessage.getCache({ channelId: channelId });
 
 				if (!sticky) {
+					const msg = await t(
+						interaction,
+						'core.tools.sticky.remove.error.not.found',
+					);
+					const components = await simpleContainer(interaction, msg, {
+						color: 'Red',
+					});
+
 					return interaction.reply({
-						content: await t(
-							interaction,
-							'core.tools.sticky.remove.error.not.found',
-						),
-						ephemeral: true,
+						components,
+						flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 					});
 				}
 
@@ -102,14 +112,18 @@ module.exports = {
 							.fetch(sticky.messageId)
 							.catch(() => null);
 						if (oldMsg) await oldMsg.delete().catch(() => {});
-					} catch (_err) {
-						// ignore error
-					}
+					} catch (_e) {}
 				}
 				await sticky.destroy({ individualHooks: true });
+
+				const msg = await t(interaction, 'core.tools.sticky.remove.success');
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
+				});
+
 				return interaction.reply({
-					content: await t(interaction, 'core.tools.sticky.remove.success'),
-					ephemeral: true,
+					components,
+					flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 				});
 			}
 		}

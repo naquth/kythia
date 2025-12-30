@@ -7,7 +7,7 @@
  */
 
 const MusicManager = require('./helpers/MusicManager');
-const MusicHandlers = require('./helpers/MusicHandlers');
+const MusicHandlers = require('./helpers/handlers/MusicHandlers');
 
 module.exports = {
 	async initialize(bot) {

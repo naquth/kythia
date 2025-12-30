@@ -6,7 +6,11 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const {
+	EmbedBuilder,
+	MessageFlags,
+	SlashCommandBuilder,
+} = require('discord.js');
 const fetch = require('node-fetch');
 
 module.exports = {
@@ -20,8 +24,14 @@ module.exports = {
 				.setRequired(true),
 		),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const t = container.t;
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
+
 		const instaUrl = interaction.options.getString('link');
 
 		const invalidUrlTitle = await t(
@@ -33,29 +43,27 @@ module.exports = {
 			'core.tools.instagram.error.invalid.url.desc',
 		);
 
-		// Validate Instagram URL
 		if (
 			!/^https?:\/\/(www\.)?instagram\.com\/(p|reel|tv)\/[a-zA-Z0-9_-]+\/?/.test(
 				instaUrl,
 			) &&
 			!/^https?:\/\/instagr\.am\/[a-zA-Z0-9_-]+\/?/.test(instaUrl)
 		) {
-			await interaction.reply({
-				embeds: [
-					new EmbedBuilder().setDescription(
-						`## ${invalidUrlTitle}\n${invalidUrlDesc}`,
-					),
-				],
-				ephemeral: true,
+			const msg = `## ${invalidUrlTitle}\n${invalidUrlDesc}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
 			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+
 			return;
 		}
 
 		await interaction.deferReply();
 
 		try {
-			// Using SnapInsta-like API endpoint (free alternative)
-			// You can also use RapidAPI's Instagram Downloader if you have an API key
 			const apiUrl = `https://v3.igdownloader.app/api/ajaxSearch`;
 
 			const response = await fetch(apiUrl, {
@@ -74,14 +82,11 @@ module.exports = {
 				throw new Error(data.msg || 'No media found');
 			}
 
-			// Parse HTML response to extract video/image URL
 			const htmlContent = data.data;
 
-			// Try to find video URL first (for reels/videos)
 			let mediaUrl = null;
 			let mediaType = null;
 
-			// Look for video download link
 			const videoMatch = htmlContent.match(
 				/href="([^"]+)"[^>]*class="[^"]*download-media[^"]*"[^>]*>\s*Download Video/i,
 			);
@@ -89,7 +94,6 @@ module.exports = {
 				mediaUrl = videoMatch[1];
 				mediaType = 'video';
 			} else {
-				// Look for image download link
 				const imageMatch = htmlContent.match(
 					/href="([^"]+)"[^>]*class="[^"]*download-media[^"]*"[^>]*>\s*Download Image/i,
 				);
@@ -103,7 +107,6 @@ module.exports = {
 				throw new Error('Could not extract media URL');
 			}
 
-			// Extract title if available
 			const titleMatch = htmlContent.match(
 				/<div[^>]*class="[^"]*desc[^"]*"[^>]*>([^<]+)<\/div>/i,
 			);
@@ -151,7 +154,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			console.error('Instagram fetch error:', err);
+			console.error('Instagram fetch error:', err, { label: 'tools' });
 			let title, desc;
 			if (err.message?.includes('No media found')) {
 				title = await t(

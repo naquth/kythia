@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { generateLyricsWithTranscript, formatTrackDuration } = require('.');
+const { generateLyricsWithTranscript, formatTrackDuration } = require('..');
 
 const {
 	EmbedBuilder,
@@ -2652,7 +2652,7 @@ class MusicHandlers {
 		await this.PlaylistTrack.bulkCreate(tracksToSave);
 	}
 
-	async handleFavorite(interaction, player) {
+	handleFavorite(interaction, player) {
 		let s;
 		if (interaction.isChatInputCommand()) {
 			s = interaction.options.getSubcommand();

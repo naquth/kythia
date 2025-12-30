@@ -13,8 +13,8 @@ const {
 } = require('@google/genai');
 const { ChannelType } = require('discord.js');
 const { utils } = require('kythia-core');
-const { buildSystemInstruction } = require('./prompt-builder');
-const { getAndUseNextAvailableToken } = require('./gemini');
+const { buildSystemInstruction } = require('../prompt-builder');
+const { getAndUseNextAvailableToken } = require('../gemini');
 
 /**
  * AIMessageHandler
@@ -34,10 +34,10 @@ class AIMessageHandler {
 		this.aiConfig = this.config.addons.ai;
 
 		// Initialize helper classes
-		const AIResponseFilter = require('./AIResponseFilter');
-		const UserFactsManager = require('./UserFactsManager');
-		const ConversationManager = require('./ConversationManager');
-		const MediaProcessor = require('./MediaProcessor');
+		const AIResponseFilter = require('../AIResponseFilter');
+		const UserFactsManager = require('../UserFactsManager');
+		const ConversationManager = require('../ConversationManager');
+		const MediaProcessor = require('../MediaProcessor');
 
 		this.responseFilter = new AIResponseFilter();
 		this.factsManager = new UserFactsManager({

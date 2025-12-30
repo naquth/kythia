@@ -7,13 +7,26 @@
  */
 
 const { Hono } = require('hono');
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	SectionBuilder,
+	ThumbnailBuilder,
+	MediaGalleryBuilder,
+	MediaGalleryItemBuilder,
+} = require('discord.js');
 const app = new Hono();
 
 app.post('/topgg', async (c) => {
 	const client = c.get('client');
 	const container = client.container;
-	const { models, logger, helpers } = container;
+	const { models, logger, helpers, kythiaConfig } = container;
 	const { convertColor } = helpers.color;
 	const { KythiaVoter, KythiaUser } = models;
 	const config = c.get('config');
@@ -67,16 +80,20 @@ app.post('/topgg', async (c) => {
 
 		try {
 			const discordUser = await client.users.fetch(userId);
-			const embed = new EmbedBuilder()
-				.setColor(config.bot.color)
-				.setThumbnail(client.user.displayAvatarURL())
-				.setDescription(
-					isNew
-						? `## 👤 Account Created!\nThanks for voting! You got **1,000 Coins**.`
-						: `## 🩷 Thanks for voting!\nYou got **1,000 Coins**.`,
-				);
+			const { simpleContainer } = helpers.discord;
 
-			await discordUser.send({ embeds: [embed] });
+			const msg = isNew
+				? `## \`👤\` Kythia Account Created!\nThanks for voting! You got **1,000 Kythia Coins** and unlock **vote only** command as a thank you. \nDont forget to vote for Kythia tomorrow!`
+				: `## \`🩷\` Thanks for voting!\nYou got **1,000 Kythia Coins** and unlock **vote only** command as a thank you. \nDont forget to vote for Kythia tomorrow!`;
+
+			const components = await simpleContainer({ client }, msg, {
+				color: config.bot.color,
+			});
+
+			await discordUser.send({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (err) {
 			logger.warn(`Failed DM to ${userId}\n${err.message}`);
 		}
@@ -94,55 +111,60 @@ app.post('/topgg', async (c) => {
 				webhookUrl.searchParams.append('wait', 'true');
 				webhookUrl.searchParams.append('with_components', 'true');
 
+				const voteContainer = new ContainerBuilder()
+					.setAccentColor(accentColor)
+					.addMediaGalleryComponents(
+						new MediaGalleryBuilder().addItems([
+							new MediaGalleryItemBuilder().setURL(
+								kythiaConfig.settings.voteBannerImage,
+							),
+						]),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addSectionComponents(
+						new SectionBuilder()
+							.addTextDisplayComponents(
+								new TextDisplayBuilder().setContent(
+									`## 🌸 New Vote!\n<@${userId}> (${user.username})\njust gave their love and support to **${config.bot.name}** on Top.gg!\n\nYou're very cool >,<! thank youu very muchh, Dont forget **${config.bot.name}** tomorrow!\n-# psttt look at my dm!`,
+								),
+							)
+							.setThumbnailAccessory(
+								new ThumbnailBuilder()
+									.setDescription(user.username)
+									.setURL(user.displayAvatarURL()),
+							),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addActionRowComponents(
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder()
+								.setStyle(ButtonStyle.Link)
+								.setLabel(`🌸 Vote ${config.bot.name}`)
+								.setURL(`https://top.gg/bot/${config.bot.clientId}/vote`),
+						),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							`-# © ${config.bot.name} by ${config.owner.names}`,
+						),
+					);
+
 				const payload = {
 					flags: MessageFlags.IsComponentsV2,
-					components: [
-						{
-							type: 17,
-							accent_color: accentColor,
-							components: [
-								{
-									type: 9,
-									components: [
-										{
-											type: 10,
-											content: `## 🌸 New Vote!\n<@${userId}> (${user.username})\njust gave their love and support to **${config.bot.name}** on Top.gg!\n\nYou're very cool >,<! thank youu very muchh, Dont forget **${config.bot.name}** tomorrow!\n-# psttt look at my dm!`,
-										},
-									],
-									accessory: {
-										type: 11,
-										media: {
-											url: user.displayAvatarURL(),
-										},
-										description: `kythia's logo`,
-									},
-								},
-								{
-									type: 14,
-									spacing: 1,
-								},
-								{
-									type: 1,
-									components: [
-										{
-											type: 2,
-											style: 5,
-											label: `🌸 Vote ${config.bot.name}`,
-											url: `https://top.gg/bot/${config.bot.clientId}/vote`,
-										},
-									],
-								},
-								{
-									type: 14,
-									spacing: 1,
-								},
-								{
-									type: 10,
-									content: `-# © ${config.bot.name} by ${config.owner.names}`,
-								},
-							],
-						},
-					],
+					components: [voteContainer.toJSON()],
 				};
 
 				const response = await fetch(webhookUrl.href, {
@@ -154,12 +176,14 @@ app.post('/topgg', async (c) => {
 				if (!response.ok) {
 					const errorBody = await response.text();
 					logger.warn(
-						`[Webhook] Failed to send log message via fetch. Status: ${response.status}. Body: ${errorBody}`,
+						`Failed to send log message via fetch. Status: ${response.status}. Body: ${errorBody}`,
+						{ label: 'webhook' },
 					);
 				}
 			} catch (logError) {
 				logger.warn(
-					`[Webhook] Vote saved, but failed to log the vote. Error: ${logError.message}`,
+					`Vote saved, but failed to log the vote. Error: ${logError.message}`,
+					{ label: 'webhook' },
 				);
 			}
 		}

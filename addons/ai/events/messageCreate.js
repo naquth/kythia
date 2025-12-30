@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const AIMessageHandler = require('../helpers/AIMessageHandler');
+const AIMessageHandler = require('../helpers/handlers/AIMessageHandler');
 
 let messageHandler;
 

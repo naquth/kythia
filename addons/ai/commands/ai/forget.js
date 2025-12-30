@@ -27,7 +27,7 @@ module.exports = {
 
 		// Get the conversation manager from the AI message handler
 		// We need to access the singleton instance
-		const AIMessageHandler = require('../../helpers/AIMessageHandler');
+		const AIMessageHandler = require('../../helpers/handlers/AIMessageHandler');
 
 		// The handler is lazily initialized in messageCreate.js
 		// We'll create a temporary instance just to delete the conversation

@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { toBigIntSafe } = require('../../helpers/bigint');
 
 module.exports = {
@@ -22,8 +22,9 @@ module.exports = {
 			),
 
 	async execute(interaction, container) {
-		const { t, models } = container;
+		const { t, models, helpers } = container;
 		const { KythiaUser, MarketPortfolio, MarketOrder } = models;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 		const orderId = interaction.options.getString('order_id');
@@ -36,12 +37,14 @@ module.exports = {
 			});
 
 			if (!order) {
-				const notFoundEmbed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						`## ${await t(interaction, 'economy.market.cancel.not.found.title')}\n${await t(interaction, 'economy.market.cancel.not.found.desc')}`,
-					);
-				return interaction.editReply({ embeds: [notFoundEmbed] });
+				const msg = `## ${await t(interaction, 'economy.market.cancel.not.found.title')}\n${await t(interaction, 'economy.market.cancel.not.found.desc')}`;
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			if (order.side === 'buy') {
@@ -75,20 +78,24 @@ module.exports = {
 			order.status = 'cancelled';
 			await order.save();
 
-			const successEmbed = new EmbedBuilder()
-				.setColor('Green')
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.cancel.success.title')}\n${await t(interaction, 'economy.market.cancel.success.desc', { orderId: order.id })}`,
-				);
-			await interaction.editReply({ embeds: [successEmbed] });
+			const msg = `## ${await t(interaction, 'economy.market.cancel.success.title')}\n${await t(interaction, 'economy.market.cancel.success.desc', { orderId: order.id })}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Green',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			console.error('Error in cancel order:', error);
-			const errorEmbed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.cancel.error.title')}\n${await t(interaction, 'economy.market.cancel.error.desc')}`,
-				);
-			await interaction.editReply({ embeds: [errorEmbed] });
+			const msg = `## ${await t(interaction, 'economy.market.cancel.error.title')}\n${await t(interaction, 'economy.market.cancel.error.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

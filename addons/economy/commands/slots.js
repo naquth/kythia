@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { toBigIntSafe } = require('../helpers/bigint');
 
 const symbols = {
@@ -55,43 +55,46 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer, createContainer } = helpers.discord;
 
 		const bet = interaction.options.getInteger('bet');
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.reply({ embeds: [embed], ephemeral: true });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+			});
 		}
 
 		if (user.kythiaCoin < bet) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.slots.slots.not.enough.cash', {
-						bet: bet.toLocaleString(),
-						cash: user.kythiaCoin.toLocaleString(),
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.reply({ embeds: [embed], ephemeral: true });
+			const msg = await t(interaction, 'economy.slots.slots.not.enough.cash', {
+				bet: bet.toLocaleString(),
+				cash: user.kythiaCoin.toLocaleString(),
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+			});
 		}
 
-		const spinningEmbed = new EmbedBuilder()
-			.setColor('Yellow')
-			.setDescription(
-				`## ${await t(interaction, 'economy.slots.slots.spinning.title')}\n${await t(interaction, 'economy.slots.slots.spinning.desc')}\n\n🎰 | 🎰 | 🎰`,
-			)
-			.setFooter(await embedFooter(interaction));
+		const spinningMsg = `## ${await t(interaction, 'economy.slots.slots.spinning.title')}\n${await t(interaction, 'economy.slots.slots.spinning.desc')}\n\n🎰 | 🎰 | 🎰`;
+		const spinningComponents = await simpleContainer(interaction, spinningMsg, {
+			color: 'Yellow',
+		});
 
-		await interaction.reply({ embeds: [spinningEmbed], fetchReply: true });
+		await interaction.reply({
+			components: spinningComponents,
+			flags: MessageFlags.IsComponentsV2,
+			fetchReply: true,
+		});
 
 		await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -150,34 +153,23 @@ module.exports = {
 			'```',
 		].join('\n');
 
-		const finalEmbed = new EmbedBuilder()
-			.setColor(resultColor)
-			.setAuthor({
-				name: await t(interaction, 'economy.slots.slots.author', {
-					username: interaction.user.username,
-				}),
-				iconURL: interaction.user.displayAvatarURL(),
-			})
-			.setDescription(`## ${await t(interaction, resultKey)}\n${slotDisplay}`)
-			.addFields(
-				{
-					name: await t(interaction, 'economy.slots.slots.bet.field'),
-					value: `🪙 ${bet.toLocaleString()}`,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'economy.slots.slots.win.field'),
-					value: `🪙 ${winnings.toLocaleString()} (${payoutMultiplier}x)`,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'economy.slots.slots.cash.field'),
-					value: `💰 ${user.kythiaCoin.toLocaleString()}`,
-					inline: true,
-				},
-			)
-			.setFooter(await embedFooter(interaction));
+		const resultMsg = [
+			`## ${await t(interaction, resultKey)}`,
+			slotDisplay,
+			'',
+			`**${await t(interaction, 'economy.slots.slots.bet.field')}:** 🪙 ${bet.toLocaleString()}`,
+			`**${await t(interaction, 'economy.slots.slots.win.field')}:** 🪙 ${winnings.toLocaleString()} (${payoutMultiplier}x)`,
+			`**${await t(interaction, 'economy.slots.slots.cash.field')}:** 💰 ${user.kythiaCoin.toLocaleString()}`,
+		].join('\n');
 
-		await interaction.editReply({ embeds: [finalEmbed] });
+		const resultComponents = await createContainer(interaction, {
+			description: resultMsg,
+			color: resultColor,
+		});
+
+		await interaction.editReply({
+			components: resultComponents,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

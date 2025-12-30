@@ -6,7 +6,13 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder } = require('discord.js');
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 const { getMarketData } = require('../../helpers/market');
 
 function getChangeEmoji(percent) {
@@ -25,20 +31,20 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketPortfolio } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer, convertColor } = helpers.discord;
 
 		await interaction.deferReply();
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const userHoldings = await MarketPortfolio.getAllCache({
@@ -47,13 +53,14 @@ module.exports = {
 		});
 
 		if (userHoldings.length === 0) {
-			const emptyEmbed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.portfolio.empty.title')}\n${await t(interaction, 'economy.market.portfolio.empty.desc')}`,
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [emptyEmbed] });
+			const msg = `## ${await t(interaction, 'economy.market.portfolio.empty.title')}\n${await t(interaction, 'economy.market.portfolio.empty.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const marketData = await getMarketData();
@@ -63,20 +70,18 @@ module.exports = {
 		let totalUnrealizedLoss = 0;
 		let totalUnrealizedGain = 0;
 
-		const portfolioFields = [];
+		const portfolioSections = [];
 
 		for (const holding of userHoldings) {
 			const currentAssetData = marketData[holding.assetId];
 			if (!currentAssetData) {
-				portfolioFields.push({
-					name: `${holding.assetId.toUpperCase()}`,
-					value: await t(
+				portfolioSections.push(
+					`### 💠 ${holding.assetId.toUpperCase()}\n${await t(
 						interaction,
 						'economy.market.portfolio.data.unavailable',
 						{ quantity: holding.quantity },
-					),
-					inline: false,
-				});
+					)}`,
+				);
 				continue;
 			}
 
@@ -111,6 +116,7 @@ module.exports = {
 			const change24hEmoji = getChangeEmoji(currentAssetData.usd_24h_change);
 
 			const lines = [
+				`### 💠 ${holding.assetId.toUpperCase()}${pnl > 0 ? '  📈' : pnl < 0 ? '  📉' : ''}`,
 				`> **${await t(interaction, 'economy.market.portfolio.field.quantity')}** \`${holding.quantity}\``,
 				`> **${await t(interaction, 'economy.market.portfolio.field.avg.buy.price')}** \`$${holding.avgBuyPrice.toLocaleString(undefined, { maximumFractionDigits: 8 })}\``,
 				`> **${await t(interaction, 'economy.market.portfolio.field.current.price')}** \`$${priceNow.toLocaleString(undefined, { maximumFractionDigits: 8 })}\``,
@@ -121,13 +127,11 @@ module.exports = {
 				`> **${await t(interaction, 'economy.market.portfolio.field.invested')}** \`$${invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}\``,
 				`> **${await t(interaction, 'economy.market.portfolio.field.market.value')}** \`$${currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}\``,
 				`> **${await t(interaction, 'economy.market.portfolio.field.pl')}** \`${pnlEmoji} ${pnlSign}$${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}\` (${pnlSign}${((pnl / invested) * 100 || 0).toFixed(2)}%)`,
-			].filter(Boolean);
+			]
+				.filter(Boolean)
+				.join('\n');
 
-			portfolioFields.push({
-				name: `💠 ${holding.assetId.toUpperCase()}${pnl > 0 ? '  📈' : pnl < 0 ? '  📉' : ''}`,
-				value: lines.join('\n'),
-				inline: false,
-			});
+			portfolioSections.push(lines);
 		}
 
 		const totalPnlSign = totalPnl > 0 ? '+' : totalPnl < 0 ? '-' : '';
@@ -138,22 +142,42 @@ module.exports = {
 				: '0.00';
 
 		const summaryLines = [
+			`## ${await t(interaction, 'economy.market.portfolio.title', { username: interaction.user.username })}`,
 			`**${await t(interaction, 'economy.market.portfolio.summary.total.invested')}** \`$${totalInvested.toLocaleString(undefined, { maximumFractionDigits: 2 })}\``,
 			`**${await t(interaction, 'economy.market.portfolio.summary.market.value')}** \`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}\``,
 			`**${await t(interaction, 'economy.market.portfolio.summary.total.pl')}** \`${totalPnlEmoji} ${totalPnlSign}$${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}\` (${totalPnlSign}${totalReturnPct}%)`,
 			`**${await t(interaction, 'economy.market.portfolio.summary.unrealized.gains')}** \`📈 +$${totalUnrealizedGain.toLocaleString(undefined, { maximumFractionDigits: 2 })}\``,
 			`**${await t(interaction, 'economy.market.portfolio.summary.unrealized.losses')}** \`📉 -$${totalUnrealizedLoss.toLocaleString(undefined, { maximumFractionDigits: 2 })}\``,
-		];
+		].join('\n');
 
-		const embed = new EmbedBuilder()
-			.setColor(totalPnl >= 0 ? 'Green' : 'Red')
-			.setDescription(
-				`## ${await t(interaction, 'economy.market.portfolio.title', { username: interaction.user.username })}\n${summaryLines.join('\n')}`,
+		const fullContent = [summaryLines, '', ...portfolioSections].join('\n\n');
+
+		const portfolioContainer = new ContainerBuilder()
+			.setAccentColor(
+				convertColor(totalPnl >= 0 ? '#00FF00' : '#FF0000', {
+					from: 'hex',
+					to: 'decimal',
+				}),
 			)
-			.addFields(portfolioFields)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setFooter(await embedFooter(interaction));
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(fullContent),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'common.container.footer', {
+						username: interaction.client.user.username,
+					}),
+				),
+			);
 
-		await interaction.editReply({ embeds: [embed] });
+		await interaction.editReply({
+			components: [portfolioContainer],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

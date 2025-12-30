@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { toBigIntSafe } = require('../helpers/bigint');
 
 module.exports = {
@@ -30,32 +30,35 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		const bet = interaction.options.getInteger('bet');
 		const side = interaction.options.getString('side').toLowerCase();
 
 		if (user.kythiaCoin < bet) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.coinflip.coinflip.not.enough.cash'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.coinflip.coinflip.not.enough.cash',
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const flip = Math.random() < 0.5 ? 'heads' : 'tails';
@@ -66,34 +69,34 @@ module.exports = {
 			user.changed('kythiaCoin', true);
 
 			await user.saveAndUpdateCache('userId');
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.coinflip.coinflip.win', {
-						flip: flip.charAt(0).toUpperCase() + flip.slice(1),
-						amount: bet,
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.coinflip.coinflip.win', {
+				flip: flip.charAt(0).toUpperCase() + flip.slice(1),
+				amount: bet,
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else {
 			user.kythiaCoin = toBigIntSafe(user.kythiaCoin) - toBigIntSafe(bet);
 
 			user.changed('kythiaCoin', true);
 
 			await user.saveAndUpdateCache('userId');
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.coinflip.coinflip.lose', {
-						flip: flip.charAt(0).toUpperCase() + flip.slice(1),
-						amount: bet,
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.coinflip.coinflip.lose', {
+				flip: flip.charAt(0).toUpperCase() + flip.slice(1),
+				amount: bet,
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

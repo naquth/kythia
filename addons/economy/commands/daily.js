@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -19,21 +19,21 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 		const { checkCooldown } = helpers.time;
 
 		await interaction.deferReply();
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const cooldown = checkCooldown(
@@ -42,16 +42,16 @@ module.exports = {
 			interaction,
 		);
 		if (cooldown.remaining) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					await t(interaction, 'economy.daily.daily.cooldown', {
-						time: cooldown.time,
-					}),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.daily.daily.cooldown', {
+				time: cooldown.time,
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const avgDaily = 3677 / 30;
@@ -74,15 +74,15 @@ module.exports = {
 
 		await user.saveAndUpdateCache('userId');
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setDescription(
-				await t(interaction, 'economy.daily.daily.success', {
-					amount: randomCoin,
-				}),
-			)
-			.setFooter(await embedFooter(interaction));
-		return interaction.editReply({ embeds: [embed] });
+		const msg = await t(interaction, 'economy.daily.daily.success', {
+			amount: randomCoin,
+		});
+		const components = await simpleContainer(interaction, msg, {
+			color: kythiaConfig.bot.color,
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

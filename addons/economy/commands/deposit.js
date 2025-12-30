@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -35,7 +35,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 		const type = interaction.options.getString('type');
@@ -43,78 +43,87 @@ module.exports = {
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (type === 'all') {
 			amount = user.kythiaCoin;
 		} else if (type === 'partial') {
 			if (amount === null) {
-				const embed = new EmbedBuilder()
-					.setColor('Yellow')
-					.setDescription(
-						await t(interaction, 'economy.deposit.deposit.amount.required'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(
+					interaction,
+					'economy.deposit.deposit.amount.required',
+				);
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Yellow',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 		}
 
 		if (amount <= 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					await t(interaction, 'economy.deposit.deposit.invalid.amount'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.deposit.deposit.invalid.amount',
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (user.kythiaCoin < amount) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.deposit.deposit.not.enough.cash'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.deposit.deposit.not.enough.cash',
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (amount === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					await t(interaction, 'economy.deposit.deposit.zero.cash'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.deposit.deposit.zero.cash');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const userBank = banks.getBank(user.bankType);
 		const maxBalance = userBank.maxBalance;
 
 		if (user.kythiaBank + amount > maxBalance) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.deposit.deposit.max.balance', {
-						max: maxBalance.toLocaleString(),
-					}),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.deposit.deposit.max.balance', {
+				max: maxBalance.toLocaleString(),
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		user.kythiaCoin = toBigIntSafe(user.kythiaCoin) - toBigIntSafe(amount);
@@ -125,14 +134,16 @@ module.exports = {
 
 		await user.saveAndUpdateCache();
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setDescription(
-				await t(interaction, 'economy.deposit.deposit.success', { amount }),
-			)
-			.setFooter(await embedFooter(interaction));
+		const msg = await t(interaction, 'economy.deposit.deposit.success', {
+			amount,
+		});
+		const components = await simpleContainer(interaction, msg, {
+			color: kythiaConfig.bot.color,
+		});
 
-		return interaction.editReply({ embeds: [embed] });
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

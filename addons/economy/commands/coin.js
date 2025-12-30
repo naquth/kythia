@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -16,32 +16,32 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
-		const cashEmbed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setDescription(
-				await t(interaction, 'economy.cash.cash.balance', {
-					username: interaction.user.username,
-					cash: user.kythiaCoin.toLocaleString(),
-				}),
-			)
-			.setFooter(await embedFooter(interaction));
-		return interaction.editReply({ embeds: [cashEmbed] });
+		const msg = await t(interaction, 'economy.cash.cash.balance', {
+			username: interaction.user.username,
+			cash: user.kythiaCoin.toLocaleString(),
+		});
+		const components = await simpleContainer(interaction, msg, {
+			color: kythiaConfig.bot.color,
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

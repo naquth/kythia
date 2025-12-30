@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -23,64 +23,69 @@ module.exports = {
 					.setRequired(true),
 			),
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
+		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, Inventory } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 		const { checkCooldown } = helpers.time;
 
 		await interaction.deferReply();
 
 		const targetUser = interaction.options.getUser('target');
 		if (targetUser.id === interaction.user.id) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'economy.rob.rob.cannot.rob.self'))
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.rob.rob.cannot.rob.self');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const target = await KythiaUser.getCache({ userId: targetUser.id });
 		if (!target) {
-			const embed = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.rob.rob.target.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.rob.rob.target.no.account.desc',
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const cooldown = checkCooldown(
 			user.lastRob,
-			kythia.addons.economy.robCooldown || 10800,
+			kythiaConfig.addons.economy.robCooldown || 10800,
 			interaction,
 		);
 
 		if (cooldown.remaining) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					await t(interaction, 'economy.rob.rob.cooldown', {
-						time: cooldown.time,
-					}),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.rob.rob.cooldown', {
+				time: cooldown.time,
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const guard = await Inventory.getCache({
@@ -118,14 +123,17 @@ module.exports = {
 
 		if (success) {
 			if (target.kythiaCoin < robAmount) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await t(interaction, 'economy.rob.rob.target.not.enough.money'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(
+					interaction,
+					'economy.rob.rob.target.not.enough.money',
+				);
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			user.kythiaCoin = toBigIntSafe(user.kythiaCoin) + toBigIntSafe(robAmount);
@@ -139,42 +147,45 @@ module.exports = {
 			await user.saveAndUpdateCache('userId');
 			await target.saveAndUpdateCache('userId');
 
-			const embed = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.rob.rob.success.text', {
-						amount: robAmount,
-						target: targetUser.username,
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			await interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.rob.rob.success.text', {
+				amount: robAmount,
+				target: targetUser.username,
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 
-			const embedToTarget = new EmbedBuilder()
-				.setColor('Red')
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.rob.rob.success.dm', {
-						robber: interaction.user.username,
-						amount: robAmount,
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			await targetUser.send({ embeds: [embedToTarget] });
+			const dmMsg = await t(interaction, 'economy.rob.rob.success.dm', {
+				robber: interaction.user.username,
+				amount: robAmount,
+			});
+			const dmComponents = await simpleContainer(interaction, dmMsg, {
+				color: 'Red',
+			});
+			await targetUser.send({
+				components: dmComponents,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else {
 			const robPenaltyMultiplier = userBank ? userBank.robPenaltyMultiplier : 1;
 			const basePenalty = Math.floor(robAmount * robPenaltyMultiplier);
 
 			if (user.kythiaCoin < basePenalty && !poison) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await t(interaction, 'economy.rob.rob.user.not.enough.money.fail'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(
+					interaction,
+					'economy.rob.rob.user.not.enough.money.fail',
+				);
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 			let penalty = basePenalty;
 			if (poison) {
@@ -199,44 +210,44 @@ module.exports = {
 			await user.saveAndUpdateCache('userId');
 			await target.saveAndUpdateCache('userId');
 
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.rob.rob.fail.text', {
-						target: targetUser.username,
-						penalty: poison
-							? await t(interaction, 'economy.rob.rob.fail.penalty.all')
-							: `${robAmount} kythia coin`,
-						guard: guard
-							? await t(interaction, 'economy.rob.rob.fail.guard.text')
-							: '',
-						poison: poison
-							? await t(interaction, 'economy.rob.rob.fail.poison')
-							: '',
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			await interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.rob.rob.fail.text', {
+				target: targetUser.username,
+				penalty: poison
+					? await t(interaction, 'economy.rob.rob.fail.penalty.all')
+					: `${robAmount} kythia coin`,
+				guard: guard
+					? await t(interaction, 'economy.rob.rob.fail.guard.text')
+					: '',
+				poison: poison
+					? await t(interaction, 'economy.rob.rob.fail.poison')
+					: '',
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 
-			const embedToTarget = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.rob.rob.fail.dm', {
-						robber: interaction.user.username,
-						amount: robAmount,
-						penalty: poison ? penalty : robAmount,
-						guard: guard
-							? await t(interaction, 'economy.rob.rob.fail.guard.dm')
-							: '',
-						poison: poison
-							? await t(interaction, 'economy.rob.rob.fail.poison.dm')
-							: '',
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			await targetUser.send({ embeds: [embedToTarget] });
+			const dmMsg = await t(interaction, 'economy.rob.rob.fail.dm', {
+				robber: interaction.user.username,
+				amount: robAmount,
+				penalty: poison ? penalty : robAmount,
+				guard: guard
+					? await t(interaction, 'economy.rob.rob.fail.guard.dm')
+					: '',
+				poison: poison
+					? await t(interaction, 'economy.rob.rob.fail.poison.dm')
+					: '',
+			});
+			const dmComponents = await simpleContainer(interaction, dmMsg, {
+				color: kythiaConfig.bot.color,
+			});
+			await targetUser.send({
+				components: dmComponents,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

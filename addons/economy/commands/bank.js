@@ -5,7 +5,13 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -19,19 +25,19 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer, convertColor } = helpers.discord;
 
 		await interaction.deferReply();
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const userBankType = user.bankType || 'solara_mutual';
@@ -134,11 +140,29 @@ module.exports = {
 			}
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setDescription(descriptionParts.join('\n'))
-			.setFooter(await embedFooter(interaction));
-		return interaction.editReply({ embeds: [embed] });
+		const replyContainer = new ContainerBuilder()
+			.setAccentColor(
+				convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(descriptionParts.join('\n')),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'common.container.footer', {
+						username: interaction.client.user.username,
+					}),
+				),
+			);
+
+		return interaction.editReply({
+			components: [replyContainer],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

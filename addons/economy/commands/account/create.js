@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const banks = require('../../helpers/banks');
 
 module.exports = {
@@ -31,7 +31,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 		const bankType = interaction.options.getString('bank');
@@ -40,33 +40,33 @@ module.exports = {
 		const bankDisplay = `${userBank.emoji} ${userBank.name}`;
 		const existingUser = await KythiaUser.getCache({ userId: userId });
 		if (existingUser) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(
-						interaction,
-						'economy.account.create.account.create.already.desc',
-					),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.account.create.account.create.already.desc',
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		// Create new user account
 		await KythiaUser.create({ userId, bankType });
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(
-				await t(
-					interaction,
-					'economy.account.create.account.create.success.desc',
-					{ bankType: bankDisplay },
-				),
-			)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setFooter(await embedFooter(interaction));
-		return interaction.editReply({ embeds: [embed] });
+		const msg = await t(
+			interaction,
+			'economy.account.create.account.create.success.desc',
+			{ bankType: bankDisplay },
+		);
+		const components = await simpleContainer(interaction, msg, {
+			color: kythiaConfig.bot.color,
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

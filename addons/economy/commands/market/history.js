@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -15,22 +15,22 @@ module.exports = {
 			.setDescription('View your transaction history.'),
 
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
+		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketTransaction } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		try {
@@ -42,13 +42,14 @@ module.exports = {
 			});
 
 			if (transactions.length === 0) {
-				const emptyEmbed = new EmbedBuilder()
-					.setColor(kythia.bot.color)
-					.setDescription(
-						`## ${await t(interaction, 'economy.market.history.empty.title')}\n${await t(interaction, 'economy.market.history.empty.desc')}`,
-					)
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [emptyEmbed] });
+				const msg = `## ${await t(interaction, 'economy.market.history.empty.title')}\n${await t(interaction, 'economy.market.history.empty.desc')}`;
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const description = transactions
@@ -59,25 +60,28 @@ module.exports = {
 				})
 				.join('\n\n');
 
-			const historyEmbed = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setTitle(
-					await t(interaction, 'economy.market.history.title', {
-						username: interaction.user.username,
-					}),
-				)
-				.setDescription(description)
-				.setFooter(await embedFooter(interaction));
+			const msg = `## ${await t(interaction, 'economy.market.history.title', {
+				username: interaction.user.username,
+			})}\n\n${description}`;
 
-			await interaction.editReply({ embeds: [historyEmbed] });
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			console.error('Error in history command:', error);
-			const errorEmbed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.history.error.title')}\n${await t(interaction, 'economy.market.history.error.desc')}`,
-				);
-			await interaction.editReply({ embeds: [errorEmbed] });
+			const msg = `## ${await t(interaction, 'economy.market.history.error.title')}\n${await t(interaction, 'economy.market.history.error.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

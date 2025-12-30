@@ -5,7 +5,12 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const {
+	MessageFlags,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+} = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -30,7 +35,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer, createContainer } = helpers.discord;
 
 		await interaction.deferReply();
 		try {
@@ -41,91 +46,70 @@ module.exports = {
 			const receiver = await KythiaUser.getCache({ userId: target.id });
 
 			if (!giver) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'economy.withdraw.no.account.desc'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			if (giver.kythiaBank < amount) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(
-							interaction,
-							'economy.transfer.transfer.not.enough.bank.text',
-						),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(
+					interaction,
+					'economy.transfer.transfer.not.enough.bank.text',
+				);
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 			if (!receiver) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'economy.transfer.transfer.target.no.account'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(
+					interaction,
+					'economy.transfer.transfer.target.no.account',
+				);
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 			if (giver.userId === receiver.userId) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'economy.transfer.transfer.self'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(interaction, 'economy.transfer.transfer.self');
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const giverBank = banks.getBank(giver.bankType);
 			const transferFeePercent = giverBank.transferFeePercent;
 			const fee = Math.floor(amount * (transferFeePercent / 100));
 			if (giver.kythiaBank < amount + fee) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(
-							interaction,
-							'economy.transfer.transfer.not.enough.bank.fee',
-							{ fee },
-						),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(
+					interaction,
+					'economy.transfer.transfer.not.enough.bank.fee',
+					{ fee },
+				);
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
-
-			const {
-				ActionRowBuilder,
-				ButtonBuilder,
-				ButtonStyle,
-			} = require('discord.js');
-
-			const confirmEmbed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.transfer.transfer.confirm', {
-						amount,
-						target: target.username,
-						fee,
-					}),
-				)
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
 
 			const row = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
@@ -142,9 +126,18 @@ module.exports = {
 					.setStyle(ButtonStyle.Danger),
 			);
 
-			await interaction.editReply({
-				embeds: [confirmEmbed],
+			const confirmComponents = await createContainer(interaction, {
+				description: await t(interaction, 'economy.transfer.transfer.confirm', {
+					amount,
+					target: target.username,
+					fee,
+				}),
 				components: [row],
+			});
+
+			await interaction.editReply({
+				components: confirmComponents,
+				flags: MessageFlags.IsComponentsV2,
 			});
 
 			const filter = (i) => i.user.id === interaction.user.id;
@@ -166,66 +159,61 @@ module.exports = {
 					await giver.saveAndUpdateCache('userId');
 					await receiver.saveAndUpdateCache('userId');
 
-					const embed = new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setThumbnail(interaction.user.displayAvatarURL())
-						.setDescription(
-							await t(interaction, 'economy.transfer.transfer.success', {
-								amount,
-								target: target.username,
-								fee,
-							}),
-						)
-						.setTimestamp()
-						.setFooter(await embedFooter(interaction));
-					await i.update({ embeds: [embed], components: [] });
+					const msg = await t(i, 'economy.transfer.transfer.success', {
+						amount,
+						target: target.username,
+						fee,
+					});
+					const components = await simpleContainer(i, msg, {
+						color: kythiaConfig.bot.color,
+					});
+					await i.update({ components, flags: MessageFlags.IsComponentsV2 });
 
-					const targetEmbed = new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setThumbnail(interaction.user.displayAvatarURL())
-						.setDescription(
-							await t(interaction, 'economy.transfer.transfer.received', {
-								amount,
-								from: interaction.user.username,
-							}),
-						)
-						.setTimestamp()
-						.setFooter(await embedFooter(interaction));
+					// Send DM to receiver
+					const receiverMsg = await t(i, 'economy.transfer.transfer.received', {
+						amount,
+						from: interaction.user.username,
+					});
+					const receiverComponents = await simpleContainer(i, receiverMsg, {
+						color: kythiaConfig.bot.color,
+					});
 					try {
-						await target.send({ embeds: [targetEmbed] });
+						await target.send({
+							components: receiverComponents,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					} catch (_e) {}
 				} else if (i.customId === 'cancel') {
-					const embed = new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setDescription(
-							await t(interaction, 'economy.transfer.transfer.cancelled'),
-						)
-						.setTimestamp()
-						.setFooter(await embedFooter(interaction));
-					await i.update({ embeds: [embed], components: [] });
+					const msg = await t(i, 'economy.transfer.transfer.cancelled');
+					const components = await simpleContainer(i, msg, {
+						color: kythiaConfig.bot.color,
+					});
+					await i.update({ components, flags: MessageFlags.IsComponentsV2 });
 				}
 			});
 
 			collector.on('end', async (collected) => {
 				if (collected.size === 0) {
-					const embed = new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setDescription(
-							await t(interaction, 'economy.transfer.transfer.timeout'),
-						)
-						.setTimestamp()
-						.setFooter(await embedFooter(interaction));
-					await interaction.editReply({ embeds: [embed], components: [] });
+					const msg = await t(interaction, 'economy.transfer.transfer.timeout');
+					const components = await simpleContainer(interaction, msg, {
+						color: kythiaConfig.bot.color,
+					});
+					await interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 			});
 		} catch (error) {
 			console.error('Error during transfer command execution:', error);
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(await t(interaction, 'economy.transfer.transfer.error'))
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.transfer.transfer.error');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

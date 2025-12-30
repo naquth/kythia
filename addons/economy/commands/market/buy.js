@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { getMarketData, ASSET_IDS } = require('../../helpers/market');
 const { toBigIntSafe } = require('../../helpers/bigint');
 
@@ -37,7 +37,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketPortfolio, MarketTransaction } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 
@@ -46,39 +46,39 @@ module.exports = {
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (user.kythiaCoin < amountToSpend) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.buy.insufficient.funds.title')}\n${await t(interaction, 'economy.market.buy.insufficient.funds.desc', { amount: amountToSpend.toLocaleString() })}`,
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.market.buy.insufficient.funds.title')}\n${await t(interaction, 'economy.market.buy.insufficient.funds.desc', { amount: amountToSpend.toLocaleString() })}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const marketData = await getMarketData();
 		const assetData = marketData[assetId];
 
 		if (!assetData) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.buy.asset.not.found.title')}\n${await t(interaction, 'economy.market.buy.asset.not.found.desc')}`,
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.market.buy.asset.not.found.title')}\n${await t(interaction, 'economy.market.buy.asset.not.found.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const currentPrice = assetData.usd;
@@ -126,23 +126,25 @@ module.exports = {
 
 			await user.saveAndUpdateCache();
 
-			const successEmbed = new EmbedBuilder()
-				.setColor('Green')
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.buy.success.title')}\n${await t(interaction, 'economy.market.buy.success.desc', { quantity: quantityToBuy.toFixed(6), asset: assetId.toUpperCase(), amount: amountToSpend.toLocaleString() })}`,
-				)
-				.setFooter(await embedFooter(interaction));
+			const msg = `## ${await t(interaction, 'economy.market.buy.success.title')}\n${await t(interaction, 'economy.market.buy.success.desc', { quantity: quantityToBuy.toFixed(6), asset: assetId.toUpperCase(), amount: amountToSpend.toLocaleString() })}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Green',
+			});
 
-			await interaction.editReply({ embeds: [successEmbed] });
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			console.error('Error during market buy:', error);
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.buy.error.title')}\n${await t(interaction, 'economy.market.buy.error.desc')}`,
-				)
-				.setFooter(await embedFooter(interaction));
-			await interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.market.buy.error.title')}\n${await t(interaction, 'economy.market.buy.error.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

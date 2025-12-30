@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -24,7 +24,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 		try {
@@ -32,15 +32,14 @@ module.exports = {
 			const user = await KythiaUser.getCache({ userId: interaction.user.id });
 
 			if (!user) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'economy.withdraw.no.account.desc'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const userBank = banks.getBank(user.bankType);
@@ -49,15 +48,17 @@ module.exports = {
 			const totalRequired = amount + fee;
 
 			if (user.kythiaBank < totalRequired) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await t(interaction, 'economy.withdraw.withdraw.not.enough.bank'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setTimestamp()
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(
+					interaction,
+					'economy.withdraw.withdraw.not.enough.bank',
+				);
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			user.kythiaBank =
@@ -69,25 +70,27 @@ module.exports = {
 
 			await user.saveAndUpdateCache('userId');
 
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setDescription(
-					await t(interaction, 'economy.withdraw.withdraw.success', {
-						user: interaction.user.username,
-						amount,
-					}),
-				)
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
-			await interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.withdraw.success', {
+				user: interaction.user.username,
+				amount,
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			console.error('Error during withdraw command execution:', error);
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'economy.withdraw.withdraw.error'))
-				.setTimestamp();
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.withdraw.error');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

@@ -7,11 +7,20 @@
  */
 
 const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryBuilder,
+	MediaGalleryItemBuilder,
+	AttachmentBuilder,
+} = require('discord.js');
+const {
 	getMarketData,
 	ASSET_IDS,
 	getChartBuffer,
 } = require('../../helpers/market');
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 function formatMarketTable(rows) {
 	return [
@@ -50,95 +59,123 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketOrder } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer, createContainer, convertColor } = helpers.discord;
 
 		await interaction.deferReply();
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const marketData = await getMarketData();
 		const assetId = interaction.options.getString('asset');
-		let embed;
 		const files = [];
 
 		if (assetId) {
 			const data = marketData[assetId];
 			if (!data) {
-				embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						`## ${await t(interaction, 'economy.market.view.asset.not.found.title')}\n${await t(interaction, 'economy.market.view.asset.not.found.desc', { asset: assetId.toUpperCase() })}`,
-					);
-			} else {
-				const percent = data.usd_24h_change.toFixed(2);
-				const emoji = getChangeEmoji(data.usd_24h_change);
-
-				embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setTitle(
-						await t(interaction, 'economy.market.view.chart.title', {
-							asset: assetId.toUpperCase(),
-						}),
-					)
-					.addFields(
-						{
-							name: await t(interaction, 'economy.market.view.price.label'),
-							value: `$${data.usd.toLocaleString()}`,
-							inline: true,
-						},
-						{
-							name: await t(
-								interaction,
-								'economy.market.view.24h.change.label',
-							),
-							value: `${emoji} ${percent}%`,
-							inline: true,
-						},
-					)
-					.setFooter(await embedFooter(interaction));
-
-				const openOrders = await MarketOrder.getAllCache({
-					where: {
-						userId: interaction.user.id,
-						assetId: assetId,
-						status: 'open',
-					},
-					cacheTags: [
-						`MarketOrder:open:byUser:${interaction.user.id}:byAsset:${assetId}`,
-					],
+				const msg = `## ${await t(interaction, 'economy.market.view.asset.not.found.title')}\n${await t(interaction, 'economy.market.view.asset.not.found.desc', { asset: assetId.toUpperCase() })}`;
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Red',
 				});
-
-				if (openOrders.length > 0) {
-					const orderSummary = openOrders
-						.map((order) => {
-							return `- **${order.side.toUpperCase()} ${order.quantity} ${order.assetId.toUpperCase()}** at $${order.price} (${order.type})`;
-						})
-						.join('\n');
-					embed.addFields({
-						name: await t(interaction, 'economy.market.view.open.orders.label'),
-						value: orderSummary,
-					});
-				}
-
-				const chartBuffer = await getChartBuffer(assetId);
-				if (chartBuffer) {
-					const attachment = new AttachmentBuilder(chartBuffer, {
-						name: 'market-chart.png',
-					});
-					files.push(attachment);
-					embed.setImage('attachment://market-chart.png');
-				}
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
+
+			const percent = data.usd_24h_change.toFixed(2);
+			const emoji = getChangeEmoji(data.usd_24h_change);
+
+			let description = `## ${await t(
+				interaction,
+				'economy.market.view.chart.title',
+				{
+					asset: assetId.toUpperCase(),
+				},
+			)}\n\n`;
+			description += `**${await t(interaction, 'economy.market.view.price.label')}:** $${data.usd.toLocaleString()}\n`;
+			description += `**${await t(interaction, 'economy.market.view.24h.change.label')}:** ${emoji} ${percent}%\n`;
+
+			const openOrders = await MarketOrder.getAllCache({
+				where: {
+					userId: interaction.user.id,
+					assetId: assetId,
+					status: 'open',
+				},
+				cacheTags: [
+					`MarketOrder:open:byUser:${interaction.user.id}:byAsset:${assetId}`,
+				],
+			});
+
+			if (openOrders.length > 0) {
+				const orderSummary = openOrders
+					.map((order) => {
+						return `- **${order.side.toUpperCase()} ${order.quantity} ${order.assetId.toUpperCase()}** at $${order.price} (${order.type})`;
+					})
+					.join('\n');
+				description += `\n**${await t(interaction, 'economy.market.view.open.orders.label')}:**\n${orderSummary}`;
+			}
+
+			const chartBuffer = await getChartBuffer(assetId);
+			let mediaUrl = null;
+			if (chartBuffer) {
+				const attachment = new AttachmentBuilder(chartBuffer, {
+					name: 'market-chart.png',
+				});
+				files.push(attachment);
+				mediaUrl = 'attachment://market-chart.png';
+			}
+
+			const viewContainer = new ContainerBuilder()
+				.setAccentColor(
+					convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(description),
+				);
+
+			if (mediaUrl) {
+				viewContainer
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addMediaGalleryComponents(
+						new MediaGalleryBuilder().addItems([
+							new MediaGalleryItemBuilder().setURL(mediaUrl),
+						]),
+					);
+			}
+
+			viewContainer
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t(interaction, 'common.container.footer', {
+							username: interaction.client.user.username,
+						}),
+					),
+				);
+
+			await interaction.editReply({
+				components: [viewContainer],
+				files: files,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else {
 			const assetRows = ASSET_IDS.map((id) => {
 				const data = marketData[id];
@@ -158,15 +195,17 @@ module.exports = {
 			});
 			const prettyTable = formatMarketTable(assetRows);
 
-			embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.view.all.title')}\n` +
-						prettyTable,
-				)
-				.setFooter(await embedFooter(interaction));
-		}
+			const msg =
+				`## ${await t(interaction, 'economy.market.view.all.title')}\n` +
+				prettyTable;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
 
-		await interaction.editReply({ embeds: [embed], files: files });
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
 	},
 };

@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { ASSET_IDS } = require('../../helpers/market');
 const { toBigIntSafe } = require('../../helpers/bigint');
 
@@ -54,7 +54,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketPortfolio, MarketOrder } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 
@@ -65,28 +65,28 @@ module.exports = {
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		try {
 			if (side === 'buy') {
 				const totalCost = quantity * price;
 				if (user.kythiaCoin < totalCost) {
-					const embed = new EmbedBuilder()
-						.setColor('Red')
-						.setDescription(
-							`## ${await t(interaction, 'economy.market.buy.insufficient.funds.title')}\n${await t(interaction, 'economy.market.buy.insufficient.funds.desc', { amount: totalCost.toLocaleString() })}`,
-						)
-						.setThumbnail(interaction.user.displayAvatarURL())
-						.setFooter(await embedFooter(interaction));
-					return interaction.editReply({ embeds: [embed] });
+					const msg = `## ${await t(interaction, 'economy.market.buy.insufficient.funds.title')}\n${await t(interaction, 'economy.market.buy.insufficient.funds.desc', { amount: totalCost.toLocaleString() })}`;
+					const components = await simpleContainer(interaction, msg, {
+						color: 'Red',
+					});
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 
 				const order = await MarketOrder.create({
@@ -105,13 +105,14 @@ module.exports = {
 
 				await user.saveAndUpdateCache();
 
-				const successEmbed = new EmbedBuilder()
-					.setColor('Green')
-					.setDescription(
-						`## ${await t(interaction, 'economy.market.limit.buy.success.title')}\n${await t(interaction, 'economy.market.limit.buy.success.desc', { quantity: quantity, asset: assetId.toUpperCase(), price: price.toLocaleString() })}\n\nOrder ID: \`${order.id}\``,
-					)
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [successEmbed] });
+				const msg = `## ${await t(interaction, 'economy.market.limit.buy.success.title')}\n${await t(interaction, 'economy.market.limit.buy.success.desc', { quantity: quantity, asset: assetId.toUpperCase(), price: price.toLocaleString() })}\n\nOrder ID: \`${order.id}\``;
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Green',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} else {
 				const holding = await MarketPortfolio.getCache({
 					userId: interaction.user.id,
@@ -119,14 +120,14 @@ module.exports = {
 				});
 
 				if (!holding || holding.quantity < quantity) {
-					const embed = new EmbedBuilder()
-						.setColor('Red')
-						.setDescription(
-							`## ${await t(interaction, 'economy.market.sell.insufficient.asset.title')}\n${await t(interaction, 'economy.market.sell.insufficient.asset.desc', { asset: assetId.toUpperCase() })}`,
-						)
-						.setThumbnail(interaction.user.displayAvatarURL())
-						.setFooter(await embedFooter(interaction));
-					return interaction.editReply({ embeds: [embed] });
+					const msg = `## ${await t(interaction, 'economy.market.sell.insufficient.asset.title')}\n${await t(interaction, 'economy.market.sell.insufficient.asset.desc', { asset: assetId.toUpperCase() })}`;
+					const components = await simpleContainer(interaction, msg, {
+						color: 'Red',
+					});
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 
 				const order = await MarketOrder.create({
@@ -145,22 +146,25 @@ module.exports = {
 					await holding.destroy();
 				}
 
-				const successEmbed = new EmbedBuilder()
-					.setColor('Yellow')
-					.setDescription(
-						`## ${await t(interaction, 'economy.market.limit.sell.success.title')}\n${await t(interaction, 'economy.market.limit.sell.success.desc', { quantity: quantity, asset: assetId.toUpperCase(), price: price.toLocaleString() })}\n\nOrder ID: \`${order.id}\``,
-					)
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [successEmbed] });
+				const msg = `## ${await t(interaction, 'economy.market.limit.sell.success.title')}\n${await t(interaction, 'economy.market.limit.sell.success.desc', { quantity: quantity, asset: assetId.toUpperCase(), price: price.toLocaleString() })}\n\nOrder ID: \`${order.id}\``;
+				const components = await simpleContainer(interaction, msg, {
+					color: 'Yellow',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 		} catch (error) {
 			console.error('Error in limit order:', error);
-			const errorEmbed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.order.error.title')}\n${await t(interaction, 'economy.market.order.error.desc')}`,
-				);
-			await interaction.editReply({ embeds: [errorEmbed] });
+			const msg = `## ${await t(interaction, 'economy.market.order.error.title')}\n${await t(interaction, 'economy.market.order.error.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

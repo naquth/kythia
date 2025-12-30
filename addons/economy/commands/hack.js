@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -27,7 +27,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, Inventory } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 		const { checkCooldown } = helpers.time;
 
 		await interaction.deferReply();
@@ -37,14 +37,14 @@ module.exports = {
 		const target = await KythiaUser.getCache({ userId: targetUser.id });
 
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const cooldown = checkCooldown(
@@ -53,70 +53,78 @@ module.exports = {
 			interaction,
 		);
 		if (cooldown.remaining) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					await t(interaction, 'economy.hack.hack.cooldown', {
-						time: cooldown.time,
-					}),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.hack.hack.cooldown', {
+				time: cooldown.time,
+			});
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (!user || !target) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.hack.hack.user.or.target.not.found'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.hack.hack.user.or.target.not.found',
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (targetUser.id === interaction.user.id) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'economy.hack.hack.self'))
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.hack.hack.self');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (target.kythiaBank <= 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.hack.hack.target.no.bank'),
-				)
-				.setThumbnail(targetUser.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.hack.hack.target.no.bank');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (user.kythiaBank <= 20) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'economy.hack.hack.user.no.bank'))
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.hack.hack.user.no.bank');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
-		const embed = new EmbedBuilder()
-			.setDescription(
-				await t(interaction, 'economy.hack.hack.in.progress', {
-					user: interaction.user.username,
-					target: targetUser.username,
-					chance: user.hackMastered || 10,
-				}),
-			)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setColor(kythiaConfig.bot.color);
+		const msg = await t(interaction, 'economy.hack.hack.in.progress', {
+			user: interaction.user.username,
+			target: targetUser.username,
+			chance: user.hackMastered || 10,
+		});
+		const components = await simpleContainer(interaction, msg, {
+			color: kythiaConfig.bot.color,
+		});
 
-		await interaction.editReply({ embeds: [embed] });
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 
 		const desktop = await Inventory.getCache({
 			userId: interaction.user.id,
@@ -156,31 +164,39 @@ module.exports = {
 				await user.saveAndUpdateCache('userId');
 				await target.saveAndUpdateCache('userId');
 
-				const embedToTarget = new EmbedBuilder()
-					.setColor('Red')
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setDescription(
-						await t(interaction, 'economy.hack.hack.success.dm', {
-							hacker: interaction.user.username,
-							amount: totalHacked,
-						}),
-					)
-					.setFooter(await embedFooter(interaction));
+				const dmMsg = await t(interaction, 'economy.hack.hack.success.dm', {
+					hacker: interaction.user.username,
+					amount: totalHacked,
+				});
+				const dmComponents = await simpleContainer(interaction, dmMsg, {
+					color: 'Red',
+				});
 				try {
-					await targetUser.send({ embeds: [embedToTarget] });
+					await targetUser.send({
+						components: dmComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				} catch (_err) {}
 
-				const successEmbed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setDescription(
-						await t(interaction, 'economy.hack.hack.success.text', {
-							target: targetUser.username,
-						}),
-					)
-					.setFooter(await embedFooter(interaction));
+				const successMsg = await t(
+					interaction,
+					'economy.hack.hack.success.text',
+					{
+						target: targetUser.username,
+					},
+				);
+				const successComponents = await simpleContainer(
+					interaction,
+					successMsg,
+					{
+						color: kythiaConfig.bot.color,
+					},
+				);
 
-				await interaction.editReply({ embeds: [successEmbed] });
+				await interaction.editReply({
+					components: successComponents,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} else {
 				const userBank = banks.getBank(user.bankType || 'solara_mutual');
 				const robPenaltyMultiplier = userBank
@@ -206,18 +222,18 @@ module.exports = {
 				user.changed('lastHack', true);
 				await user.saveAndUpdateCache('userId');
 
-				const failureEmbed = new EmbedBuilder()
-					.setColor('Red')
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setDescription(
-						await t(interaction, 'economy.hack.hack.failure', {
-							target: targetUser.username,
-							penalty,
-						}),
-					)
-					.setFooter(await embedFooter(interaction));
+				const failMsg = await t(interaction, 'economy.hack.hack.failure', {
+					target: targetUser.username,
+					penalty,
+				});
+				const failComponents = await simpleContainer(interaction, failMsg, {
+					color: 'Red',
+				});
 
-				await interaction.editReply({ embeds: [failureEmbed] });
+				await interaction.editReply({
+					components: failComponents,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 		}, 5000);
 	},

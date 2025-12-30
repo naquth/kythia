@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const banks = require('../../helpers/banks');
 
 module.exports = {
@@ -31,7 +31,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 		try {
@@ -43,14 +43,14 @@ module.exports = {
 			// Check if user has an account
 			const existingUser = await KythiaUser.getCache({ userId: userId });
 			if (!existingUser) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'economy.withdraw.no.account.desc'),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			// Update user's bank type
@@ -58,28 +58,31 @@ module.exports = {
 			existingUser.changed('bankType', true);
 			await existingUser.saveAndUpdateCache('userId');
 
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(
-						interaction,
-						'economy.account.edit.account.edit.success.desc',
-						{ bankType: bankDisplay },
-					),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.account.edit.account.edit.success.desc',
+				{ bankType: bankDisplay },
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			console.error('Error during account edit command execution:', error);
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.account.edit.account.edit.error.desc'),
-				)
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(
+				interaction,
+				'economy.account.edit.account.edit.error.desc',
+			);
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

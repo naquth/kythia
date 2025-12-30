@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, MessageFlags } = require('discord.js');
 const banks = require('../helpers/banks');
 const jobs = require('../helpers/jobs');
 const { toBigIntSafe } = require('../helpers/bigint');
@@ -21,22 +21,21 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, Inventory } = models;
-		const { embedFooter } = helpers.discord;
+		const { embedFooter, simpleContainer } = helpers.discord;
 		const { checkCooldown } = helpers.time;
 		await interaction.deferReply();
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setTimestamp()
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const userInventory = await Inventory.getAllCache({ userId: user.userId });
@@ -48,13 +47,14 @@ module.exports = {
 		);
 
 		if (cooldown.remaining) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					`## ${await t(interaction, 'economy.work.work.cooldown.title')}\n${await t(interaction, 'economy.work.work.cooldown.desc', { time: cooldown.time })}`,
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.work.work.cooldown.title')}\n${await t(interaction, 'economy.work.work.cooldown.desc', { time: cooldown.time })}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		let availableJobs = [];
@@ -85,13 +85,14 @@ module.exports = {
 		}
 
 		if (availableJobs.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`## ${await t(interaction, 'economy.work.work.no.job.title')}\n${await t(interaction, 'economy.work.work.no.job.desc')}`,
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.work.work.no.job.title')}\n${await t(interaction, 'economy.work.work.no.job.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const job = availableJobs[Math.floor(Math.random() * availableJobs.length)];

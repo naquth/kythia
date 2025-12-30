@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { getMarketData, ASSET_IDS } = require('../../helpers/market');
 const { toBigIntSafe } = require('../../helpers/bigint');
 
@@ -39,7 +39,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketPortfolio, MarketTransaction } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 
@@ -48,14 +48,14 @@ module.exports = {
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const holding = await MarketPortfolio.getCache({
@@ -64,28 +64,28 @@ module.exports = {
 		});
 
 		if (!holding || holding.quantity < sellQuantity) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.sell.insufficient.asset.title')}\n${await t(interaction, 'economy.market.sell.insufficient.asset.desc', { asset: assetId.toUpperCase() })}`,
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.market.sell.insufficient.asset.title')}\n${await t(interaction, 'economy.market.sell.insufficient.asset.desc', { asset: assetId.toUpperCase() })}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const marketData = await getMarketData();
 		const assetData = marketData[assetId];
 
 		if (!assetData) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.sell.asset.not.found.title')}\n${await t(interaction, 'economy.market.sell.asset.not.found.desc')}`,
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.market.sell.asset.not.found.title')}\n${await t(interaction, 'economy.market.sell.asset.not.found.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const currentPrice = assetData.usd;
@@ -108,11 +108,6 @@ module.exports = {
 				price: currentPrice,
 			});
 
-			// Fix: Don't use BigInt if value is not integer. Use Number for fractional currency.
-			// If kythiaCoin is BigInt in DB, convert to float field, otherwise this logic works for decimal field too.
-			// If user.kythiaCoin is a string with only integer, parseInt, otherwise use parseFloat.
-			// We'll treat kythiaCoin as decimal (float) value here.
-			// Defensive: If it's integer string, parseInt, else parseFloat.
 			let kythiaCoinNumeric =
 				typeof user.kythiaCoin === 'bigint'
 					? Number(user.kythiaCoin)
@@ -134,23 +129,25 @@ module.exports = {
 			const pnlSign = pnl >= 0 ? '+' : '';
 			const pnlEmoji = pnl >= 0 ? '📈' : '📉';
 
-			const successEmbed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.sell.success.title')}\n${await t(interaction, 'economy.market.sell.success.desc', { quantity: sellQuantity.toFixed(6), asset: assetId.toUpperCase(), amount: totalUsdReceived.toLocaleString(undefined, { maximumFractionDigits: 2 }), avgBuyPrice: holding.avgBuyPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }), sellPrice: currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }), pnlEmoji: pnlEmoji, pnlSign: pnlSign, pnl: pnl.toLocaleString(undefined, { maximumFractionDigits: 2 }) })}`,
-				)
-				.setFooter(await embedFooter(interaction));
+			const msg = `## ${await t(interaction, 'economy.market.sell.success.title')}\n${await t(interaction, 'economy.market.sell.success.desc', { quantity: sellQuantity.toFixed(6), asset: assetId.toUpperCase(), amount: totalUsdReceived.toLocaleString(undefined, { maximumFractionDigits: 2 }), avgBuyPrice: holding.avgBuyPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }), sellPrice: currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }), pnlEmoji: pnlEmoji, pnlSign: pnlSign, pnl: pnl.toLocaleString(undefined, { maximumFractionDigits: 2 }) })}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
 
-			await interaction.editReply({ embeds: [successEmbed] });
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			console.error('Error during market sell:', error);
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'economy.market.sell.error.title')}\n${await t(interaction, 'economy.market.sell.error.desc')}`,
-				)
-				.setFooter(await embedFooter(interaction));
-			await interaction.editReply({ embeds: [embed] });
+			const msg = `## ${await t(interaction, 'economy.market.sell.error.title')}\n${await t(interaction, 'economy.market.sell.error.desc')}`;
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

@@ -6,10 +6,14 @@
  * @version 0.11.0-beta
  */
 const {
-	EmbedBuilder,
+	MessageFlags,
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
 } = require('discord.js');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -34,7 +38,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer, convertColor } = helpers.discord;
 
 		await interaction.deferReply();
 
@@ -43,84 +47,96 @@ module.exports = {
 
 		const giver = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!giver) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.withdraw.no.account.desc');
+			const components = await simpleContainer(interaction, msg, {
+				color: kythiaConfig.bot.color,
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (amount <= 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					await t(interaction, 'economy.give.give.invalid.amount'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.give.give.invalid.amount');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (target.id === interaction.user.id) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(await t(interaction, 'economy.give.give.self'))
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.give.give.self');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Yellow',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const receiver = await KythiaUser.getCache({ userId: target.id });
 		if (!receiver) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.give.give.no.target.account'),
-				)
-				.setThumbnail(
-					target.displayAvatarURL ? target.displayAvatarURL() : null,
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.give.give.no.target.account');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (giver.kythiaCoin < amount) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'economy.give.give.not.enough.cash'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const msg = await t(interaction, 'economy.give.give.not.enough.cash');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
-		const confirmEmbed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL())
-			.setDescription(
-				await t(interaction, 'economy.give.give.confirm', {
-					amount,
-					target: target.username,
-				}),
+		// Confirmation with buttons
+		const confirmContainer = new ContainerBuilder()
+			.setAccentColor(
+				convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 			)
-			.setFooter(await embedFooter(interaction));
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'economy.give.give.confirm', {
+						amount,
+						target: target.username,
+					}),
+				),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addActionRowComponents(
+				new ActionRowBuilder().addComponents(
+					new ButtonBuilder()
+						.setCustomId('confirm')
+						.setLabel(await t(interaction, 'economy.give.give.btn.confirm'))
+						.setStyle(ButtonStyle.Success),
+					new ButtonBuilder()
+						.setCustomId('cancel')
+						.setLabel(await t(interaction, 'economy.give.give.btn.cancel'))
+						.setStyle(ButtonStyle.Danger),
+				),
+			);
 
-		const row = new ActionRowBuilder().addComponents(
-			new ButtonBuilder()
-				.setCustomId('confirm')
-				.setLabel(await t(interaction, 'economy.give.give.btn.confirm'))
-				.setStyle(ButtonStyle.Success),
-			new ButtonBuilder()
-				.setCustomId('cancel')
-				.setLabel(await t(interaction, 'economy.give.give.btn.cancel'))
-				.setStyle(ButtonStyle.Danger),
-		);
-
-		await interaction.editReply({ embeds: [confirmEmbed], components: [row] });
+		await interaction.editReply({
+			components: [confirmContainer],
+			flags: MessageFlags.IsComponentsV2,
+		});
 
 		const filter = (i) => i.user.id === interaction.user.id;
 		const collector = interaction.channel.createMessageComponentCollector({
@@ -141,48 +157,49 @@ module.exports = {
 				await giver.saveAndUpdateCache('userId');
 				await receiver.saveAndUpdateCache('userId');
 
-				const successEmbed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'economy.give.give.success', {
-							amount,
-							target: target.username,
-						}),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setFooter(await embedFooter(interaction));
-				await i.update({ embeds: [successEmbed], components: [] });
+				const msg = await t(interaction, 'economy.give.give.success', {
+					amount,
+					target: target.username,
+				});
+				const components = await simpleContainer(i, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				await i.update({ components, flags: MessageFlags.IsComponentsV2 });
 
-				const receiverEmbed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'economy.give.give.received', {
-							amount,
-							from: interaction.user.username,
-						}),
-					)
-					.setThumbnail(interaction.user.displayAvatarURL())
-					.setFooter(await embedFooter(interaction));
+				// Send DM to receiver
+				const receiverMsg = await t(i, 'economy.give.give.received', {
+					amount,
+					from: interaction.user.username,
+				});
+				const receiverComponents = await simpleContainer(i, receiverMsg, {
+					color: kythiaConfig.bot.color,
+				});
 				try {
 					const member = await interaction.client.users.fetch(target.id);
-					await member.send({ embeds: [receiverEmbed] });
+					await member.send({
+						components: receiverComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				} catch (_e) {}
 			} else if (i.customId === 'cancel') {
-				const cancelEmbed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(await t(interaction, 'economy.give.give.cancelled'))
-					.setFooter(await embedFooter(interaction));
-				await i.update({ embeds: [cancelEmbed], components: [] });
+				const msg = await t(i, 'economy.give.give.cancelled');
+				const components = await simpleContainer(i, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				await i.update({ components, flags: MessageFlags.IsComponentsV2 });
 			}
 		});
 
 		collector.on('end', async (collected) => {
 			if (collected.size === 0) {
-				const timeoutEmbed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(await t(interaction, 'economy.give.give.timeout'))
-					.setFooter(await embedFooter(interaction));
-				await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
+				const msg = await t(interaction, 'economy.give.give.timeout');
+				const components = await simpleContainer(interaction, msg, {
+					color: kythiaConfig.bot.color,
+				});
+				await interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 		});
 	},

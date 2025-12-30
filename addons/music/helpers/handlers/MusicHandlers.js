@@ -9,7 +9,6 @@
 const { generateLyricsWithTranscript, formatTrackDuration } = require('..');
 
 const {
-	EmbedBuilder,
 	ContainerBuilder,
 	TextDisplayBuilder,
 	SeparatorBuilder,
@@ -66,6 +65,7 @@ class MusicHandlers {
 		this.isOwner = helpers.discord.isOwner;
 		this.embedFooter = helpers.discord.embedFooter;
 		this.isPremium = helpers.discord.isPremium;
+		this.simpleContainer = helpers.discord.simpleContainer;
 
 		// 4. State & Config Internal
 		this.guildStates = new Map();
@@ -108,12 +108,15 @@ class MusicHandlers {
 			(!this.config.addons.music.spotify.clientID ||
 				!this.config.addons.music.spotify.clientSecret)
 		) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.configured'),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.configured'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		let res;
@@ -121,12 +124,17 @@ class MusicHandlers {
 			res = await client.poru.resolve({ query, requester: interaction.user });
 		} catch (e) {
 			this.logger.error('Poru resolve error:', e);
-			const embed = new EmbedBuilder().setColor('Red').setDescription(
+			const components = await this.simpleContainer(
+				interaction,
 				await this.t(interaction, 'music.helpers.handlers.music.failed', {
 					error: e?.message || 'Unknown error',
 				}),
+				{ color: 'Red' },
 			);
-			return interaction.editReply({ embeds: [embed] });
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const isSpotifyPlaylist =
@@ -140,12 +148,15 @@ class MusicHandlers {
 				!Array.isArray(res.tracks) ||
 				res.tracks.length === 0
 			) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await this.t(interaction, 'music.helpers.handlers.music.results'),
-					);
-				return interaction.editReply({ embeds: [embed] });
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(interaction, 'music.helpers.handlers.music.results'),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const player = client.poru.createConnection({
@@ -162,21 +173,22 @@ class MusicHandlers {
 
 			if (!player.isPlaying && player.isConnected) player.play();
 
-			const embed = new EmbedBuilder()
-				.setColor(this.config.bot.color)
-				.setThumbnail(res.playlistInfo?.image)
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.desc.spotify',
-						{
-							count: res.tracks.length,
-							name: res.playlistInfo?.name || 'Spotify Playlist',
-						},
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.desc.spotify',
+					{
+						count: res.tracks.length,
+						name: res.playlistInfo?.name || 'Spotify Playlist',
+					},
+				),
+				{ color: this.config.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (res.loadType === 'search') {
@@ -184,31 +196,42 @@ class MusicHandlers {
 				(track) => !track.info.isStream && track.info.length > 70000,
 			);
 			if (!filteredTracks.length) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await this.t(interaction, 'music.helpers.handlers.music.results'),
-					);
-				return interaction.editReply({ embeds: [embed] });
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(interaction, 'music.helpers.handlers.music.results'),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 			res.tracks = filteredTracks;
 		}
 
 		if (res.loadType === 'error') {
-			const embed = new EmbedBuilder().setColor('Red').setDescription(
+			const components = await this.simpleContainer(
+				interaction,
 				await this.t(interaction, 'music.helpers.handlers.music.failed', {
 					error: res.exception?.message || 'Unknown error',
 				}),
+				{ color: 'Red' },
 			);
-			return interaction.editReply({ embeds: [embed] });
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		if (res.loadType === 'empty') {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.results'),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.results'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const player = client.poru.createConnection({
@@ -231,29 +254,31 @@ class MusicHandlers {
 
 		if (!player.isPlaying && player.isConnected) player.play();
 
-		const embed = new EmbedBuilder().setColor(this.config.bot.color);
+		let message;
 		if (res.loadType === 'playlist' || res.loadType === 'PLAYLIST_LOADED') {
-			embed.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.playlist.desc.text',
-					{
-						count: res.tracks.length,
-						name: res.playlistInfo?.name || 'Playlist',
-					},
-				),
+			message = await this.t(
+				interaction,
+				'music.helpers.handlers.music.playlist.desc.text',
+				{
+					count: res.tracks.length,
+					name: res.playlistInfo?.name || 'Playlist',
+				},
 			);
 		} else {
 			const track = res.tracks[0];
-			embed.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.added.to.queue',
-					{ title: track.info.title, url: track.info.uri },
-				),
+			message = await this.t(
+				interaction,
+				'music.helpers.handlers.music.added.to.queue',
+				{ title: track.info.title, url: track.info.uri },
 			);
 		}
-		return interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(interaction, message, {
+			color: this.config.bot.color,
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -264,20 +289,26 @@ class MusicHandlers {
 	 */
 	async handlePause(interaction, player) {
 		if (player.isPaused) {
-			const embed = new EmbedBuilder()
-				.setColor(this.config.bot.color)
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.paused'),
-				);
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.paused'),
+				{ color: this.config.bot.color },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		player.pause(true);
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.paused'),
-			);
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.paused'),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -288,23 +319,26 @@ class MusicHandlers {
 	 */
 	async handleResume(interaction, player) {
 		if (!player.isPaused) {
-			const embed = new EmbedBuilder()
-				.setColor(this.config.bot.color)
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playing.desc',
-					),
-				);
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.playing.desc'),
+				{ color: this.config.bot.color },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		player.pause(false);
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.resume'),
-			);
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.resume'),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async handlePauseResume(interaction, player) {
@@ -313,14 +347,17 @@ class MusicHandlers {
 		const state = player.isPaused
 			? await this.t(interaction, 'music.helpers.handlers.manager.paused')
 			: await this.t(interaction, 'music.helpers.handlers.manager.resumed');
+
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.manager.reply', {
+				state,
+			}),
+			{ color: this.config.bot.color },
+		);
 		await interaction.reply({
-			embeds: [
-				new EmbedBuilder().setColor(this.config.bot.color).setDescription(
-					await this.t(interaction, 'music.helpers.handlers.manager.reply', {
-						state,
-					}),
-				),
-			],
+			components,
+			flags: MessageFlags.IsComponentsV2,
 		});
 	}
 
@@ -332,20 +369,26 @@ class MusicHandlers {
 	 */
 	async handleSkip(interaction, player) {
 		if (!player.currentTrack) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.skip'),
-				);
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.skip'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		player.skip();
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.skipped'),
-			);
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.skipped'),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -365,12 +408,15 @@ class MusicHandlers {
 		player.queue.clear();
 		player.skip();
 
-		const embed = new EmbedBuilder()
-			.setColor('Red')
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.stopped'),
-			);
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.stopped'),
+			{ color: 'Red' },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -472,13 +518,15 @@ class MusicHandlers {
 		const nowPlaying = player.currentTrack;
 
 		if (!nowPlaying) {
-			const embed = new EmbedBuilder()
-				.setColor(this.config.bot.color)
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.empty'),
-				);
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.empty'),
+				{ color: this.config.bot.color },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		let initialPage;
@@ -537,35 +585,37 @@ class MusicHandlers {
 	 */
 	async handleNowPlaying(interaction, player) {
 		if (!player.currentTrack) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.nowplaying.error',
-					),
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.nowplaying.error',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const track = player.currentTrack;
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setURL(track.info.uri)
-			.setThumbnail(track.info.thumbnail)
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.nowplaying.text',
-					{
-						duration: formatTrackDuration(track.info.length),
-						author: track.info.author,
-					},
-				),
-			)
-			.setFooter(await this.embedFooter(interaction));
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.nowplaying.text',
+				{
+					duration: formatTrackDuration(track.info.length),
+					author: track.info.author,
+				},
+			),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -618,12 +668,16 @@ class MusicHandlers {
 				break;
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(nextMode === 'off' ? 'Red' : this.config.bot.color)
-			.setDescription(descriptionText)
-			.setFooter(await this.embedFooter(interaction));
+		const components = await this.simpleContainer(
+			interaction,
+			descriptionText,
+			{ color: nextMode === 'off' ? 'Red' : this.config.bot.color },
+		);
 
-		return interaction.reply({ embeds: [embed] });
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -659,17 +713,20 @@ class MusicHandlers {
 					'music.helpers.handlers.music.autoplay.disabled.message',
 				);
 
-		const embed = new EmbedBuilder()
-			.setColor(player.autoplay ? this.config.bot.color : 'Red')
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.autoplay.status.desc',
-					{ status: statusMessage },
-				),
-			);
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.autoplay.status.desc',
+				{ status: statusMessage },
+			),
+			{ color: player.autoplay ? this.config.bot.color : 'Red' },
+		);
 
-		return interaction.reply({ embeds: [embed] });
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -681,15 +738,15 @@ class MusicHandlers {
 	async handleVolume(interaction, player) {
 		const level = interaction.options.getInteger('level');
 		player.setVolume(level);
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.set', {
-					level,
-				}),
-			)
-			.setFooter(await this.embedFooter(interaction));
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.set', { level }),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -701,24 +758,28 @@ class MusicHandlers {
 	async handleShuffle(interaction, player) {
 		await interaction.deferReply();
 		if (player.queue.length < 2) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.enough'),
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.enough'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		player.queue.shuffle();
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.shuffled'),
-			)
-			.setFooter(await this.embedFooter(interaction));
-		return interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.shuffled'),
+			{ color: this.config.bot.color },
+		);
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 	/**
 	 * ⏮️ Handles the 'back' subcommand.
@@ -740,16 +801,18 @@ class MusicHandlers {
 				!guildState.previousTracks ||
 				guildState.previousTracks.length === 0
 			) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await this.t(
-							interaction,
-							'music.helpers.handlers.music.no.previous.track',
-						),
-					)
-					.setFooter(await this.embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.handlers.music.no.previous.track',
+					),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const previousTrack = guildState.previousTracks.shift();
@@ -762,18 +825,20 @@ class MusicHandlers {
 
 			player.skip();
 
-			const embed = new EmbedBuilder()
-				.setColor(this.config.bot.color)
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playing.previous',
-						{ title: previousTrack.info.title },
-					),
-				)
-				.setFooter(await this.embedFooter(interaction));
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playing.previous',
+					{ title: previousTrack.info.title },
+				),
+				{ color: this.config.bot.color },
+			);
 
-			return interaction.editReply({ embeds: [embed] });
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			logger.error('[HandleBack] Error:', error);
 
@@ -906,18 +971,14 @@ class MusicHandlers {
 			if (btnInt.customId === 'filter_reset') {
 				player.filters.clearFilters(true);
 				await player.filters.updateFilters();
+				const components = await this.simpleContainer(
+					btnInt,
+					await this.t(btnInt, 'music.helpers.handlers.music.filter.reset'),
+					{ color: this.config.bot.color },
+				);
 				await btnInt.reply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor(this.config.bot.color)
-							.setDescription(
-								await this.t(
-									btnInt,
-									'music.helpers.handlers.music.filter.reset',
-								),
-							)
-							.setFooter(await this.embedFooter(btnInt)),
-					],
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 				return;
 			}
@@ -1000,34 +1061,30 @@ class MusicHandlers {
 
 			if (applied) {
 				await player.filters.updateFilters();
+				const components = await this.simpleContainer(
+					btnInt,
+					await this.t(btnInt, 'music.helpers.handlers.music.filter.applied', {
+						preset: filterId,
+					}),
+					{ color: this.config.bot.color },
+				);
 				await btnInt.reply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor(this.config.bot.color)
-							.setDescription(
-								await this.t(
-									btnInt,
-									'music.helpers.handlers.music.filter.applied',
-									{ preset: filterId },
-								),
-							)
-							.setFooter(await this.embedFooter(btnInt)),
-					],
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			} else {
+				const components = await this.simpleContainer(
+					btnInt,
+					await this.t(
+						btnInt,
+						'music.helpers.handlers.music.filter.not.available',
+						{ preset: filterId },
+					),
+					{ color: 'Orange' },
+				);
 				await btnInt.reply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor('Orange')
-							.setDescription(
-								await this.t(
-									btnInt,
-									'music.helpers.handlers.music.filter.not.available',
-									{ preset: filterId },
-								),
-							)
-							.setFooter(await this.embedFooter(btnInt)),
-					],
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 		});
@@ -1051,38 +1108,44 @@ class MusicHandlers {
 			position < 1 ||
 			position > player.queue.length
 		) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.position', {
-						size: player.queue.length,
-					}),
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.position', {
+					size: player.queue.length,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		const removed = player.queue.splice(position - 1, 1);
 		if (!removed || removed.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.failed'),
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.failed'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		const track = removed[0];
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.removed', {
-					title: track.info.title,
-					url: track.info.uri,
-					position,
-				}),
-			)
-			.setFooter(await this.embedFooter(interaction));
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.removed', {
+				title: track.info.title,
+				url: track.info.uri,
+				position,
+			}),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -1104,62 +1167,72 @@ class MusicHandlers {
 			to < 1 ||
 			to > queueSize
 		) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.positions', {
-						size: queueSize,
-					}),
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.positions', {
+					size: queueSize,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		if (from === to) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.position'),
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.position'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const trackArr = player.queue.splice(from - 1, 1);
 		const track = trackArr[0];
 		if (!track) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(interaction, 'music.helpers.handlers.music.found'),
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.found'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		player.queue.splice(to - 1, 0, track);
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.moved', {
-					title: track.info.title,
-					url: track.info.uri,
-					from,
-					to,
-				}),
-			)
-			.setFooter(await this.embedFooter(interaction));
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.moved', {
+				title: track.info.title,
+				url: track.info.uri,
+				from,
+				to,
+			}),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async handleClear(interaction, player) {
 		player.queue.clear();
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.clear'),
-			)
-			.setFooter(await this.embedFooter(interaction));
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.clear'),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async handleSeek(interaction, player) {
@@ -1187,25 +1260,29 @@ class MusicHandlers {
 		}
 
 		if (Number.isNaN(seconds) || seconds < 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					'❌ Invalid time format! Please use seconds or mm:ss or hh:mm:ss format.',
-				)
-				.setFooter(await this.embedFooter(interaction));
-			return interaction.reply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				'❌ Invalid time format! Please use seconds or mm:ss or hh:mm:ss format.',
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		player.seekTo(seconds * 1000);
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(interaction, 'music.helpers.handlers.music.seeked', {
-					time: seconds,
-				}),
-			)
-			.setFooter(await this.embedFooter(interaction));
-		return interaction.reply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.seeked', {
+				time: seconds,
+			}),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async handleLyrics(interaction, player) {
@@ -1458,32 +1535,34 @@ class MusicHandlers {
 			playlistCount >= this.config.addons.music.playlistLimit &&
 			!userIsPremium
 		) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.save.limit.desc',
-						{
-							count: this.config.addons.music.playlistLimit,
-						},
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.save.limit.desc',
+					{ count: this.config.addons.music.playlistLimit },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (!player || (!player.currentTrack && player.queue.length === 0)) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.save.empty.queue',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.save.empty.queue',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const existing = await this.Playlist.getCache({
@@ -1491,17 +1570,19 @@ class MusicHandlers {
 			name: playlistName,
 		});
 		if (existing) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.save.duplicate',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.save.duplicate',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const playlist = await this.Playlist.create({ userId, name: playlistName });
@@ -1530,20 +1611,22 @@ class MusicHandlers {
 
 		await this.PlaylistTrack.bulkCreate(tracksToSave);
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setFooter(await this.embedFooter(interaction))
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.playlist.save.success',
-					{
-						name: playlistName,
-						count: tracksToSave.length,
-					},
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.playlist.save.success',
+				{
+					name: playlistName,
+					count: tracksToSave.length,
+				},
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async _handlePlaylistLoad(interaction, player) {
@@ -1559,31 +1642,35 @@ class MusicHandlers {
 		});
 
 		if (!playlist) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.load.not.found',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.load.not.found',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (!playlist.tracks || playlist.tracks.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.load.empty',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.load.empty',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (player) {
@@ -1613,17 +1700,19 @@ class MusicHandlers {
 
 		if (!newPlayer.isPlaying) newPlayer.play();
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setFooter(await this.embedFooter(interaction))
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.playlist.load.success',
-					{ count: added, name: playlistName },
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.playlist.load.success',
+				{ count: added, name: playlistName },
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async _createPlaylistListContainer(
@@ -1714,16 +1803,18 @@ class MusicHandlers {
 		});
 
 		if (!playlists || playlists.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.list.empty',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.list.empty',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const itemsPerPage = 10;
@@ -1794,33 +1885,37 @@ class MusicHandlers {
 			name: playlistName,
 		});
 		if (!playlist) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.delete.not.found',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.delete.not.found',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		await this.PlaylistTrack.destroy({ where: { playlistId: playlist.id } });
 		await playlist.destroy();
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setFooter(await this.embedFooter(interaction))
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.playlist.delete.success',
-					{ name: playlistName },
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.playlist.delete.success',
+				{ name: playlistName },
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async _handlePlaylistAppend(interaction, player) {
@@ -1828,16 +1923,18 @@ class MusicHandlers {
 		const playlistName = interaction.options.getString('name');
 
 		if (!player) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.append.no.player',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.append.no.player',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const playlist = await this.Playlist.getCache({
@@ -1847,31 +1944,35 @@ class MusicHandlers {
 		});
 
 		if (!playlist) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.load.not.found',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.load.not.found',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (!playlist.tracks || playlist.tracks.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.load.empty',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.load.empty',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		let addedCount = 0;
@@ -1887,20 +1988,22 @@ class MusicHandlers {
 			}
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setFooter(await this.embedFooter(interaction))
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.playlist.append.success.v2',
-					{
-						count: addedCount,
-						name: playlistName,
-					},
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.playlist.append.success.v2',
+				{
+					count: addedCount,
+					name: playlistName,
+				},
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async _handlePlaylistRemoveTrack(interaction) {
@@ -1918,58 +2021,66 @@ class MusicHandlers {
 		});
 
 		if (!playlist) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.remove.track.not.found',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.remove.track.not.found',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		if (!playlist.tracks || playlist.tracks.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.remove.track.empty',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.remove.track.empty',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		if (position < 1 || position > playlist.tracks.length) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.remove.track.invalid.position',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.remove.track.invalid.position',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const track = playlist.tracks[position - 1];
 		await track.destroy();
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setFooter(await this.embedFooter(interaction))
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.playlist.remove.track.success',
-					{ position, name: playlistName },
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.playlist.remove.track.success',
+				{ position, name: playlistName },
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async _handlePlaylistRename(interaction) {
@@ -1983,17 +2094,19 @@ class MusicHandlers {
 			name: playlistName,
 		});
 		if (!playlist) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.rename.not.found',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.rename.not.found',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const existing = await this.Playlist.getCache({
@@ -2001,33 +2114,37 @@ class MusicHandlers {
 			name: newName,
 		});
 		if (existing) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.rename.duplicate',
-						{ name: newName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.rename.duplicate',
+					{ name: newName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		playlist.name = newName;
 		await playlist.saveAndUpdateCache();
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setFooter(await this.embedFooter(interaction))
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.music.playlist.rename.success',
-					{ oldName: playlistName, newName },
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.playlist.rename.success',
+				{ oldName: playlistName, newName },
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async _createTrackListContainer(
@@ -2122,31 +2239,35 @@ class MusicHandlers {
 		});
 		const playlist = Array.isArray(playlistRaw) ? playlistRaw[0] : playlistRaw;
 		if (!playlist) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.track.list.not.found',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.track.list.not.found',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (!playlist.tracks || playlist.tracks.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setFooter(await this.embedFooter(interaction))
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.music.playlist.track.list.empty',
-						{ name: playlistName },
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.playlist.track.list.empty',
+					{ name: playlistName },
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const itemsPerPage = 10;
@@ -2289,16 +2410,19 @@ class MusicHandlers {
 			name: playlistName,
 		});
 		if (!playlist) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`${await this.t(interaction, 'music.helpers.handlers.playlist.share.not.found.title')}\n${await this.t(
-						interaction,
-						'music.helpers.handlers.playlist.share.not.found.desc',
-						{ name: playlistName },
-					)}`,
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				`${await this.t(interaction, 'music.helpers.handlers.playlist.share.not.found.title')}\n${await this.t(
+					interaction,
+					'music.helpers.handlers.playlist.share.not.found.desc',
+					{ name: playlistName },
+				)}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		let shareCode = playlist.shareCode;
@@ -2309,16 +2433,19 @@ class MusicHandlers {
 			await playlist.saveAndUpdateCache();
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				`${await this.t(interaction, 'music.helpers.handlers.playlist.share.title', { name: playlist.name })}\n${await this.t(
-					interaction,
-					'music.helpers.handlers.playlist.share.desc',
-				)}\n\n**${await this.t(interaction, 'music.helpers.handlers.playlist.share.code.label')}**: \`${shareCode}\``,
-			);
+		const components = await this.simpleContainer(
+			interaction,
+			`${await this.t(interaction, 'music.helpers.handlers.playlist.share.title', { name: playlist.name })}\n${await this.t(
+				interaction,
+				'music.helpers.handlers.playlist.share.desc',
+			)}\n\n**${await this.t(interaction, 'music.helpers.handlers.playlist.share.code.label')}**: \`${shareCode}\``,
+			{ color: this.config.bot.color },
+		);
 
-		await interaction.editReply({ embeds: [embed] });
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -2344,15 +2471,18 @@ class MusicHandlers {
 			});
 
 			if (!originalPlaylist) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						`${await this.t(interaction, 'music.helpers.handlers.playlist.import.invalid.title')}\n${await this.t(
-							interaction,
-							'music.helpers.handlers.playlist.import.invalid.desc',
-						)}`,
-					);
-				return interaction.editReply({ embeds: [embed] });
+				const components = await this.simpleContainer(
+					interaction,
+					`${await this.t(interaction, 'music.helpers.handlers.playlist.import.invalid.title')}\n${await this.t(
+						interaction,
+						'music.helpers.handlers.playlist.import.invalid.desc',
+					)}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			let newPlaylistName = originalPlaylist.name;
@@ -2374,16 +2504,19 @@ class MusicHandlers {
 				playlistCount >= this.config.addons.music.playlistLimit &&
 				!userIsPremium
 			) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						`${await this.t(interaction, 'music.helpers.handlers.music.playlist.save.limit.title')}\n${await this.t(
-							interaction,
-							'music.helpers.handlers.music.playlist.save.limit.desc',
-							{ count: this.config.addons.music.playlistLimit },
-						)}`,
-					);
-				return interaction.editReply({ embeds: [embed] });
+				const components = await this.simpleContainer(
+					interaction,
+					`${await this.t(interaction, 'music.helpers.handlers.music.playlist.save.limit.title')}\n${await this.t(
+						interaction,
+						'music.helpers.handlers.music.playlist.save.limit.desc',
+						{ count: this.config.addons.music.playlistLimit },
+					)}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const newPlaylist = await this.Playlist.create({
@@ -2402,29 +2535,35 @@ class MusicHandlers {
 
 			await this.PlaylistTrack.bulkCreate(tracksToCopy);
 
-			const embed = new EmbedBuilder()
-				.setColor(this.config.bot.color)
-				.setDescription(
-					`${await this.t(interaction, 'music.helpers.handlers.playlist.import.success.title')}\n${await this.t(
-						interaction,
-						'music.helpers.handlers.playlist.import.success.desc',
-						{
-							original: originalPlaylist.name,
-							name: newPlaylist.name,
-							count: tracksToCopy.length,
-						},
-					)}`,
-				);
+			const components = await this.simpleContainer(
+				interaction,
+				`${await this.t(interaction, 'music.helpers.handlers.playlist.import.success.title')}\n${await this.t(
+					interaction,
+					'music.helpers.handlers.playlist.import.success.desc',
+					{
+						original: originalPlaylist.name,
+						name: newPlaylist.name,
+						count: tracksToCopy.length,
+					},
+				)}`,
+				{ color: this.config.bot.color },
+			);
 
-			return interaction.editReply({ embeds: [embed] });
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (error) {
 			this.logger.error('Playlist import from code failed:', error);
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`${await this.t(interaction, 'music.helpers.handlers.playlist.import.error.title')}\n${await this.t(interaction, 'music.helpers.handlers.playlist.import.error.desc')}`,
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				`${await this.t(interaction, 'music.helpers.handlers.playlist.import.error.title')}\n${await this.t(interaction, 'music.helpers.handlers.playlist.import.error.desc')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	}
 
@@ -2437,15 +2576,18 @@ class MusicHandlers {
 			requester: user,
 		});
 		if (!res || res.loadType !== 'PLAYLIST_LOADED' || !res.tracks.length) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.playlist.import.failed',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.playlist.import.failed',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const spotifyPlaylistName = res.playlistInfo.name;
@@ -2457,49 +2599,71 @@ class MusicHandlers {
 		});
 
 		if (existingPlaylist) {
-			const embed = new EmbedBuilder()
-				.setColor('Yellow')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.playlist.import.duplicate.prompt',
-						{ name: spotifyPlaylistName },
+			const container = new ContainerBuilder()
+				.setAccentColor(
+					this.convertColor('Yellow', { from: 'discord', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await this.t(
+							interaction,
+							'music.helpers.handlers.playlist.import.duplicate.prompt',
+							{ name: spotifyPlaylistName },
+						),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addActionRowComponents(
+					new ActionRowBuilder().addComponents(
+						new ButtonBuilder()
+							.setCustomId('import_overwrite')
+							.setLabel(
+								await this.t(
+									interaction,
+									'music.helpers.handlers.playlist.import.btn.overwrite',
+								),
+							)
+							.setStyle(ButtonStyle.Danger),
+						new ButtonBuilder()
+							.setCustomId('import_copy')
+							.setLabel(
+								await this.t(
+									interaction,
+									'music.helpers.handlers.playlist.import.btn.copy',
+								),
+							)
+							.setStyle(ButtonStyle.Primary),
+						new ButtonBuilder()
+							.setCustomId('import_cancel')
+							.setLabel(
+								await this.t(
+									interaction,
+									'music.helpers.handlers.playlist.import.btn.cancel',
+								),
+							)
+							.setStyle(ButtonStyle.Secondary),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await this.t(interaction, 'common.container.footer', {
+							username: client.user.username,
+						}),
 					),
 				);
 
-			const row = new ActionRowBuilder().addComponents(
-				new ButtonBuilder()
-					.setCustomId('import_overwrite')
-					.setLabel(
-						await this.t(
-							interaction,
-							'music.helpers.handlers.playlist.import.btn.overwrite',
-						),
-					)
-					.setStyle(ButtonStyle.Danger),
-				new ButtonBuilder()
-					.setCustomId('import_copy')
-					.setLabel(
-						await this.t(
-							interaction,
-							'music.helpers.handlers.playlist.import.btn.copy',
-						),
-					)
-					.setStyle(ButtonStyle.Primary),
-				new ButtonBuilder()
-					.setCustomId('import_cancel')
-					.setLabel(
-						await this.t(
-							interaction,
-							'music.helpers.handlers.playlist.import.btn.cancel',
-						),
-					)
-					.setStyle(ButtonStyle.Secondary),
-			);
-
 			const reply = await interaction.editReply({
-				embeds: [embed],
-				components: [row],
+				components: [container],
+				flags: MessageFlags.IsComponentsV2,
 			});
 
 			const collector = reply.createMessageComponentCollector({
@@ -2516,20 +2680,23 @@ class MusicHandlers {
 					});
 					await this._saveTracksToPlaylist(existingPlaylist, tracksFromSpotify);
 
-					const successEmbed = new EmbedBuilder()
-						.setColor(this.config.bot.color)
-						.setDescription(
-							await this.t(
-								interaction,
-								'music.helpers.handlers.playlist.import.overwrite.success',
-								{
-									count: tracksFromSpotify.length,
-									name: spotifyPlaylistName,
-									source: 'spotify',
-								},
-							),
-						);
-					await i.editReply({ embeds: [successEmbed], components: [] });
+					const successComponents = await this.simpleContainer(
+						interaction,
+						await this.t(
+							interaction,
+							'music.helpers.handlers.playlist.import.overwrite.success',
+							{
+								count: tracksFromSpotify.length,
+								name: spotifyPlaylistName,
+								source: 'spotify',
+							},
+						),
+						{ color: this.config.bot.color },
+					);
+					await i.editReply({
+						components: successComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				} else if (i.customId === 'import_copy') {
 					let newName = '';
 					let copyNum = 1;
@@ -2554,45 +2721,54 @@ class MusicHandlers {
 					});
 					await this._saveTracksToPlaylist(newPlaylist, tracksFromSpotify);
 
-					const successEmbed = new EmbedBuilder()
-						.setColor(this.config.bot.color)
-						.setDescription(
-							await this.t(
-								interaction,
-								'music.helpers.handlers.playlist.import.copy.success',
-								{
-									count: tracksFromSpotify.length,
-									newName: newName,
-									source: 'spotify',
-								},
-							),
-						);
-					await i.editReply({ embeds: [successEmbed], components: [] });
+					const successComponents = await this.simpleContainer(
+						interaction,
+						await this.t(
+							interaction,
+							'music.helpers.handlers.playlist.import.copy.success',
+							{
+								count: tracksFromSpotify.length,
+								newName: newName,
+								source: 'spotify',
+							},
+						),
+						{ color: this.config.bot.color },
+					);
+					await i.editReply({
+						components: successComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				} else if (i.customId === 'import_cancel') {
-					const cancelEmbed = new EmbedBuilder()
-						.setColor('Grey')
-						.setDescription(
-							await this.t(
-								interaction,
-								'music.helpers.handlers.playlist.import.cancelled',
-							),
-						);
-					await i.editReply({ embeds: [cancelEmbed], components: [] });
+					const cancelComponents = await this.simpleContainer(
+						interaction,
+						await this.t(
+							interaction,
+							'music.helpers.handlers.playlist.import.cancelled',
+						),
+						{ color: 'Grey' },
+					);
+					await i.editReply({
+						components: cancelComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				collector.stop();
 			});
 
 			collector.on('end', async (_collected, reason) => {
 				if (reason === 'time') {
-					const timeoutEmbed = new EmbedBuilder()
-						.setColor('Red')
-						.setDescription(
-							await this.t(
-								interaction,
-								'music.helpers.handlers.playlist.import.timeout',
-							),
-						);
-					interaction.editReply({ embeds: [timeoutEmbed], components: [] });
+					const timeoutComponents = await this.simpleContainer(
+						interaction,
+						await this.t(
+							interaction,
+							'music.helpers.handlers.playlist.import.timeout',
+						),
+						{ color: 'Red' },
+					);
+					interaction.editReply({
+						components: timeoutComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 			});
 		} else {
@@ -2605,16 +2781,19 @@ class MusicHandlers {
 				playlistCount >= this.config.addons.music.playlistLimit &&
 				!userIsPremium
 			) {
-				const embed = new EmbedBuilder().setColor('Red').setDescription(
+				const components = await this.simpleContainer(
+					interaction,
 					await this.t(
 						interaction,
 						'music.helpers.handlers.music.playlist.save.limit.desc',
-						{
-							count: this.config.addons.music.playlistLimit,
-						},
+						{ count: this.config.addons.music.playlistLimit },
 					),
+					{ color: 'Red' },
 				);
-				return interaction.editReply({ embeds: [embed] });
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const newPlaylist = await this.Playlist.create({
@@ -2623,20 +2802,23 @@ class MusicHandlers {
 			});
 			await this._saveTracksToPlaylist(newPlaylist, tracksFromSpotify);
 
-			const embed = new EmbedBuilder()
-				.setColor(this.config.bot.color)
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.playlist.import.success.text',
-						{
-							count: tracksFromSpotify.length,
-							name: spotifyPlaylistName,
-							source: 'spotify',
-						},
-					),
-				);
-			await interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.playlist.import.success.text',
+					{
+						count: tracksFromSpotify.length,
+						name: spotifyPlaylistName,
+						source: 'spotify',
+					},
+				),
+				{ color: this.config.bot.color },
+			);
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	}
 
@@ -2679,15 +2861,15 @@ class MusicHandlers {
 		});
 
 		if (!favorites || favorites.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.favorite.play.empty',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.favorite.play.empty'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (player && !append) {
@@ -2717,16 +2899,19 @@ class MusicHandlers {
 
 		if (!newPlayer.isPlaying) newPlayer.play();
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.favorite.play.success',
-					{ count: added },
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.favorite.play.success',
+				{ count: added },
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 	async _createFavoriteListContainer(
 		page = 1,
@@ -2817,15 +3002,15 @@ class MusicHandlers {
 		});
 
 		if (!favorites || favorites.length === 0) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.favorite.list.empty',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.favorite.list.empty'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const itemsPerPage = 10;
@@ -2899,15 +3084,18 @@ class MusicHandlers {
 				requester: interaction.user,
 			});
 			if (!res || !res.tracks || res.tracks.length === 0) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await this.t(
-							interaction,
-							'music.helpers.handlers.favorite.add.no.track',
-						),
-					);
-				return interaction.editReply({ embeds: [embed] });
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.handlers.favorite.add.no.track',
+					),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 			track = res.tracks[0];
 		} else {
@@ -2915,15 +3103,18 @@ class MusicHandlers {
 		}
 
 		if (!track) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.favorite.add.no.track',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.favorite.add.no.track',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const existing = await this.Favorite.getCache({
@@ -2934,16 +3125,19 @@ class MusicHandlers {
 		});
 
 		if (existing) {
-			const embed = new EmbedBuilder().setColor('Yellow').setDescription(
+			const components = await this.simpleContainer(
+				interaction,
 				await this.t(
 					interaction,
 					'music.helpers.handlers.favorite.add.duplicate',
-					{
-						title: track.info.title || track.info.name,
-					},
+					{ title: track.info.title },
 				),
+				{ color: 'Yellow' },
 			);
-			return interaction.editReply({ embeds: [embed] });
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		await this.Favorite.create({
@@ -2955,16 +3149,17 @@ class MusicHandlers {
 			uri: track.info.uri,
 		});
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.favorite.add.success',
-					{ title: track.info.title || track.info.name },
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.favorite.add.success', {
+				title: track.info.title || track.info.name,
+			}),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	async _handleFavoriteRemove(interaction) {
@@ -2979,41 +3174,47 @@ class MusicHandlers {
 		});
 
 		if (!favorite) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.favorite.list.empty',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.favorite.list.empty'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (!favorite) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await this.t(
-						interaction,
-						'music.helpers.handlers.favorite.remove.invalid.name',
-					),
-				);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.favorite.remove.invalid.name',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		await favorite.destroy();
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(
-				await this.t(
-					interaction,
-					'music.helpers.handlers.favorite.remove.success',
-					{ title: favorite.title },
-				),
-			);
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.favorite.remove.success',
+				{ title: favorite.title },
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -3067,10 +3268,15 @@ class MusicHandlers {
 			}
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(this.config.bot.color)
-			.setDescription(await this.t(interaction, msgKey));
-		await interaction.editReply({ embeds: [embed] });
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, msgKey),
+			{ color: this.config.bot.color },
+		);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	/**
@@ -3221,16 +3427,17 @@ class MusicHandlers {
 			);
 
 			if (!response.data || response.data.length === 0) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await this.t(
-							interaction,
-							'music.helpers.handlers.radio.no_results',
-							{ query },
-						),
-					);
-				return interaction.editReply({ embeds: [embed] });
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(interaction, 'music.helpers.handlers.radio.no_results', {
+						query,
+					}),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			if (response.data.length === 1) {

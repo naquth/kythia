@@ -26,6 +26,9 @@ class StickyMessageHandler {
 		const { convertColor } = helpers.color;
 
 		try {
+			// Ignore bot messages to prevent infinite loop
+			if (message.author.bot) return;
+
 			const sticky = await StickyMessage.getCache({
 				channelId: message.channel.id,
 			});

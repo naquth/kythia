@@ -247,6 +247,9 @@ module.exports = {
 			await i.update({
 				components: [newLeaderboardContainer],
 				flags: MessageFlags.IsComponentsV2,
+				allowedMentions: {
+					parse: [],
+				},
 			});
 		});
 
@@ -265,6 +268,9 @@ module.exports = {
 				await message.edit({
 					components: [finalContainer],
 					flags: MessageFlags.IsComponentsV2,
+					allowedMentions: {
+						parse: [],
+					},
 				});
 			} catch (_e) {}
 		});

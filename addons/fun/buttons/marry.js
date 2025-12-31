@@ -17,7 +17,7 @@ const { convertColor } = require('kythia-core').utils;
 module.exports = {
 	execute: async (interaction) => {
 		const container = interaction.client.container;
-		const { t } = container;
+		const { t, kythiaConfig } = container;
 		const [prefix, actionType, marriageId] = interaction.customId.split('_');
 		if (prefix !== 'marry' || !actionType || !marriageId) return;
 
@@ -27,7 +27,10 @@ module.exports = {
 			if (!marriage || marriage.status !== 'pending') {
 				const container = new ContainerBuilder()
 					.setAccentColor(
-						convertColor(kythia.bot.color, { from: 'hex', to: 'decimal' }),
+						convertColor(kythiaConfig.bot.color, {
+							from: 'hex',
+							to: 'decimal',
+						}),
 					)
 					.addTextDisplayComponents(
 						new TextDisplayBuilder().setContent(
@@ -85,7 +88,7 @@ module.exports = {
 
 			const container = new ContainerBuilder()
 				.setAccentColor(
-					convertColor(kythia.bot.color, { from: 'hex', to: 'decimal' }),
+					convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(congratsTitle),
@@ -104,7 +107,10 @@ module.exports = {
 			if (!marriage || marriage.status !== 'pending') {
 				const container = new ContainerBuilder()
 					.setAccentColor(
-						convertColor(kythia.bot.color, { from: 'hex', to: 'decimal' }),
+						convertColor(kythiaConfig.bot.color, {
+							from: 'hex',
+							to: 'decimal',
+						}),
 					)
 					.addTextDisplayComponents(
 						new TextDisplayBuilder().setContent(

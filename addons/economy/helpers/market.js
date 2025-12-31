@@ -39,7 +39,7 @@ async function getMarketData() {
 	};
 	return response.data;
 }
-async function getChartBuffer(assetId) {
+async function getChartBuffer(config, assetId) {
 	try {
 		const historyResponse = await axios.get(
 			`https://api.coingecko.com/api/v3/coins/${assetId}/market_chart`,
@@ -58,10 +58,8 @@ async function getChartBuffer(assetId) {
 		);
 		const dataPoints = dailyPrices.map((p) => p[1]);
 
-		// Use color from kythia.bot.color (assume global, as in other files)
-		const hexColor = kythia?.bot?.color || '#4bc0c0'; // fallback to old cyan if undefined
+		const hexColor = config.bot.color || '#4bc0c0';
 
-		// Helper to convert HEX to rgba
 		function hexToRgba(hex, alpha = 1) {
 			let c = hex.replace('#', '');
 			if (c.length === 3)

@@ -29,12 +29,14 @@ module.exports = {
 		.setDescription('Send an announcement to all servers the bot has joined.')
 		.addSubcommand((sub) =>
 			sub
-				.setName('embed')
-				.setDescription('Send a simple announcement using an embed.'),
+				.setName('simple')
+				.setDescription(
+					'Send a simple announcement using a simple components v2.',
+				),
 		)
 		.addSubcommand((sub) =>
 			sub
-				.setName('container')
+				.setName('complex')
 				.setDescription(
 					'Send a complex announcement by pasting a JSON payload.',
 				),
@@ -53,7 +55,7 @@ module.exports = {
 
 		const subcommand = interaction.options.getSubcommand();
 
-		if (subcommand === 'embed') {
+		if (subcommand === 'simple') {
 			const modal = new ModalBuilder()
 				.setCustomId(`announcement-modal-embed_${interaction.user.id}`)
 				.setTitle('📝 Create Embed Announcement');
@@ -115,7 +117,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			};
 			await this.sendToAllGuilds(modalSubmit, payload);
-		} else if (subcommand === 'container') {
+		} else if (subcommand === 'complex') {
 			const modal = new ModalBuilder()
 				.setCustomId(`announcement-modal-container_${interaction.user.id}`)
 				.setTitle('📝 Create Container Announcement');

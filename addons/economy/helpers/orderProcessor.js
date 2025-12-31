@@ -15,7 +15,7 @@ async function processOrders(bot) {
 	const { KythiaUser, MarketOrder, MarketPortfolio, MarketTransaction } =
 		models;
 
-	logger.info(`[Economy] Processing market orders...`);
+	logger.info(`Processing market orders...`, { label: 'economy' });
 	try {
 		const marketData = await getMarketData();
 		const openOrders = await MarketOrder.getAllCache({ status: 'open' });

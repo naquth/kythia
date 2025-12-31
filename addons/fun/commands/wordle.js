@@ -22,7 +22,10 @@ const {
 	TextInputStyle,
 } = require('discord.js');
 
-const WORD_LIST = kythia.addons.fun.wordle.words;
+const kythiaConfig = require('../../../kythia.config');
+
+const WORD_LIST = kythiaConfig.addons.fun.wordle.words;
+
 const EMOJI_CORRECT = '🟩';
 const EMOJI_PRESENT = '🟨';
 const EMOJI_ABSENT = '⬛';
@@ -34,6 +37,7 @@ function pickRandomWord() {
 function isValidWord(word) {
 	return WORD_LIST.includes(word);
 }
+
 function checkGuess(guess, answer) {
 	const result = Array(5).fill('absent');
 	const answerArr = answer.split('');

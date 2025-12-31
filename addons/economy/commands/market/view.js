@@ -125,7 +125,7 @@ module.exports = {
 				description += `\n**${await t(interaction, 'economy.market.view.open.orders.label')}:**\n${orderSummary}`;
 			}
 
-			const chartBuffer = await getChartBuffer(assetId);
+			const chartBuffer = await getChartBuffer(kythiaConfig, assetId);
 			let mediaUrl = null;
 			if (chartBuffer) {
 				const attachment = new AttachmentBuilder(chartBuffer, {

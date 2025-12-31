@@ -7,10 +7,14 @@
  */
 const {
 	SlashCommandBuilder,
-	EmbedBuilder,
 	ChannelType,
 	PermissionFlagsBits,
 	InteractionContextType,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	MessageFlags,
 } = require('discord.js');
 const { updateStats } = require('../../helpers/stats');
 
@@ -866,7 +870,8 @@ module.exports = {
 	},
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers, models, logger } = container;
-		const { embedFooter, getChannelSafe } = helpers.discord;
+		const { getChannelSafe, simpleContainer } = helpers.discord;
+		// const { convertColor } = helpers.color;
 		const { ServerSetting } = models;
 
 		await interaction.deferReply({ ephemeral: true });
@@ -892,13 +897,6 @@ module.exports = {
 			);
 		}
 
-		const embed = new EmbedBuilder()
-			.setTitle(await t(interaction, 'core.setting.setting.embed.title.text'))
-			.setColor(kythiaConfig.bot.color)
-			.setThumbnail(interaction.client.user.displayAvatarURL())
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
-
 		function cleanAndParseJson(value) {
 			if (typeof value !== 'string') return value;
 			let tempValue = value;
@@ -914,10 +912,15 @@ module.exports = {
 
 		if (sub === 'view') {
 			if (!serverSetting || !serverSetting.dataValues) {
-				embed.setDescription(
+				const components = await simpleContainer(
+					interaction,
 					await t(interaction, 'core.setting.setting.no.config'),
+					{ color: kythiaConfig.bot.color },
 				);
-				return interaction.editReply({ embeds: [embed] });
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 			const settings = serverSetting.dataValues;
 			const kategori = { umum: [], boolean: [], array: [], lainnya: [] };
@@ -1056,33 +1059,45 @@ module.exports = {
 			let page = 0;
 			const totalPages = pages.length;
 
-			const buildPageEmbed = async (pageIdx) => {
-				return new EmbedBuilder()
-					.setTitle(
-						await t(interaction, 'core.setting.setting.embed.title.view'),
+			const buildPageContainer = async (pageIdx) => {
+				const { convertColor } = helpers.color;
+				const container = new ContainerBuilder()
+					.setAccentColor(
+						convertColor(kythiaConfig.bot.color, {
+							from: 'hex',
+							to: 'decimal',
+						}),
 					)
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						pages[pageIdx] ||
-							(await t(interaction, 'core.setting.setting.no.configured')),
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							`## ${await t(interaction, 'core.setting.setting.embed.title.view')}`,
+						),
 					)
-					.setFooter({
-						text: `${await t(interaction, 'common.embed.footer', { username: interaction.client.user.username })} • Page ${pageIdx + 1}/${totalPages}`,
-					});
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							pages[pageIdx] ||
+								(await t(interaction, 'core.setting.setting.no.configured')),
+						),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							`${await t(interaction, 'common.embed.footer', { username: interaction.client.user.username })} • Page ${pageIdx + 1}/${totalPages}`,
+						),
+					);
+				return container;
 			};
 
 			if (pages.length === 1) {
-				embed
-					.setTitle(
-						await t(interaction, 'core.setting.setting.embed.title.view'),
-					)
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						pages[0] ||
-							(await t(interaction, 'core.setting.setting.no.configured')),
-					)
-					.setFooter(await embedFooter(interaction));
-				return interaction.editReply({ embeds: [embed] });
+				const container = await buildPageContainer(0);
+				return interaction.editReply({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 
 			const {
@@ -1104,8 +1119,8 @@ module.exports = {
 			const row = new ActionRowBuilder().addComponents(prevBtn, nextBtn);
 
 			const msg = await interaction.editReply({
-				embeds: [await buildPageEmbed(page)],
-				components: [row],
+				components: [await buildPageContainer(page), row],
+				flags: MessageFlags.IsComponentsV2,
 				fetchReply: true,
 			});
 
@@ -1129,8 +1144,8 @@ module.exports = {
 				nextBtn.setDisabled(page === pages.length - 1);
 
 				await i.update({
-					embeds: [await buildPageEmbed(page)],
-					components: [row],
+					components: [await buildPageContainer(page), row],
+					flags: MessageFlags.IsComponentsV2,
 				});
 			});
 
@@ -1159,10 +1174,15 @@ module.exports = {
 				? 'core.setting.setting.feature.enabled'
 				: 'core.setting.setting.feature.disabled';
 
-			embed.setDescription(
+			const components = await simpleContainer(
+				interaction,
 				await t(interaction, translationKey, { feature: featureName }),
+				{ color: isEnabled ? 'Green' : 'Red' },
 			);
-			return interaction.editReply({ embeds: [embed] });
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		switch (group) {
@@ -1174,13 +1194,18 @@ module.exports = {
 
 						if (action === 'add') {
 							if (whitelist.includes(targetId)) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.whitelist.already',
 									),
+									{ color: 'Yellow' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							whitelist.push(targetId);
 							serverSetting.whitelist = whitelist;
@@ -1188,7 +1213,8 @@ module.exports = {
 							await serverSetting.saveAndUpdateCache('guildId');
 
 							const isRole = interaction.guild.roles.cache.has(targetId);
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								isRole
 									? await t(
 											interaction,
@@ -1200,17 +1226,26 @@ module.exports = {
 											'core.setting.setting.whitelist.add.user',
 											{ user: `<@${targetId}>` },
 										),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						} else if (action === 'remove') {
 							if (!whitelist.includes(targetId)) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.whitelist.notfound',
 									),
+									{ color: 'Red' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							whitelist = whitelist.filter((id) => id !== targetId);
 							serverSetting.whitelist = whitelist;
@@ -1218,7 +1253,8 @@ module.exports = {
 							await serverSetting.saveAndUpdateCache('guildId');
 
 							const isRole = interaction.guild.roles.cache.has(targetId);
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								isRole
 									? await t(
 											interaction,
@@ -1230,16 +1266,25 @@ module.exports = {
 											'core.setting.setting.whitelist.remove.user',
 											{ user: `<@${targetId}>` },
 										),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						} else {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.whitelist.invalid.action',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 					}
 					case 'whitelist-list': {
@@ -1253,10 +1298,15 @@ module.exports = {
 						}
 						if (!Array.isArray(whitelist)) whitelist = [];
 						if (whitelist.length === 0) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(interaction, 'core.setting.setting.whitelist.empty'),
+								{ color: 'Yellow' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						const whitelistString = whitelist
 							.map(async (id) => {
@@ -1269,12 +1319,17 @@ module.exports = {
 								});
 							})
 							.join('\n');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.whitelist.list', {
 								list: whitelistString,
 							}),
+							{ color: kythiaConfig.bot.color },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'badwords': {
 						let badwords = serverSetting.badwords;
@@ -1289,20 +1344,30 @@ module.exports = {
 						}
 						const word = interaction.options.getString('word');
 						if (!word) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.badword.word.required',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						if (action === 'add') {
 							if (badwords.includes(word.toLowerCase())) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(interaction, 'core.setting.setting.badword.already'),
+									{ color: 'Yellow' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							badwords.push(word.toLowerCase());
 							serverSetting.badwords = badwords;
@@ -1314,29 +1379,44 @@ module.exports = {
 									regexCache.delete(interaction.guild.id);
 								}
 							} catch {}
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(interaction, 'core.setting.setting.badword.add', {
 									word,
 								}),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						} else if (action === 'remove') {
 							if (!badwords.includes(word.toLowerCase())) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(interaction, 'core.setting.setting.badword.notfound'),
+									{ color: 'Red' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							badwords = badwords.filter((w) => w !== word.toLowerCase());
 							serverSetting.badwords = badwords;
 							serverSetting.changed('badwords', true);
 							await serverSetting.saveAndUpdateCache('guildId');
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(interaction, 'core.setting.setting.badword.remove', {
 									word,
 								}),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						break;
 					}
@@ -1351,18 +1431,28 @@ module.exports = {
 						}
 						if (!Array.isArray(badwords)) badwords = [];
 						if (badwords.length === 0) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(interaction, 'core.setting.setting.badword.empty'),
+								{ color: 'Yellow' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						const badwordsString = badwords.map((w) => `• \`${w}\``).join('\n');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.badword.list', {
 								list: badwordsString,
 							}),
+							{ color: kythiaConfig.bot.color },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'badword-whitelist': {
 						let badwordWhitelist = serverSetting.badwordWhitelist;
@@ -1380,23 +1470,33 @@ module.exports = {
 						}
 						const word = interaction.options.getString('word');
 						if (!word) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.badword.word.required',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						if (action === 'add') {
 							if (badwordWhitelist.includes(word.toLowerCase())) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.badword.whitelist.already',
 									),
+									{ color: 'Yellow' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							badwordWhitelist.push(word.toLowerCase());
 							serverSetting.badwordWhitelist = badwordWhitelist;
@@ -1408,23 +1508,33 @@ module.exports = {
 									regexCache.delete(interaction.guild.id);
 								}
 							} catch {}
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.badword.whitelist.add',
 									{ word },
 								),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						} else if (action === 'remove') {
 							if (!badwordWhitelist.includes(word.toLowerCase())) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.badword.whitelist.notfound',
 									),
+									{ color: 'Red' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							badwordWhitelist = badwordWhitelist.filter(
 								(w) => w !== word.toLowerCase(),
@@ -1432,14 +1542,19 @@ module.exports = {
 							serverSetting.badwordWhitelist = badwordWhitelist;
 							serverSetting.changed('badwordWhitelist', true);
 							await serverSetting.saveAndUpdateCache('guildId');
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.badword.whitelist.remove',
 									{ word },
 								),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						break;
 					}
@@ -1454,25 +1569,35 @@ module.exports = {
 						}
 						if (!Array.isArray(badwordWhitelist)) badwordWhitelist = [];
 						if (badwordWhitelist.length === 0) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.badword.whitelist.empty',
 								),
+								{ color: 'Yellow' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						const badwordWhitelistString = badwordWhitelist
 							.map((w) => `• \`${w}\``)
 							.join('\n');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.badword.whitelist.list',
 								{ list: badwordWhitelistString },
 							),
+							{ color: kythiaConfig.bot.color },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'exception-channel': {
 						const targetId = channel.id;
@@ -1491,56 +1616,81 @@ module.exports = {
 						}
 						if (action === 'add') {
 							if (ignoredChannels.includes(targetId)) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.exception.channel.already',
 									),
+									{ color: 'Yellow' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							ignoredChannels.push(targetId);
 							serverSetting.ignoredChannels = ignoredChannels;
 							serverSetting.changed('ignoredChannels', true);
 							await serverSetting.saveAndUpdateCache('guildId');
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.exception.channel.add',
 									{ channel: `<#${targetId}>` },
 								),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						} else if (action === 'remove') {
 							if (!ignoredChannels.includes(targetId)) {
-								embed.setDescription(
+								const components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.exception.channel.notfound',
 									),
+									{ color: 'Red' },
 								);
-								return interaction.editReply({ embeds: [embed] });
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							ignoredChannels = ignoredChannels.filter((id) => id !== targetId);
 							serverSetting.ignoredChannels = ignoredChannels;
 							serverSetting.changed('ignoredChannels', true);
 							await serverSetting.saveAndUpdateCache('guildId');
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.exception.channel.remove',
 									{ channel: `<#${targetId}>` },
 								),
+								{ color: 'Green' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						} else {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.exception.channel.invalid.action',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 					}
 					case 'exception-channel-list': {
@@ -1554,13 +1704,18 @@ module.exports = {
 						}
 						if (!Array.isArray(ignoredChannels)) ignoredChannels = [];
 						if (ignoredChannels.length === 0) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.exception.channel.empty',
 								),
+								{ color: 'Yellow' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						const list = ignoredChannels
 							.map(async (id) => {
@@ -1572,56 +1727,81 @@ module.exports = {
 										});
 							})
 							.join('\n');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.exception.channel.list',
 								{ list },
 							),
+							{ color: kythiaConfig.bot.color },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'mod-log-channel': {
 						const targetChannel = channel;
 						if (!targetChannel.isTextBased()) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.log.channel.invalid',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						serverSetting.modLogChannelId = targetChannel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.mod.log.channel.set', {
 								channel: `<#${targetChannel.id}>`,
 							}),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'audit-log-channel': {
 						const targetChannel = channel;
 						if (!targetChannel.isTextBased()) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.log.channel.invalid',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						serverSetting.auditLogChannelId = targetChannel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.audit.log.channel.set',
 								{ channel: `<#${targetChannel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -1634,10 +1814,15 @@ module.exports = {
 					serverSetting[settingKey] = status === 'enable';
 					await serverSetting.saveAndUpdateCache();
 
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						`✅ Fitur **${featureName}** telah **di-${status === 'enable' ? 'aktifkan' : 'nonaktifkan'}**.`,
+						{ color: status === 'enable' ? 'Green' : 'Red' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				break;
 			}
@@ -1689,21 +1874,32 @@ module.exports = {
 					case 'category': {
 						const cat = interaction.options.getChannel('category');
 						if (!cat || cat.type !== ChannelType.GuildCategory) {
-							return interaction.editReply({
-								content: await t(
+							const components = await simpleContainer(
+								interaction,
+								await t(
 									interaction,
 									'core.setting.setting.stats.category.invalid',
 								),
+								{ color: 'Red' },
+							);
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
 						}
 						serverSetting.serverStatsCategoryId = cat.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.stats.category.set', {
 								category: `<#${cat.id}>`,
 							}),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'add': {
 						const format = interaction.options.getString('format');
@@ -1712,14 +1908,20 @@ module.exports = {
 							format.includes(ph),
 						);
 						if (!hasAllowedPlaceholder) {
-							return interaction.editReply({
-								content: await t(
+							const components = await simpleContainer(
+								interaction,
+								await t(
 									interaction,
 									'core.setting.setting.stats.format.invalid',
 									{
 										placeholders: allowedPlaceholders.join(', '),
 									},
 								),
+								{ color: 'Red' },
+							);
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
 						}
 						if (!channel) {
@@ -1740,11 +1942,14 @@ module.exports = {
 							(s) => s.channelId === channel.id,
 						);
 						if (already) {
+							const components = await simpleContainer(
+								interaction,
+								await t(interaction, 'core.setting.setting.stats.already'),
+								{ color: 'Yellow' },
+							);
 							return interaction.editReply({
-								content: await t(
-									interaction,
-									'core.setting.setting.stats.already',
-								),
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
 						}
 						serverSetting.serverStats ??= [];
@@ -1756,11 +1961,17 @@ module.exports = {
 						serverSetting.changed('serverStats', true);
 						await serverSetting.saveAndUpdateCache('guildId');
 						await updateStats(interaction, interaction.client, [serverSetting]);
-						return interaction.editReply({
-							content: await t(interaction, 'core.setting.setting.stats.add', {
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.setting.setting.stats.add', {
 								channel: `<#${channel.id}>`,
 								format,
 							}),
+							{ color: 'Green' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 					case 'edit': {
@@ -1769,36 +1980,52 @@ module.exports = {
 						const stat = serverSetting.serverStats?.find(
 							(s) => s.channelId === statsId,
 						);
-						if (!stat)
+						if (!stat) {
+							const components = await simpleContainer(
+								interaction,
+								await t(interaction, 'core.setting.setting.stats.notfound'),
+								{ color: 'Red' },
+							);
 							return interaction.editReply({
-								content: await t(
-									interaction,
-									'core.setting.setting.stats.notfound',
-								),
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
+						}
 						if (format) stat.format = format;
 						const hasAllowedPlaceholder = allowedPlaceholders.some((ph) =>
 							format.includes(ph),
 						);
 						if (!hasAllowedPlaceholder) {
-							return interaction.editReply({
-								content: await t(
+							const components = await simpleContainer(
+								interaction,
+								await t(
 									interaction,
 									'core.setting.setting.stats.format.invalid',
 									{
 										placeholders: allowedPlaceholders.join(', '),
 									},
 								),
+								{ color: 'Red' },
+							);
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
 						}
 						serverSetting.changed('serverStats', true);
 						await serverSetting.saveAndUpdateCache('guildId');
 						await updateStats(interaction, interaction.client, [serverSetting]);
-						return interaction.editReply({
-							content: await t(interaction, 'core.setting.setting.stats.edit', {
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.setting.setting.stats.edit', {
 								channel: `<#${statsId}>`,
 								format,
 							}),
+							{ color: 'Green' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 					case 'enable': {
@@ -1806,23 +2033,31 @@ module.exports = {
 						const stat = serverSetting.serverStats?.find(
 							(s) => s.channelId === statsId,
 						);
-						if (!stat)
+						if (!stat) {
+							const components = await simpleContainer(
+								interaction,
+								await t(interaction, 'core.setting.setting.stats.notfound'),
+								{ color: 'Red' },
+							);
 							return interaction.editReply({
-								content: await t(
-									interaction,
-									'core.setting.setting.stats.notfound',
-								),
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
+						}
 						stat.enabled = true;
 						serverSetting.changed('serverStats', true);
 						await serverSetting.saveAndUpdateCache('guildId');
 						await updateStats(interaction, interaction.client, [serverSetting]);
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.setting.setting.stats.enabled.msg', {
+								channel: `<#${statsId}>`,
+							}),
+							{ color: 'Green' },
+						);
 						return interaction.editReply({
-							content: await t(
-								interaction,
-								'core.setting.setting.stats.enabled.msg',
-								{ channel: `<#${statsId}>` },
-							),
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 					case 'disable': {
@@ -1830,23 +2065,31 @@ module.exports = {
 						const stat = serverSetting.serverStats?.find(
 							(s) => s.channelId === statsId,
 						);
-						if (!stat)
+						if (!stat) {
+							const components = await simpleContainer(
+								interaction,
+								await t(interaction, 'core.setting.setting.stats.notfound'),
+								{ color: 'Red' },
+							);
 							return interaction.editReply({
-								content: await t(
-									interaction,
-									'core.setting.setting.stats.notfound',
-								),
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
+						}
 						stat.enabled = false;
 						serverSetting.changed('serverStats', true);
 						await serverSetting.saveAndUpdateCache('guildId');
 						await updateStats(interaction, interaction.client, [serverSetting]);
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.setting.setting.stats.disabled.msg', {
+								channel: `<#${statsId}>`,
+							}),
+							{ color: 'Red' },
+						);
 						return interaction.editReply({
-							content: await t(
-								interaction,
-								'core.setting.setting.stats.disabled.msg',
-								{ channel: `<#${statsId}>` },
-							),
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 					case 'remove': {
@@ -1864,18 +2107,25 @@ module.exports = {
 						} catch (_) {}
 						serverSetting.changed('serverStats', true);
 						await serverSetting.saveAndUpdateCache('guildId');
-						const msg =
-							before === after
+						await updateStats(interaction, interaction.client, [serverSetting]);
+						const isSuccess = before !== after;
+						const components = await simpleContainer(
+							interaction,
+							isSuccess
 								? await t(
 										interaction,
-										'core.setting.setting.stats.remove.notfound',
+										'core.setting.setting.stats.remove.success',
 									)
 								: await t(
 										interaction,
-										'core.setting.setting.stats.remove.success',
-									);
-						await updateStats(interaction, interaction.client, [serverSetting]);
-						return interaction.editReply({ content: msg });
+										'core.setting.setting.stats.remove.notfound',
+									),
+							{ color: isSuccess ? 'Green' : 'Yellow' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -1886,104 +2136,151 @@ module.exports = {
 						const targetChannel = channel;
 						serverSetting.welcomeInChannelId = targetChannel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.welcome.in.channel.set',
 								{ channel: `<#${targetChannel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'out-channel': {
 						const targetChannel = channel;
 						serverSetting.welcomeOutChannelId = targetChannel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.welcome.out.channel.set',
 								{ channel: `<#${targetChannel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'role': {
 						const targetRole = interaction.options.getRole('role');
 						serverSetting.welcomeRoleId = targetRole.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.welcome.role.set', {
 								role: `<@&${targetRole.id}>`,
 							}),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'in-text': {
 						const text = interaction.options.getString('text');
 						serverSetting.welcomeInText = text;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.welcome.in.text.set', {
 								text,
 							}),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'out-text': {
 						const text = interaction.options.getString('text');
 						serverSetting.welcomeOutText = text;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.welcome.out.text.set',
 								{ text },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'in-background': {
 						const background = interaction.options.getString('background');
 						if (!background.startsWith('http')) {
-							return interaction.editReply({
-								content: await t(
+							const components = await simpleContainer(
+								interaction,
+								await t(
 									interaction,
 									'core.setting.setting.welcome.in.background.invalid',
 								),
+								{ color: 'Red' },
+							);
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
 						}
 						serverSetting.welcomeInBackgroundUrl = background;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.welcome.in.background.set',
 								{ background },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'out-background': {
 						const background = interaction.options.getString('background');
 						if (!background.startsWith('http')) {
-							return interaction.editReply({
-								content: await t(
+							const components = await simpleContainer(
+								interaction,
+								await t(
 									interaction,
 									'core.setting.setting.welcome.out.background.invalid',
 								),
+								{ color: 'Red' },
+							);
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
 							});
 						}
 						serverSetting.welcomeOutBackgroundUrl = background;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.welcome.out.background.set',
 								{ background },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -1994,55 +2291,73 @@ module.exports = {
 						const targetChannel = interaction.options.getChannel('channel');
 						serverSetting.levelingChannelId = targetChannel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.leveling.channel.set',
 								{ channel: `<#${targetChannel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'cooldown': {
 						const cooldown = interaction.options.getInteger('cooldown');
 						serverSetting.levelingCooldown = cooldown * 1000;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.leveling.cooldown.set',
 								{ cooldown },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'xp': {
 						const xp = interaction.options.getInteger('xp');
 						serverSetting.levelingXp = xp;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.leveling.xp.set', {
 								xp,
 							}),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'rolereward': {
 						const role = interaction.options.getRole('role');
 						const level = interaction.options.getInteger('level');
 						const action = interaction.options.getString('action');
 						if (!serverSetting.roleRewards) serverSetting.roleRewards = [];
+						let components;
 						if (action === 'add') {
 							serverSetting.roleRewards = serverSetting.roleRewards.filter(
 								(r) => r.level !== level,
 							);
 							serverSetting.roleRewards.push({ level, role: role.id });
-							embed.setDescription(
+							components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.leveling.rolereward.add',
 									{ role: `<@&${role.id}>`, level },
 								),
+								{ color: 'Green' },
 							);
 						} else if (action === 'remove') {
 							const initial = serverSetting.roleRewards.length;
@@ -2050,26 +2365,33 @@ module.exports = {
 								(r) => r.level !== level,
 							);
 							if (serverSetting.roleRewards.length === initial) {
-								embed.setDescription(
+								components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.leveling.rolereward.notfound',
 										{ level },
 									),
+									{ color: 'Red' },
 								);
 							} else {
-								embed.setDescription(
+								components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.leveling.rolereward.remove',
 										{ level },
 									),
+									{ color: 'Green' },
 								);
 							}
 						}
 						serverSetting.changed('roleRewards', true);
 						await serverSetting.saveAndUpdateCache('guildId');
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -2080,71 +2402,101 @@ module.exports = {
 						const ip = interaction.options.getString('ip');
 						serverSetting.minecraftIp = ip;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.minecraft.ip.set', {
 								ip,
 							}),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'port': {
 						const port = interaction.options.getInteger('port');
 						serverSetting.minecraftPort = port;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.minecraft.port.set', {
 								port,
 							}),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'ip-channel': {
 						serverSetting.minecraftIpChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.minecraft.ip.channel.set',
 								{ channel: `<#${channel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'port-channel': {
 						serverSetting.minecraftPortChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.minecraft.port.channel.set',
 								{ channel: `<#${channel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'status-channel': {
 						serverSetting.minecraftStatusChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.minecraft.status.channel.set',
 								{ channel: `<#${channel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'players-channel': {
 						serverSetting.minecraftPlayersChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.minecraft.players.channel.set',
 								{ channel: `<#${channel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -2154,10 +2506,15 @@ module.exports = {
 					const lang = interaction.options.getString('lang');
 					serverSetting.lang = lang;
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.language.set', { lang }),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				break;
 			}
@@ -2165,98 +2522,140 @@ module.exports = {
 				switch (sub) {
 					case 'testimony-channel': {
 						if (!channel || channel.type !== 0) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.testimony.channel.invalid',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						serverSetting.testimonyChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.testimony.channel.set',
 								{ channel: `<#${channel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'feedback-channel': {
 						if (!channel || channel.type !== 0) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.testimony.channel.invalid',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						serverSetting.feedbackChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.testimony.feedback.channel.set',
 								{ channel: `<#${channel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'count-channel': {
 						if (!channel) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.testimony.channel.invalid',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						serverSetting.testimonyCountChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components2 = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.testimony.count.channel.set',
 								{ channel: `<#${channel.id}>` },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components: components2,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'count-format': {
 						const format = interaction.options.getString('format');
 						if (!format || !format.includes('{count}')) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.testimony.count.format.invalid',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						serverSetting.testimonyCountFormat = format;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.testimony.count.format.set',
 								{ format },
 							),
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'reset-count': {
 						serverSetting.testimonyCount = 0;
 						serverSetting.changed('testimonyCount');
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(
 								interaction,
 								'core.setting.setting.testimony.count.reset',
 							),
+							{ color: 'Green' },
 						);
 						if (serverSetting.testimonyCountChannelId) {
 							try {
@@ -2276,26 +2675,36 @@ module.exports = {
 								}
 							} catch (_err) {}
 						}
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'count': {
 						const count = interaction.options.getInteger('count');
 						if (typeof count !== 'number' || count < 0) {
-							embed.setDescription(
+							const components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.testimony.count.invalid',
 								),
+								{ color: 'Red' },
 							);
-							return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 						serverSetting.testimonyCount = count;
 						serverSetting.changed('testimonyCount');
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.testimony.count.set', {
 								count,
 							}),
+							{ color: 'Green' },
 						);
 						if (serverSetting.testimonyCountChannelId) {
 							try {
@@ -2315,7 +2724,10 @@ module.exports = {
 								}
 							} catch (_err) {}
 						}
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -2328,18 +2740,21 @@ module.exports = {
 						const action = interaction.options.getString('action');
 						if (!serverSetting.streakRoleRewards)
 							serverSetting.streakRoleRewards = [];
+						let components;
 						if (action === 'add') {
 							serverSetting.streakRoleRewards =
 								serverSetting.streakRoleRewards.filter(
 									(r) => r.streak !== streak,
 								);
 							serverSetting.streakRoleRewards.push({ streak, role: role.id });
-							embed.setDescription(
+							components = await simpleContainer(
+								interaction,
 								await t(
 									interaction,
 									'core.setting.setting.streak.rolereward.add',
 									{ role: `<@&${role.id}>`, streak },
 								),
+								{ color: 'Green' },
 							);
 						} else if (action === 'remove') {
 							const initial = serverSetting.streakRoleRewards.length;
@@ -2348,26 +2763,33 @@ module.exports = {
 									(r) => r.streak !== streak,
 								);
 							if (serverSetting.streakRoleRewards.length === initial) {
-								embed.setDescription(
+								components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.streak.rolereward.notfound',
 										{ streak },
 									),
+									{ color: 'Red' },
 								);
 							} else {
-								embed.setDescription(
+								components = await simpleContainer(
+									interaction,
 									await t(
 										interaction,
 										'core.setting.setting.streak.rolereward.remove',
 										{ streak },
 									),
+									{ color: 'Green' },
 								);
 							}
 						}
 						serverSetting.changed('streakRoleRewards', true);
 						await serverSetting.saveAndUpdateCache('guildId');
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -2377,34 +2799,49 @@ module.exports = {
 					const minimum = interaction.options.getInteger('minimum');
 					serverSetting.streakMinimum = minimum;
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.streak.minimum.set', {
 							minimum,
 						}),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				if (sub === 'emoji') {
 					const emoji = interaction.options.getString('emoji');
 					serverSetting.streakEmoji = emoji;
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.streak.emoji.set', {
 							emoji,
 						}),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				if (sub === 'nickname') {
 					const status = interaction.options.getString('status');
 					serverSetting.streakNickname = status === 'enable';
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.streak.nickname.set', {
 							status: status === 'enable' ? 'Enabled' : 'Disabled',
 						}),
+						{ color: status === 'enable' ? 'Green' : 'Red' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				break;
 			}
@@ -2412,24 +2849,34 @@ module.exports = {
 				if (sub === 'announcement') {
 					serverSetting.announcementChannelId = channel.id;
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(
 							interaction,
 							'core.setting.setting.announcement.channel.set',
 							{ channel: `<#${channel.id}>` },
 						),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				if (sub === 'invite') {
 					serverSetting.inviteChannelId = channel.id;
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.invite.channel.set', {
 							channel: `<#${channel.id}>`,
 						}),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				break;
 			}
@@ -2438,19 +2885,29 @@ module.exports = {
 					case 'channel': {
 						serverSetting.boostLogChannelId = channel.id;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							`✅ Boost log channel has been set to <#${channel.id}>`,
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					case 'message': {
 						const message = interaction.options.getString('message');
 						serverSetting.boostLogMessage = message;
 						await serverSetting.saveAndUpdateCache('guildId');
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							`✅ Boost log message has been updated!\n\n**Preview:**\n${message}`,
+							{ color: 'Green' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 				break;
@@ -2462,12 +2919,17 @@ module.exports = {
 					serverSetting.aiChannelIds = aiChannelIds;
 					serverSetting.changed('aiChannelIds', true);
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.ai.channel.add', {
 							channel: `<#${channel.id}>`,
 						}),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				if (sub === 'remove-channel') {
 					let aiChannelIds = ensureArray(serverSetting.aiChannelIds);
@@ -2475,28 +2937,43 @@ module.exports = {
 					serverSetting.aiChannelIds = aiChannelIds;
 					serverSetting.changed('aiChannelIds', true);
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.ai.channel.remove', {
 							channel: `<#${channel.id}>`,
 						}),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				if (sub === 'list') {
 					const aiChannelIds = ensureArray(serverSetting.aiChannelIds);
 					if (aiChannelIds.length === 0) {
-						embed.setDescription(
+						const components = await simpleContainer(
+							interaction,
 							await t(interaction, 'core.setting.setting.ai.channel.empty'),
+							{ color: 'Yellow' },
 						);
-						return interaction.editReply({ embeds: [embed] });
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					const list = aiChannelIds.map((id) => `<#${id}>`).join('\n');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.ai.channel.list', {
 							list,
 						}),
+						{ color: kythiaConfig.bot.color },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				break;
 			}
@@ -2506,12 +2983,16 @@ module.exports = {
 					const field = interaction.options.getString('field');
 					const valueStr = interaction.options.getString('value');
 					if (!Object.hasOwn(serverSetting.dataValues, field)) {
+						const components = await simpleContainer(
+							interaction,
+							await t(interaction, 'core.setting.setting.raw.field.invalid', {
+								field,
+							}),
+							{ color: 'Red' },
+						);
 						return interaction.editReply({
-							content: await t(
-								interaction,
-								'core.setting.setting.raw.field.invalid',
-								{ field },
-							),
+							components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 					const original = serverSetting.dataValues[field];
@@ -2536,21 +3017,31 @@ module.exports = {
 					serverSetting[field] = parsed;
 					if (Array.isArray(parsed)) serverSetting.changed(field, true);
 					await serverSetting.saveAndUpdateCache('guildId');
-					embed.setDescription(
+					const components = await simpleContainer(
+						interaction,
 						await t(interaction, 'core.setting.setting.raw.set', {
 							field,
 							value: `\`${valueStr}\``,
 						}),
+						{ color: 'Green' },
 					);
-					return interaction.editReply({ embeds: [embed] });
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				}
 				break;
 			}
 			default: {
-				embed.setDescription(
+				const components = await simpleContainer(
+					interaction,
 					await t(interaction, 'core.setting.setting.command.not.found'),
+					{ color: 'Red' },
 				);
-				return interaction.editReply({ embeds: [embed] });
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 		}
 	},

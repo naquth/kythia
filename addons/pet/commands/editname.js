@@ -5,7 +5,8 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -16,9 +17,14 @@ module.exports = {
 			.addStringOption((option) =>
 				option.setName('name').setDescription('New pet name').setRequired(true),
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { UserPet, Pet } = models;
 		await interaction.deferReply();
 
@@ -33,23 +39,25 @@ module.exports = {
 		userPet.petName = newName;
 		userPet.changed('petName', true);
 		await userPet.saveAndUpdateCache('userId');
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`## ${await t(interaction, 'pet.editname.success.title')}\n${await t(
-					interaction,
-					'pet.editname.success.desc',
-					{
-						icon: userPet.pet.icon,
-						name: userPet.pet.name,
-						rarity: userPet.pet.rarity,
-						petName: userPet.petName,
-					},
-				)}`,
-			)
-			.setColor(kythia.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
-		return await interaction.editReply({ embeds: [embed] });
+
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'pet.editname.success.title')}\n${await t(
+				interaction,
+				'pet.editname.success.desc',
+				{
+					icon: userPet.pet.icon,
+					name: userPet.pet.name,
+					rarity: userPet.pet.rarity,
+					petName: userPet.petName,
+				},
+			)}`,
+			{ color: kythiaConfig.bot.color },
+		);
+
+		return await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

@@ -28,8 +28,8 @@ module.exports = {
 		subcommand
 			.setName('connect')
 			.setDescription('Connect to a global voice room or create a room')
-			.addStringOption((o) =>
-				o.setName('room').setDescription('Room ID').setRequired(true),
+			.addStringOption((option) =>
+				option.setName('room').setDescription('Room ID').setRequired(true),
 			),
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -13,8 +13,8 @@ module.exports = {
 		subcommand.setName('feed').setDescription('Feed your pet!'),
 
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { Pet, UserPet, Inventory } = models;
 
 		await interaction.deferReply();
@@ -28,20 +28,26 @@ module.exports = {
 		});
 
 		if (!userPet) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.feed.no.pet.title')}\n${await t(interaction, 'pet.feed.no.pet.desc')}`,
-				)
-				.setColor(0xed4245);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.feed.no.pet.title')}\n${await t(interaction, 'pet.feed.no.pet.desc')}`,
+				{ color: 'Red' }, // 0xed4245 is Red
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		if (userPet.isDead) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.feed.dead.title')}\n${await t(interaction, 'pet.feed.dead.desc')}`,
-				)
-				.setColor(0xed4245);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.feed.dead.title')}\n${await t(interaction, 'pet.feed.dead.desc')}`,
+				{ color: 'Red' }, // 0xed4245 is Red
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const petFood = await Inventory.getCache({
@@ -49,12 +55,15 @@ module.exports = {
 			itemName: '🍪 Pet Food',
 		});
 		if (!petFood) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.feed.no.food.title')}\n${await t(interaction, 'pet.feed.no.food.desc')}`,
-				)
-				.setColor(0xed4245);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.feed.no.food.title')}\n${await t(interaction, 'pet.feed.no.food.desc')}`,
+				{ color: 'Red' }, // 0xed4245 is Red
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		await petFood.destroy();
 		userPet.hunger = Math.min(userPet.hunger + 20, 100);
@@ -63,31 +72,35 @@ module.exports = {
 
 		// Check if hunger exceeds the maximum limit
 		if (userPet.hunger >= 100) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.feed.full.title')}\n${await t(interaction, 'pet.feed.full.desc')}`,
-				)
-				.setColor(0x57f287);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.feed.full.title')}\n${await t(interaction, 'pet.feed.full.desc')}`,
+				{ color: '#57f287' }, // 0x57f287
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`## ${await t(interaction, 'pet.feed.success.title')}\n${await t(
-					interaction,
-					'pet.feed.success.desc',
-					{
-						icon: userPet.pet.icon,
-						name: userPet.pet.name,
-						rarity: userPet.pet.rarity,
-						hunger: userPet.hunger,
-					},
-				)}`,
-			)
-			.setColor(kythia.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-			.setFooter(await embedFooter(interaction));
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'pet.feed.success.title')}\n${await t(
+				interaction,
+				'pet.feed.success.desc',
+				{
+					icon: userPet.pet.icon,
+					name: userPet.pet.name,
+					rarity: userPet.pet.rarity,
+					hunger: userPet.hunger,
+				},
+			)}`,
+			{ color: kythiaConfig.bot.color },
+		);
 
-		return interaction.editReply({ embeds: [embed] });
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

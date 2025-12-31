@@ -26,7 +26,6 @@ class StickyMessageHandler {
 		const { convertColor } = helpers.color;
 
 		try {
-			// Ignore bot messages to prevent infinite loop
 			if (message.author.bot) return;
 
 			const sticky = await StickyMessage.getCache({
@@ -35,7 +34,6 @@ class StickyMessageHandler {
 
 			if (!sticky) return;
 
-			// Delete old sticky message
 			if (sticky.messageId) {
 				const oldMsg = await message.channel.messages
 					.fetch(sticky.messageId)
@@ -43,15 +41,12 @@ class StickyMessageHandler {
 				if (oldMsg) await oldMsg.delete().catch(() => {});
 			}
 
-			// Create new sticky message with Components V2
 			const stickyContainer = new ContainerBuilder()
 				.setAccentColor(
 					convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 				)
 				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						`## ${await t(message, 'core.events.messageCreate.sticky.title')}\n${sticky.message}`,
-					),
+					new TextDisplayBuilder().setContent(sticky.message),
 				)
 				.addSeparatorComponents(
 					new SeparatorBuilder()

@@ -9,7 +9,6 @@
 const {
 	PermissionFlagsBits,
 	ChannelType,
-	EmbedBuilder,
 	MessageFlags,
 } = require('discord.js');
 const fetch = require('node-fetch');
@@ -32,7 +31,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers, logger, client } = container;
 		const { GlobalChat } = models;
-		const { embedFooter, getChannelSafe } = helpers.discord;
+		const { simpleContainer, getChannelSafe } = helpers.discord;
 
 		const apiUrl = kythiaConfig?.addons?.globalchat?.apiUrl;
 		const webhookName = 'Kythia Global Chat';
@@ -56,12 +55,14 @@ module.exports = {
 			}
 		} catch (error) {
 			logger.error('Failed to check existing guild from API:', error);
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'globalchat.setup.check.failed'));
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'globalchat.setup.check.failed'),
+				{ color: 'Red' },
+			);
 			return interaction.editReply({
-				embeds: [embed],
-				flags: MessageFlags.Ephemeral,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -69,14 +70,16 @@ module.exports = {
 			guildId: interaction.guild.id,
 		});
 		if (alreadySetup || localDbChat) {
-			const embed = new EmbedBuilder().setColor('Red').setDescription(
+			const components = await simpleContainer(
+				interaction,
 				await t(interaction, 'globalchat.setup.already.set', {
 					channel: `<#${existingChannelId || localDbChat?.globalChannelId}>`,
 				}),
+				{ color: 'Red' },
 			);
 			return interaction.editReply({
-				embeds: [embed],
-				flags: MessageFlags.Ephemeral,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -92,25 +95,19 @@ module.exports = {
 					avatar: client.user.displayAvatarURL(),
 				});
 
-				const setupEmbed = new EmbedBuilder()
-					.setTitle(await t(interaction, 'globalchat.setup.title'))
-					.setDescription(await t(interaction, 'globalchat.setup.intro.desc'))
-					.setColor(kythia.bot.color)
-					.setFooter(await embedFooter(interaction))
-					.setTimestamp(new Date());
-
+				// Send simple welcome message
 				await channel.send({
-					embeds: [setupEmbed],
+					content: `## ${await t(interaction, 'globalchat.setup.title')}\n${await t(interaction, 'globalchat.setup.intro.desc')}`,
 				});
 			} catch (_err) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await t(interaction, 'globalchat.setup.webhook.failed'),
-					);
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'globalchat.setup.webhook.failed'),
+					{ color: 'Red' },
+				);
 				return interaction.editReply({
-					embeds: [embed],
-					flags: MessageFlags.Ephemeral,
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 		} else {
@@ -160,26 +157,20 @@ module.exports = {
 					avatar: client.user.displayAvatarURL(),
 				});
 
-				const setupEmbed = new EmbedBuilder()
-					.setTitle(await t(interaction, 'globalchat.setup.title'))
-					.setDescription(await t(interaction, 'globalchat.setup.intro.desc'))
-					.setColor(kythia.bot.color)
-					.setFooter(await embedFooter(interaction))
-					.setTimestamp(new Date());
-
+				// Send simple welcome message
 				await channel.send({
-					embeds: [setupEmbed],
+					content: `## ${await t(interaction, 'globalchat.setup.title')}\n${await t(interaction, 'globalchat.setup.intro.desc')}`,
 				});
 			} catch (err) {
 				logger.info(err);
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						await t(interaction, 'globalchat.setup.create.channel.failed'),
-					);
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'globalchat.setup.create.channel.failed'),
+					{ color: 'Red' },
+				);
 				return interaction.editReply({
-					embeds: [embed],
-					flags: MessageFlags.Ephemeral,
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 		}
@@ -210,22 +201,27 @@ module.exports = {
 				}),
 			});
 		} catch (_err) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'globalchat.setup.register.api.failed'),
-				);
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'globalchat.setup.register.api.failed'),
+				{ color: 'Red' },
+			);
 			return interaction.editReply({
-				embeds: [embed],
-				flags: MessageFlags.Ephemeral,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
-		const embed = new EmbedBuilder().setColor('Green').setDescription(
+		const components = await simpleContainer(
+			interaction,
 			await t(interaction, 'globalchat.setup.success', {
 				channel: `<#${usedChannelId}>`,
 			}),
+			{ color: 'Green' },
 		);
-		return interaction.editReply({ embeds: [embed] });
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

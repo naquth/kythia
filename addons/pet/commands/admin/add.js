@@ -5,7 +5,8 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: (subcommand) =>
@@ -51,9 +52,14 @@ module.exports = {
 			),
 	subcommand: true,
 	teamOnly: true,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { Pet } = models;
 
 		await interaction.deferReply();
@@ -65,12 +71,19 @@ module.exports = {
 		const bonusValue = interaction.options.getInteger('bonus_value');
 
 		await Pet.create({ name, icon, rarity, bonusType, bonusValue });
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`## ${await t(interaction, 'pet.admin.add.add.success.title')}\n${await t(interaction, 'pet.admin.add.add.success.desc', { name })}`,
-			)
-			.setColor(kythia.bot.color)
-			.setFooter(await embedFooter(interaction));
-		return interaction.editReply({ embeds: [embed] });
+		const msg = `## ${await t(interaction, 'pet.admin.add.add.success.title')}\n${await t(
+			interaction,
+			'pet.admin.add.add.success.desc',
+			{ name },
+		)}`;
+
+		const components = await simpleContainer(interaction, msg, {
+			color: kythiaConfig.bot.color,
+		});
+
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

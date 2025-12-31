@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { checkCooldown } = require('@coreHelpers/time');
 const { updatePetStatus } = require('../helpers/status');
 const { toBigIntSafe } = require('@addons/economy/helpers/bigint');
@@ -15,8 +15,8 @@ module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand.setName('use').setDescription('Use your pet and get a bonus!'),
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { KythiaUser, UserPet, Pet } = models;
 
 		await interaction.deferReply();
@@ -30,13 +30,15 @@ module.exports = {
 		});
 
 		if (!userPet) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.use.no.pet.title')}\n${await t(interaction, 'pet.use.no.pet.desc')}`,
-				)
-				.setColor('Red')
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.use.no.pet.title')}\n${await t(interaction, 'pet.use.no.pet.desc')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const { pet: updatedPet, justDied } = updatePetStatus(userPet);
@@ -50,28 +52,32 @@ module.exports = {
 			} catch (_e) {
 				/* abaikan jika DM gagal */
 			}
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.use.dead.title')}\n${await t(interaction, 'pet.use.dead.desc')}`,
-				)
-				.setColor('Red')
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.use.dead.title')}\n${await t(interaction, 'pet.use.dead.desc')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const cooldown = checkCooldown(
 			updatedPet.lastUse,
-			kythia.addons.pet.useCooldown || 14400,
+			kythiaConfig.addons.pet.useCooldown || 14400,
 			interaction,
 		);
 		if (cooldown.remaining) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.use.cooldown.title')}\n${await t(interaction, 'pet.use.cooldown.desc', { time: cooldown.time })}`,
-				)
-				.setColor('Red')
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.use.cooldown.title')}\n${await t(interaction, 'pet.use.cooldown.desc', { time: cooldown.time })}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		updatedPet.level += 1;
@@ -104,25 +110,26 @@ module.exports = {
 
 		await kythiaUser.saveAndUpdateCache();
 
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`## ${await t(interaction, 'pet.use.success.title')}\n${await t(
-					interaction,
-					'pet.use.success.desc',
-					{
-						icon: updatedPet.pet.icon,
-						name: updatedPet.pet.name,
-						rarity: updatedPet.pet.rarity,
-						bonusType: bonusTypeDisplay,
-						bonusValue: bonusValue,
-						level: updatedPet.level,
-					},
-				)}`,
-			)
-			.setColor(kythia.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-			.setFooter(await embedFooter(interaction));
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'pet.use.success.title')}\n${await t(
+				interaction,
+				'pet.use.success.desc',
+				{
+					icon: updatedPet.pet.icon,
+					name: updatedPet.pet.name,
+					rarity: updatedPet.pet.rarity,
+					bonusType: bonusTypeDisplay,
+					bonusValue: bonusValue,
+					level: updatedPet.level,
+				},
+			)}`,
+			{ color: kythiaConfig.bot.color },
+		);
 
-		return interaction.editReply({ embeds: [embed] });
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { calculateLevelAndXp } = require('../helpers');
 
 module.exports = {
@@ -29,8 +29,8 @@ module.exports = {
 			),
 
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { User } = models;
 
 		await interaction.deferReply({ ephemeral: true });
@@ -43,13 +43,15 @@ module.exports = {
 		});
 
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`## ${await t(interaction, 'leveling.xp-set.leveling.user.not.found.title')}\n${await t(interaction, 'leveling.xp-set.leveling.user.not.found.desc')}`,
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'leveling.xp-set.leveling.user.not.found.title')}\n${await t(interaction, 'leveling.xp-set.leveling.user.not.found.desc')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const { newLevel, newXp } = calculateLevelAndXp(xpToSet);
@@ -59,19 +61,20 @@ module.exports = {
 		user.changed('level', true);
 		await user.saveAndUpdateCache('userId');
 
-		const embed = new EmbedBuilder()
-			.setColor(kythia.bot.color)
-			.setDescription(
-				`## ${await t(interaction, 'leveling.xp-set.leveling.xp.set.title')}\n` +
-					(await t(interaction, 'leveling.xp-set.leveling.xp.set.desc', {
-						username: targetUser.username,
-						newLevel: user.level,
-						newXp: user.xp,
-					})),
-			)
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'leveling.xp-set.leveling.xp.set.title')}\n` +
+				(await t(interaction, 'leveling.xp-set.leveling.xp.set.desc', {
+					username: targetUser.username,
+					newLevel: user.level,
+					newXp: user.xp,
+				})),
+			{ color: kythiaConfig.bot.color },
+		);
 
-		return interaction.editReply({ embeds: [embed] });
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

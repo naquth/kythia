@@ -140,7 +140,7 @@ module.exports = {
 		}
 	},
 
-	async execute(interaction, container) {
+	execute(interaction, container) {
 		const { giveawayManager } = container;
 		const subcommand = interaction.options.getSubcommand();
 

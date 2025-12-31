@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const fetch = require('node-fetch');
 
 module.exports = {
@@ -18,7 +18,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { GlobalChat } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		const apiUrl = kythiaConfig?.addons?.globalchat?.apiUrl;
 
@@ -41,37 +41,46 @@ module.exports = {
 			const resJson = await res.json();
 
 			if (resJson.status === 'ok') {
-				const embed = new EmbedBuilder()
-					.setColor('Green')
-					.setDescription(await t(interaction, 'globalchat.remove.success'))
-					.setFooter(await embedFooter(interaction))
-					.setTimestamp(new Date());
-				return interaction.editReply({ embeds: [embed] });
-			} else if (resJson.code === 'GUILD_NOT_FOUND') {
-				const embed = new EmbedBuilder()
-					.setColor('Orange')
-					.setDescription(await t(interaction, 'globalchat.remove.not.found'));
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'globalchat.remove.success'),
+					{ color: 'Green' },
+				);
 				return interaction.editReply({
-					embeds: [embed],
-					flags: MessageFlags.Ephemeral,
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} else if (resJson.code === 'GUILD_NOT_FOUND') {
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'globalchat.remove.not.found'),
+					{ color: 'Orange' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			} else {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(await t(interaction, 'globalchat.remove.failed'));
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'globalchat.remove.failed'),
+					{ color: 'Red' },
+				);
 				return interaction.editReply({
-					embeds: [embed],
-					flags: MessageFlags.Ephemeral,
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 		} catch (error) {
 			logger.error('Failed to remove guild from global chat via API:', error);
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'globalchat.remove.error'));
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'globalchat.remove.error'),
+				{ color: 'Red' },
+			);
 			return interaction.editReply({
-				embeds: [embed],
-				flags: MessageFlags.Ephemeral,
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},

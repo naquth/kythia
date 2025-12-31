@@ -12,7 +12,9 @@ const {
 	ButtonBuilder,
 	ButtonStyle,
 	StringSelectMenuBuilder,
-	EmbedBuilder,
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
 	ComponentType,
 } = require('discord.js');
 const { UnoGame } = require('../helpers/unoGame'); // Sesuaikan path
@@ -99,20 +101,19 @@ module.exports = {
 			}
 			const currentPlayer = game.currentPlayer;
 
-			const gameEmbed = new EmbedBuilder()
-				.setTitle('UNO Game!')
-				.setDescription(
-					`**Kartu Teratas:** ${formatCard(game.topCard)}\n\nSekarang giliran **${currentPlayer.username}**!`,
+			const playerInfo = players
+				.map((p) => `**${p.username}:** ${game.hands.get(p.id).length} kartu`)
+				.join('\n');
+
+			const gameContainer = new ContainerBuilder()
+				.setAccentColor(
+					parseInt(getEmbedColor(game.topCard.color).replace('#', ''), 16),
 				)
-				.addFields(
-					players.map((p) => ({
-						name: p.username,
-						value: `${game.hands.get(p.id).length} kartu`,
-						inline: true,
-					})),
-				)
-				.setColor(getEmbedColor(game.topCard.color))
-				.setThumbnail('https://i.imgur.com/E1f6tAD.png');
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`## 🎮 UNO Game!\n**Kartu Teratas:** ${formatCard(game.topCard)}\n\nSekarang giliran **${currentPlayer.username}**!\n\n${playerInfo}`,
+					),
+				);
 
 			if (game.aiPlayerIds.has(currentPlayer.id)) {
 				// --- GILIRAN AI ---
@@ -125,11 +126,11 @@ module.exports = {
 				);
 				await mainMessage.edit({
 					content: ``,
-					embeds: [gameEmbed],
-					components: [publicActionRow],
+					components: [gameContainer, publicActionRow],
+					flags: MessageFlags.IsComponentsV2,
 				});
 
-				setTimeout(async () => {
+				setTimeout(() => {
 					const move = game.runAiTurn();
 					if (game.hands.get(currentPlayer.id).length === 1)
 						game.unoCalled.add(currentPlayer.id);
@@ -155,8 +156,8 @@ module.exports = {
 				);
 				await mainMessage.edit({
 					content: `Giliranmu, ${currentPlayer}!`,
-					embeds: [gameEmbed],
-					components: [publicActionRow],
+					components: [gameContainer, publicActionRow],
+					flags: MessageFlags.IsComponentsV2,
 				});
 
 				try {
@@ -195,7 +196,6 @@ module.exports = {
 					await mainMessage
 						.edit({
 							content: `⏳ Giliran ${currentPlayer.username} habis! Dia menarik 2 kartu.`,
-							embeds: [mainMessage.embeds[0]],
 							components: [],
 						})
 						.catch(() => {});
@@ -354,11 +354,17 @@ async function askColor(selectInteraction) {
 function checkWinCondition(mainMessage, player, game) {
 	if (game.hands.get(player.id).length === 0) {
 		game.isGameOver = true;
-		const winEmbed = new EmbedBuilder()
-			.setTitle('🏆 UNO!')
-			.setDescription(`${player.username} telah memenangkan permainan!`)
-			.setColor('Gold');
-		mainMessage.edit({ embeds: [winEmbed], components: [] });
+		const winComponents = new ContainerBuilder()
+			.setAccentColor(0xffd700)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`## 🏆 UNO!\n${player.username} telah memenangkan permainan!`,
+				),
+			);
+		mainMessage.edit({
+			components: [winComponents],
+			flags: MessageFlags.IsComponentsV2,
+		});
 		return true;
 	}
 	if (

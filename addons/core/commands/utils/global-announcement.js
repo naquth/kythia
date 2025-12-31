@@ -7,7 +7,10 @@
  */
 
 const {
-	EmbedBuilder,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
 	ModalBuilder,
 	MessageFlags,
 	TextInputStyle,
@@ -46,7 +49,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { logger, kythiaConfig } = container;
+		const { logger, kythiaConfig, helpers } = container;
 
 		const subcommand = interaction.options.getSubcommand();
 
@@ -88,17 +91,28 @@ module.exports = {
 			const content = modalSubmit.fields.getTextInputValue(
 				'announcement-content',
 			);
+			const { convertColor } = helpers.color;
+			const container = new ContainerBuilder()
+				.setAccentColor(
+					convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(`## 📢 ${title}\n\n${content}`),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`Announcement from Developer ${interaction.client.user.username} • <t:${Math.floor(Date.now() / 1000)}:R>`,
+					),
+				);
+
 			const payload = {
-				embeds: [
-					new EmbedBuilder()
-						.setTitle(`📢 ${title}`)
-						.setDescription(content)
-						.setColor(kythiaConfig.bot.color)
-						.setTimestamp()
-						.setFooter({
-							text: `Announcement from Developer ${interaction.client.user.username}`,
-						}),
-				],
+				components: [container],
+				flags: MessageFlags.IsComponentsV2,
 			};
 			await this.sendToAllGuilds(modalSubmit, payload);
 		} else if (subcommand === 'container') {
@@ -222,13 +236,13 @@ module.exports = {
 			`**Failed to Send:** ${failCount} server(s)` +
 			failList;
 
-		const { createContainer } = container.helpers.discord;
+		const { simpleContainer } = container.helpers.discord;
 
-		const components = await createContainer(interaction, {
-			title: '✅ Announcement Delivery Report',
-			description,
-			color: 'Green',
-		});
+		const components = await simpleContainer(
+			interaction,
+			`## ✅ Announcement Delivery Report\n${description}`,
+			{ color: 'Green' },
+		);
 
 		await interaction.editReply({
 			components,

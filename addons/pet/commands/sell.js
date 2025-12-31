@@ -5,15 +5,21 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand.setName('sell').setDescription('Sell your pet!'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { User, UserPet, Pet } = models;
 
 		await interaction.deferReply();
@@ -27,13 +33,15 @@ module.exports = {
 			include: [{ model: Pet, as: 'pet' }],
 		});
 		if (!userPet) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.sell.no.pet.title')}\n${await t(interaction, 'pet.sell.no.pet.desc')}`,
-				)
-				.setColor('Red')
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.sell.no.pet.title')}\n${await t(interaction, 'pet.sell.no.pet.desc')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		const rarity = userPet.pet.rarity;
 		const rarityValue = {
@@ -48,12 +56,15 @@ module.exports = {
 		await userPet.destroy();
 		user.changed('cash', true);
 		await user.saveAndUpdateCache('userId');
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`## ${await t(interaction, 'pet.sell.success.title')}\n${await t(interaction, 'pet.sell.success.desc', { value: petValue })}`,
-			)
-			.setColor(kythia.bot.color)
-			.setFooter(await embedFooter(interaction));
-		return interaction.editReply({ embeds: [embed] });
+
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'pet.sell.success.title')}\n${await t(interaction, 'pet.sell.success.desc', { value: petValue })}`,
+			{ color: kythiaConfig.bot.color },
+		);
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

@@ -8,7 +8,7 @@
 
 const { initializeOrderProcessing } = require('./helpers/orderProcessor');
 module.exports = {
-	async initialize(bot) {
+	initialize(bot) {
 		const summery = [];
 		initializeOrderProcessing(bot);
 		summery.push('   └─ Task: Order processing');

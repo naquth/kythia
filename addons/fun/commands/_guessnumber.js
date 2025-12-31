@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -25,7 +25,7 @@ module.exports = {
 
 	async execute(interaction, container) {
 		const { t, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		const mode = interaction.options.getString('mode');
 		let maxNumber = 100;
@@ -40,42 +40,34 @@ module.exports = {
 		const duration = 60; // seconds
 		const endTime = Math.floor((Date.now() + duration * 1000) / 1000);
 
-		const embed = new EmbedBuilder()
-			.setDescription(
-				(await t(interaction, 'fun.guessnumber.desc', { maxNumber })) +
-					'\n\n-# ' +
-					(await t(interaction, 'fun.guessnumber.hint')),
-			)
-			.addFields(
-				{
-					name: await t(interaction, 'fun.guessnumber.mode.field'),
-					value: `${mode.toUpperCase()}`,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'fun.guessnumber.timeleft.field'),
-					value: `<t:${endTime}:R>`,
-					inline: true,
-				},
-			)
-			.setColor('Blue')
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
+		const components = await simpleContainer(
+			interaction,
+			(await t(interaction, 'fun.guessnumber.desc', { maxNumber })) +
+				'\n\n-# ' +
+				(await t(interaction, 'fun.guessnumber.hint')) +
+				`\n\n**${await t(interaction, 'fun.guessnumber.mode.field')}:** ${mode.toUpperCase()}\n` +
+				`**${await t(interaction, 'fun.guessnumber.timeleft.field')}:** <t:${endTime}:R>`,
+			{ color: 'Blue' },
+		);
 
-		// DM support: interaction.channel can be null in DM, so fallback to DM if needed
 		if (!interaction.channel) {
 			const dm = await interaction.user.createDM();
-			await dm.send({ embeds: [embed] });
-			const dmEmbed = new EmbedBuilder()
-				.setDescription(await t(interaction, 'fun.guessnumber.dm.sent.desc'))
-				.setColor('Blue')
-				.setFooter(await embedFooter(interaction))
-				.setTimestamp();
-			return interaction.reply({ embeds: [dmEmbed], ephemeral: true });
+			await dm.send({ components, flags: MessageFlags.IsComponentsV2 });
+			const dmComponents = await simpleContainer(
+				interaction,
+				await t(interaction, 'fun.guessnumber.dm.sent.desc'),
+				{ color: 'Blue' },
+			);
+			return interaction.reply({
+				components: dmComponents,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
 		}
 
 		const gameMessage = await interaction.reply({
-			embeds: [embed],
+			components,
+			flags: MessageFlags.IsComponentsV2,
 			fetchReply: true,
 		});
 
@@ -110,22 +102,26 @@ module.exports = {
 			if (guess === number) {
 				collector.stop('guessed');
 
-				const winEmbed = new EmbedBuilder()
-					.setDescription(
-						await t(interaction, 'fun.guessnumber.win.desc', {
-							number,
-							attempts,
-						}),
-					)
-					.setColor('Green')
-					.setFooter(await embedFooter(interaction))
-					.setTimestamp();
+				const winComponents = await simpleContainer(
+					interaction,
+					await t(interaction, 'fun.guessnumber.win.desc', {
+						number,
+						attempts,
+					}),
+					{ color: 'Green' },
+				);
 
 				try {
-					await gameMessage.edit({ embeds: [winEmbed] });
+					await gameMessage.edit({
+						components: winComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				} catch {
 					try {
-						await interaction.channel.send({ embeds: [winEmbed] });
+						await interaction.channel.send({
+							components: winComponents,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					} catch {}
 				}
 				return;
@@ -148,33 +144,35 @@ module.exports = {
 
 			const feedback = await t(interaction, feedbackKey);
 
-			// Send feedback as embed
-			const feedbackEmbed = new EmbedBuilder()
-				.setDescription(feedback)
-				.setColor('Yellow')
-				.setFooter(await embedFooter(interaction))
-				.setTimestamp();
+			const feedbackComponents = await simpleContainer(interaction, feedback, {
+				color: 'Yellow',
+			});
 
 			lastBotReply = await interaction.channel.send({
-				embeds: [feedbackEmbed],
+				components: feedbackComponents,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		});
 
 		collector.on('end', async (_, reason) => {
 			if (reason !== 'guessed') {
-				const loseEmbed = new EmbedBuilder()
-					.setDescription(
-						await t(interaction, 'fun.guessnumber.lose.desc', { number }),
-					)
-					.setColor('Red')
-					.setFooter(await embedFooter(interaction))
-					.setTimestamp();
+				const loseComponents = await simpleContainer(
+					interaction,
+					await t(interaction, 'fun.guessnumber.lose.desc', { number }),
+					{ color: 'Red' },
+				);
 
 				try {
-					await gameMessage.edit({ embeds: [loseEmbed] });
+					await gameMessage.edit({
+						components: loseComponents,
+						flags: MessageFlags.IsComponentsV2,
+					});
 				} catch {
 					try {
-						await interaction.channel.send({ embeds: [loseEmbed] });
+						await interaction.channel.send({
+							components: loseComponents,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					} catch {}
 				}
 			}

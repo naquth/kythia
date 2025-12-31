@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { Op } = require('sequelize');
 
 const divorceConfirmations = new Map();
@@ -20,7 +20,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { Marriage } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 		const userId = interaction.user.id;
 
 		const marriages = await Marriage.getAllCache({
@@ -36,12 +36,14 @@ module.exports = {
 		const marriage = marriages && marriages.length > 0 ? marriages[0] : null;
 
 		if (!marriage) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'fun.marry.not.married'))
-				.setFooter(await embedFooter(interaction));
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'fun.marry.not.married'),
+				{ color: 'Red' },
+			);
 			return interaction.reply({
-				embeds: [embed],
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -69,33 +71,33 @@ module.exports = {
 			}
 
 			if (partner) {
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						await t(interaction, 'fun.marry.divorce.partner.confirm', {
-							partnerName: interaction.user.username,
-							serverName: interaction.guild
-								? interaction.guild.name
-								: 'the server',
-						}),
-					)
-					.setFooter(await embedFooter(interaction));
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'fun.marry.divorce.partner.confirm', {
+						partnerName: interaction.user.username,
+						serverName: interaction.guild
+							? interaction.guild.name
+							: 'the server',
+					}),
+					{ color: kythiaConfig.bot.color },
+				);
 				partner
-					.send({
-						embeds: [embed],
-					})
+					.send({ components, flags: MessageFlags.IsComponentsV2 })
 					.catch(() => {});
 			}
 
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					await t(interaction, 'fun.marry.divorce.confirmation.needed', {
-						partner: partner ? partner.tag : `ID: ${partnerId}`,
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
-			return interaction.reply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'fun.marry.divorce.confirmation.needed', {
+					partner: partner ? partner.tag : `ID: ${partnerId}`,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
 		}
 
 		if (confirmation.confirmedBy.has(userId)) {
@@ -122,19 +124,24 @@ module.exports = {
 				userB = await interaction.client.users.fetch(marriage.user2Id);
 			} catch {}
 
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setTitle(await t(interaction, 'fun.marry.divorced.title'))
-				.setDescription(await t(interaction, 'fun.marry.divorced.description'))
-				.setFooter(await embedFooter(interaction));
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'fun.marry.divorced.title')}\n${await t(interaction, 'fun.marry.divorced.description')}`,
+				{ color: 'Red' },
+			);
 
 			for (const user of [userA, userB]) {
 				if (user) {
-					user.send({ embeds: [embed] }).catch(() => {});
+					user
+						.send({ components, flags: MessageFlags.IsComponentsV2 })
+						.catch(() => {});
 				}
 			}
 
-			return interaction.reply({ embeds: [embed] });
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} else {
 			return interaction.reply({
 				content: await t(

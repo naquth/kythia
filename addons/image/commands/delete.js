@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -21,8 +21,9 @@ module.exports = {
 					.setRequired(true),
 			),
 	async execute(interaction, container) {
-		const { models, t, kythiaConfig } = container;
+		const { models, t, kythiaConfig, helpers } = container;
 		const { Image } = models;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -34,12 +35,15 @@ module.exports = {
 		});
 
 		if (!image) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`${await t(interaction, 'image.delete.not.found.desc')}`,
-				);
-			return await interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				`${await t(interaction, 'image.delete.not.found.desc')}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			return await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		// Get storage server configuration
@@ -53,12 +57,15 @@ module.exports = {
 			'';
 
 		if (!apiKey) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					'❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment or configure `kythiaConfig.addons.image.apiKey`.',
-				);
-			return interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				'❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment or configure `kythiaConfig.addons.image.apiKey`.',
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		try {
@@ -83,17 +90,25 @@ module.exports = {
 			// Delete from database
 			await image.destroy();
 
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(`${await t(interaction, 'image.delete.success.desc')}`);
-			await interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				`${await t(interaction, 'image.delete.success.desc')}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (err) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`❌ **Failed to delete image:** ${err instanceof Error ? err.message : 'Unknown error'}`,
-				);
-			return await interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				`❌ **Failed to delete image:** ${err instanceof Error ? err.message : 'Unknown error'}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			return await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

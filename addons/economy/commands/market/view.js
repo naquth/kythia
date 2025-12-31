@@ -59,7 +59,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketOrder } = models;
-		const { simpleContainer, createContainer, convertColor } = helpers.discord;
+		const { simpleContainer, convertColor } = helpers.discord;
 
 		await interaction.deferReply();
 

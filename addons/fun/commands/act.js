@@ -6,7 +6,16 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const {
+	SlashCommandBuilder,
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryBuilder,
+	MediaGalleryItemBuilder,
+} = require('discord.js');
 const axios = require('axios');
 
 const VALID_ACTIONS = [
@@ -83,7 +92,6 @@ module.exports = {
 
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
 
 		const action = interaction.options.getString('action');
 		const targetUser = interaction.options.getUser('user');
@@ -126,12 +134,40 @@ module.exports = {
 			});
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(actionText)
-			.setImage(gifUrl)
-			.setFooter(await embedFooter(interaction));
+		const actionContainer = new ContainerBuilder()
+			.setAccentColor(
+				helpers.color.convertColor(kythiaConfig.bot.color, {
+					from: 'hex',
+					to: 'decimal',
+				}),
+			)
+			.addTextDisplayComponents(new TextDisplayBuilder().setContent(actionText))
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addMediaGalleryComponents(
+				new MediaGalleryBuilder().addItems([
+					new MediaGalleryItemBuilder().setURL(gifUrl),
+				]),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'common.container.footer', {
+						username: interaction.client.user.username,
+					}),
+				),
+			);
 
-		await interaction.reply({ embeds: [embed] });
+		await interaction.reply({
+			components: [actionContainer],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

@@ -17,7 +17,6 @@ const {
 	SeparatorBuilder,
 	SeparatorSpacingSize,
 	MessageFlags,
-	EmbedBuilder,
 } = require('discord.js');
 
 function createGame(interaction, opponent, mode) {
@@ -279,15 +278,14 @@ module.exports = {
 		if (opponent.bot) {
 			mode = interaction.options.getString('difficulty') || 'bot_hard';
 		} else if (opponent.id === interaction.user.id) {
-			// Tidak bisa lawan diri sendiri
+			const { simpleContainer } = container.helpers.discord;
 			return interaction.reply({
-				embeds: [
-					new EmbedBuilder()
-						.setColor('Red')
-						.setDescription(
-							`${await t(interaction, 'fun.tictactoe.error.title')}\n${await t(interaction, 'fun.tictactoe.error.self')}`,
-						),
-				],
+				components: await simpleContainer(
+					interaction,
+					`${await t(interaction, 'fun.tictactoe.error.title')}\n${await t(interaction, 'fun.tictactoe.error.self')}`,
+					{ color: 'Red' },
+				),
+				flags: MessageFlags.IsComponentsV2,
 				ephemeral: true,
 			});
 		}
@@ -319,14 +317,14 @@ module.exports = {
 						i.user.id !== gameInstance.playerX.id &&
 						i.user.id !== gameInstance.playerO.id
 					) {
+						const { simpleContainer } = container.helpers.discord;
 						return i.reply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor('Yellow')
-									.setDescription(
-										`${await t(i, 'fun.tictactoe.error.title')}\n${await t(i, 'fun.tictactoe.error.rematch')}`,
-									),
-							],
+							components: await simpleContainer(
+								i,
+								`${await t(i, 'fun.tictactoe.error.title')}\n${await t(i, 'fun.tictactoe.error.rematch')}`,
+								{ color: 'Yellow' },
+							),
+							flags: MessageFlags.IsComponentsV2,
 							ephemeral: true,
 						});
 					}
@@ -338,14 +336,14 @@ module.exports = {
 				}
 
 				if (i.user.id !== gameInstance.currentPlayer.id) {
+					const { simpleContainer } = container.helpers.discord;
 					return i.reply({
-						embeds: [
-							new EmbedBuilder()
-								.setColor('Yellow')
-								.setDescription(
-									`${await t(i, 'fun.tictactoe.error.title')}\n${await t(i, 'fun.tictactoe.error.turn')}`,
-								),
-						],
+						components: await simpleContainer(
+							i,
+							`${await t(i, 'fun.tictactoe.error.title')}\n${await t(i, 'fun.tictactoe.error.turn')}`,
+							{ color: 'Yellow' },
+						),
+						flags: MessageFlags.IsComponentsV2,
 						ephemeral: true,
 					});
 				}

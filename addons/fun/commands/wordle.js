@@ -11,7 +11,11 @@ const {
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
-	EmbedBuilder,
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
 	ComponentType,
 	ModalBuilder,
 	TextInputBuilder,
@@ -79,7 +83,9 @@ function renderBoard(guesses, answer) {
 
 async function buildGameEmbed(interaction, game) {
 	let description = renderBoard(game.guesses, game.answer);
-	const { t } = interaction.client.container;
+	const { t, helpers, kythiaConfig } = interaction.client.container;
+	const { convertColor } = helpers.color;
+
 	if (game.isOver) {
 		if (game.win) {
 			description += `\n\n${await t(interaction, 'fun.wordle.win', { answer: game.answer.toUpperCase() })}`;
@@ -90,18 +96,30 @@ async function buildGameEmbed(interaction, game) {
 		description += `\n\n${await t(interaction, 'fun.wordle.remaining', { remaining: 6 - game.guesses.length })}`;
 	}
 
-	return new EmbedBuilder()
-		.setDescription(
-			`${await t(interaction, 'fun.wordle.title')}\n${description}`,
+	const footer = game.isOver
+		? await t(interaction, 'fun.wordle.footer.end')
+		: await t(interaction, 'fun.wordle.footer.play');
+
+	return new ContainerBuilder()
+		.setAccentColor(
+			convertColor(
+				game.isOver ? (game.win ? 'Green' : 'Red') : kythiaConfig.bot.color,
+				{ from: 'discord', to: 'decimal' },
+			),
 		)
-		.setColor(
-			game.isOver ? (game.win ? '#2ecc71' : '#e74c3c') : kythia.bot.color,
+		.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`${await t(interaction, 'fun.wordle.title')}\n${description}`,
+			),
 		)
-		.setFooter({
-			text: game.isOver
-				? await t(interaction, 'fun.wordle.footer.end')
-				: await t(interaction, 'fun.wordle.footer.play'),
-		});
+		.addSeparatorComponents(
+			new SeparatorBuilder()
+				.setSpacing(SeparatorSpacingSize.Small)
+				.setDivider(true),
+		)
+		.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(`-# ${footer}`),
+		);
 }
 
 module.exports = {
@@ -115,10 +133,16 @@ module.exports = {
 		const userId = interaction.user.id;
 
 		if (games[userId] && !games[userId].isOver) {
-			const embed = new EmbedBuilder()
-				.setColor('#e67e22')
-				.setDescription(await t(interaction, 'fun.wordle.already.playing'));
-			return interaction.reply({ embeds: [embed], ephemeral: true });
+			const { simpleContainer } = container.helpers.discord;
+			return interaction.reply({
+				components: await simpleContainer(
+					interaction,
+					await t(interaction, 'fun.wordle.already.playing'),
+					{ color: '#e67e22' },
+				),
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
 		}
 
 		const answer = pickRandomWord();
@@ -130,7 +154,7 @@ module.exports = {
 		};
 		const game = games[userId];
 
-		const embed = await buildGameEmbed(interaction, game);
+		const gameContainer = await buildGameEmbed(interaction, game);
 		const row = new ActionRowBuilder().addComponents(
 			new ButtonBuilder()
 				.setCustomId('wordle_guess_button')
@@ -139,8 +163,8 @@ module.exports = {
 		);
 
 		const message = await interaction.reply({
-			embeds: [embed],
-			components: [row],
+			components: [gameContainer, row],
+			flags: MessageFlags.IsComponentsV2,
 			fetchReply: true,
 		});
 
@@ -151,10 +175,16 @@ module.exports = {
 
 		collector.on('collect', async (i) => {
 			if (i.user.id !== userId) {
-				const embed = new EmbedBuilder()
-					.setColor('#e67e22')
-					.setDescription(await t(i, 'fun.wordle.not.your.game'));
-				return i.reply({ embeds: [embed], ephemeral: true });
+				const { simpleContainer } = container.helpers.discord;
+				return i.reply({
+					components: await simpleContainer(
+						i,
+						await t(i, 'fun.wordle.not.your.game'),
+						{ color: '#e67e22' },
+					),
+					flags: MessageFlags.IsComponentsV2,
+					ephemeral: true,
+				});
 			}
 
 			const modal = new ModalBuilder()
@@ -179,20 +209,30 @@ module.exports = {
 					.toLowerCase();
 
 				if (!isValidWord(guess)) {
-					const embed = new EmbedBuilder()
-						.setColor('#e74c3c')
-						.setDescription(
+					const { simpleContainer } = container.helpers.discord;
+					return modalSubmit.reply({
+						components: await simpleContainer(
+							modalSubmit,
 							await t(modalSubmit, 'fun.wordle.invalid.word', { word: guess }),
-						);
-					return modalSubmit.reply({ embeds: [embed], ephemeral: true });
+							{ color: '#e74c3c' },
+						),
+						flags: MessageFlags.IsComponentsV2,
+						ephemeral: true,
+					});
 				}
 				if (game.guesses.includes(guess)) {
-					const embed = new EmbedBuilder().setColor('#e67e22').setDescription(
-						await t(modalSubmit, 'fun.wordle.already.guessed', {
-							word: guess,
-						}),
-					);
-					return modalSubmit.reply({ embeds: [embed], ephemeral: true });
+					const { simpleContainer } = container.helpers.discord;
+					return modalSubmit.reply({
+						components: await simpleContainer(
+							modalSubmit,
+							await t(modalSubmit, 'fun.wordle.already.guessed', {
+								word: guess,
+							}),
+							{ color: '#e67e22' },
+						),
+						flags: MessageFlags.IsComponentsV2,
+						ephemeral: true,
+					});
 				}
 
 				await modalSubmit.deferUpdate();
@@ -207,8 +247,11 @@ module.exports = {
 					collector.stop('lose');
 				}
 
-				const updatedEmbed = await buildGameEmbed(interaction, game);
-				await interaction.editReply({ embeds: [updatedEmbed] });
+				const updatedContainer = await buildGameEmbed(interaction, game);
+				await interaction.editReply({
+					components: [updatedContainer],
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} catch (_err) {}
 		});
 
@@ -217,7 +260,7 @@ module.exports = {
 
 			delete games[userId];
 
-			const finalEmbed = await buildGameEmbed(interaction, game);
+			const finalContainer = await buildGameEmbed(interaction, game);
 			const finalRow = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setCustomId('wordle_guess_button')
@@ -226,8 +269,8 @@ module.exports = {
 					.setDisabled(true),
 			);
 			await interaction.editReply({
-				embeds: [finalEmbed],
-				components: [finalRow],
+				components: [finalContainer, finalRow],
+				flags: MessageFlags.IsComponentsV2,
 			});
 		});
 	},

@@ -126,7 +126,6 @@ async function createMockEventArgs(eventName, interaction, type = 'default') {
 				case 'nickname':
 					oldMember.nickname = oldMember.nickname ? null : 'NewNickname';
 					break;
-				case 'role-change':
 				default:
 					oldMember.roles = new Collection(member.roles.cache);
 					break;
@@ -159,7 +158,6 @@ async function createMockEventArgs(eventName, interaction, type = 'default') {
 				case 'owner-change':
 					oldGuild.ownerId = '123456789';
 					break;
-				case 'name-change':
 				default:
 					oldGuild.name = 'Old Guild Name';
 					break;
@@ -195,7 +193,6 @@ async function createMockEventArgs(eventName, interaction, type = 'default') {
 				case 'nsfw-toggle':
 					oldChannel.nsfw = !channel.nsfw;
 					break;
-				case 'name-change':
 				default:
 					oldChannel.name = 'old-channel-name';
 					break;

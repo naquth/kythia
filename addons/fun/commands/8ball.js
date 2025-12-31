@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
@@ -20,7 +20,7 @@ module.exports = {
 
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		const question = interaction.options.getString('question');
 
@@ -40,26 +40,28 @@ module.exports = {
 		const randomIndex = Math.floor(Math.random() * answerKeys.length);
 		const answer = await t(interaction, answerKeys[randomIndex]);
 
-		const thinkingEmbed = new EmbedBuilder()
-			.setDescription(await t(interaction, 'fun.8ball.thinking.desc'))
-			.setColor(kythiaConfig.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
+		const thinkingComponents = await simpleContainer(
+			interaction,
+			await t(interaction, 'fun.8ball.thinking.desc'),
+			{ color: kythiaConfig.bot.color },
+		);
 
-		await interaction.reply({ embeds: [thinkingEmbed] });
+		await interaction.reply({
+			components: thinkingComponents,
+			flags: MessageFlags.IsComponentsV2,
+		});
 
 		setTimeout(async () => {
-			const resultEmbed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-				.setDescription(
-					await t(interaction, 'fun.8ball.result.desc', { question, answer }),
-				)
-				.setFooter(await embedFooter(interaction))
-				.setTimestamp();
+			const resultComponents = await simpleContainer(
+				interaction,
+				await t(interaction, 'fun.8ball.result.desc', { question, answer }),
+				{ color: kythiaConfig.bot.color },
+			);
 
-			await interaction.editReply({ embeds: [resultEmbed] });
+			await interaction.editReply({
+				components: resultComponents,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}, 2000);
 	},
 };

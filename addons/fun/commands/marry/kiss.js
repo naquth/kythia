@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { Op } = require('sequelize');
 
 const KISS_COOLDOWN = 3600;
@@ -17,7 +17,6 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { Marriage } = models;
-		const { embedFooter } = helpers.discord;
 		const userId = interaction.user.id;
 		const now = new Date();
 
@@ -34,12 +33,14 @@ module.exports = {
 		const marriage = marriages && marriages.length > 0 ? marriages[0] : null;
 
 		if (!marriage) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'fun.marry.not.married'))
-				.setFooter(await embedFooter(interaction));
+			const components = await helpers.discord.simpleContainer(
+				interaction,
+				await t(interaction, 'fun.marry.not.married.both'),
+				{ color: 'Red' },
+			);
 			return interaction.reply({
-				embeds: [embed],
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -84,11 +85,12 @@ module.exports = {
 		const randomMessage =
 			kissMessages[Math.floor(Math.random() * kissMessages.length)];
 
-		const embed = new EmbedBuilder()
-			.setColor(kythiaConfig.bot.color)
-			.setDescription(randomMessage)
-			.setFooter(await embedFooter(interaction));
+		const components = await helpers.discord.simpleContainer(
+			interaction,
+			randomMessage,
+			{ color: kythiaConfig.bot.color },
+		);
 
-		await interaction.reply({ embeds: [embed] });
+		await interaction.reply({ components, flags: MessageFlags.IsComponentsV2 });
 	},
 };

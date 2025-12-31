@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -17,35 +17,36 @@ module.exports = {
 				option.setName('name').setDescription('Pet name').setRequired(true),
 			),
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { KythiaUser, UserPet, Pet } = models;
 		await interaction.deferReply();
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 		if (!user) {
-			const embed = new EmbedBuilder()
-				.setColor(kythia.bot.color)
-				.setDescription(
-					await t(interaction, 'economy.withdraw.no.account.desc'),
-				)
-				.setThumbnail(interaction.user.displayAvatarURL())
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'economy.withdraw.no.account.desc'),
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const existingPet = await UserPet.getCache({
 			where: { userId: interaction.user.id, isDead: false },
 		});
 		if (existingPet) {
-			const title = await t(interaction, 'pet.adopt.already.title');
-			const desc = await t(interaction, 'pet.adopt.already.desc');
-			const embed = new EmbedBuilder()
-				.setDescription(`## ${title}\n${desc}`)
-				.setColor(kythia.bot.color)
-				.setFooter(await embedFooter(interaction));
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.adopt.already.title')}\n${await t(interaction, 'pet.adopt.already.desc')}`,
+				{ color: kythiaConfig.bot.color },
+			);
 			return interaction.editReply({
-				embeds: [embed],
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -77,24 +78,23 @@ module.exports = {
 			petName: name,
 		});
 
-		const title = await t(interaction, 'pet.adopt.success.title', {
-			name: selectedPet.name,
-			icon: selectedPet.icon ?? '',
-			rarity: selectedPet.rarity,
-		});
-		const desc = await t(interaction, 'pet.adopt.success.simple', {
-			name: selectedPet.name,
-			icon: selectedPet.icon ?? '',
-			rarity: selectedPet.rarity,
-		});
-
-		const embed = new EmbedBuilder()
-			.setDescription(`## ${title}\n${desc}`)
-			.setColor(kythia.bot.color)
-			.setFooter(await embedFooter(interaction));
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'pet.adopt.success.title', {
+				name: selectedPet.name,
+				icon: selectedPet.icon ?? '',
+				rarity: selectedPet.rarity,
+			})}\n${await t(interaction, 'pet.adopt.success.simple', {
+				name: selectedPet.name,
+				icon: selectedPet.icon ?? '',
+				rarity: selectedPet.rarity,
+			})}`,
+			{ color: kythiaConfig.bot.color },
+		);
 
 		return interaction.editReply({
-			embeds: [embed],
+			components,
+			flags: MessageFlags.IsComponentsV2,
 		});
 	},
 };

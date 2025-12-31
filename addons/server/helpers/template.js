@@ -9,7 +9,6 @@
 // templates.js
 const fs = require('node:fs');
 const path = require('node:path');
-const { EmbedBuilder } = require('discord.js');
 
 const TYPE_MAP = { text: 0, voice: 2, forum: 15 }; // ChannelType enum minimal
 
@@ -61,24 +60,4 @@ function loadTemplates(dir, embedded = {}) {
 	return result;
 }
 
-function buildEmbeds(embedArray = []) {
-	const embeds = [];
-	for (const e of embedArray) {
-		const embed = new EmbedBuilder();
-		if (e.title) embed.setTitle(e.title);
-		if (e.description) embed.setDescription(e.description);
-		if (e.color) embed.setColor(e.color);
-		if (e.footer)
-			embed.setFooter(
-				typeof e.footer === 'string' ? { text: e.footer } : e.footer,
-			);
-		if (e.thumbnail?.url) embed.setThumbnail(e.thumbnail.url);
-		if (e.image?.url) embed.setImage(e.image.url);
-		if (e.fields) embed.setFields(e.fields);
-
-		embeds.push(embed);
-	}
-	return embeds;
-}
-
-module.exports = { loadTemplates, buildEmbeds };
+module.exports = { loadTemplates };

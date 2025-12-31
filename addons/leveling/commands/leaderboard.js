@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -15,8 +15,8 @@ module.exports = {
 			.setDescription("See the server's level leaderboard."),
 
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { User } = models;
 
 		await interaction.deferReply();
@@ -57,16 +57,15 @@ module.exports = {
 			).join('\n');
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(kythia.bot.color)
-			.setDescription(
-				`## ${await t(interaction, 'leveling.leaderboard.leveling.leaderboard.title')}\n${leaderboard}`,
-			)
-			.setTimestamp()
-			.setFooter(await embedFooter(interaction));
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'leveling.leaderboard.leveling.leaderboard.title')}\n${leaderboard}`,
+			{ color: kythiaConfig.bot.color },
+		);
 
 		await interaction.editReply({
-			embeds: [embed],
+			components,
+			flags: MessageFlags.IsComponentsV2,
 			allowedMentions: {
 				parse: [],
 			},

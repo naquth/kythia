@@ -10,13 +10,17 @@ const {
 	ChannelType,
 	PermissionFlagsBits,
 	OverwriteType,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
 	AttachmentBuilder,
-	EmbedBuilder,
+	MessageFlags,
 	InteractionContextType,
 } = require('discord.js');
 
 const path = require('node:path');
-const { loadTemplates, buildEmbeds } = require('../helpers/template');
+const { loadTemplates } = require('../helpers/template');
 
 // Path ke folder template
 const TEMPLATE_DIR = path.join(__dirname, '../template');
@@ -96,8 +100,9 @@ async function ensureCategory(guild, name, stats) {
 	await sleep(250);
 	return cat;
 }
+
 async function ensureChannel(guild, category, spec, stats) {
-	const { logger } = guild.client.container;
+	const { logger, helpers, kythiaConfig } = guild.client.container;
 	const existing = guild.channels.cache.find(
 		(c) =>
 			c.parentId === category.id &&
@@ -139,8 +144,40 @@ async function ensureChannel(guild, category, spec, stats) {
 		for (const msg of spec.pin) {
 			let m;
 			if (typeof msg === 'object' && msg !== null && !Array.isArray(msg)) {
-				const embedsToSend = buildEmbeds([msg]);
-				m = await ch.send({ embeds: embedsToSend });
+				const { convertColor } = helpers.color;
+				const container = new ContainerBuilder().setAccentColor(
+					msg.color
+						? convertColor(msg.color, { from: 'hex', to: 'decimal' })
+						: convertColor(kythiaConfig.bot.color, {
+								from: 'hex',
+								to: 'decimal',
+							}),
+				);
+
+				let content = '';
+				if (msg.title) content += `## ${msg.title}\n\n`;
+				if (msg.description) content += msg.description;
+
+				container.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(content),
+				);
+
+				if (msg.footer?.text) {
+					container
+						.addSeparatorComponents(
+							new SeparatorBuilder()
+								.setSpacing(SeparatorSpacingSize.Small)
+								.setDivider(true),
+						)
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(msg.footer.text),
+						);
+				}
+
+				m = await ch.send({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} else {
 				m = await ch.send({ content: msg });
 			}
@@ -161,7 +198,8 @@ async function ensureChannel(guild, category, spec, stats) {
 async function updateProgress(interaction, progress) {
 	const container = interaction.client.container;
 	const { kythiaConfig, t, helpers } = container;
-	const { embedFooter } = helpers.discord;
+	const { simpleContainer } = helpers.discord;
+	let components;
 	const percent =
 		progress.total > 0
 			? Math.floor((progress.current / progress.total) * 100)
@@ -169,18 +207,21 @@ async function updateProgress(interaction, progress) {
 	const barLength = 20;
 	const filledLength = Math.round((percent / 100) * barLength);
 	const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
-	const embed = new EmbedBuilder()
-		.setColor(kythiaConfig.bot.color)
-		.setDescription(
-			`## ${await t(interaction, 'server.server.progress.title')}\n` +
-				`**${progress.label}**\n` +
-				`\`${bar}\` ${percent}%\n` +
-				`(${progress.current}/${progress.total})\n\n` +
-				(progress.extra || '') +
-				`\n${await t(interaction, 'server.server.progress.step', { step: progress.step, totalSteps: progress.totalSteps })}`,
-		)
-		.setFooter(await embedFooter(interaction));
-	await interaction.editReply({ embeds: [embed] });
+
+	components = await simpleContainer(
+		interaction,
+		`## ${await t(interaction, 'server.server.progress.title')}\n` +
+			`**${progress.label}**\n` +
+			`\`${bar}\` ${percent}%\n` +
+			`(${progress.current}/${progress.total})\n\n` +
+			(progress.extra || '') +
+			`\n${await t(interaction, 'server.server.progress.step', { step: progress.step, totalSteps: progress.totalSteps })}`,
+		{ color: kythiaConfig.bot.color },
+	);
+	await interaction.editReply({
+		components,
+		flags: MessageFlags.IsComponentsV2,
+	});
 }
 
 async function runTemplate(interaction, tpl, opts) {
@@ -403,7 +444,7 @@ module.exports = {
 		PermissionFlagsBits.ManageChannels,
 		PermissionFlagsBits.ManageRoles,
 	],
-	async autocomplete(interaction) {
+	autocomplete(interaction) {
 		const sub = interaction.options.getSubcommand();
 		const focused = interaction.options.getFocused();
 		// Autocomplete for /server autobuild template
@@ -446,18 +487,23 @@ module.exports = {
 
 	async execute(interaction, container) {
 		const { kythiaConfig, t, logger, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
+		let components;
 		const subcommand = interaction.options.getSubcommand();
 
 		await interaction.deferReply();
 
 		if (!interaction.guild) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(
-					`## ${await t(interaction, 'server.server.command.no.guild')}`,
-				);
-			return interaction.editReply({ embeds: [embed], ephemeral: true });
+			components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'server.server.command.no.guild')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
 		}
 		// AUTOBUILD
 		if (subcommand === 'autobuild') {
@@ -475,12 +521,16 @@ module.exports = {
 			// load semua templates dari folder + embedded
 			const tpl = EMBEDDED[key];
 			if (!tpl) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						`## ${await t(interaction, 'server.server.autobuild.template.not.found', { key })}`,
-					);
-				return interaction.editReply({ embeds: [embed], ephemeral: true });
+				components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'server.server.autobuild.template.not.found', { key })}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+					ephemeral: true,
+				});
 			}
 
 			const locale =
@@ -496,15 +546,14 @@ module.exports = {
 
 			try {
 				// Initial progress embed
+				components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'server.server.autobuild.progress.start')}`,
+					{ color: kythiaConfig.bot.color },
+				);
 				await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor(kythiaConfig.bot.color)
-							.setDescription(
-								`## ${await t(interaction, 'server.server.autobuild.progress.start')}`,
-							)
-							.setFooter(await embedFooter(interaction)),
-					],
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 
 				const stats = await runTemplate(interaction, tpl, {
@@ -513,34 +562,39 @@ module.exports = {
 					privateStaff,
 					locale,
 				});
-				const embed = new EmbedBuilder()
-					.setColor(kythiaConfig.bot.color)
-					.setDescription(
-						`## ${await t(interaction, 'server.server.autobuild.success.title', { name: tpl.meta.display || key })}\n` +
-							(await t(interaction, 'server.server.autobuild.success.desc', {
-								mode: dryRun ? 'dry-run' : 'apply',
-								locale,
-								voice: includeVoice ? 'on' : 'off',
-								staff: privateStaff ? 'on' : 'off',
-								roleCreated: stats.role.created,
-								roleSkipped: stats.role.skipped,
-								catCreated: stats.category.created,
-								catSkipped: stats.category.skipped,
-								chCreated: stats.channel.created,
-								chSkipped: stats.channel.skipped,
-								failed: stats.failed,
-							})),
-					)
-					.setFooter(await embedFooter(interaction));
+				components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'server.server.autobuild.success.title', { name: tpl.meta.display || key })}\n` +
+						(await t(interaction, 'server.server.autobuild.success.desc', {
+							mode: dryRun ? 'dry-run' : 'apply',
+							locale,
+							voice: includeVoice ? 'on' : 'off',
+							staff: privateStaff ? 'on' : 'off',
+							roleCreated: stats.role.created,
+							roleSkipped: stats.role.skipped,
+							catCreated: stats.category.created,
+							catSkipped: stats.category.skipped,
+							chCreated: stats.channel.created,
+							chSkipped: stats.channel.skipped,
+							failed: stats.failed,
+						})),
+					{ color: kythiaConfig.bot.color },
+				);
 
-				return interaction.editReply({ embeds: [embed] });
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} catch (e) {
-				const embed = new EmbedBuilder()
-					.setColor('Red')
-					.setDescription(
-						`## ${await t(interaction, 'server.server.autobuild.failed', { error: e.message })}`,
-					);
-				return interaction.editReply({ embeds: [embed] });
+				components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'server.server.autobuild.failed', { error: e.message })}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
 			}
 		}
 
@@ -550,24 +604,26 @@ module.exports = {
 				case 'backup': {
 					const guild = interaction.guild;
 					if (!guild) {
-						const embed = new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								`## ${await t(interaction, 'server.server.backup.no.guild')}`,
-							);
-						return interaction.editReply({ embeds: [embed] });
+						components = await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.no.guild')}`,
+							{ color: 'Red' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 
 					// Kasih tau user kalau prosesnya lagi jalan
+					components = await simpleContainer(
+						interaction,
+						`## ${await t(interaction, 'server.server.backup.progress.start')}`,
+						{ color: kythiaConfig.bot.color },
+					);
 					await interaction.editReply({
-						embeds: [
-							new EmbedBuilder()
-								.setColor(kythiaConfig.bot.color)
-								.setDescription(
-									`## ${await t(interaction, 'server.server.backup.progress.start')}`,
-								)
-								.setFooter(await embedFooter(interaction)),
-						],
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 
 					try {
@@ -588,16 +644,11 @@ module.exports = {
 							publicUpdatesChannelId: guild.publicUpdatesChannel?.id,
 						};
 
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.backup.progress.settings')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.progress.settings')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 
 						// 2. Ambil data Roles
 						const roles = guild.roles.cache
@@ -612,16 +663,11 @@ module.exports = {
 								mentionable: role.mentionable,
 							}));
 
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.backup.progress.roles')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.progress.roles')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 
 						// 3. Ambil data Channels
 						const channels = guild.channels.cache
@@ -644,16 +690,11 @@ module.exports = {
 								),
 							}));
 
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.backup.progress.channels')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.progress.channels')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 
 						// 4. Ambil data Emojis & Stickers
 						const emojis = guild.emojis.cache.map((e) => ({
@@ -669,16 +710,11 @@ module.exports = {
 							})),
 						);
 
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.backup.progress.emojis')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.progress.emojis')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 
 						// 5. Ambil data Soundboard
 						let soundboard = [];
@@ -699,16 +735,11 @@ module.exports = {
 							soundboard = [];
 						}
 
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.backup.progress.soundboard')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.progress.soundboard')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 
 						// --- GABUNGKAN SEMUA DATA JADI SATU ---
 						const backupData = {
@@ -741,43 +772,52 @@ module.exports = {
 						});
 
 						// Update reply awal di channel
-						const embed = new EmbedBuilder()
-							.setColor('Green')
-							.setDescription(
-								`## ${await t(interaction, 'server.server.backup.success')}`,
-							);
-						await interaction.editReply({ embeds: [embed] });
+						// Update reply awal di channel
+						components = await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.success')}`,
+							{ color: 'Green' },
+						);
+						await interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					} catch (err) {
 						logger.error(err);
 						if (err.code === 50007) {
-							const embed = new EmbedBuilder()
-								.setColor('Red')
-								.setDescription(
-									`## ${await t(interaction, 'server.server.backup.dm.failed')}`,
-								);
-							return interaction.editReply({ embeds: [embed] });
-						}
-						const embed = new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								`## ${await t(interaction, 'server.server.backup.failed')}`,
+							components = await simpleContainer(
+								interaction,
+								`## ${await t(interaction, 'server.server.backup.dm.failed')}`,
+								{ color: 'Red' },
 							);
-						return interaction.editReply({ embeds: [embed] });
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
+						}
+						components = await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.backup.failed')}`,
+							{ color: 'Red' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 					break;
 				}
 				case 'restore':
 				case 'clone': {
 					// Progress embed: start
+					components = await simpleContainer(
+						interaction,
+						`## ${await t(interaction, 'server.server.restore.progress.start')}`,
+						{ color: kythiaConfig.bot.color },
+					);
 					await interaction.editReply({
-						embeds: [
-							new EmbedBuilder()
-								.setColor(kythiaConfig.bot.color)
-								.setDescription(
-									`## ${await t(interaction, 'server.server.restore.progress.start')}`,
-								)
-								.setFooter(await embedFooter(interaction)),
-						],
+						components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 
 					let backup;
@@ -796,12 +836,15 @@ module.exports = {
 						if (subcommand === 'restore') {
 							const file = interaction.options.getAttachment('file');
 							if (!file || !file.name.endsWith('.json')) {
-								const embed = new EmbedBuilder()
-									.setColor('Red')
-									.setDescription(
-										`## ${await t(interaction, 'server.server.restore.file.invalid')}`,
-									);
-								return interaction.editReply({ embeds: [embed] });
+								components = await simpleContainer(
+									interaction,
+									`## ${await t(interaction, 'server.server.restore.file.invalid')}`,
+									{ color: 'Red' },
+								);
+								return interaction.editReply({
+									components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 							const res = await fetch(file.url);
 							backup = await res.json();
@@ -810,26 +853,24 @@ module.exports = {
 						}
 
 						if (!backup) {
-							const embed = new EmbedBuilder()
-								.setColor('Red')
-								.setDescription(
-									`## ${await t(interaction, 'server.server.restore.data.invalid')}`,
-								);
-							return interaction.editReply({ embeds: [embed] });
+							components = await simpleContainer(
+								interaction,
+								`## ${await t(interaction, 'server.server.restore.data.invalid')}`,
+								{ color: 'Red' },
+							);
+							return interaction.editReply({
+								components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 
 						// Hapus semua yang lama (jika diminta)
 						if (clearBefore) {
-							await interaction.editReply({
-								embeds: [
-									new EmbedBuilder()
-										.setColor(kythiaConfig.bot.color)
-										.setDescription(
-											`## ${await t(interaction, 'server.server.restore.clearing')}`,
-										)
-										.setFooter(await embedFooter(interaction)),
-								],
-							});
+							await simpleContainer(
+								interaction,
+								`## ${await t(interaction, 'server.server.restore.clearing')}`,
+								{ color: kythiaConfig.bot.color, editReply: true },
+							);
 							await Promise.all(
 								guild.channels.cache.map((c) => c.delete().catch(() => {})),
 							);
@@ -849,16 +890,11 @@ module.exports = {
 						}
 
 						// Restore settingan server
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.restore.settings')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.restore.settings')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 						const settings = backup.settings;
 						await guild
 							.edit({
@@ -875,16 +911,11 @@ module.exports = {
 							);
 
 						// Restore Roles
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.restore.roles.text')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.restore.roles.text')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 						const roleMap = new Map();
 						let roleIdx = 0;
 						for (const roleData of backup.roles.slice().reverse()) {
@@ -901,30 +932,20 @@ module.exports = {
 							if (role) roleMap.set(roleData.id, role);
 							roleIdx++;
 							if (roleIdx % 5 === 0 || roleIdx === backup.roles.length) {
-								await interaction.editReply({
-									embeds: [
-										new EmbedBuilder()
-											.setColor(kythiaConfig.bot.color)
-											.setDescription(
-												`## ${await t(interaction, 'server.server.restore.roles.progress', { current: roleIdx, total: backup.roles.length })}`,
-											)
-											.setFooter(await embedFooter(interaction)),
-									],
-								});
+								await simpleContainer(
+									interaction,
+									`## ${await t(interaction, 'server.server.restore.roles.progress', { current: roleIdx, total: backup.roles.length })}`,
+									{ color: kythiaConfig.bot.color, editReply: true },
+								);
 							}
 						}
 
 						// Restore Channels
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.restore.channels.text')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.restore.channels.text')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 						const categoryMap = new Map();
 						let catIdx = 0;
 						const categories = backup.channels.filter(
@@ -939,16 +960,11 @@ module.exports = {
 							categoryMap.set(catData.name, category);
 							catIdx++;
 							if (catIdx % 2 === 0 || catIdx === categories.length) {
-								await interaction.editReply({
-									embeds: [
-										new EmbedBuilder()
-											.setColor(kythiaConfig.bot.color)
-											.setDescription(
-												`## ${await t(interaction, 'server.server.restore.categories.progress', { current: catIdx, total: categories.length })}`,
-											)
-											.setFooter(await embedFooter(interaction)),
-									],
-								});
+								await simpleContainer(
+									interaction,
+									`## ${await t(interaction, 'server.server.restore.categories.progress', { current: catIdx, total: categories.length })}`,
+									{ color: kythiaConfig.bot.color, editReply: true },
+								);
 							}
 						}
 						let chIdx = 0;
@@ -981,30 +997,20 @@ module.exports = {
 							});
 							chIdx++;
 							if (chIdx % 5 === 0 || chIdx === nonCatChannels.length) {
-								await interaction.editReply({
-									embeds: [
-										new EmbedBuilder()
-											.setColor(kythiaConfig.bot.color)
-											.setDescription(
-												`## ${await t(interaction, 'server.server.restore.channels.progress', { current: chIdx, total: nonCatChannels.length })}`,
-											)
-											.setFooter(await embedFooter(interaction)),
-									],
-								});
+								await simpleContainer(
+									interaction,
+									`## ${await t(interaction, 'server.server.restore.channels.progress', { current: chIdx, total: nonCatChannels.length })}`,
+									{ color: kythiaConfig.bot.color, editReply: true },
+								);
 							}
 						}
 
 						// Restore Emojis, Stickers, Soundboard (Paralel)
-						await interaction.editReply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(kythiaConfig.bot.color)
-									.setDescription(
-										`## ${await t(interaction, 'server.server.restore.assets')}`,
-									)
-									.setFooter(await embedFooter(interaction)),
-							],
-						});
+						await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.restore.assets')}`,
+							{ color: kythiaConfig.bot.color, editReply: true },
+						);
 						const assetPromises = [];
 
 						backup.emojis?.forEach((emoji) => {
@@ -1054,20 +1060,26 @@ module.exports = {
 
 						await Promise.allSettled(assetPromises);
 
-						const embed = new EmbedBuilder()
-							.setColor('Green')
-							.setDescription(
-								`## ${await t(interaction, 'server.server.restore.success', { name: backup.metadata.guildName })}`,
-							);
-						return interaction.editReply({ embeds: [embed] });
+						components = await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.restore.success', { name: backup.metadata.guildName })}`,
+							{ color: 'Green' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					} catch (err) {
 						logger.error(err);
-						const embed = new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								`## ${await t(interaction, 'server.server.restore.failed')}`,
-							);
-						return interaction.editReply({ embeds: [embed] });
+						components = await simpleContainer(
+							interaction,
+							`## ${await t(interaction, 'server.server.restore.failed')}`,
+							{ color: 'Red' },
+						);
+						return interaction.editReply({
+							components,
+							flags: MessageFlags.IsComponentsV2,
+						});
 					}
 				}
 			}
@@ -1084,26 +1096,29 @@ async function resetServer(interaction) {
 	const { guild, client } = interaction;
 	const container = client.container;
 	const { kythiaConfig, t, helpers } = container;
-	const { embedFooter } = helpers.discord;
+	const { simpleContainer } = helpers.discord;
+	let components;
 	if (!guild) {
-		const embed = new EmbedBuilder()
-			.setColor('Red')
-			.setDescription(
-				`## ${await t(interaction, 'server.server.reset.no.guild')}`,
-			);
-		return interaction.editReply({ embeds: [embed] });
+		components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'server.server.reset.no.guild')}`,
+			{ color: 'Red' },
+		);
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	// Progress embed: start
+	components = await simpleContainer(
+		interaction,
+		`## ${await t(interaction, 'server.server.reset.progress.start')}`,
+		{ color: kythiaConfig.bot.color },
+	);
 	await interaction.editReply({
-		embeds: [
-			new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`## ${await t(interaction, 'server.server.reset.progress.start')}`,
-				)
-				.setFooter(await embedFooter(interaction)),
-		],
+		components,
+		flags: MessageFlags.IsComponentsV2,
 	});
 
 	const currentChannelId = interaction.channelId;
@@ -1116,16 +1131,11 @@ async function resetServer(interaction) {
 		}
 		chIdx++;
 		if (chIdx % 5 === 0 || chIdx === channelsArr.length) {
-			await interaction.editReply({
-				embeds: [
-					new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setDescription(
-							`## ${await t(interaction, 'server.server.reset.progress.channels', { current: chIdx, total: channelsArr.length })}`,
-						)
-						.setFooter(await embedFooter(interaction)),
-				],
-			});
+			await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'server.server.reset.progress.channels', { current: chIdx, total: channelsArr.length })}`,
+				{ color: kythiaConfig.bot.color, editReply: true },
+			);
 		}
 	}
 	await Promise.all(channelPromises);
@@ -1139,16 +1149,11 @@ async function resetServer(interaction) {
 		}
 		roleIdx++;
 		if (roleIdx % 5 === 0 || roleIdx === rolesArr.length) {
-			await interaction.editReply({
-				embeds: [
-					new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setDescription(
-							`## ${await t(interaction, 'server.server.reset.progress.roles', { current: roleIdx, total: rolesArr.length })}`,
-						)
-						.setFooter(await embedFooter(interaction)),
-				],
-			});
+			await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'server.server.reset.progress.roles', { current: roleIdx, total: rolesArr.length })}`,
+				{ color: kythiaConfig.bot.color, editReply: true },
+			);
 		}
 	}
 	await Promise.all(rolePromises);
@@ -1159,16 +1164,11 @@ async function resetServer(interaction) {
 		await emoji.delete().catch(() => {});
 		emojiIdx++;
 		if (emojiIdx % 5 === 0 || emojiIdx === emojisArr.length) {
-			await interaction.editReply({
-				embeds: [
-					new EmbedBuilder()
-						.setColor(kythiaConfig.bot.color)
-						.setDescription(
-							`## ${await t(interaction, 'server.server.reset.progress.emojis', { current: emojiIdx, total: emojisArr.length })}`,
-						)
-						.setFooter(await embedFooter(interaction)),
-				],
-			});
+			await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'server.server.reset.progress.emojis', { current: emojiIdx, total: emojisArr.length })}`,
+				{ color: kythiaConfig.bot.color, editReply: true },
+			);
 		}
 	}
 
@@ -1179,22 +1179,22 @@ async function resetServer(interaction) {
 			await sticker.delete().catch(() => {});
 			stickerIdx++;
 			if (stickerIdx % 2 === 0 || stickerIdx === stickersArr.length) {
-				await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor(kythiaConfig.bot.color)
-							.setDescription(
-								`## ${await t(interaction, 'server.server.reset.progress.stickers', { current: stickerIdx, total: stickersArr.length })}`,
-							)
-							.setFooter(await embedFooter(interaction)),
-					],
-				});
+				await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'server.server.reset.progress.stickers', { current: stickerIdx, total: stickersArr.length })}`,
+					{ color: kythiaConfig.bot.color, editReply: true },
+				);
 			}
 		}
 	}
 
-	const embed = new EmbedBuilder()
-		.setColor('Green')
-		.setDescription(`${await t(interaction, 'server.server.reset.success')}`);
-	return interaction.editReply({ embeds: [embed] });
+	components = await simpleContainer(
+		interaction,
+		`${await t(interaction, 'server.server.reset.success')}`,
+		{ color: 'Green' },
+	);
+	return interaction.editReply({
+		components,
+		flags: MessageFlags.IsComponentsV2,
+	});
 }

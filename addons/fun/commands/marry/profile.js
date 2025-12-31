@@ -7,7 +7,6 @@
  */
 
 const {
-	EmbedBuilder,
 	MessageFlags,
 	ContainerBuilder,
 	TextDisplayBuilder,
@@ -25,7 +24,6 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { Marriage } = models;
-		const { embedFooter } = helpers.discord;
 		const { convertColor } = helpers.color;
 
 		const userId = interaction.user.id;
@@ -43,12 +41,14 @@ module.exports = {
 		const marriage = marriages && marriages.length > 0 ? marriages[0] : null;
 
 		if (!marriage) {
-			const embed = new EmbedBuilder()
-				.setColor('Red')
-				.setDescription(await t(interaction, 'fun.marry.not.married'))
-				.setFooter(await embedFooter(interaction));
+			const components = await helpers.discord.simpleContainer(
+				interaction,
+				await t(interaction, 'fun.marry.not.married'),
+				{ color: 'Red' },
+			);
 			return interaction.reply({
-				embeds: [embed],
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 

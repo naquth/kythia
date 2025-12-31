@@ -5,15 +5,15 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand.setName('leaderboard').setDescription('View pet leaderboard!'),
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { UserPet, Pet } = models;
 
 		await interaction.deferReply();
@@ -55,16 +55,15 @@ module.exports = {
 			leaderboardDesc = await t(interaction, 'pet.leaderboard.empty');
 		}
 
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`${await t(interaction, 'pet.leaderboard.title')}\n${leaderboardDesc}`,
-			)
-			.setColor(kythia.bot.color)
-			.setFooter(await embedFooter(interaction))
-			.setTimestamp();
+		const components = await simpleContainer(
+			interaction,
+			`${await t(interaction, 'pet.leaderboard.title')}\n${leaderboardDesc}`,
+			{ color: kythiaConfig.bot.color },
+		);
 
 		return interaction.editReply({
-			embeds: [embed],
+			components,
+			flags: MessageFlags.IsComponentsV2,
 			allowedMentions: {
 				parse: [],
 			},

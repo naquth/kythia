@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -23,17 +23,22 @@ module.exports = {
 	async execute(interaction, container) {
 		const { models, helpers, t, kythiaConfig } = container;
 		const { Image } = models;
-		const { embedFooter } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const attachment = interaction.options.getAttachment('image');
 
 		if (!attachment.contentType.startsWith('image/')) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(await t(interaction, 'image.add.invalid.type.desc'));
-			return interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'image.add.invalid.type.desc'),
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		// Get storage server configuration
@@ -47,12 +52,15 @@ module.exports = {
 			'';
 
 		if (!apiKey) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					'❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment or configure `kythiaConfig.addons.image.apiKey`.',
-				);
-			return interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				'❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment or configure `kythiaConfig.addons.image.apiKey`.',
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		try {
@@ -94,23 +102,28 @@ module.exports = {
 				fileSize: uploadData.metadata.file_size,
 			});
 
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					await t(interaction, 'image.add.success.desc', {
-						url: savedImage.storageUrl,
-					}),
-				)
-				.setFooter(await embedFooter(interaction));
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'image.add.success.desc', {
+					url: savedImage.storageUrl,
+				}),
+				{ color: kythiaConfig.bot.color },
+			);
 
-			await interaction.editReply({ embeds: [embed] });
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		} catch (err) {
-			const embed = new EmbedBuilder()
-				.setColor(kythiaConfig.bot.color)
-				.setDescription(
-					`❌ **Failed to upload image:** ${err instanceof Error ? err.message : 'Unknown error'}`,
-				);
-			return interaction.editReply({ embeds: [embed], ephemeral: true });
+			const components = await simpleContainer(
+				interaction,
+				`❌ **Failed to upload image:** ${err instanceof Error ? err.message : 'Unknown error'}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	},
 };

@@ -64,10 +64,8 @@ module.exports = {
 					});
 				}
 
-				const msg = `${await t(interaction, 'core.tools.sticky.embed.title')}\n${messageContent}`;
-				const components = await simpleContainer(interaction, msg, {
-					color: 'Red',
-				});
+				const msg = messageContent;
+				const components = await simpleContainer(interaction, msg);
 				const message = await interaction.channel.send({
 					components,
 					flags: MessageFlags.IsComponentsV2,

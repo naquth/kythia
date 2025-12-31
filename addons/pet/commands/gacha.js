@@ -6,7 +6,7 @@
  * @version 0.11.0-beta
  */
 const { checkCooldown } = require('@coreHelpers/time');
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -14,8 +14,8 @@ module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand.setName('gacha').setDescription('Gacha your pet!'),
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { User, UserPet, Pet } = models;
 
 		await interaction.deferReply();
@@ -29,27 +29,32 @@ module.exports = {
 		});
 
 		if (!userPet) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.gacha.no.pet.title')}\n${await t(interaction, 'pet.gacha.no.pet.desc')}`,
-				)
-				.setColor(kythia.bot.color);
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.gacha.no.pet.title')}\n${await t(interaction, 'pet.gacha.no.pet.desc')}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const cooldown = checkCooldown(
 			userPet.lastGacha,
-			kythia.addons.pet.gachaCooldown || 86400,
+			kythiaConfig.addons.pet.gachaCooldown || 86400,
 			interaction,
 		); // Default to 24 hours
 		if (cooldown.remaining) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.gacha.cooldown.title')}\n${await t(interaction, 'pet.gacha.cooldown.desc', { time: cooldown.time })}`,
-				)
-				.setColor(kythia.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.gacha.cooldown.title')}\n${await t(interaction, 'pet.gacha.cooldown.desc', { time: cooldown.time })}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		const pet = await Pet.getCache({ id: userPet.petId });
@@ -94,24 +99,25 @@ module.exports = {
 			lastGacha: now,
 		});
 
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`## ${await t(interaction, 'pet.gacha.success.title')}\n${await t(
-					interaction,
-					'pet.gacha.success.desc',
-					{
-						icon: selectedPet.icon,
-						name: selectedPet.name,
-						rarity: selectedPet.rarity,
-						level: newLevel,
-					},
-				)}`,
-			)
-			.setColor(kythia.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-			.setFooter(await embedFooter(interaction));
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'pet.gacha.success.title')}\n${await t(
+				interaction,
+				'pet.gacha.success.desc',
+				{
+					icon: selectedPet.icon,
+					name: selectedPet.name,
+					rarity: selectedPet.rarity,
+					level: newLevel,
+				},
+			)}`,
+			{ color: kythiaConfig.bot.color },
+		);
 
-		return await interaction.editReply({ embeds: [embed] });
+		return await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 
 		// Helper function to get a higher rarity
 		function getHigherRarity(currentRarity) {

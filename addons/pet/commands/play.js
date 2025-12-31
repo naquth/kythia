@@ -5,15 +5,15 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand.setName('play').setDescription('Play with your pet!'),
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
-		const { embedFooter } = helpers.discord;
+		const { t, models, helpers, kythiaConfig } = container;
+		const { simpleContainer } = helpers.discord;
 		const { UserPet, Pet } = models;
 
 		await interaction.deferReply();
@@ -27,45 +27,50 @@ module.exports = {
 			include: [{ model: Pet, as: 'pet' }],
 		});
 		if (!userPet) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.play.no.pet.title')}\n${await t(interaction, 'pet.play.no.pet.desc')}`,
-				)
-				.setColor(kythia.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.play.no.pet.title')}\n${await t(interaction, 'pet.play.no.pet.desc')}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		if (userPet.isDead) {
-			const embed = new EmbedBuilder()
-				.setDescription(
-					`## ${await t(interaction, 'pet.play.dead.title')}\n${await t(interaction, 'pet.play.dead.desc')}`,
-				)
-				.setColor(kythia.bot.color)
-				.setFooter(await embedFooter(interaction));
-			return interaction.editReply({ embeds: [embed] });
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'pet.play.dead.title')}\n${await t(interaction, 'pet.play.dead.desc')}`,
+				{ color: kythiaConfig.bot.color },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 		// Update happiness level
 		userPet.happiness = Math.min(userPet.happiness + 20, 100);
 		userPet.changed('happiness', true);
 		await userPet.saveAndUpdateCache('userId');
 
-		const embed = new EmbedBuilder()
-			.setDescription(
-				`## ${await t(interaction, 'pet.play.success.title')}\n${await t(
-					interaction,
-					'pet.play.success.desc',
-					{
-						icon: userPet.pet.icon,
-						name: userPet.pet.name,
-						rarity: userPet.pet.rarity,
-						happiness: userPet.happiness,
-					},
-				)}`,
-			)
-			.setColor(kythia.bot.color)
-			.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-			.setFooter(await embedFooter(interaction));
+		const components = await simpleContainer(
+			interaction,
+			`## ${await t(interaction, 'pet.play.success.title')}\n${await t(
+				interaction,
+				'pet.play.success.desc',
+				{
+					icon: userPet.pet.icon,
+					name: userPet.pet.name,
+					rarity: userPet.pet.rarity,
+					happiness: userPet.happiness,
+				},
+			)}`,
+			{ color: kythiaConfig.bot.color },
+		);
 
-		return interaction.editReply({ embeds: [embed] });
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

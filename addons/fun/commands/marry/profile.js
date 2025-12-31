@@ -43,7 +43,7 @@ module.exports = {
 		if (!marriage) {
 			const components = await helpers.discord.simpleContainer(
 				interaction,
-				await t(interaction, 'fun.marry.not.married'),
+				await t(interaction, 'fun.marry.not.married.default'),
 				{ color: 'Red' },
 			);
 			return interaction.reply({

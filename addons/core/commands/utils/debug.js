@@ -27,7 +27,7 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { logger, models, helpers } = container;
-		const { simpleContainer } = helpers;
+		const { simpleContainer } = helpers.discord;
 		const Playlist = models.Playlist;
 		const PlaylistTrack = models.PlaylistTrack;
 

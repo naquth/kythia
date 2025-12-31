@@ -1,4 +1,17 @@
 {
+	"common": {
+		"pagination": {
+			"first": "First Page",
+			"last": "Last Page",
+			"next": "Next Page",
+			"prev": "Previous Page",
+			"not": {
+				"your": {
+					"interaction": "❌ This interaction is not for you."
+				}
+			}
+		}
+	},
 	"core": {
 		"utils": {
 			"about": {
@@ -908,72 +921,46 @@
 		},
 		"moderation": {
 			"announce": {
-				"message": {
-					"format": "## 📢 Announcement:\n{message}"
+				"default": {
+					"title": "Announcement"
 				},
-				"success": "✅ | Announcement sent in **{channel}**."
+				"failed": "❌ Failed to send announcement: {error}",
+				"footer": "Announced by {user}",
+				"success": "✅ Announcement sent successfully!"
 			},
 			"autosetup": {
-				"embed": {
-					"cleaning": {
-						"title": "Cleaning Old Rules",
-						"desc": "Looking for and deleting previous AutoMod rules created by Kythia..."
-					},
-					"installing": {
-						"title": "Installing AutoMod Rules",
-						"desc": "Installing {total} core rules. This may take some time due to retries..."
-					},
-					"rules": {
-						"badwords": "Block Bad Words (All Presets)",
-						"suspectedspam": "Block Suspected Spam",
-						"massmentions": "Block Mass Mentions (Combined)",
-						"invites": "Block Discord Invites",
-						"scamlinks": "Block Scam & Phishing Links",
-						"caps": "Block Excessive Caps"
-					},
-					"final": {
-						"success": {
-							"title": "Successfully Installed {total} Rules!",
-							"desc": "Your server is now protected by Kythia."
-						},
-						"failed": {
-							"title": "Setup Completed With {count} Failures!",
-							"desc": "One or more rules failed to be installed even after 10 retries."
-						},
-						"installed": {
-							"title": "Successfully Installed ({count})",
-							"empty": "None."
-						},
-						"failedrules": {
-							"title": "Failed to Install ({count})",
-							"footer": "Run this command again to attempt to reinstall the failed rules."
-						},
-						"footer": "Kythia AutoMod System"
-					},
-					"error": {
-						"title": "❌ Error",
-						"desc": "An error occurred while cleaning old AutoMod rules. Please try again later."
-					}
+				"created": {
+					"channel": "✅ Created channel {channel}",
+					"role": "✅ Created role {role}"
+				},
+				"failed": "❌ Auto setup failed: {error}",
+				"nothing": {
+					"new": "⚠️ Nothing new to setup."
+				},
+				"success": {
+					"title": "Auto Setup Complete"
 				}
 			},
 			"ban": {
+				"failed": "❌ Failed to ban user: {error}",
+				"success": {
+					"desc": "✅ **{user}** has been banned for: {reason}",
+					"title": "User Banned"
+				},
 				"default": {
-					"reason": "Member was banned by command."
-				},
-				"embed": {
-					"title": "> Ban",
-					"desc": "🚫 | **{tag}** has been banned from the server.\n**Reason:** {reason}"
-				},
-				"user": {
-					"not": {
-						"found": "User is not in this server!"
-					}
-				},
-				"cannot": {
-					"self": "❌ You cannot ban yourself."
+					"reason": "No reason provided"
 				}
 			},
 			"clear": {
+				"cancelled": "❌ Clear command cancelled.",
+				"failed": "❌ Failed to clear messages: {error}",
+				"not": {
+					"allowed": "❌ I cannot delete messages older than 14 days."
+				},
+				"nuked": {
+					"success": "✅ Channel has been nuked!"
+				},
+				"timeout": "❌ Clear command timed out.",
 				"text": {
 					"only": "❌ This command can only be used in text channels."
 				},
@@ -993,62 +980,31 @@
 					"bulk": {
 						"value": "Deletes all messages that can be bulk deleted (from the last 14 days)."
 					}
-				},
-				"not": {
-					"for": {
-						"you": "❌ This button is not for you."
-					}
-				},
-				"cancel": {
-					"desc": "❌ Clear operation cancelled."
-				},
-				"confirm": {
-					"expired": "❌ Confirmation expired. Please try again."
-				},
-				"nuke": {
-					"in": {
-						"progress": "💥 Nuke in progress... Please wait."
-					}
-				},
-				"success": "✅ Channel cleared by {user}!",
-				"bulk": {
-					"in": {
-						"progress": "🗑️ Deleting all messages... This may take a while."
-					}
 				}
 			},
 			"kick": {
-				"no": {
-					"permission": {}
+				"failed": "❌ Failed to kick user: {error}",
+				"success": {
+					"desc": "✅ **{user}** has been kicked for: {reason}",
+					"title": "User Kicked"
 				},
 				"default": {
-					"reason": "Member was kicked by command."
+					"reason": "No reason provided"
 				},
 				"modlog": {
-					"title": "> Mod Log: Member Kicked",
 					"desc": "**Member:** {member}\n**Kicked by:** {kicker}\n**Reason:** {reason}"
-				},
-				"embed": {
-					"title": "> Member Kicked",
-					"desc": "**{member}** has been kicked from the server by **{kicker}** via command.\n**Reason:** {reason}"
-				},
-				"user": {
-					"not": {
-						"found": "User is not in this server!"
-					}
-				},
-				"cannot": {
-					"self": "❌ You cannot kick yourself."
 				}
 			},
 			"lock": {
-				"failed": "❌ Failed to lock the channel. Please check my permissions and try again.",
-				"embed": {
-					"channel": {
-						"locked": "🔒 This channel has been locked by {user}. You cannot send messages until it is unlocked."
-					},
-					"reply": "✅ Channel {channel} has been locked!"
-				}
+				"confirm": "✅ Channel locked!",
+				"default": {
+					"reason": "No reason provided"
+				},
+				"success": {
+					"desc": "🔒 Channel has been locked for: {reason}",
+					"title": "Channel Locked"
+				},
+				"failed": "❌ Failed to lock the channel. Please check my permissions and try again."
 			},
 			"mute": {
 				"user": {
@@ -1066,165 +1022,119 @@
 				}
 			},
 			"pin": {
+				"already": {
+					"pinned": "⚠️ This message is already pinned."
+				},
+				"success": {
+					"desc": "📌 Message has been pinned.",
+					"title": "Message Pinned"
+				},
 				"not": {
 					"found": "❌ Message not found!"
 				},
-				"failed": "❌ Failed to pin the message. Please check my permissions and try again.",
-				"success": "## 📌 Pin\n**{content}** has been pinned in this channel.",
-				"no": {
-					"content": "[No message content]"
-				}
+				"failed": "❌ Failed to pin the message. Please check my permissions and try again."
 			},
 			"role": {
-				"already": {
-					"has": "🎭 | **{user}** already has the **{role}** role."
+				"added": {
+					"desc": "✅ Role {role} has been added to {user}.",
+					"title": "Role Added"
 				},
-				"add": {
-					"success": "🎭 | The **{role}** role has been added to **{user}**."
-				},
-				"not": {
-					"has": "🎭 | **{user}** does not have the **{role}** role."
-				},
-				"remove": {
-					"success": "🎭 | The **{role}** role has been removed from **{user}**."
-				},
-				"member": {
-					"not": {
-						"found": "❌ | Member **{user}** not found in this server."
-					}
-				},
-				"managed": "❌ | The role **{role}** is managed by an integration or Discord and cannot be modified.",
-				"too": {
-					"high": "❌ | The role **{role}** is higher than my highest role. I cannot manage it."
-				},
-				"owner": "❌ | You cannot modify the server owner (**{user}**).",
-				"missing": {
-					"bot": {
-						"perm": "❌ | I do not have permission to manage roles in this server."
-					},
-					"perm": {
-						"error": "❌ | You do not have permission to manage roles."
-					}
-				},
-				"hierarchy": "❌ | You cannot modify roles that are higher or equal to your highest role.",
-				"unknown": {
-					"error": "❌ | An unknown error occurred while managing the role."
+				"failed": "❌ Failed to modify roles: {error}",
+				"removed": {
+					"desc": "✅ Role {role} has been removed from {user}.",
+					"title": "Role Removed"
 				}
 			},
 			"say": {
-				"success": "✅ | Bot sent the message: {message}"
+				"failed": "❌ Failed to send message: {error}",
+				"success": "✅ Message sent successfully."
 			},
 			"slowmode": {
-				"title": "Slowmode",
-				"set": {
-					"success": "Slowmode set to **{duration}** seconds."
+				"confirm": "✅ Slowmode set!",
+				"default": {
+					"reason": "No reason provided"
+				},
+				"failed": "❌ Failed to set slowmode: {error}",
+				"success": {
+					"desc": "✅ Slowmode set to {time} for: {reason}",
+					"title": "Slowmode Set"
 				}
 			},
 			"timeout": {
-				"reason": "Timeout by command.",
-				"embed": {
-					"title": "🔴 Timeout",
-					"desc": "**{user}** has been put in timeout for **{duration}** seconds by **{moderator}**."
+				"default": {
+					"reason": "No reason provided"
 				},
-				"failed": "❌ An error occurred while trying to timeout the user: {error}",
-				"user": {
-					"not": {
-						"found": "That user is not in this server!"
-					}
-				}
+				"success": {
+					"desc": "✅ **{user}** has been timed out until {time} for: {reason}",
+					"title": "User Timed Out"
+				},
+				"failed": "❌ Failed to timeout user: {error}"
 			},
 			"unban": {
-				"embed": {
-					"title": "🔓 Unban",
-					"desc": "{user} has been unbanned from this server."
+				"success": {
+					"desc": "✅ **{user}** has been unbanned.",
+					"title": "User Unbanned"
 				},
-				"failed": "❌ Unable to unban the user. Please check the ID. {error}"
+				"failed": "❌ Failed to unban user: {error}"
 			},
 			"unlock": {
-				"embed": {
-					"channel": {
-						"unlocked": {
-							"title": "🔓 Channel Unlocked",
-							"desc": "This channel has been unlocked by {user}. You can now send messages."
-						}
-					},
-					"reply": {
-						"title": "🔓 Channel Unlocked",
-						"desc": "Channel {channel} has been unlocked!"
-					}
+				"confirm": "✅ Channel unlocked!",
+				"default": {
+					"reason": "No reason provided"
+				},
+				"failed": "❌ Failed to unlock channel: {error}",
+				"success": {
+					"desc": "🔓 Channel has been unlocked for: {reason}",
+					"title": "Channel Unlocked"
 				}
 			},
 			"unmute": {
-				"embed": {
-					"title": "🔊 Unmute",
-					"desc": "{user} has been unmuted."
-				},
-				"user": {
-					"not": {
-						"found": "That user is not in this server!"
+				"failed": "❌ Failed to unmute user: {error}",
+				"not": {
+					"in": {
+						"voice": "❌ User is not in a voice channel."
 					}
+				},
+				"success": {
+					"desc": "✅ **{user}** has been unmuted.",
+					"title": "User Unmuted"
 				}
 			},
 			"unpin": {
 				"not": {
-					"found": "❌ Message not found!"
-				},
-				"failed": "❌ Failed to unpin the message. Please check my permissions and try again.",
-				"embed": {
-					"title": "📌 Unpin Message",
-					"desc": "Message with ID **{messageId}** has been unpinned."
-				}
-			},
-			"warn": {
-				"user": {
-					"not": {
-						"in": {
-							"guild": "❌ | That user is not in this server!",
-							"db": "❌ | User not found in the database!"
-						}
-					}
-				},
-				"db": {
-					"save": {
-						"failed": "❌ | Failed to save warning to the database!"
-					}
-				},
-				"timeout": {
-					"reason": "Reached 3 warnings.",
-					"notice": "⏳ User has been timed out for 1 day for reaching 3 warnings."
-				},
-				"modlog": {
-					"not": {
-						"found": "❌ | Mod log channel not found!"
-					},
-					"no": {
-						"permission": "❌ | I do not have permission to send messages to the mod log channel!"
-					},
-					"embed": "## ⚠️ Warning Issued\n{user} has received a warning from {moderator} for: **{reason}**",
-					"timeout": {
-						"embed": "## ⏳ Auto Timeout\n{user} has been timed out for 1 day for reaching 3 warnings."
-					}
+					"pinned": "⚠️ This message is not pinned.",
+					"found": "❌ Message not found."
 				},
 				"success": {
-					"embed": "## Warn Member\n{user} has been warned for: {reason}{timeout}"
+					"desc": "Message has been unpinned.",
+					"title": "Message Unpinned"
+				},
+				"failed": "❌ Failed to unpin message."
+			},
+			"warn": {
+				"cannot": {
+					"self": "❌ You cannot warn yourself."
+				},
+				"default": {
+					"reason": "No reason provided"
 				},
 				"dm": {
-					"embed": "## ⚠️ Warning Issued\nYou ({user}) have received a warning from {moderator} for: **{reason}**{timeout}",
-					"timeout": {
-						"notice": "⏳ You have been timed out for 1 day for reaching 3 warnings."
-					}
+					"desc": "You have been warned in **{guild}** for: {reason}",
+					"title": "Warned"
+				},
+				"failed": "❌ Failed to warn user: {error}",
+				"modlog": {
+					"desc": "**{user}** has been warned by **{moderator}** for: {reason}"
+				},
+				"success": {
+					"desc": "✅ **{user}** has been warned for: {reason}",
+					"title": "User Warned"
 				}
 			},
 			"warnings": {
-				"none": "⚠️ | **{user}** has no warnings.",
-				"item": "**#{number}** — Reason: {reason}, Date: {date}",
-				"unknown": {
-					"reason": "No reason provided",
-					"date": "Unknown"
-				},
-				"embed": {
-					"description": "## 🔔 Warnings\nWarnings for {user}:\n{warnings}"
-				}
+				"failed": "❌ Failed to fetch warnings: {error}",
+				"title": "Warnings for {user}",
+				"none": "✅ {user} has no warnings."
 			}
 		},
 		"embed": {
@@ -1504,6 +1414,7 @@
 				}
 			}
 		},
+
 		"system": {
 			"automod": {
 				"spam": {

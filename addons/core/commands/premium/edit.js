@@ -27,7 +27,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, helpers } = container;
 		const { KythiaUser } = models;
-		const { simpleContainer } = helpers;
+		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
 

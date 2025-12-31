@@ -51,7 +51,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;
-		const { simpleContainer } = helpers.container;
+		const { simpleContainer } = helpers.discord;
 
 		const minutes = interaction.options.getInteger('minutes');
 		const timeStr = interaction.options.getString('time');

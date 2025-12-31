@@ -242,7 +242,10 @@
 			},
 			"not": {
 				"enough": {},
-				"married": "❌ You're not currently married!",
+				"married": {
+					"default": "❌ You're not currently married!",
+					"both": "❌ Neither of you are married!"
+				},
 				"your": {
 					"proposal": "This isn't your marriage proposal to accept!"
 				}

@@ -132,7 +132,8 @@
 					},
 					"title": "Pet List",
 					"desc": "This Discord system has pets you can adopt and play with. The available pets are:",
-					"field": "**Rarity**: {rarity}\n**Bonus**: {bonusType} +{bonusValue}"
+					"field": "**Rarity**: {rarity}\n**Bonus**: {bonusType} +{bonusValue}",
+					"footer": "Total Pets: {count}"
 				}
 			},
 			"delete": {

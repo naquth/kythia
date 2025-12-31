@@ -48,11 +48,12 @@ module.exports = {
 		);
 
 		if (!cmd) {
-			const components = await simpleContainer(interaction, {
-				content: await t(interaction, 'core.utils.commandid.not.found', {
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.utils.commandid.not.found', {
 					commandName,
 				}),
-			});
+			);
 			return interaction.editReply({
 				components,
 				flags: MessageFlags.IsComponentsV2,

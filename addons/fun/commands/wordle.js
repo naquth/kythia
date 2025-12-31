@@ -107,8 +107,12 @@ async function buildGameEmbed(interaction, game) {
 	return new ContainerBuilder()
 		.setAccentColor(
 			convertColor(
-				game.isOver ? (game.win ? 'Green' : 'Red') : kythiaConfig.bot.color,
-				{ from: 'discord', to: 'decimal' },
+				game.isOver
+					? game.win
+						? '#2ecc71'
+						: '#e74c3c'
+					: kythiaConfig.bot.color,
+				{ from: 'hex', to: 'decimal' },
 			),
 		)
 		.addTextDisplayComponents(

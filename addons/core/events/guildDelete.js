@@ -6,51 +6,76 @@
  * @version 0.11.0-beta
  */
 
-const { EmbedBuilder, WebhookClient } = require('discord.js');
-
-function safeWebhookClient(url) {
-	if (typeof url === 'string' && url.trim().length > 0) {
-		return new WebhookClient({ url });
-	}
-	return null;
-}
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 
 module.exports = async (bot, guild) => {
 	const container = bot.client.container;
-	const { t, kythiaConfig } = container;
+	const { t, kythiaConfig, helpers } = container;
+	const { convertColor } = helpers.color;
 
-	const webhookClient = safeWebhookClient(
-		kythiaConfig.api.webhookGuildInviteLeave,
-	);
+	const webhookUrl = kythiaConfig.api.webhookGuildInviteLeave;
+	if (webhookUrl) {
+		try {
+			const accentColor = convertColor('Red', {
+				from: 'discord',
+				to: 'decimal',
+			});
 
-	// Use t for all text
-	const leaveEmbed = new EmbedBuilder()
-		.setColor('Red')
-		.setDescription(
-			await t(
-				guild,
-				'core.events.guildDelete.events.guild.delete.webhook.desc',
-				{
-					bot: guild.client.user.username,
-					guild: guild.name,
-					guildId: guild.id,
-					ownerId: guild.ownerId,
-					memberCount: guild.memberCount ?? '?',
-					createdAt: guild.createdAt.toLocaleDateString('en-US', {
-						year: 'numeric',
-						month: 'long',
-						day: 'numeric',
-					}),
-				},
-			),
-		)
-		.setTimestamp();
+			const leaveContainer = new ContainerBuilder()
+				.setAccentColor(accentColor)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t(
+							guild,
+							'core.events.guildDelete.events.guild.delete.webhook.desc',
+							{
+								bot: guild.client.user.username,
+								guild: guild.name,
+								guildId: guild.id,
+								ownerId: guild.ownerId,
+								memberCount: guild.memberCount ?? '?',
+								createdAt: guild.createdAt.toLocaleDateString('en-US', {
+									year: 'numeric',
+									month: 'long',
+									day: 'numeric',
+								}),
+							},
+						),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`-# Guild Delete Event | ${bot.client.user.username}`,
+					),
+				);
 
-	if (webhookClient) {
-		webhookClient
-			.send({
-				embeds: [leaveEmbed],
-			})
-			.catch(console.error);
+			const url = new URL(webhookUrl);
+			url.searchParams.append('wait', 'true');
+			url.searchParams.append('with_components', 'true');
+
+			const payload = {
+				flags: MessageFlags.IsComponentsV2,
+				components: [leaveContainer.toJSON()],
+			};
+
+			await fetch(url.href, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload),
+			});
+		} catch (err) {
+			console.error('Failed to send guild delete webhook:', err);
+		}
 	}
 };

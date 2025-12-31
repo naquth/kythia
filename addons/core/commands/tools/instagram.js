@@ -6,11 +6,7 @@
  * @version 0.11.0-beta
  */
 
-const {
-	EmbedBuilder,
-	MessageFlags,
-	SlashCommandBuilder,
-} = require('discord.js');
+const { MessageFlags, SlashCommandBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 
 module.exports = {
@@ -141,12 +137,14 @@ module.exports = {
 					fileError.code === 40005 ||
 					fileError.message?.includes('Request entity too large')
 				) {
+					const components = await simpleContainer(
+						interaction,
+						`## ${tooLargeTitle}\n${tooLargeDesc}`,
+						{ color: 'Red' },
+					);
 					await interaction.editReply({
-						embeds: [
-							new EmbedBuilder().setDescription(
-								`## ${tooLargeTitle}\n${tooLargeDesc}`,
-							),
-						],
+						components,
+						flags: MessageFlags.IsComponentsV2,
 						files: [],
 					});
 				} else {
@@ -170,8 +168,14 @@ module.exports = {
 				desc = await t(interaction, 'core.tools.instagram.error.unknown.desc');
 			}
 
+			const components = await simpleContainer(
+				interaction,
+				`## ${title}\n${desc}`,
+				{ color: 'Red' },
+			);
 			await interaction.editReply({
-				embeds: [new EmbedBuilder().setDescription(`## ${title}\n${desc}`)],
+				components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},

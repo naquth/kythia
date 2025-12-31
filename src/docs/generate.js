@@ -282,40 +282,18 @@ function generateCommandMarkdown(
 	return mdContent;
 }
 
-/**
- * ✨ [NEW] Processes a directory with a split command structure (_command.js).
- * It assembles the main command and all its subcommands before generating docs.
- * Memperhatikan aliases dan metadata dari subcommand file juga.
- * @param {string} dirPath - Path to the command directory.
- * @param {string} categoryName - The name of the category/addon.
- */
-/**
- * ✨ [DIROMBAK] Processes a directory with a split command structure (_command.js).
- * SEKARANG BISA nanganin subcommand file (.js) DAN subcommand group (folder).
- * @param {string} dirPath - Path to the command directory.
- * @param {string} categoryName - The name of the category/addon.
- */
 function processSplitCommandDirectory(dirPath, categoryName) {
 	console.log(`[SPLIT] Assembling '${categoryName}' from folder...`);
 	try {
 		const baseCommandPath = path.join(dirPath, '_command.js');
 		const baseCommandModule = require(baseCommandPath);
 
-		if (baseCommandModule.ownerOnly || baseCommandModule.teamOnly) {
-			console.log(`⏩ Ignoring owner-only split command in '${categoryName}'.`);
-			return;
-		}
+		if (baseCommandModule.ownerOnly || baseCommandModule.teamOnly) return;
 
 		const mainBuilder = getSlashCommandBuilder(baseCommandModule);
-		if (!mainBuilder || typeof mainBuilder.addSubcommand !== 'function') {
-			console.error(
-				`❌ Base command in ${categoryName} is not a valid SlashCommandBuilder.`,
-			);
-			return;
-		}
+		if (!mainBuilder) return;
 
 		const subcommandExtraMeta = {};
-
 		const contents = fs.readdirSync(dirPath, { withFileTypes: true });
 
 		for (const item of contents) {
@@ -326,71 +304,71 @@ function processSplitCommandDirectory(dirPath, categoryName) {
 				item.name.endsWith('.js') &&
 				item.name !== '_command.js'
 			) {
-				const subcommandModule = require(itemPath);
+				const subModule = require(itemPath);
 
-				if (typeof subcommandModule.data === 'function') {
-					const subcommandBuilder = new SlashCommandSubcommandBuilder();
-					subcommandModule.data(subcommandBuilder);
-					mainBuilder.addSubcommand(subcommandBuilder);
+				const subData = subModule.data || subModule.slashCommand;
+				if (!subData) continue;
 
-					let subcommandName = subcommandBuilder.name;
-					if (!subcommandName) subcommandName = path.basename(item.name, '.js');
+				const subBuilder = new SlashCommandSubcommandBuilder();
 
-					const subMeta = {};
-					if (
-						Array.isArray(subcommandModule.aliases) &&
-						subcommandModule.aliases.length > 0
-					)
-						subMeta.aliases = subcommandModule.aliases;
-					if (subcommandModule.ownerOnly) subMeta.ownerOnly = true;
-					if (subcommandModule.cooldown)
-						subMeta.cooldown = subcommandModule.cooldown;
-					if (subcommandModule.permissions)
-						subMeta.permissions = subcommandModule.permissions;
-					if (subcommandModule.botPermissions)
-						subMeta.botPermissions = subcommandModule.botPermissions;
-					if (Object.keys(subMeta).length > 0) {
-						subcommandExtraMeta[subcommandName] = subMeta;
+				if (typeof subData === 'function') {
+					subData(subBuilder);
+				} else if (typeof subData === 'object') {
+					subBuilder.setName(subData.name).setDescription(subData.description);
+					if (subData.options) {
+						subBuilder.options = subData.options;
 					}
+				}
+
+				if (subBuilder.name) {
+					mainBuilder.addSubcommand(subBuilder);
+
+					subcommandExtraMeta[subBuilder.name] = {
+						aliases: subModule.aliases,
+						ownerOnly: subModule.ownerOnly,
+						cooldown: subModule.cooldown,
+						permissions: subModule.permissions,
+						botPermissions: subModule.botPermissions,
+					};
 				}
 			} else if (item.isDirectory()) {
 				const groupDefPath = path.join(itemPath, '_group.js');
 				if (!fs.existsSync(groupDefPath)) continue;
 
 				const groupModule = require(groupDefPath);
-				const groupBuilder = new SlashCommandSubcommandGroupBuilder();
-				groupModule.data(groupBuilder);
+				const groupData = groupModule.data || groupModule.slashCommand;
+				if (!groupData) continue;
 
-				const subCommandFiles = fs
+				const groupBuilder = new SlashCommandSubcommandGroupBuilder();
+				if (typeof groupData === 'function') groupData(groupBuilder);
+				else {
+					groupBuilder
+						.setName(groupData.name)
+						.setDescription(groupData.description);
+				}
+
+				const subFiles = fs
 					.readdirSync(itemPath)
 					.filter((f) => f.endsWith('.js') && !f.startsWith('_'));
+				for (const file of subFiles) {
+					const subModule = require(path.join(itemPath, file));
+					const subData = subModule.data || subModule.slashCommand;
+					if (!subData) continue;
 
-				for (const file of subCommandFiles) {
-					const subCommandPath = path.join(itemPath, file);
-					const subModule = require(subCommandPath);
-
-					if (typeof subModule.data === 'function') {
-						const subBuilder = new SlashCommandSubcommandBuilder();
-						subModule.data(subBuilder);
-						groupBuilder.addSubcommand(subBuilder);
-
-						const subMeta = {};
-						if (
-							Array.isArray(subModule.aliases) &&
-							subModule.aliases.length > 0
-						)
-							subMeta.aliases = subModule.aliases;
-						if (subModule.ownerOnly) subMeta.ownerOnly = true;
-						if (subModule.cooldown) subMeta.cooldown = subModule.cooldown;
-						if (subModule.permissions)
-							subMeta.permissions = subModule.permissions;
-						if (subModule.botPermissions)
-							subMeta.botPermissions = subModule.botPermissions;
-
-						if (Object.keys(subMeta).length > 0) {
-							subcommandExtraMeta[subBuilder.name] = subMeta;
-						}
+					const subBuilder = new SlashCommandSubcommandBuilder();
+					if (typeof subData === 'function') subData(subBuilder);
+					else {
+						subBuilder
+							.setName(subData.name)
+							.setDescription(subData.description);
+						if (subData.options) subBuilder.options = subData.options;
 					}
+
+					groupBuilder.addSubcommand(subBuilder);
+					subcommandExtraMeta[subBuilder.name] = {
+						aliases: subModule.aliases,
+						permissions: subModule.permissions,
+					};
 				}
 				mainBuilder.addSubcommandGroup(groupBuilder);
 			}
@@ -408,121 +386,101 @@ function processSplitCommandDirectory(dirPath, categoryName) {
 				`## 📁 Command Category: ${categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}\n\n`;
 		}
 		markdownBuffers[categoryName] += `${markdown}\n\n`;
-		console.log(
-			`[SPLIT] Added assembled command '${commandJSON.name}' to buffer`,
-		);
 	} catch (e) {
-		console.error(
-			`❌ Failed to assemble split command in addon ${categoryName}: ${e.message}`,
-		);
+		console.error(`❌ Failed to assemble split command in ${categoryName}:`, e);
+	}
+}
+/**
+ * 🛠️ Helper to process files in a simple directory structure.
+ */
+function processSimpleDirectory(dirPath, categoryName) {
+	const files = fs
+		.readdirSync(dirPath)
+		.filter((f) => f.endsWith('.js') && !f.startsWith('_'));
+	for (const file of files) {
+		try {
+			const filePath = path.join(dirPath, file);
+			const commandModule = require(filePath);
+
+			if (commandModule.ownerOnly || commandModule.teamOnly) continue;
+
+			const commandBuilder = getSlashCommandBuilder(commandModule);
+			if (!commandBuilder) continue;
+
+			let commandJSON;
+			if (typeof commandBuilder.toJSON === 'function') {
+				commandJSON = commandBuilder.toJSON();
+			} else {
+				commandJSON = commandBuilder;
+			}
+
+			const markdown = generateCommandMarkdown(commandJSON, commandModule);
+
+			if (!markdownBuffers[categoryName]) {
+				markdownBuffers[categoryName] =
+					`## 📁 Command Category: ${categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}\n\n`;
+			}
+			markdownBuffers[categoryName] += `${markdown}\n\n`;
+			console.log(
+				`[${categoryName.toUpperCase()}] Added '${commandJSON.name || file}' to buffer`,
+			);
+		} catch (e) {
+			console.error(
+				`❌ Failed to process file ${file} in category ${categoryName}: ${e.message}`,
+			);
+		}
+	}
+}
+
+/**
+ * 🔄 Recursive function to scan command directories.
+ */
+function processDirectory(dirPath, categoryName) {
+	const baseCommandPath = path.join(dirPath, '_command.js');
+
+	if (fs.existsSync(baseCommandPath)) {
+		processSplitCommandDirectory(dirPath, categoryName);
+	} else {
+		processSimpleDirectory(dirPath, categoryName);
+
+		const items = fs.readdirSync(dirPath, { withFileTypes: true });
+		for (const item of items) {
+			if (item.isDirectory()) {
+				const subPath = path.join(dirPath, item.name);
+
+				const subCategory = categoryName === 'core' ? item.name : categoryName;
+				processDirectory(subPath, subCategory);
+			}
+		}
 	}
 }
 
 function runGenerator() {
 	console.log('🚀 Starting documentation generator...');
 
+	Object.keys(markdownBuffers).forEach((key) => {
+		delete markdownBuffers[key];
+	});
+
 	const addons = fs
 		.readdirSync(rootAddonsDir, { withFileTypes: true })
-		.filter((dirent) => dirent.isDirectory());
+		.filter((d) => d.isDirectory());
 
 	for (const addon of addons) {
 		const commandsPath = path.join(rootAddonsDir, addon.name, 'commands');
 		if (!fs.existsSync(commandsPath)) continue;
 
-		const processSimpleDirectory = (dirPath, categoryName) => {
-			const files = fs.readdirSync(dirPath).filter((f) => f.endsWith('.js'));
-			for (const file of files) {
-				try {
-					const filePath = path.join(dirPath, file);
-					const commandModule = require(filePath);
-
-					if (commandModule.ownerOnly || commandModule.teamOnly) {
-						console.log(
-							`⏩ Ignoring owner-only command '${file}' in '${categoryName}'.`,
-						);
-						continue;
-					}
-
-					const commandBuilder = getSlashCommandBuilder(commandModule);
-
-					if (!commandBuilder) continue;
-
-					let commandJSON;
-					if (typeof commandBuilder.toJSON === 'function') {
-						commandJSON = commandBuilder.toJSON();
-					} else if (typeof commandBuilder === 'object') {
-						commandJSON = commandBuilder;
-						console.warn(
-							`⚠️ Command builder for '${file}' in '${categoryName}' does not have toJSON(), using as-is.`,
-						);
-					} else {
-						throw new Error('Command builder is not valid or missing toJSON()');
-					}
-
-					const markdown = generateCommandMarkdown(commandJSON, commandModule);
-
-					if (!markdownBuffers[categoryName]) {
-						markdownBuffers[categoryName] =
-							`## 📁 Command Category: ${categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}\n\n`;
-					}
-					markdownBuffers[categoryName] += `${markdown}\n\n`;
-					if (commandJSON?.name) {
-						console.log(
-							`[${categoryName.toUpperCase()}] Added '${commandJSON.name}' to buffer`,
-						);
-					} else {
-						console.log(
-							`[${categoryName.toUpperCase()}] Added command from '${file}' to buffer`,
-						);
-					}
-				} catch (e) {
-					console.error(
-						`❌ Failed to process file ${file} in category ${categoryName}: ${e.message}`,
-					);
-				}
-			}
-		};
-
-		const categoryName = addon.name;
-		const baseCommandPath = path.join(commandsPath, '_command.js');
-
-		if (fs.existsSync(baseCommandPath)) {
-			processSplitCommandDirectory(commandsPath, categoryName);
-		} else if (addon.name === 'core') {
-			const coreCategories = fs
-				.readdirSync(commandsPath, { withFileTypes: true })
-				.filter((dirent) => dirent.isDirectory());
-			for (const category of coreCategories) {
-				const categoryPath = path.join(commandsPath, category.name);
-				const baseCommandPathInCore = path.join(categoryPath, '_command.js');
-
-				if (fs.existsSync(baseCommandPathInCore)) {
-					processSplitCommandDirectory(categoryPath, category.name);
-				} else {
-					processSimpleDirectory(categoryPath, category.name);
-				}
-			}
-		} else {
-			processSimpleDirectory(commandsPath, categoryName);
-		}
+		console.log(`📦 Processing Addon: ${addon.name}`);
+		processDirectory(commandsPath, addon.name);
 	}
 
-	console.log('\n✅ Writing all buffers to .md files...');
-	for (const categoryName in markdownBuffers) {
-		try {
-			const outputFilePath = path.join(outputDir, `${categoryName}.md`);
-			fs.writeFileSync(outputFilePath, markdownBuffers[categoryName]);
-			console.log(
-				`   -> Generated: ${path.relative(path.join(__dirname, '..'), outputFilePath)}`,
-			);
-		} catch (e) {
-			console.error(
-				`❌ Failed to write file for category ${categoryName}: ${e.message}`,
-			);
-		}
+	console.log('\n✅ Writing to .md files...');
+	for (const [cat, content] of Object.entries(markdownBuffers)) {
+		const outputFilePath = path.join(outputDir, `${cat}.md`);
+		fs.writeFileSync(outputFilePath, content);
+		console.log(`   -> Generated: ${cat}.md`);
 	}
-
-	console.log('\n🎉 Documentation generator finished successfully.');
+	console.log('\n🎉 Finished!');
 }
 
 runGenerator();

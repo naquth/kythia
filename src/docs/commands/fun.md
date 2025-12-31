@@ -63,40 +63,37 @@
 
 
 
-### 💾 `/guessnumber`
+### 💾 `/marry`
 
-**Description:** Guess the number the bot is thinking of 😋
-
-### 💻 Usage
-
-`/guessnumber <mode>`
-
-### ⚙️ Options
-
-- **`mode*`**
-  - **Description:** Choose difficulty level
-  - **Type:** Text
-  - **Choices:** `Easy (1 - 50)` (`easy`), `Medium (1 - 100)` (`medium`), `Hard (1 - 500)` (`hard`)
-
-
-### 💾 `/uno`
-
-**Description:** Mulai permainan UNO dengan teman atau bot!
+**Description:** 💍 Marriage system commands
 
 ### 💻 Usage
 
-`/uno [lawan] [player3] [player4]`
+`/marry divorce`
+`/marry kiss`
+`/marry profile`
+`/marry propose <user>`
 
-### ⚙️ Options
+### 🔧 Subcommands
 
-- **`lawan`**
-  - **Description:** Tantang teman atau bot.
-  - **Type:** User
-- **`player3`**
-  - **Description:** Pemain ketiga.
-  - **Type:** User
-- **`player4`**
-  - **Description:** Pemain keempat.
+**`/marry divorce`**
+> 💔 End your current marriage
+
+
+**`/marry kiss`**
+> 😘 Kiss your partner
+
+
+**`/marry profile`**
+> 👰 View your marriage profile
+
+
+**`/marry propose <user>`**
+> 💍 Propose to another user
+
+**Options for this subcommand:**
+- **`user*`**
+  - **Description:** The user you want to propose to
   - **Type:** User
 
 

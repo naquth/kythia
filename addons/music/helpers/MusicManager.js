@@ -7,7 +7,6 @@
  */
 
 const {
-	EmbedBuilder,
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
@@ -56,6 +55,7 @@ class MusicManager {
 		this.config = container.kythiaConfig;
 		this.helpers = container.helpers;
 
+		this.simpleContainer = this.helpers.discord.simpleContainer;
 		this.handlers = container.musicHandlers;
 
 		this.setVoiceChannelStatus = this.helpers.discord.setVoiceChannelStatus;
@@ -318,17 +318,17 @@ class MusicManager {
 
 			if (!shouldContinue) {
 				if (channel) {
+					const components = await this.simpleContainer(
+						channel,
+						await this.t(
+							channel,
+							'music.helpers.musicManager.manager.no.listener',
+						),
+						{ color: 'Orange' },
+					);
 					channel.send({
-						embeds: [
-							new EmbedBuilder()
-								.setColor('Orange')
-								.setDescription(
-									await this.t(
-										channel,
-										'music.helpers.musicManager.manager.no.listener',
-									),
-								),
-						],
+						components: components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 				if (player && !player.destroyed) {
@@ -370,20 +370,20 @@ class MusicManager {
 
 				try {
 					if (channel) {
+						const searchingComponents = await this.simpleContainer(
+							channel,
+							await this.t(
+								channel,
+								'music.helpers.musicManager.manager.searching',
+								{
+									title: lastTrack.info.title,
+								},
+							),
+							{ color: this.config.bot.color },
+						);
 						searchingMessage = await channel.send({
-							embeds: [
-								new EmbedBuilder()
-									.setColor(this.config.bot.color)
-									.setDescription(
-										await this.t(
-											channel,
-											'music.helpers.musicManager.manager.searching',
-											{
-												title: lastTrack.info.title,
-											},
-										),
-									),
-							],
+							components: searchingComponents,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 
@@ -409,19 +409,25 @@ class MusicManager {
 
 					if (!potentialNextTracks.length) {
 						if (channel) {
-							const embed = new EmbedBuilder()
-								.setColor('Orange')
-								.setDescription(
-									await this.t(
-										channel,
-										'music.helpers.musicManager.manager.played',
-									),
-								);
+							const components = await this.simpleContainer(
+								channel,
+								await this.t(
+									channel,
+									'music.helpers.musicManager.manager.played',
+								),
+								{ color: 'Orange' },
+							);
 
 							if (searchingMessage?.editable) {
-								await searchingMessage.edit({ embeds: [embed] });
+								await searchingMessage.edit({
+									components: components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							} else {
-								await channel.send({ embeds: [embed] });
+								await channel.send({
+									components: components,
+									flags: MessageFlags.IsComponentsV2,
+								});
 							}
 						}
 					} else {
@@ -445,20 +451,28 @@ class MusicManager {
 					}
 				} catch (err) {
 					if (channel) {
-						const embed = new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								await this.t(
-									channel,
-									'music.helpers.musicManager.manager.failed',
-									{ error: err.message },
-								),
-							);
+						const components = await this.simpleContainer(
+							channel,
+							await this.t(
+								channel,
+								'music.helpers.musicManager.manager.failed',
+								{
+									error: err.message,
+								},
+							),
+							{ color: 'Red' },
+						);
 
 						if (searchingMessage?.editable) {
-							await searchingMessage.edit({ embeds: [embed] });
+							await searchingMessage.edit({
+								components: components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						} else {
-							await channel.send({ embeds: [embed] });
+							await channel.send({
+								components: components,
+								flags: MessageFlags.IsComponentsV2,
+							});
 						}
 					}
 				}
@@ -476,7 +490,10 @@ class MusicManager {
 					player.voiceChannel,
 				);
 				try {
-					this.setVoiceChannelStatus(voiceChannel, 'idle');
+					this.setVoiceChannelStatus(
+						voiceChannel,
+						'Use /music play and hear the melody',
+					);
 				} catch (_e) {}
 
 				const lastPlayable = player.currentTrack || lastTrack;
@@ -488,7 +505,7 @@ class MusicManager {
 				await this.shutdownPlayerUI(player, lastPlayable);
 				player.nowPlayingMessage = null;
 
-				const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+				const IDLE_TIMEOUT_MS = 1000;
 
 				if (player.disconnectTimeout) clearTimeout(player.disconnectTimeout);
 
@@ -498,18 +515,18 @@ class MusicManager {
 					}
 
 					if (channel) {
+						const components = await this.simpleContainer(
+							channel,
+							await this.t(
+								channel,
+								'music.helpers.musicManager.manager.idleDisconnect',
+								{ seconds: IDLE_TIMEOUT_MS / 1000 },
+							),
+							{ color: 'Orange' },
+						);
 						await channel.send({
-							embeds: [
-								new EmbedBuilder().setColor('Orange').setDescription(
-									await this.t(
-										channel,
-										'music.helpers.musicManager.manager.idleDisconnect',
-										{
-											seconds: IDLE_TIMEOUT_MS / 1000,
-										},
-									),
-								),
-							],
+							components: components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 					player.destroy();
@@ -530,7 +547,10 @@ class MusicManager {
 			}
 			const voiceChannel = this.client.channels.cache.get(player.voiceChannel);
 			try {
-				this.setVoiceChannelStatus(voiceChannel, 'idle');
+				this.setVoiceChannelStatus(
+					voiceChannel,
+					'Use /music play and hear the melody',
+				);
 			} catch (e) {
 				this.logger.error('❌ Failed to set voice channel status', e);
 			}
@@ -567,45 +587,42 @@ class MusicManager {
 			const player = this.client.poru.players.get(interaction.guildId);
 
 			if (!player) {
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(interaction, 'music.helpers.musicManager.manager.ended'),
+					{ color: 'Red' },
+				);
 				return await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								await this.t(
-									interaction,
-									'music.helpers.musicManager.manager.ended',
-								),
-							),
-					],
+					components: components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 			if (!interaction.member.voice.channel) {
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.musicManager.manager.simple',
+					),
+					{ color: 'Red' },
+				);
 				return await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								await this.t(
-									interaction,
-									'music.helpers.musicManager.manager.simple',
-								),
-							),
-					],
+					components: components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 			if (interaction.member.voice.channel.id !== player.voiceChannel) {
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.musicManager.manager.required',
+					),
+					{ color: 'Red' },
+				);
 				return await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								await this.t(
-									interaction,
-									'music.helpers.musicManager.manager.required',
-								),
-							),
-					],
+					components: components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 
@@ -618,48 +635,48 @@ class MusicManager {
 					requester: interaction.user,
 				});
 				if (res.loadType === 'error' || !res.tracks.length) {
+					const components = await this.simpleContainer(
+						interaction,
+						await this.t(
+							interaction,
+							'music.helpers.musicManager.manager.track',
+						),
+						{ color: 'Red' },
+					);
 					return await interaction.editReply({
-						embeds: [
-							new EmbedBuilder()
-								.setColor('Red')
-								.setDescription(
-									await this.t(
-										interaction,
-										'music.helpers.musicManager.manager.track',
-									),
-								),
-						],
+						components: components,
+						flags: MessageFlags.IsComponentsV2,
 					});
 				}
 
 				player.queue.add(res.tracks[0]);
 
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.musicManager.manager.queue',
+						{
+							title: res.tracks[0].info.title,
+							url: res.tracks[0].info.uri,
+						},
+					),
+					{ color: this.config.bot.color },
+				);
+
 				await interaction.editReply({
-					embeds: [
-						new EmbedBuilder().setColor(this.config.bot.color).setDescription(
-							await this.t(
-								interaction,
-								'music.helpers.musicManager.manager.queue',
-								{
-									title: res.tracks[0].info.title,
-									url: res.tracks[0].info.uri,
-								},
-							),
-						),
-					],
+					components: components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			} catch (_e) {
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(interaction, 'music.helpers.musicManager.manager.track'),
+					{ color: 'Red' },
+				);
 				await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setColor('Red')
-							.setDescription(
-								await this.t(
-									interaction,
-									'music.helpers.musicManager.manager.track',
-								),
-							),
-					],
+					components: components,
+					flags: MessageFlags.IsComponentsV2,
 				});
 			}
 		}
@@ -932,17 +949,17 @@ class MusicManager {
 						!interaction.member.voice.channelId ||
 						interaction.member.voice.channelId !== player.voiceChannel
 					) {
+						const components = await this.simpleContainer(
+							interaction,
+							await t(
+								interaction,
+								'music.helpers.musicManager.manager.required',
+							),
+							{ color: 'Red' },
+						);
 						return interaction.reply({
-							embeds: [
-								new EmbedBuilder()
-									.setColor('Red')
-									.setDescription(
-										await t(
-											interaction,
-											'music.helpers.musicManager.manager.required',
-										),
-									),
-							],
+							components: components,
+							flags: MessageFlags.IsComponentsV2,
 						});
 					}
 					if (!hasControlPermission(interaction, player)) {

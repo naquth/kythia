@@ -4,6 +4,9 @@
 
 **Description:** 🎟️ All commands related to kythia ticket system.
 
+### 📋 Details
+
+- **User Permissions:** `ManageGuild`
 ### 💻 Usage
 
 `/ticket add <user>`

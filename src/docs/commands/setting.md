@@ -56,6 +56,7 @@
 `/set booster message <message>`
 `/set streak-settings minimum <minimum>`
 `/set streak-settings emoji <emoji>`
+`/set streak-settings nickname <status>`
 `/set raw set <field> <value>`
 `/set streak rolereward <action> <streak> <role>`
 `/set view`
@@ -445,6 +446,14 @@
 - **`emoji*`**
   - **Description:** Emoji
   - **Type:** Text
+**`/set streak-settings nickname <status>`**
+> 🔥 Toggle auto-nickname for streak
+
+**Options for this subcommand:**
+- **`status*`**
+  - **Description:** Select status
+  - **Type:** Text
+  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
 **`/set raw set <field> <value>`**
 > 🧰 Set any field (admin only)
 

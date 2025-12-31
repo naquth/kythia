@@ -2,44 +2,34 @@
 
 ### 💾 `/streak`
 
-**Description:** Check and claim your daily streak!
+**Description:** All commands related to the streak system.
 
 ### 💻 Usage
 
 `/streak claim`
-`/streak me`
 `/streak leaderboard`
 `/streak reset`
-`/streak stats`
-`/streak user <target>`
+`/streak user [target]`
 
 ### 🔧 Subcommands
 
 **`/streak claim`**
-> Klaim streak harianmu untuk hari ini!
-
-
-**`/streak me`**
-> Lihat status streak harianmu saat ini.
+> 🔥 Claim your streak for today, keep your streak continue!
 
 
 **`/streak leaderboard`**
-> Lihat leaderboard streak di server ini.
+> 🥇 Streak leaderboard in this server
 
 
 **`/streak reset`**
-> Reset streak kamu ke 0 (hati-hati, tidak bisa dibatalkan).
+> Reset YOUR streak to 0 (be careful, can't be undone).
 
 
-**`/streak stats`**
-> Lihat statistik streak server ini.
-
-
-**`/streak user <target>`**
+**`/streak user [<target>]`**
 > Lihat streak user lain.
 
 **Options for this subcommand:**
-- **`target*`**
+- **`target`**
   - **Description:** User yang ingin dicek streak-nya
   - **Type:** User
 

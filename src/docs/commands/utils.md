@@ -40,12 +40,11 @@
 
 ### 💾 `/convert`
 
-**Description:** 🔄 Convert between units, currencies, timezones, etc.
+**Description:** 🔄 Convert between units, currencies, etc.
 
 ### 💻 Usage
 
 `/convert currency <from> <to> <amount>`
-`/convert timezone <from> <to> <time>`
 `/convert length <from> <to> <value>`
 `/convert mass <from> <to> <value>`
 `/convert temperature <from> <to> <value>`
@@ -62,29 +61,12 @@
 - **`from*`**
   - **Description:** Currency code (e.g. USD)
   - **Type:** Text
-  - **Choices:** `IDR` (`IDR`), `USD` (`USD`), `EUR` (`EUR`), `JPY` (`JPY`), `GBP` (`GBP`), `SGD` (`SGD`), `AUD` (`AUD`)
 - **`to*`**
   - **Description:** Currency code to convert to (e.g. IDR)
   - **Type:** Text
-  - **Choices:** `IDR` (`IDR`), `USD` (`USD`), `EUR` (`EUR`), `JPY` (`JPY`), `GBP` (`GBP`), `SGD` (`SGD`), `AUD` (`AUD`)
 - **`amount*`**
   - **Description:** Amount to convert
   - **Type:** Number
-**`/convert timezone <from> <to> <time>`**
-> ⏰ Convert time between timezones
-
-**Options for this subcommand:**
-- **`from*`**
-  - **Description:** From timezone
-  - **Type:** Text
-  - **Choices:** `WIB (Asia/Jakarta)` (`Asia/Jakarta`), `WITA (Asia/Makassar)` (`Asia/Makassar`), `WIT (Asia/Jayapura)` (`Asia/Jayapura`), `UTC` (`UTC`), `EST (America/New_York)` (`America/New_York`), `PST (America/Los_Angeles)` (`America/Los_Angeles`), `CET (Europe/Berlin)` (`Europe/Berlin`), `JST (Asia/Tokyo)` (`Asia/Tokyo`)
-- **`to*`**
-  - **Description:** To timezone
-  - **Type:** Text
-  - **Choices:** `WIB (Asia/Jakarta)` (`Asia/Jakarta`), `WITA (Asia/Makassar)` (`Asia/Makassar`), `WIT (Asia/Jayapura)` (`Asia/Jayapura`), `UTC` (`UTC`), `EST (America/New_York)` (`America/New_York`), `PST (America/Los_Angeles)` (`America/Los_Angeles`), `CET (Europe/Berlin)` (`Europe/Berlin`), `JST (Asia/Tokyo)` (`Asia/Tokyo`)
-- **`time*`**
-  - **Description:** Time (e.g. 10:00 or 2024-06-01 10:00)
-  - **Type:** Text
 **`/convert length <from> <to> <value>`**
 > 📏 Convert length units (e.g. m to km)
 
@@ -229,19 +211,34 @@
 
 ### 💾 `/leaveguild`
 
-**Description:** Force Kythia to leave a specific guild (Owner Only).
+**Description:** Manage bot guild membership (Owner Only).
 
 ### 📋 Details
 
 - **Aliases:** `lg`
 ### 💻 Usage
 
-`/leaveguild <guild_id>`
+`/leaveguild target <guild_id>`
+`/leaveguild cleanup <min_member> [message]`
 
-### ⚙️ Options
+### 🔧 Subcommands
 
+**`/leaveguild target <guild_id>`**
+> Force leave a specific guild by ID.
+
+**Options for this subcommand:**
 - **`guild_id*`**
   - **Description:** The ID of the guild to leave
+  - **Type:** Text
+**`/leaveguild cleanup <min_member> [<message>]`**
+> Mass leave guilds with member count below threshold.
+
+**Options for this subcommand:**
+- **`min_member*`**
+  - **Description:** Threshold: Leave guilds with LESS members than this.
+  - **Type:** Integer
+- **`message`**
+  - **Description:** Last message to send before leaving (Optional).
   - **Type:** Text
 
 

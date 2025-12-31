@@ -6,8 +6,8 @@
  * @version 0.11.0-beta
  */
 const {
-	SlashCommandBuilder,
 	GuildMember,
+	SlashCommandBuilder,
 	PermissionFlagsBits,
 	InteractionContextType,
 } = require('discord.js');

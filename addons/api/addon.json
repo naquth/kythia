@@ -1,8 +1,8 @@
 {
-	"name": "Dashboard",
-	"featureName": "Dashboard",
-	"featureFlag": "dashboardOn",
+	"name": "API",
+	"featureName": "API",
+	"featureFlag": "apiOn",
 	"version": "1.0.0",
-	"description": "Take control with a sleek web dashboard! Monitor server statistics, manage settings, view analytics, and configure your bot from anywhere with an intuitive web interface that puts power at your fingertips.",
+	"description": "The bridge between Kythia and the dashboard.",
 	"author": "kenndeclouv"
 }

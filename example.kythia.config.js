@@ -3,19 +3,44 @@
  *         KYTHIA BOT CONFIGURATION (kythia.config.js)
  * ===================================================================
  *
- * INSTRUCTIONS:
- * 1. Ensure your environment variables are set in a `.env` file at the project root.
- *    - You can copy `.env.example` and fill in your values.
- *    - This config file reads from `process.env` (populated by dotenv or your process manager).
- * 2. Do NOT commit your real `.env` file to version control.
- * 3. All configuration values are loaded into the `kythia` object below.
- *    - Default values are provided where appropriate.
- *    - For sensitive values (tokens, secrets), always use environment variables.
- * 4. If you add new configuration keys, document them clearly and update `.env.example`.
+ * 📋 SETUP INSTRUCTIONS:
+ *
+ * 1. Copy this file and rename it to 'kythia.config.js' (remove 'example.')
+ * 2. Ensure your .env file is properly configured first (see example.env)
+ * 3. Review the settings below and adjust as needed for your bot
+ * 4. Most settings have sensible defaults - you don't need to change everything!
+ *
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * ⚠️  IMPORTANT - READ THIS BEFORE ASKING FOR HELP ⚠️
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *
+ *   🚫 BASIC SETUP SUPPORT POLICY:
+ *
+ *   Questions about basic configuration values WILL NOT BE ANSWERED.
+ *   ALL SETTINGS ARE DOCUMENTED IN THIS FILE WITH EXAMPLES.
+ *
+ *   👉 RTFM (Read The F*cking Manual) 👈
+ *
+ *   If you cannot understand the clear comments and examples here,
+ *   this bot is not for you. No exceptions.
+ *
+ *   Advanced technical questions are welcome in Discord.
+ *   Basic configuration questions will be ignored.
+ *
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *
+ * 🆘 RESOURCES:
+ *   - Discord Server (Advanced Support Only): https://dsc.gg/kythia
+ *   - Documentation: https://kythia.me
+ *   - README.md: Read it thoroughly before asking anything
+ *
+ * ⚠️  IMPORTANT NOTES:
+ *   - This config reads environment variables from your .env file
+ *   - Sensitive values (tokens, secrets) should ONLY be in .env, never here
+ *   - Do NOT commit this file with your personal values to version control
+ *   - Most settings have defaults - only change what you need
  *
  * ===================================================================
- * DM me if you need any help https://discord.com/users/1158654757183959091
- * Join my server https://dsc.gg/kythia
  */
 
 function loadKythiaConfig() {
@@ -23,31 +48,43 @@ function loadKythiaConfig() {
 		/** -------------------------------------------------------------------
 		 * I. GENERAL SETTINGS
 		 * ------------------------------------------------------------------- */
+		// Environment (usually 'local' for self-hosted)
 		env: 'local',
-		// Bot version
+
+		// Bot version (automatically loaded from package.json - DO NOT CHANGE)
 		version: require('./package.json').version,
-		// Bot license key
+
+		// License key from .env (get from https://dsc.gg/kythia)
 		licenseKey: process.env.LICENSE_KEY,
-		// Bot legal settings
-		// Read more at https://kythia.me/tos
-		// SET ALL TO TRUE IF YOU ACCEPT THE TERMS OF SERVICE
-		// IF NOT THE BOT WILL NOT WORK
+
+		/** ⚠️  CRITICAL - LEGAL ACCEPTANCE REQUIRED ⚠️
+		 * Read the Terms of Service at https://kythia.me/tos
+		 *
+		 * YOU MUST SET BOTH VALUES TO true TO USE THE BOT:
+		 * - acceptTOS: true     (Accept Terms of Service)
+		 * - dataCollection: true (Accept telemetry data collection)
+		 *
+		 * THE BOT WILL NOT START IF BOTH ARE NOT SET TO true!
+		 */
 		legal: {
-			// Accept Terms of Service
-			acceptTOS: false,
-			// acceptTOS: true,
-			// Data Collection
-			dataCollection: false,
-			// dataCollection: true,
+			acceptTOS: false, // ⚠️  CHANGE THIS TO true
+			dataCollection: false, // ⚠️  CHANGE THIS TO true
 		},
-		// Bot owner
+
+		/** Bot Owner Configuration
+		 * IMPORTANT: Change this to YOUR Discord User ID!
+		 * How to get your Discord ID:
+		 *   1. Enable Developer Mode in Discord (Settings > Advanced > Developer Mode)
+		 *   2. Right-click your username anywhere and select "Copy User ID"
+		 */
 		owner: {
-			// Discord User ID of the bot owner (for owner-only commands)
-			// can be multiple, seperate with comma (eg: 1158654757183959091,1358351229771710565)
-			ids: '1158654757183959091',
-			// Display name of the owner
-			// can be multiple, seperate with comma (eg: kenndeclouv,kenoura_)
-			names: 'kenndeclouv',
+			// Your Discord User ID (NOT kenndeclouv's!)
+			// Multiple owners: '123456789,987654321'
+			ids: '1158654757183959091', // ⚠️  CHANGE THIS TO YOUR ID!
+
+			// Your display name (shown in bot info)
+			// Multiple names: 'owner1,owner2'
+			names: 'kenndeclouv', // ⚠️  CHANGE THIS TO YOUR NAME!
 		},
 		/**
 		 * Sentry for error logging
@@ -149,10 +186,15 @@ function loadKythiaConfig() {
 		},
 
 		/** -------------------------------------------------------------------
-		 * IV. TURN ADDONS ON/OFF (the default is all addons are on)
-		 * for example: addons: { nsfw: false, music: true }
-		 * you can turn it all off by addons: { all: active: false }
-		 * you can leave it empty if you dont have any addon
+		 * IV. ADDON CONFIGURATION - Enable/Disable Features
+		 * -------------------------------------------------------------------
+		 * QUICK GUIDE:
+		 *   - Set 'active: true' to enable an addon
+		 *   - Set 'active: false' to disable an addon
+		 *   - Disabled addons won't load, saving memory
+		 *   - Some addons require additional .env configuration (noted below)
+		 *
+		 * 💡 TIP: Start with all addons enabled, then disable what you don't need
 		 * ------------------------------------------------------------------- */
 		addons: {
 			all: {
@@ -163,8 +205,11 @@ function loadKythiaConfig() {
 				active: true,
 			},
 			/** -------------------------------------------------------------------
-			 * AI ADDON (Google Gemini)
-			 * get your api key at: https://aistudio.google.com/apikey
+			 * AI ADDON - Google Gemini AI Chat
+			 * -------------------------------------------------------------------
+			 * REQUIREMENTS:
+			 *   - Set GEMINI_API_KEYS in .env
+			 *   - Get free API keys at: https://aistudio.google.com/apikey
 			 * ------------------------------------------------------------------- */
 			ai: {
 				active: true,
@@ -221,9 +266,14 @@ function loadKythiaConfig() {
 				hackCooldown: 3600, // 1 hour
 			},
 			/** -------------------------------------------------------------------
-			 * API ADDON
-			 * this addon is used for dashboard
-			 * see dashboard on https://github.com/kenndeclouv/kythia-dashboard
+			 * API/DASHBOARD ADDON - Web Dashboard Interface
+			 * -------------------------------------------------------------------
+			 * REQUIREMENTS:
+			 *   - Set API_SECRET, API_URL, API_PORT in .env
+			 *   - Configure OAuth2 Redirect URI in Discord Developer Portal
+			 *   - See example.env for detailed setup instructions
+			 *
+			 * Dashboard repo: https://github.com/kenndeclouv/kythia-dashboard
 			 * ------------------------------------------------------------------- */
 			api: {
 				active: true,
@@ -289,7 +339,14 @@ function loadKythiaConfig() {
 				backgroundUrl: 'https://placehold.co/800x250.png',
 			},
 			/** -------------------------------------------------------------------
-			 * MUSIC ADDON (Using Lavalink)
+			 * MUSIC ADDON - Lavalink Music Player
+			 * -------------------------------------------------------------------
+			 * REQUIREMENTS:
+			 *   - Setup Lavalink server (see example.env for details)
+			 *   - Set LAVALINK_* variables in .env
+			 *   - Optional: Spotify (SPOTIFY_CLIENT_ID/SECRET)
+			 *
+			 * 💡 Free Lavalink available in Kythia Discord: https://dsc.gg/kythia
 			 * ------------------------------------------------------------------- */
 			music: {
 				active: true,

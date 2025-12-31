@@ -113,6 +113,21 @@
   - **Type:** Text
 
 
+### 💾 `/instagram`
+
+**Description:** 📸 Get and play an Instagram post/reel by link.
+
+### 💻 Usage
+
+`/instagram <link>`
+
+### ⚙️ Options
+
+- **`link*`**
+  - **Description:** The Instagram post/reel link
+  - **Type:** Text
+
+
 ### 💾 `/nickprefix`
 
 **Description:** 📛 Adds or removes a prefix from member nicknames.

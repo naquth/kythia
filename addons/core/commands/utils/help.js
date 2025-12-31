@@ -25,7 +25,7 @@ const {
 const fs = require('node:fs');
 const path = require('node:path');
 
-const EXCLUDED_ADDONS = [];
+const EXCLUDED_ADDONS = ['api'];
 const EXCLUDED_CORE_CATEGORIES = [];
 const CATEGORIES_PER_PAGE = 25;
 

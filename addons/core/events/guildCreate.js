@@ -7,8 +7,6 @@
  */
 
 const {
-	EmbedBuilder,
-	WebhookClient,
 	PermissionsBitField,
 	ContainerBuilder,
 	TextDisplayBuilder,
@@ -21,13 +19,6 @@ const {
 	ButtonStyle,
 	MessageFlags,
 } = require('discord.js');
-
-function safeWebhookClient(url) {
-	if (typeof url === 'string' && url.trim().length > 0) {
-		return new WebhookClient({ url });
-	}
-	return null;
-}
 
 async function getInviteLink(guild) {
 	if (guild.vanityURLCode) {
@@ -86,9 +77,6 @@ module.exports = async (bot, guild) => {
 		console.log(`Default bot settings created for server: ${guild.name}`);
 	}
 
-	const webhookClient = safeWebhookClient(
-		kythiaConfig.api.webhookGuildInviteLeave,
-	);
 	let ownerName = 'Unknown';
 	try {
 		let owner = guild.members?.cache?.get(guild.ownerId);
@@ -105,35 +93,66 @@ module.exports = async (bot, guild) => {
 		? inviteUrl
 		: await t(guild, 'core.events.guildCreate.events.guild.create.no.invite');
 
-	const inviteEmbed = new EmbedBuilder()
-		.setColor(kythiaConfig.bot.color)
-		.setDescription(
-			await t(
-				guild,
-				'core.events.guildCreate.events.guild.create.webhook.desc',
-				{
-					bot: guild.client.user.username,
-					guild: guild.name,
-					guildId: guild.id,
-					ownerId: guild.ownerId,
-					ownerName: ownerName,
-					memberCount: guild.memberCount ?? '?',
-					invite: inviteText,
-					createdAt: guild.createdAt.toLocaleDateString('en-US', {
-						year: 'numeric',
-						month: 'long',
-						day: 'numeric',
-					}),
-				},
-			),
-		)
-		.setThumbnail(guild.iconURL({ dynamic: true }))
+	const webhookUrl = kythiaConfig.api.webhookGuildInviteLeave;
+	if (webhookUrl) {
+		try {
+			const accentColor = convertColor(kythiaConfig.bot.color, {
+				from: 'hex',
+				to: 'decimal',
+			});
 
-		.setFooter({ text: `Guild Create Event | ${bot.client.user.username}` })
-		.setTimestamp();
+			const inviteContainer = new ContainerBuilder()
+				.setAccentColor(accentColor)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t(
+							guild,
+							'core.events.guildCreate.events.guild.create.webhook.desc',
+							{
+								bot: guild.client.user.username,
+								guild: guild.name,
+								guildId: guild.id,
+								ownerId: guild.ownerId,
+								ownerName: ownerName,
+								memberCount: guild.memberCount ?? '?',
+								invite: inviteText,
+								createdAt: guild.createdAt.toLocaleDateString('en-US', {
+									year: 'numeric',
+									month: 'long',
+									day: 'numeric',
+								}),
+							},
+						),
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`-# Guild Create Event | ${bot.client.user.username}`,
+					),
+				);
 
-	if (webhookClient) {
-		webhookClient.send({ embeds: [inviteEmbed] }).catch(console.error);
+			const url = new URL(webhookUrl);
+			url.searchParams.append('wait', 'true');
+			url.searchParams.append('with_components', 'true');
+
+			const payload = {
+				flags: MessageFlags.IsComponentsV2,
+				components: [inviteContainer.toJSON()],
+			};
+
+			await fetch(url.href, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload),
+			});
+		} catch (err) {
+			console.error('Failed to send guild create webhook:', err);
+		}
 	}
 
 	let channel = guild.systemChannel;

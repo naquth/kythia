@@ -5,7 +5,13 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 const banks = require('../helpers/banks');
 const jobs = require('../helpers/jobs');
 const { toBigIntSafe } = require('../helpers/bigint');
@@ -21,7 +27,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, Inventory } = models;
-		const { embedFooter, simpleContainer } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
 		const { checkCooldown } = helpers.time;
 		await interaction.deferReply();
 
@@ -136,39 +142,58 @@ module.exports = {
 			failure: 'Red',
 		};
 
-		const resultEmbed = new EmbedBuilder()
-			.setColor(outcomeColors[scenario.outcome])
-			.setAuthor({
-				name: await t(interaction, 'economy.work.work.result.author', {
-					job: jobName,
-					emoji: job.emoji,
-				}),
-				iconURL: interaction.user.displayAvatarURL(),
-			})
-			.setDescription(
-				`${await t(interaction, 'economy.work.result.title.outcome')}\n*${scenarioDesc}*${levelUpText}`,
-			)
-			.addFields(
-				{
-					name: await t(interaction, 'economy.work.work.basepay.field'),
-					value: `🪙 ${baseEarning.toLocaleString()}`,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'economy.work.work.bonus.field', {
-						modifier: scenario.modifier,
-					}),
-					value: `🪙 ${(finalEarning - baseEarning).toLocaleString()}`,
-					inline: true,
-				},
-				{
-					name: await t(interaction, 'economy.work.work.total.field'),
-					value: `**💰 ${finalEarning.toLocaleString()}**`,
-					inline: true,
-				},
-			)
-			.setFooter(await embedFooter(interaction));
+		const { convertColor } = helpers.color;
 
-		await interaction.editReply({ embeds: [resultEmbed] });
+		const accentColor = convertColor(outcomeColors[scenario.outcome], {
+			from: 'discord',
+			to: 'decimal',
+		});
+
+		const resultContainer = new ContainerBuilder()
+			.setAccentColor(accentColor)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`## ${job.emoji} ${await t(interaction, 'economy.work.work.result.author', { job: jobName, emoji: job.emoji })}`,
+				),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`${await t(interaction, 'economy.work.result.title.outcome')}\n*${scenarioDesc}*${levelUpText}`,
+				),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`**${await t(interaction, 'economy.work.work.basepay.field')}:** 🪙 ${baseEarning.toLocaleString()}\n` +
+						`**${await t(interaction, 'economy.work.work.bonus.field', { modifier: scenario.modifier })}:** 🪙 ${(finalEarning - baseEarning).toLocaleString()}\n` +
+						`**${await t(interaction, 'economy.work.work.total.field')}:** 💰 ${finalEarning.toLocaleString()}`,
+				),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'common.container.footer', {
+						username: interaction.client.user.username,
+					}),
+				),
+			);
+
+		await interaction.editReply({
+			components: [resultContainer],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

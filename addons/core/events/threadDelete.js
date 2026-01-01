@@ -15,6 +15,7 @@ const {
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 const channelTypeNames = {
 	[ChannelType.GuildText]: 'Text Channel',
@@ -46,9 +47,10 @@ function humanChannelType(type) {
 module.exports = async (bot, thread) => {
 	if (!thread.guild) return;
 	const container = bot.client.container;
-	const { models, helpers } = container;
+	const { models, helpers, logger, t } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
+	const guildId = thread.guild.id;
 
 	try {
 		const settings = await ServerSetting.getCache({ guildId: thread.guild.id });
@@ -97,6 +99,18 @@ module.exports = async (bot, thread) => {
 						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
 							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
 				),
 		];
 
@@ -108,6 +122,9 @@ module.exports = async (bot, thread) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in threadDelete audit log:', err);
+		logger.error(err, { label: 'threadDelete' });
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

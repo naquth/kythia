@@ -15,7 +15,7 @@ module.exports = {
 			.setDescription('View your transaction history.'),
 
 	async execute(interaction, container) {
-		const { t, models, kythiaConfig, helpers } = container;
+		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { KythiaUser, MarketTransaction } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -73,7 +73,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error in history command:', error);
+			logger.error('Error in history command:', error, {
+				label: 'core:commands:economy:market:history',
+			});
 			const msg = `## ${await t(interaction, 'economy.market.history.error.title')}\n${await t(interaction, 'economy.market.history.error.desc')}`;
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',

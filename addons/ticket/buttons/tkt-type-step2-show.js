@@ -19,7 +19,7 @@ const {
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { t, helpers, redis } = container;
+		const { t, helpers, redis, logger } = container;
 		const { simpleContainer } = helpers.discord;
 
 		try {
@@ -100,7 +100,9 @@ module.exports = {
 
 			await interaction.showModal(modal);
 		} catch (error) {
-			console.error('Error in tkt-type-step2-show handler:', error);
+			logger.error('Error in tkt-type-step2-show handler:', error, {
+				label: 'ticket',
+			});
 			if (!interaction.replied && !interaction.deferred) {
 				const desc = await t(interaction, 'ticket.errors.modal_show_failed');
 				await interaction.reply({

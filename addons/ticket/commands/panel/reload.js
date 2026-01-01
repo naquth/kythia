@@ -50,7 +50,7 @@ module.exports = {
 	},
 
 	async execute(interaction, container) {
-		const { t, helpers } = container;
+		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -71,7 +71,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error reloading panel:', error);
+			logger.error('Error reloading panel:', error, { label: 'ticket' });
 			const desc = await t(interaction, 'ticket.errors.generic');
 			await interaction.editReply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

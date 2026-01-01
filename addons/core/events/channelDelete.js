@@ -24,7 +24,7 @@ async function handleAntiNuke(bot, channel, entry) {
 	if (!entry || !entry.executor || entry.executor.bot) return;
 
 	const container = bot.client.container;
-	const { t, models } = container;
+	const { t, models, logger } = container;
 	const { ServerSetting } = models;
 
 	if (!bot.client.channelDeleteTracker) {
@@ -80,9 +80,12 @@ async function handleAntiNuke(bot, channel, entry) {
 				await logChannel.send(message);
 			}
 		} catch (err) {
-			console.error(
+			logger.error(
 				`Failed to kick member for anti-nuke (channelDelete):`,
 				err,
+				{
+					label: 'core:events:channelDelete',
+				},
 			);
 		}
 
@@ -94,7 +97,7 @@ async function handleAntiNuke(bot, channel, entry) {
 module.exports = async (bot, channel) => {
 	if (!channel.guild) return;
 	const container = bot.client.container;
-	const { models, helpers } = container;
+	const { models, helpers, logger } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
 
@@ -181,7 +184,9 @@ module.exports = async (bot, channel) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error fetching audit logs for channelDelete:', err);
+		logger.error('Error fetching audit logs for channelDelete:', err, {
+			label: 'core:events:channelDelete',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

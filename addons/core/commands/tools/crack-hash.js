@@ -41,7 +41,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, kythiaConfig, helpers } = container;
+		const { t, kythiaConfig, helpers, logger } = container;
 		const { createContainer } = helpers.discord;
 
 		await interaction.deferReply();
@@ -94,7 +94,9 @@ module.exports = {
 				}
 			}
 		} catch (error) {
-			console.error('Hash lookup API error:', error);
+			logger.error('Hash lookup API error:', error, {
+				label: 'core:tools:crack-hash',
+			});
 			resultText = await t(interaction, 'core.tools.crackhash.api.error');
 		}
 

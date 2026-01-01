@@ -9,49 +9,13 @@
 const CloudflareApi = require('./helpers/CloudflareApi');
 
 module.exports = {
-	async initialize(bot) {
+	initialize(bot) {
 		const summary = [];
 
 		bot.addClientReadyHook((_sequelize) => {
 			const container = bot.client.container;
 			const { logger, kythiaConfig, models } = container;
-			const { KythiaUser, Subdomain, DnsRecord, Monitor } = models;
 
-			if (KythiaUser && Subdomain) {
-				KythiaUser.hasMany(Subdomain, {
-					foreignKey: 'userId',
-					as: 'subdomains',
-					onDelete: 'CASCADE',
-				});
-				Subdomain.belongsTo(KythiaUser, {
-					foreignKey: 'userId',
-					as: 'kythiaUser',
-				});
-			}
-
-			if (Subdomain && DnsRecord) {
-				Subdomain.hasMany(DnsRecord, {
-					foreignKey: 'subdomainId',
-					as: 'dnsRecords',
-					onDelete: 'CASCADE',
-				});
-				DnsRecord.belongsTo(Subdomain, {
-					foreignKey: 'subdomainId',
-					as: 'subdomain',
-				});
-			}
-
-			if (KythiaUser && Monitor) {
-				KythiaUser.hasMany(Monitor, {
-					foreignKey: 'userId',
-					as: 'monitors',
-					onDelete: 'CASCADE',
-				});
-				Monitor.belongsTo(KythiaUser, {
-					foreignKey: 'userId',
-					as: 'kythiaUser',
-				});
-			}
 			summary.push(' └─ DnsRecord & Monitor model associations registered.');
 
 			try {

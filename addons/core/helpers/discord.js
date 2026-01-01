@@ -261,7 +261,6 @@ async function getMemberSafe(guild, userId) {
 }
 
 async function isTeam(container, userId) {
-	console.log(container);
 	const { helpers, models } = container;
 	const { KythiaTeam } = models;
 

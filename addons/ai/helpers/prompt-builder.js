@@ -40,8 +40,6 @@ const discordRulesPrompt = `
  */
 function init({ isOwner, config }) {
 	if (typeof isOwner !== 'function' || !config) {
-		console.error('PromptBuilder init requires isOwner function and config.');
-
 		return;
 	}
 	_isOwner = isOwner;

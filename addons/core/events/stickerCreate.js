@@ -14,13 +14,15 @@ const {
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 module.exports = async (bot, sticker) => {
 	if (!sticker.guild) return;
 	const container = bot.client.container;
-	const { models, helpers } = container;
+	const { models, helpers, logger, t } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
+	const guildId = sticker.guild.id;
 
 	try {
 		const settings = await ServerSetting.getCache({
@@ -72,6 +74,18 @@ module.exports = async (bot, sticker) => {
 						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Un known'})\n` +
 							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
 				),
 		];
 
@@ -83,6 +97,9 @@ module.exports = async (bot, sticker) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in guildStickerCreate audit log:', err);
+		logger.error(err, { label: 'stickerCreate' });
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

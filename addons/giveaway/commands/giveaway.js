@@ -91,7 +91,8 @@ module.exports = {
 	async autocomplete(interaction, container) {
 		const focusedValue = interaction.options.getFocused();
 		const subcommand = interaction.options.getSubcommand();
-		const { Giveaway } = container.models;
+		const { logger, models } = container;
+		const { Giveaway } = models;
 
 		const whereClause = {
 			guildId: interaction.guild.id,
@@ -135,7 +136,9 @@ module.exports = {
 
 			await interaction.respond(result);
 		} catch (error) {
-			console.error('[Giveaway Autocomplete] Error:', error);
+			logger.error('[Giveaway Autocomplete] Error:', error, {
+				label: 'giveaway:autocomplete',
+			});
 			await interaction.respond([]);
 		}
 	},

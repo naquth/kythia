@@ -29,7 +29,7 @@ module.exports = {
 					),
 			),
 	async execute(interaction, container) {
-		const { t, models, kythiaConfig, helpers } = container;
+		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { KythiaUser } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -71,7 +71,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error during account edit command execution:', error);
+			logger.error('Error during account edit command execution:', error, {
+				label: 'core:commands:economy:account:edit',
+			});
 			const msg = await t(
 				interaction,
 				'economy.account.edit.account.edit.error.desc',

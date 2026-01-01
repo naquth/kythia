@@ -21,6 +21,20 @@ class KythiaUser extends KythiaModel {
 				as: 'pets',
 			});
 		}
+		if (models.Subdomain) {
+			this.hasMany(models.Subdomain, {
+				foreignKey: 'userId',
+				as: 'subdomains',
+				onDelete: 'CASCADE',
+			});
+		}
+		if (models.Monitor) {
+			this.hasMany(models.Monitor, {
+				foreignKey: 'userId',
+				as: 'monitors',
+				onDelete: 'CASCADE',
+			});
+		}
 	}
 }
 

@@ -21,7 +21,7 @@ const levelUpXp = (level) => level * level * 50;
 
 const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 	const { container } = message.client;
-	const { helpers, kythia, t, models, kythiaConfig } = container;
+	const { helpers, kythia, t, models, kythiaConfig, logger } = container;
 	const { ServerSetting, User } = models;
 	const { getTextChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
@@ -114,7 +114,9 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 			moreBackgroundBlur: false,
 		});
 	} catch (err) {
-		console.error('Failed to generate level up image:', err);
+		logger.error('Failed to generate level up image:', err, {
+			label: 'leveling:helpers',
+		});
 		buffer = null;
 	}
 

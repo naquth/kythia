@@ -23,7 +23,6 @@ module.exports = {
 		if (!command.voteLocked) return true;
 		if (container.helpers.discord.isOwner(interaction.user.id)) return true;
 
-		console.log(container);
 		const { kythiaConfig, t, helpers } = container;
 		const { KythiaVoter } = container.models;
 		const { convertColor } = helpers.color;

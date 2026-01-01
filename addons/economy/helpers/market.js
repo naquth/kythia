@@ -120,11 +120,7 @@ async function getChartBuffer(config, assetId) {
 		);
 
 		return response.data;
-	} catch (error) {
-		console.error(
-			`Failed to generate chart for ${assetId}:`,
-			error.response ? error.response.data : error.message,
-		);
+	} catch (_e) {
 		return null;
 	}
 }

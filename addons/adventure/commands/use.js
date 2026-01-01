@@ -24,7 +24,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, models, helpers, kythiaConfig } = container;
+		const { t, models, helpers, kythiaConfig, logger } = container;
 		const { UserAdventure, InventoryAdventure } = models;
 		const { createContainer } = helpers.discord;
 
@@ -206,7 +206,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (e) {
-			console.error(e);
+			logger.error(e, { label: 'adventure:use' });
 		}
 	},
 };

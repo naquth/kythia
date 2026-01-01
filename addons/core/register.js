@@ -6,10 +6,8 @@
  * @version 0.11.0-beta
  */
 
-// const { cleanupUserCache } = require('./helpers/index.js');
 const setupTopGGPoster = require('./helpers/topgg-poster.js');
 const { runStatsUpdater } = require('./helpers/stats.js');
-// const { userCache } = require('./helpers/automod.js');
 const { loadFonts } = require('kythia-arts');
 
 const cron = require('node-cron');
@@ -20,16 +18,6 @@ const initialize = (bot) => {
 	const { logger } = container;
 	const summary = [];
 
-	try {
-		const reactRoleHandler = require('./buttons/reactrole.js');
-
-		bot.registerButtonHandler('reactrole', reactRoleHandler.execute);
-		summary.push("  └─ Button: 'reactrole'");
-	} catch (error) {
-		logger.error("Error registering button handler 'reactrole':", error);
-	}
-
-	// Setup Top.gg auto-poster
 	const topGGPoster = setupTopGGPoster(bot);
 	if (topGGPoster) {
 		summary.push('  └─ Task: Top.gg auto-poster initialized');
@@ -37,9 +25,6 @@ const initialize = (bot) => {
 			topGGPoster.cleanup();
 		});
 	}
-
-	// cron.schedule('0 * * * *', () => cleanupUserCache(container, userCache));
-	// summary.push('  └─ Cron: cleanup user cache (per day at 00:00)');
 
 	cron.schedule('*/5 * * * *', () => runStatsUpdater(bot.client));
 	summary.push('  └─ Cron: cleanup user cache (every 5 minutes)');

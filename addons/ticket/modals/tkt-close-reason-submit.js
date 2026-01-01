@@ -10,7 +10,7 @@ const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { t, helpers } = container;
+		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 
 		try {
@@ -18,7 +18,9 @@ module.exports = {
 
 			await closeTicket(interaction, container, reason);
 		} catch (error) {
-			console.error('Error submitting close w/ reason modal:', error);
+			logger.error('Error submitting close w/ reason modal:', error, {
+				label: 'ticket',
+			});
 			const descError = await t(interaction, 'ticket.errors.close_failed');
 			if (interaction.replied || interaction.deferred) {
 				await interaction.followUp({

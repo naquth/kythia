@@ -14,16 +14,18 @@ const {
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 module.exports = async (bot, ban) => {
 	if (!ban.guild) return;
 	const container = bot.client.container;
-	const { models, helpers } = container;
+	const { models, helpers, logger, t } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
+	const guildId = ban.guild.id;
 
 	try {
-		const settings = await ServerSetting.getCache({ guildId: ban.guild.id });
+		const settings = await ServerSetting.getCache({ guildId });
 		if (!settings || !settings.auditLogChannelId) return;
 
 		const logChannel = await ban.guild.channels
@@ -68,6 +70,18 @@ module.exports = async (bot, ban) => {
 						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
 							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
 				),
 		];
 
@@ -79,6 +93,9 @@ module.exports = async (bot, ban) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in guildBanRemove audit log:', err);
+		logger.error(err, { label: 'guildBanRemove' });
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

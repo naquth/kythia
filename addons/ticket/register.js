@@ -27,58 +27,42 @@ const ticketCancelClose = require('./buttons/ticket-cancel-close.js');
 
 const initialize = (bot) => {
 	const summary = [];
-	try {
-		bot.registerButtonHandler('ticket-create', ticketCreate.execute);
-		bot.registerButtonHandler('ticket-close', ticketClose.execute);
-		bot.registerSelectMenuHandler('ticket-select', ticketSelect.execute);
-		summary.push(
-			"  └─ Interaction: 'ticketcreate', 'ticketclose', 'ticketselect' (User Facing)",
-		);
 
-		bot.registerButtonHandler(
-			'tkt-panel-modal-show',
-			tktPanelModalShow.execute,
-		);
-		bot.registerModalHandler('tkt-panel-create', tktPanelCreate.execute);
-		summary.push(
-			"  └─ Panel Setup: 'tkt-panel-modal-show', 'tkt-panel-create'",
-		);
+	bot.registerButtonHandler('ticket-create', ticketCreate.execute);
+	bot.registerButtonHandler('ticket-close', ticketClose.execute);
+	bot.registerSelectMenuHandler('ticket-select', ticketSelect.execute);
+	summary.push(
+		"  └─ Interaction: 'ticketcreate', 'ticketclose', 'ticketselect' (User Facing)",
+	);
 
-		bot.registerButtonHandler('tkt-type-step1-show', tktTypeStep1Show.execute);
-		bot.registerModalHandler(
-			'tkt-type-step1-submit',
-			tktTypeStep1Submit.execute,
-		);
-		bot.registerButtonHandler('tkt-type-step2-show', tktTypeStep2Show.execute);
-		bot.registerModalHandler(
-			'tkt-type-step2-submit',
-			tktTypeStep2Submit.execute,
-		);
-		summary.push(
-			"  └─ Type Setup: 'tkt-type-step1-show', 'tkt-type-step1-submit', 'tkt-type-step2-show', 'tkt-type-step2-submit' (Multi-Modal Flow)",
-		);
+	bot.registerButtonHandler('tkt-panel-modal-show', tktPanelModalShow.execute);
+	bot.registerModalHandler('tkt-panel-create', tktPanelCreate.execute);
+	summary.push("  └─ Panel Setup: 'tkt-panel-modal-show', 'tkt-panel-create'");
 
-		bot.registerButtonHandler(
-			'ticket-close-with-reason',
-			ticketCloseWithReason.execute,
-		);
-		bot.registerModalHandler(
-			'tkt-close-reason-submit',
-			tktCloseReasonSubmit.execute,
-		);
-		bot.registerModalHandler('tkt-open-reason', tktOpenReason.execute);
-		bot.registerButtonHandler('ticket-claim', ticketClaim.execute);
-		bot.registerButtonHandler(
-			'ticket-confirm-close',
-			ticketConfirmClose.execute,
-		);
-		bot.registerButtonHandler('ticket-cancel-close', ticketCancelClose.execute);
-		summary.push(
-			"  └─ Interaction: 'ticket-close-with-reason', 'tkt-close-reason-submit', 'ticket-claim' (Staff Facing)",
-		);
-	} catch (error) {
-		console.error('Failed to register ticket handlers:', error);
-	}
+	bot.registerButtonHandler('tkt-type-step1-show', tktTypeStep1Show.execute);
+	bot.registerModalHandler('tkt-type-step1-submit', tktTypeStep1Submit.execute);
+	bot.registerButtonHandler('tkt-type-step2-show', tktTypeStep2Show.execute);
+	bot.registerModalHandler('tkt-type-step2-submit', tktTypeStep2Submit.execute);
+	summary.push(
+		"  └─ Type Setup: 'tkt-type-step1-show', 'tkt-type-step1-submit', 'tkt-type-step2-show', 'tkt-type-step2-submit' (Multi-Modal Flow)",
+	);
+
+	bot.registerButtonHandler(
+		'ticket-close-with-reason',
+		ticketCloseWithReason.execute,
+	);
+	bot.registerModalHandler(
+		'tkt-close-reason-submit',
+		tktCloseReasonSubmit.execute,
+	);
+	bot.registerModalHandler('tkt-open-reason', tktOpenReason.execute);
+	bot.registerButtonHandler('ticket-claim', ticketClaim.execute);
+	bot.registerButtonHandler('ticket-confirm-close', ticketConfirmClose.execute);
+	bot.registerButtonHandler('ticket-cancel-close', ticketCancelClose.execute);
+	summary.push(
+		"  └─ Interaction: 'ticket-close-with-reason', 'tkt-close-reason-submit', 'ticket-claim' (Staff Facing)",
+	);
+
 	return summary;
 };
 

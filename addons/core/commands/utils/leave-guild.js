@@ -80,7 +80,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { kythiaConfig, helpers } = container;
+		const { kythiaConfig, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 		const { client } = interaction;
 
@@ -187,7 +187,9 @@ module.exports = {
 
 					await new Promise((r) => setTimeout(r, 1000));
 				} catch (e) {
-					console.error(`Failed to cleanup guild ${guild.name}:`, e);
+					logger.error(`Failed to cleanup guild ${guild.name}:`, e, {
+						label: 'core:utils:leave-guild',
+					});
 					errorCount++;
 				}
 			}

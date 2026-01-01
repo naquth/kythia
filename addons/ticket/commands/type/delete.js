@@ -46,7 +46,7 @@ module.exports = {
 	},
 
 	async execute(interaction, container) {
-		const { models, t, helpers } = container;
+		const { models, t, helpers, logger } = container;
 		const { TicketConfig } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -81,7 +81,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error deleting ticket type:', error);
+			logger.error('Error deleting ticket type:', error, { label: 'ticket' });
 			const desc = await t(interaction, 'ticket.errors.generic');
 			await interaction.editReply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

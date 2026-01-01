@@ -18,7 +18,7 @@ const {
 const { MessageFlags } = require('discord.js');
 
 const { PassThrough } = require('node:stream');
-const NexusClient = require('../utils/VoiceClient');
+const KythiaRelayClient = require('../utils/VoiceClient');
 
 const nexusInstances = new Map();
 
@@ -36,7 +36,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, helpers, kythiaConfig } = container;
+		const { t, helpers, kythiaConfig, logger } = container;
 		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
@@ -67,7 +67,7 @@ module.exports = {
 		if (!nexus) {
 			const apiUrl = kythiaConfig.addons.globalvoice.apiUrl;
 			const apiKey = kythiaConfig.addons.globalvoice.apiKey;
-			nexus = new NexusClient(apiUrl, 'Kythia', apiKey);
+			nexus = new KythiaRelayClient(container, apiUrl, 'Kythia', apiKey);
 
 			nexus.connect();
 			nexusInstances.set(interaction.guildId, nexus);
@@ -110,7 +110,9 @@ module.exports = {
 			});
 
 			audioStream.on('error', (err) => {
-				console.error(`[AudioStream Error ${userId}]`, err.message);
+				logger.error(`[AudioStream Error ${userId}]`, err.message, {
+					label: 'globalvoice:connect',
+				});
 				speakingUsers.delete(userId);
 			});
 		});
@@ -129,7 +131,9 @@ module.exports = {
 
 			audioPassthrough.on('error', (err) => {
 				if (err.code === 'ERR_STREAM_DESTROYED') return;
-				console.error('[Stream Error]', err.message);
+				logger.error('[Stream Error]', err.message, {
+					label: 'globalvoice:connect',
+				});
 			});
 
 			const resource = createAudioResource(audioPassthrough, {
@@ -139,7 +143,9 @@ module.exports = {
 			try {
 				player.play(resource);
 			} catch (error) {
-				console.error('[Player Play Error]', error.message);
+				logger.error('[Player Play Error]', error.message, {
+					label: 'globalvoice:connect',
+				});
 
 				setTimeout(playStream, 1000);
 			}
@@ -152,7 +158,9 @@ module.exports = {
 		});
 
 		player.on('error', (error) => {
-			console.error('[Player Error]', error.message);
+			logger.error('[Player Error]', error.message, {
+				label: 'globalvoice:connect',
+			});
 			playStream();
 		});
 

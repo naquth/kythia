@@ -1,0 +1,112 @@
+/**
+ * @namespace: addons/core/events/messageReactionRemove.js
+ * @type: Event Handler
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const {
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
+const Sentry = require('@sentry/node');
+
+module.exports = async (bot, reaction, user) => {
+	const container = bot.client.container;
+	const { helpers, models, logger, t } = container;
+	const { convertColor } = helpers.color;
+	const { ServerSetting } = models;
+	const guildId = reaction.message.guild?.id;
+
+	try {
+		// Handle partials
+		if (reaction.partial) {
+			try {
+				await reaction.fetch();
+			} catch (error) {
+				logger.error(error, { label: 'messageReactionRemove:fetchMessage' });
+				return;
+			}
+		}
+		if (user.partial) {
+			try {
+				await user.fetch();
+			} catch (error) {
+				logger.error(error, { label: 'messageReactionRemove:fetchUser' });
+				return;
+			}
+		}
+
+		if (user.bot) return; // Ignore bots
+		const message = reaction.message;
+		if (!message.guild) return; // Ignore DMs
+
+		// Get audit log settings
+		const settings = await ServerSetting.getCache({
+			guildId: message.guild.id,
+		});
+		if (!settings || !settings.auditLogChannelId) return;
+
+		const logChannel = await message.guild.channels
+			.fetch(settings.auditLogChannelId)
+			.catch(() => null);
+		if (!logChannel || !logChannel.isTextBased()) return;
+
+		const emojiDisplay = reaction.emoji.id
+			? `<:${reaction.emoji.name}:${reaction.emoji.id}>`
+			: reaction.emoji.name;
+
+		const components = [
+			new ContainerBuilder()
+				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`😟 **Reaction Removed** in <#${message.channelId}>\n\n` +
+							`**User:** ${user.tag} (<@${user.id}>)\n` +
+							`**Emoji:** ${emojiDisplay}\n` +
+							`**Message:** [Jump to Message](${message.url})`,
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`👤 **User:** ${user.tag} (${user.id})\n` +
+							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
+				),
+		];
+
+		await logChannel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: {
+				parse: [],
+			},
+		});
+	} catch (err) {
+		logger.error(err, { label: 'messageReactionRemove' });
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
+	}
+};

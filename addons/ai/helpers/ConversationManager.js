@@ -119,9 +119,6 @@ class ConversationManager {
 		for (const [userId, conv] of this.cache.entries()) {
 			if (now - conv.lastActive > this.cacheTimeout) {
 				this.cache.delete(userId);
-				console.warn(
-					`[ConversationManager] Removed stale conversation for ${userId}`,
-				);
 			}
 		}
 	}

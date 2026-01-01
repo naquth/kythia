@@ -44,7 +44,6 @@ module.exports = {
 			guildId: interaction.guild.id,
 		});
 
-		// Handle User Baru
 		if (!user) {
 			user = await User.create({
 				userId: targetUser.id,
@@ -53,7 +52,6 @@ module.exports = {
 				level: 1,
 			});
 
-			// Tampilkan pesan "Profile Created" pake Container sederhana
 			const title = `## ${await t(interaction, 'leveling.profile.leveling.profile.created.title')}`;
 			const desc = await t(
 				interaction,
@@ -92,19 +90,13 @@ module.exports = {
 			});
 		}
 
-		// 🎨 Generate profile card dengan kythia-arts (Direct - No Helper!)
 		const imageName = 'level-profile.png';
 
-		// Get member untuk presence status
-		const member = interaction.guild.members.cache.get(targetUser.id);
-
-		// 🎨 kythia-arts Configuration (Mudah diutak-atik!)
 		const buffer = await profileImage(targetUser.id, {
-			// botToken: kythiaConfig.bot.token,
 			customWidth: 1024,
 			customHeight: 450,
-			customTag: `Level ${user.level}`, // Text di bawah username
-			customSubtitle: `XP Progress`, // Text paling bawah
+			customTag: `Level ${user.level}`,
+			customSubtitle: `XP Progress`,
 
 			customBackground: kythiaConfig.addons.leveling.backgroundUrl || null,
 
@@ -118,23 +110,18 @@ module.exports = {
 				level: user.level,
 				barColor: kythiaConfig.bot.color || '#5865F2',
 				levelColor: kythiaConfig.bot.color || '#5865F2',
-				// autoColorRank: true, // Gold/Silver/Bronze untuk rank 1-3
 			},
 
 			customFont: 'BagelFatOne-Regular',
 			fontWeight: 'normal',
-			// ⚙️ Options
-			badgesFrame: false, // Frame di belakang badges
-			// presenceStatus: member?.presence?.status || 'offline', // online/idle/dnd/offline
-			disabledBadges: false, // Disable badges
-			squareAvatar: false, // false = circle, true = square
-			moreBackgroundBlur: false, // Triple background blur
-			// backgroundBrightness: 100, // 1-100%
-			// customDate: 'Kythia',
-			// hideDate: true,
+
+			badgesFrame: false,
+
+			disabledBadges: false,
+			squareAvatar: false,
+			moreBackgroundBlur: false,
 		});
 
-		// 🔥 BUILD PROFILE CONTAINER
 		const botColor = convertColor(kythiaConfig.bot.color, {
 			from: 'hex',
 			to: 'decimal',
@@ -158,22 +145,22 @@ module.exports = {
 
 		const profileContainer = new ContainerBuilder()
 			.setAccentColor(botColor)
-			// Header
+
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(titleText))
 			.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setSpacing(SeparatorSpacingSize.Small)
 					.setDivider(true),
 			)
-			// Stats
+
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(descText))
-			// Image
+
 			.addMediaGalleryComponents(
 				new MediaGalleryBuilder().addItems([
 					new MediaGalleryItemBuilder().setURL(`attachment://${imageName}`),
 				]),
 			)
-			// Footer
+
 			.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setSpacing(SeparatorSpacingSize.Small)
@@ -183,7 +170,6 @@ module.exports = {
 				new TextDisplayBuilder().setContent(footerText),
 			);
 
-		// Kirim Reply dengan Attachment
 		await interaction.editReply({
 			components: [profileContainer],
 			files: [{ attachment: buffer, name: imageName }],

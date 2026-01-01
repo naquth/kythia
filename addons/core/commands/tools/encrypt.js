@@ -57,48 +57,32 @@ module.exports = {
 			});
 		}
 
-		try {
-			const iv = crypto.randomBytes(IV_LENGTH);
+		const iv = crypto.randomBytes(IV_LENGTH);
 
-			const cipher = crypto.createCipheriv(
-				ALGORITHM,
-				Buffer.from(secretKey),
-				iv,
-			);
+		const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(secretKey), iv);
 
-			let encrypted = cipher.update(text, 'utf8', 'hex');
-			encrypted += cipher.final('hex');
+		let encrypted = cipher.update(text, 'utf8', 'hex');
+		encrypted += cipher.final('hex');
 
-			const authTag = cipher.getAuthTag();
+		const authTag = cipher.getAuthTag();
 
-			const encryptedData = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+		const encryptedData = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
 
-			const description =
-				(await t(interaction, 'core.tools.encrypt.embed.desc')) +
-				'\n\n' +
-				`**${await t(interaction, 'core.tools.encrypt.secret.key.used')}:**\n\`\`\`${'*'.repeat(32)}\`\`\`\n\n` +
-				`**${await t(interaction, 'core.tools.encrypt.encrypted.data')}:**\n\`\`\`${encryptedData}\`\`\``;
+		const description =
+			(await t(interaction, 'core.tools.encrypt.embed.desc')) +
+			'\n\n' +
+			`**${await t(interaction, 'core.tools.encrypt.secret.key.used')}:**\n\`\`\`${'*'.repeat(32)}\`\`\`\n\n` +
+			`**${await t(interaction, 'core.tools.encrypt.encrypted.data')}:**\n\`\`\`${encryptedData}\`\`\``;
 
-			const components = await createContainer(interaction, {
-				title: await t(interaction, 'core.tools.encrypt.success'),
-				description,
-				color: kythiaConfig.bot.color,
-			});
+		const components = await createContainer(interaction, {
+			title: await t(interaction, 'core.tools.encrypt.success'),
+			description,
+			color: kythiaConfig.bot.color,
+		});
 
-			await interaction.editReply({
-				components,
-				flags: MessageFlags.IsComponentsV2,
-			});
-		} catch (error) {
-			console.error(error);
-			const components = await createContainer(interaction, {
-				description: await t(interaction, 'core.tools.encrypt.error'),
-				color: 'Red',
-			});
-			await interaction.editReply({
-				components,
-				flags: MessageFlags.IsComponentsV2,
-			});
-		}
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 	},
 };

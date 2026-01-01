@@ -26,7 +26,7 @@ module.exports = {
 			.setDescription('Get the transcript of the ticket.'),
 
 	async execute(interaction, container) {
-		const { models, t, kythiaConfig, helpers } = container;
+		const { models, t, kythiaConfig, helpers, logger } = container;
 		const { Ticket, TicketConfig } = models;
 		const { convertColor } = helpers.color;
 		const { simpleContainer, getChannelSafe } = helpers.discord;
@@ -159,7 +159,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			console.error('Failed to create transcript:', error);
+			logger.error('Failed to create transcript:', error, { label: 'ticket' });
 			const desc = await t(interaction, 'ticket.errors.transcript_failed');
 			return interaction.reply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

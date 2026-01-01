@@ -199,7 +199,7 @@ async function updateProgress(interaction, progress) {
 	const container = interaction.client.container;
 	const { kythiaConfig, t, helpers } = container;
 	const { simpleContainer } = helpers.discord;
-	let components;
+
 	const percent =
 		progress.total > 0
 			? Math.floor((progress.current / progress.total) * 100)
@@ -208,7 +208,7 @@ async function updateProgress(interaction, progress) {
 	const filledLength = Math.round((percent / 100) * barLength);
 	const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
 
-	components = await simpleContainer(
+	const components = await simpleContainer(
 		interaction,
 		`## ${await t(interaction, 'server.server.progress.title')}\n` +
 			`**${progress.label}**\n` +

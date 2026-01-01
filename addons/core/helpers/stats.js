@@ -339,8 +339,7 @@ async function safeResolvePlaceholder(member, text, statsData, fallback = '') {
 		}
 		if (result == null) return fallback;
 		return result;
-	} catch (err) {
-		console.error('Error in resolvePlaceholders for banner text:', err);
+	} catch (_e) {
 		return fallback;
 	}
 }

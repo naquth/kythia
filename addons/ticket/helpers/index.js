@@ -57,7 +57,7 @@ function getSafeEmoji(emoji, fallback = '🎫') {
  */
 
 async function refreshTicketPanel(panelMessageId, container) {
-	const { models, kythiaConfig, helpers, t } = container;
+	const { models, kythiaConfig, helpers, t, logger } = container;
 	const { TicketPanel, TicketConfig } = models;
 	const { convertColor } = helpers.color;
 	const fakeInteraction = { client: container.client };
@@ -179,7 +179,9 @@ async function refreshTicketPanel(panelMessageId, container) {
 			flags: MessageFlags.IsComponentsV2,
 		});
 	} catch (error) {
-		console.error(`🔴 REFRESH PANEL FAILED (${panelMessageId}):`, error);
+		logger.error(`REFRESH PANEL FAILED (${panelMessageId}):`, error, {
+			label: 'core:helpers:ticket:refresh-ticket-panel',
+		});
 	}
 }
 
@@ -195,7 +197,7 @@ async function createTicketChannel(
 	container,
 	reason = null,
 ) {
-	const { models, t, kythiaConfig, helpers } = container;
+	const { models, t, kythiaConfig, helpers, logger } = container;
 	const { Ticket } = models;
 	const { simpleContainer } = helpers.discord;
 	const { convertColor } = helpers.color;
@@ -356,7 +358,9 @@ async function createTicketChannel(
 			flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 		});
 	} catch (error) {
-		console.error('Error in createTicketChannel helper:', error);
+		logger.error('Error in createTicketChannel helper:', error, {
+			label: 'core:helpers:ticket:create-ticket-channel',
+		});
 
 		const descError = await t(interaction, 'ticket.errors.create_failed');
 		if (interaction.replied || interaction.deferred) {
@@ -460,7 +464,7 @@ async function createTicketTranscript(channel, container) {
  * @param {string | null} reason - The reason for closing (jika ada)
  */
 async function closeTicket(interaction, container, reason = null) {
-	const { models, t, helpers, kythiaConfig } = container;
+	const { models, t, helpers, kythiaConfig, logger } = container;
 	const { Ticket, TicketConfig } = models;
 	const { simpleContainer, getChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
@@ -625,7 +629,9 @@ async function closeTicket(interaction, container, reason = null) {
 
 		await interaction.channel.delete();
 	} catch (error) {
-		console.error('Failed to close ticket:', error);
+		logger.error('Failed to close ticket:', error, {
+			label: 'core:helpers:ticket:close-ticket',
+		});
 
 		const descError = await t(interaction, 'ticket.errors.close_failed');
 		if (!interaction.replied && !interaction.deferred) {

@@ -18,7 +18,7 @@ const {
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { t, helpers } = container;
+		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 		const originalMessageId = interaction.message.id;
 
@@ -70,7 +70,9 @@ module.exports = {
 
 			await interaction.showModal(modal);
 		} catch (error) {
-			console.error('Error in tkt-panel-modal-show handler:', error);
+			logger.error('Error in tkt-panel-modal-show handler:', error, {
+				label: 'ticket',
+			});
 			if (!interaction.replied && !interaction.deferred) {
 				const desc = await t(
 					interaction,

@@ -33,7 +33,7 @@ module.exports = {
 					.setRequired(true),
 			),
 	async execute(interaction, container) {
-		const { t, models, kythiaConfig, helpers } = container;
+		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { KythiaUser } = models;
 		const { simpleContainer, createContainer } = helpers.discord;
 
@@ -205,7 +205,9 @@ module.exports = {
 				}
 			});
 		} catch (error) {
-			console.error('Error during transfer command execution:', error);
+			logger.error('Error during transfer command execution:', error, {
+				label: 'economy:transfer',
+			});
 			const msg = await t(interaction, 'economy.transfer.transfer.error');
 			const components = await simpleContainer(interaction, msg, {
 				color: kythiaConfig.bot.color,

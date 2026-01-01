@@ -18,7 +18,7 @@ const {
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { t, helpers, models, kythiaConfig } = container;
+		const { t, helpers, models, kythiaConfig, logger } = container;
 		const { convertColor } = helpers.color;
 		const { simpleContainer } = helpers.discord;
 		const { TicketPanel } = models;
@@ -148,7 +148,9 @@ module.exports = {
 				components: successContainer,
 			});
 		} catch (error) {
-			console.error('Error in tkt-panel-create modal handler:', error);
+			logger.error('Error in tkt-panel-create modal handler:', error, {
+				label: 'core:modals:tkt-panel-create',
+			});
 			const desc = await t(interaction, 'ticket.errors.generic');
 
 			await interaction.followUp({

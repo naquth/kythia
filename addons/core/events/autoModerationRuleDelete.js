@@ -14,17 +14,19 @@ const {
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
+const { Sentry } = require('@sentry/node');
 
 module.exports = async (bot, autoModerationRule) => {
 	if (!autoModerationRule.guild) return;
 	const container = bot.client.container;
-	const { models, helpers } = container;
+	const { models, helpers, logger, t } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
 
+	const guildId = autoModerationRule.guild.id;
 	try {
 		const settings = await ServerSetting.getCache({
-			guildId: autoModerationRule.guild.id,
+			guildId,
 		});
 		if (!settings || !settings.auditLogChannelId) return;
 
@@ -68,6 +70,18 @@ module.exports = async (bot, autoModerationRule) => {
 						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
 							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
 				),
 		];
 
@@ -79,6 +93,9 @@ module.exports = async (bot, autoModerationRule) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in autoModerationRuleDelete audit log:', err);
+		logger.error(err, { label: 'autoModerationRuleDelete' });
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

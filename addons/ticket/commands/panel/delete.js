@@ -48,7 +48,7 @@ module.exports = {
 	},
 
 	async execute(interaction, container) {
-		const { models, t, helpers } = container;
+		const { models, t, helpers, logger } = container;
 		const { TicketPanel, TicketConfig } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -78,9 +78,10 @@ module.exports = {
 					if (message) await message.delete();
 				}
 			} catch (e) {
-				console.warn(
+				logger.warn(
 					`Failed to delete panel message ${panelMessageId}:`,
 					e.message,
+					{ label: 'ticket' },
 				);
 			}
 
@@ -103,7 +104,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error deleting panel:', error);
+			logger.error('Error deleting panel:', error, { label: 'ticket' });
 			const desc = await t(interaction, 'ticket.errors.generic');
 			await interaction.editReply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

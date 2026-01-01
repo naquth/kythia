@@ -11,7 +11,7 @@ const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { models, t, helpers } = container;
+		const { models, t, helpers, logger } = container;
 		const { TicketConfig } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -32,7 +32,9 @@ module.exports = {
 
 			await createTicketChannel(interaction, ticketConfig, container, reason);
 		} catch (error) {
-			console.error('Error di tkt-open-reason handler:', error);
+			logger.error('Error in tkt-open-reason handler:', error, {
+				label: 'core:modals:tkt-open-reason',
+			});
 			const descError = await t(interaction, 'ticket.errors.create_failed');
 			if (interaction.replied || interaction.deferred) {
 				await interaction.followUp({

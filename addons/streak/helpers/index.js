@@ -34,7 +34,6 @@ async function updateNickname(
 	} catch (_e) {}
 
 	if (!fetchedMember.manageable) {
-		console.log(`Bot cant change nickname: ${fetchedMember.user.username}`);
 		return;
 	}
 	try {
@@ -54,12 +53,7 @@ async function updateNickname(
 		if (fetchedMember.displayName !== newNickname) {
 			await fetchedMember.setNickname(newNickname);
 		}
-	} catch (error) {
-		console.error(
-			`Failed to update ${fetchedMember.user.username} username:`,
-			error,
-		);
-	}
+	} catch (_e) {}
 }
 
 function getTodayDateString() {
@@ -79,8 +73,7 @@ async function syncStreakRoles(member, streakCount, streakRoleRewards) {
 	let fetchedMember;
 	try {
 		fetchedMember = await member.guild.members.fetch(member.id);
-	} catch (error) {
-		console.error(`Failed to fetch member ${member.id}:`, error);
+	} catch (_e) {
 		return [];
 	}
 
@@ -113,9 +106,7 @@ async function syncStreakRoles(member, streakCount, streakRoleRewards) {
 				`Streak reward: reached ${streakCount} days`,
 			);
 			rolesGiven.push(...toAdd);
-		} catch (error) {
-			console.error(`Failed to add roles to ${member.id}:`, error);
-		}
+		} catch (_e) {}
 	}
 
 	if (toRemove.length > 0) {
@@ -124,9 +115,7 @@ async function syncStreakRoles(member, streakCount, streakRoleRewards) {
 				toRemove,
 				`Streak loss/reset: current streak ${streakCount} days`,
 			);
-		} catch (error) {
-			console.error(`Failed to remove roles from ${member.id}:`, error);
-		}
+		} catch (_e) {}
 	}
 
 	return rolesGiven;

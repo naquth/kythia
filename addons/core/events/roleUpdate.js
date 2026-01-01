@@ -14,6 +14,7 @@ const {
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 function formatChanges(changes) {
 	if (!changes || changes.length === 0) return 'No changes detected.';
@@ -33,9 +34,10 @@ function formatChanges(changes) {
 module.exports = async (bot, _oldRole, newRole) => {
 	if (!newRole.guild) return;
 	const container = bot.client.container;
-	const { models, helpers } = container;
+	const { models, helpers, logger, t } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
+	const guildId = newRole.guild.id;
 
 	try {
 		const settings = await ServerSetting.getCache({
@@ -84,6 +86,18 @@ module.exports = async (bot, _oldRole, newRole) => {
 						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
 							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
 				),
 		];
 
@@ -95,6 +109,9 @@ module.exports = async (bot, _oldRole, newRole) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in guildRoleUpdate audit log:', err);
+		logger.error(err, { label: 'roleUpdate' });
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

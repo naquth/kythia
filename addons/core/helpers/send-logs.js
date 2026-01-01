@@ -14,7 +14,7 @@ async function sendLogsWarning(
 	userId = message.author.id,
 ) {
 	const container = message.client.container;
-	const { t, helpers, models } = container;
+	const { t, helpers, models, logger } = container;
 	const { getTextChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
 	const { ModLog } = models;
@@ -53,12 +53,17 @@ async function sendLogsWarning(
 		};
 		await message.author.send({ embeds: [dmEmbed] }).catch(() => {
 			// Optionally log DM failure
-			console.warn(
+			logger.warn(
 				`Failed to send DM to ${message.author.tag}. DMs may be disabled.`,
+				{
+					label: 'core:helpers:send-logs',
+				},
 			);
 		});
 	} catch (dmError) {
-		console.error(`Failed to send DM to ${message.author.tag}:`, dmError);
+		logger.error(`Failed to send DM to ${message.author.tag}:`, dmError, {
+			label: 'core:helpers:send-logs',
+		});
 	}
 
 	// Log the action to the moderation log database
@@ -73,11 +78,16 @@ async function sendLogsWarning(
 			reason: reason,
 			channelId: message.channel.id,
 		});
-		console.log(
-			`[DB LOG] Automod log for user ${message.author.tag} saved successfully.`,
+		logger.info(
+			`Automod log for user ${message.author.tag} saved successfully.`,
+			{
+				label: 'core:helpers:send-logs',
+			},
 		);
 	} catch (dbError) {
-		console.error('Failed to save moderation log to database:', dbError);
+		logger.error('Failed to save moderation log to database:', dbError, {
+			label: 'core:helpers:send-logs',
+		});
 	}
 
 	// Send a log embed to the moderation log channel, if configured
@@ -121,7 +131,11 @@ async function sendLogsWarning(
 			},
 		};
 
-		logChannel.send({ embeds: [embed] }).catch(console.error);
+		logChannel.send({ embeds: [embed] }).catch((e) => {
+			logger.error('Failed to send log embed to moderation log channel:', e, {
+				label: 'core:helpers:send-logs',
+			});
+		});
 	}
 }
 

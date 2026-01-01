@@ -13,14 +13,16 @@ const {
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 const { automodSystem } = require('../helpers/automod');
 
 module.exports = async (bot, oldMessage, newMessage) => {
 	const container = bot.client.container;
-	const { helpers, models } = container;
+	const { helpers, models, logger, t } = container;
 	const { isOwner } = helpers.discord;
 	const { convertColor } = helpers.color;
 	const { ServerSetting } = models;
+	const guildId = newMessage.guild?.id;
 
 	try {
 		const client = bot.client;
@@ -87,6 +89,18 @@ module.exports = async (bot, oldMessage, newMessage) => {
 							`📝 **Message ID:** ${newMessage.id}\n` +
 							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
 				),
 		];
 
@@ -98,6 +112,9 @@ module.exports = async (bot, oldMessage, newMessage) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error in messageUpdate event handler:', err);
+		logger.error(err, { label: 'messageUpdate' });
+		if (bot.config?.sentry?.dsn) {
+			Sentry.captureException(err);
+		}
 	}
 };

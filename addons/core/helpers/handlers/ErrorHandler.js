@@ -71,17 +71,12 @@ class ErrorHandler {
 					}
 					Sentry.captureException(error);
 				});
-			} catch (err) {
-				console.error(
-					'Failed to send error to Sentry from messageCreate:',
-					err,
-				);
-			}
+			} catch (_e) {}
 		}
 	}
 
 	async sendUserError(message, container) {
-		const { kythiaConfig, t, helpers } = container;
+		const { kythiaConfig, t, helpers, logger } = container;
 		const { convertColor } = helpers.color;
 
 		try {
@@ -136,7 +131,9 @@ class ErrorHandler {
 					.catch(() => {});
 			}
 		} catch (e) {
-			console.error('Failed to send messageCreate error message to user:', e);
+			logger.error('Failed to send messageCreate error message to user:', e, {
+				label: 'core:helpers:handlers:ErrorHandler',
+			});
 		}
 	}
 

@@ -16,6 +16,7 @@ const {
 	MediaGalleryBuilder,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 const {
 	resolvePlaceholders,
@@ -26,7 +27,7 @@ const { welcomeBanner } = require('kythia-arts');
 module.exports = async (bot, member) => {
 	if (!member.guild) return;
 	const container = bot.client.container;
-	const { models, helpers, kythiaConfig } = container;
+	const { models, helpers, kythiaConfig, logger, t } = container;
 	const { ServerSetting } = models;
 	const { embedFooter, getTextChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
@@ -162,7 +163,10 @@ module.exports = async (bot, member) => {
 					type: 'goodbye',
 				});
 			} catch (e) {
-				console.error('[GuildMemberRemove] Failed to generate banner:', e);
+				logger.error(
+					`[GuildMemberRemove] Failed to generate banner: ${e.message}`,
+					{ label: 'guildMemberRemove:banner' },
+				);
 				goodbyeImage = null;
 			}
 
@@ -225,7 +229,10 @@ module.exports = async (bot, member) => {
 					flags: MessageFlags.IsComponentsV2,
 				})
 				.catch((err) =>
-					console.error('[GuildMemberRemove] Failed to send goodbye msg:', err),
+					logger.error(
+						`[GuildMemberRemove] Failed to send goodbye msg: ${err.message}`,
+						{ label: 'guildMemberRemove:send' },
+					),
 				);
 		}
 	}
@@ -278,6 +285,22 @@ module.exports = async (bot, member) => {
 									`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
 										`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 								),
+							)
+							.addSeparatorComponents(
+								new SeparatorBuilder()
+									.setSpacing(SeparatorSpacingSize.Small)
+									.setDivider(true),
+							)
+							.addTextDisplayComponents(
+								new TextDisplayBuilder().setContent(
+									await t(
+										{ guildId: member.guild.id },
+										'common.container.footer',
+										{
+											username: bot.client.user.username,
+										},
+									),
+								),
 							),
 					];
 
@@ -317,6 +340,22 @@ module.exports = async (bot, member) => {
 								`👤 **User:** ${member.user.tag}\n` +
 									`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 							),
+						)
+						.addSeparatorComponents(
+							new SeparatorBuilder()
+								.setSpacing(SeparatorSpacingSize.Small)
+								.setDivider(true),
+						)
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(
+								await t(
+									{ guildId: member.guild.id },
+									'common.container.footer',
+									{
+										username: bot.client.user.username,
+									},
+								),
+							),
 						),
 				];
 
@@ -328,7 +367,10 @@ module.exports = async (bot, member) => {
 					},
 				});
 			} catch (err) {
-				console.error('Error in guildMemberRemove audit log:', err);
+				logger.error(err, { label: 'guildMemberRemove' });
+				if (bot.config?.sentry?.dsn) {
+					Sentry.captureException(err);
+				}
 			}
 		}
 	}

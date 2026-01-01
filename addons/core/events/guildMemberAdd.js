@@ -21,10 +21,11 @@ const {
 	MediaGalleryItemBuilder,
 	MessageFlags,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 module.exports = async (bot, member) => {
 	const container = bot.client.container;
-	const { models, helpers, kythiaConfig } = container;
+	const { models, helpers, kythiaConfig, logger, t } = container;
 	const { ServerSetting, User } = models;
 	const { embedFooter, getTextChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
@@ -46,17 +47,19 @@ module.exports = async (bot, member) => {
 	if (!setting || !setting.welcomeInOn) return;
 
 	const channel = await getTextChannelSafe(guild, setting.welcomeInChannelId);
-	if (!channel) return console.log('Welcome channel not found');
+	if (!channel) return logger.info('Welcome channel not found');
 
 	if (setting.welcomeRoleId) {
 		try {
 			const welcomeRole = guild.roles.cache.get(setting.welcomeRoleId);
 			if (welcomeRole) {
 				await member.roles.add(welcomeRole);
-				console.log(`Added welcome role to ${member.user.tag}`);
+				logger.info(`Added welcome role to ${member.user.tag}`);
 			}
 		} catch (err) {
-			console.error(`Failed to add welcome role: ${err}`);
+			logger.error(`Failed to add welcome role: ${err}`, {
+				label: 'guildMemberAdd',
+			});
 		}
 	}
 
@@ -134,7 +137,9 @@ module.exports = async (bot, member) => {
 					welcomeText = `${member.user.username} has joined the server!`;
 				}
 			} catch (err) {
-				console.error('Error in resolvePlaceholders for welcomeInText:', err);
+				logger.error('Error in resolvePlaceholders for welcomeInText:', err, {
+					label: 'guildMemberAdd',
+				});
 				welcomeText = `${member.user.username} has joined the server!`;
 			}
 		}
@@ -292,6 +297,18 @@ module.exports = async (bot, member) => {
 								`👤 **User:** ${member.user.tag}\n` +
 									`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 							),
+						)
+						.addSeparatorComponents(
+							new SeparatorBuilder()
+								.setSpacing(SeparatorSpacingSize.Small)
+								.setDivider(true),
+						)
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(
+								await t({ guildId }, 'common.container.footer', {
+									username: bot.client.user.username,
+								}),
+							),
 						),
 				];
 
@@ -303,7 +320,10 @@ module.exports = async (bot, member) => {
 					},
 				});
 			} catch (err) {
-				console.error('Error in guildMemberAdd audit log:', err);
+				logger.error(err, { label: 'guildMemberAdd' });
+				if (bot.config?.sentry?.dsn) {
+					Sentry.captureException(err);
+				}
 			}
 		}
 	}

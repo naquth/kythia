@@ -17,7 +17,7 @@ const {
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { t, helpers, models } = container;
+		const { t, helpers, models, logger } = container;
 		const { simpleContainer, getTextChannelSafe } = helpers.discord;
 		const { TicketPanel } = models;
 
@@ -111,7 +111,9 @@ module.exports = {
 
 			await interaction.showModal(modal);
 		} catch (error) {
-			console.error('Error in tkt-type-step1-show handler:', error);
+			logger.error('Error in tkt-type-step1-show handler:', error, {
+				label: 'ticket',
+			});
 			if (!interaction.replied && !interaction.deferred) {
 				const desc = await t(interaction, 'ticket.errors.modal_show_failed');
 				await interaction.reply({

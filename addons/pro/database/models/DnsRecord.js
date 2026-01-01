@@ -11,6 +11,15 @@ const { KythiaModel } = require('kythia-core');
 class DnsRecord extends KythiaModel {
 	static guarded = [];
 
+	static associate(models) {
+		if (models.Subdomain) {
+			this.belongsTo(models.Subdomain, {
+				foreignKey: 'subdomainId',
+				as: 'subdomain',
+			});
+		}
+	}
+
 	static get structure() {
 		return {
 			options: { timestamps: false },

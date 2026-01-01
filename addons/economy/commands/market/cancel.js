@@ -22,7 +22,7 @@ module.exports = {
 			),
 
 	async execute(interaction, container) {
-		const { t, models, helpers } = container;
+		const { t, models, helpers, logger } = container;
 		const { KythiaUser, MarketPortfolio, MarketOrder } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -87,7 +87,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error in cancel order:', error);
+			logger.error('Error in cancel order:', error, {
+				label: 'core:commands:economy:market:cancel',
+			});
 			const msg = `## ${await t(interaction, 'economy.market.cancel.error.title')}\n${await t(interaction, 'economy.market.cancel.error.desc')}`;
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',

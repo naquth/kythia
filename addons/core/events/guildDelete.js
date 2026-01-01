@@ -13,10 +13,11 @@ const {
 	SeparatorBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 module.exports = async (bot, guild) => {
 	const container = bot.client.container;
-	const { t, kythiaConfig, helpers } = container;
+	const { t, kythiaConfig, helpers, logger } = container;
 	const { convertColor } = helpers.color;
 
 	const webhookUrl = kythiaConfig.api.webhookGuildInviteLeave;
@@ -75,7 +76,12 @@ module.exports = async (bot, guild) => {
 				body: JSON.stringify(payload),
 			});
 		} catch (err) {
-			console.error('Failed to send guild delete webhook:', err);
+			logger.error(`Failed to send guild delete webhook: ${err.message}`, {
+				label: 'guildDelete:webhook',
+			});
+			if (bot.config?.sentry?.dsn) {
+				Sentry.captureException(err);
+			}
 		}
 	}
 };

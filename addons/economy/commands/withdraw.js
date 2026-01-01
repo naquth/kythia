@@ -22,7 +22,7 @@ module.exports = {
 					.setRequired(true),
 			),
 	async execute(interaction, container) {
-		const { t, models, kythiaConfig, helpers } = container;
+		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { KythiaUser } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -82,7 +82,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error during withdraw command execution:', error);
+			logger.error('Error during withdraw command execution:', error, {
+				label: 'economy:withdraw',
+			});
 			const msg = await t(interaction, 'economy.withdraw.withdraw.error');
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',

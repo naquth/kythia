@@ -41,7 +41,7 @@ module.exports = {
 			),
 
 	async execute(interaction, container) {
-		const { t, models, kythiaConfig, helpers } = container;
+		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { KythiaUser, MarketPortfolio, MarketOrder } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -105,7 +105,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error in stop-loss order:', error);
+			logger.error('Error in stop-loss order:', error, {
+				label: 'economy:market:stoploss',
+			});
 			const msg = `## ${await t(interaction, 'economy.market.order.error.title')}\n${await t(interaction, 'economy.market.order.error.desc')}`;
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',

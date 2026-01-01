@@ -41,6 +41,8 @@ function getEventScenarios(eventName) {
  */
 async function createMockEventArgs(eventName, interaction, type = 'default') {
 	const { member, guild, channel, user, client } = interaction;
+	const container = client.container;
+	const { logger } = container;
 
 	switch (eventName) {
 		// Message events
@@ -427,8 +429,11 @@ async function createMockEventArgs(eventName, interaction, type = 'default') {
 
 		// Fallback for unsupported events
 		default:
-			console.warn(
-				`[Event Mock] Event '${eventName}' not explicitly supported, using basic mock.`,
+			logger.warn(
+				`Event '${eventName}' not explicitly supported, using basic mock.`,
+				{
+					label: 'core:helpers:events',
+				},
 			);
 			return [guild || channel || user || member || client];
 	}

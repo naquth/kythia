@@ -32,7 +32,8 @@
 				"noDoubleEquals": "error",
 				"noAsyncPromiseExecutor": "error",
 				"noVar": "error",
-				"useAwait": "warn"
+				"useAwait": "warn",
+				"noConsole": "warn"
 			},
 			"style": {
 				"useConst": "warn",

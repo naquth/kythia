@@ -19,7 +19,7 @@ const {
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { redis, kythiaConfig, t, helpers } = container;
+		const { redis, kythiaConfig, t, helpers, logger } = container;
 		const { convertColor } = helpers.color;
 		const { simpleContainer } = helpers.discord;
 
@@ -92,7 +92,9 @@ module.exports = {
 				components: components,
 			});
 		} catch (error) {
-			console.error('Error in tkt-type-step1-submit handler:', error);
+			logger.error('Error in tkt-type-step1-submit handler:', error, {
+				label: 'core:modals:tkt-type-step1-submit',
+			});
 			const desc = await t(interaction, 'ticket.errors.generic');
 			await interaction.followUp({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

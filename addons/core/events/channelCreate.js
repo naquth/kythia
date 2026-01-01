@@ -24,7 +24,7 @@ async function handleAntiNuke(bot, channel, entry) {
 	if (!entry || !entry.executor || entry.executor.bot) return;
 
 	const container = bot.client.container;
-	const { t, models } = container;
+	const { t, models, logger } = container;
 	const { ServerSetting } = models;
 
 	if (!bot.client.channelCreateTracker) {
@@ -80,10 +80,10 @@ async function handleAntiNuke(bot, channel, entry) {
 				await logChannel.send(message);
 			}
 		} catch (err) {
-			console.error(
-				`Failed to kick member for anti-nuke (channelCreate):`,
-				err,
-			);
+			logger.error(err, { label: 'channelCreate' });
+			if (bot.config?.sentry?.dsn) {
+				Sentry.captureException(err);
+			}
 		}
 
 		userData.count = 0;
@@ -94,9 +94,11 @@ async function handleAntiNuke(bot, channel, entry) {
 module.exports = async (bot, channel) => {
 	if (!channel.guild) return;
 	const container = bot.client.container;
-	const { models, helpers } = container;
+	const { models, helpers, t, logger } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
+
+	const guildId = channel.guild.id;
 
 	try {
 		const audit = await channel.guild.fetchAuditLogs({
@@ -120,7 +122,7 @@ module.exports = async (bot, channel) => {
 		await handleAntiNuke(bot, channel, entry);
 
 		const settings = await ServerSetting.getCache({
-			guildId: channel.guild.id,
+			guildId,
 		});
 		if (!settings || !settings.auditLogChannelId) return;
 
@@ -172,6 +174,18 @@ module.exports = async (bot, channel) => {
 						`👤 **Executor:** ${executor?.tag || 'Unknown'} (${executor?.id || 'Unknown'})\n` +
 							`🕒 **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
 					),
+				)
+				.addSeparatorComponents(
+					new SeparatorBuilder()
+						.setSpacing(SeparatorSpacingSize.Small)
+						.setDivider(true),
+				)
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						await t({ guildId }, 'common.container.footer', {
+							username: bot.client.user.username,
+						}),
+					),
 				),
 		];
 
@@ -183,7 +197,7 @@ module.exports = async (bot, channel) => {
 			},
 		});
 	} catch (err) {
-		console.error('Error fetching audit logs for channelCreate:', err);
+		logger.error(err, { label: 'channelCreate' });
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

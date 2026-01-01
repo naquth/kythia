@@ -9,14 +9,16 @@
 const WebSocket = require('ws');
 const { EventEmitter } = require('node:events');
 
-class NexusClient extends EventEmitter {
-	constructor(url, botName, apiKey) {
+class KythiaRelayClient extends EventEmitter {
+	constructor(container, url, botName, apiKey) {
 		super();
+		this.container = container;
 		this.url = url;
 		this.botName = botName;
 		this.apiKey = apiKey;
 		this.ws = null;
 		this.roomId = null;
+		this.logger = container.logger;
 	}
 
 	connect() {
@@ -28,7 +30,9 @@ class NexusClient extends EventEmitter {
 		this.ws = new WebSocket(this.url, { headers });
 
 		this.ws.on('open', () => {
-			console.log(`[Nexus] Connected to Core at ${this.url}`);
+			this.logger.info(`Relay Connected to Core at ${this.url}`, {
+				label: 'globalvoice:VoiceClient',
+			});
 			this.emit('ready');
 		});
 
@@ -36,13 +40,21 @@ class NexusClient extends EventEmitter {
 			if (isBinary) {
 				this.emit('audio', data);
 			} else {
-				console.log(`[Nexus] Msg: ${data.toString()}`);
+				this.logger.info(`Relay Msg: ${data.toString()}`, {
+					label: 'globalvoice:VoiceClient',
+				});
 			}
 		});
 
-		this.ws.on('error', (err) => console.error('[Nexus] Error:', err));
+		this.ws.on('error', (err) =>
+			this.logger.error('Relay Error:', err, {
+				label: 'globalvoice:VoiceClient',
+			}),
+		);
 		this.ws.on('close', () => {
-			console.log('[Nexus] Disconnected. Reconnecting...');
+			this.logger.info('Relay Disconnected. Reconnecting...', {
+				label: 'globalvoice:VoiceClient',
+			});
 
 			setTimeout(() => {
 				this.connect();
@@ -74,4 +86,4 @@ class NexusClient extends EventEmitter {
 	}
 }
 
-module.exports = NexusClient;
+module.exports = KythiaRelayClient;

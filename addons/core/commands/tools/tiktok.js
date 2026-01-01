@@ -25,7 +25,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, helpers } = container;
+		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 		const tiktokUrl = interaction.options.getString('link');
 
@@ -107,7 +107,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			console.error('TikTok fetch error:', err);
+			logger.error('TikTok fetch error:', err, { label: 'core:tools:tiktok' });
 			let title, desc;
 			if (err.message?.includes('No video found')) {
 				title = await t(interaction, 'core.tools.tiktok.error.no.video.title');

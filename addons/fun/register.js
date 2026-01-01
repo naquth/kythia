@@ -9,13 +9,9 @@ const marryButtonHandler = require('./buttons/marry.js');
 
 const initialize = (bot) => {
 	const summary = [];
-	try {
-		bot.registerButtonHandler('marry', marryButtonHandler.execute);
+	bot.registerButtonHandler('marry', marryButtonHandler.execute);
 
-		summary.push("  └─ Button: 'marry'");
-	} catch (error) {
-		console.error("Failed to register button handler 'marry':", error);
-	}
+	summary.push("  └─ Button: 'marry'");
 
 	return summary;
 };

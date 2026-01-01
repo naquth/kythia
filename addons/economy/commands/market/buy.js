@@ -35,7 +35,7 @@ module.exports = {
 			),
 
 	async execute(interaction, container) {
-		const { t, models, kythiaConfig, helpers } = container;
+		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { KythiaUser, MarketPortfolio, MarketTransaction } = models;
 		const { simpleContainer } = helpers.discord;
 
@@ -136,7 +136,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error during market buy:', error);
+			logger.error('Error during market buy:', error, {
+				label: 'core:commands:economy:market:buy',
+			});
 			const msg = `## ${await t(interaction, 'economy.market.buy.error.title')}\n${await t(interaction, 'economy.market.buy.error.desc')}`;
 			const components = await simpleContainer(interaction, msg, {
 				color: kythiaConfig.bot.color,

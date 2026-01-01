@@ -19,6 +19,7 @@ const {
 	ButtonStyle,
 	MessageFlags,
 } = require('discord.js');
+const Sentry = require('@sentry/node');
 
 async function getInviteLink(guild) {
 	if (guild.vanityURLCode) {
@@ -59,7 +60,7 @@ async function getInviteLink(guild) {
 
 module.exports = async (bot, guild) => {
 	const container = bot.client.container;
-	const { t, models, helpers, kythiaConfig } = container;
+	const { t, models, helpers, kythiaConfig, logger } = container;
 	const { ServerSetting } = models;
 
 	const { convertColor } = helpers.color;
@@ -74,7 +75,9 @@ module.exports = async (bot, guild) => {
 		},
 	});
 	if (created) {
-		console.log(`Default bot settings created for server: ${guild.name}`);
+		logger.info(`Default bot settings created for server: ${guild.name}`, {
+			label: 'guildCreate',
+		});
 	}
 
 	let ownerName = 'Unknown';
@@ -151,7 +154,12 @@ module.exports = async (bot, guild) => {
 				body: JSON.stringify(payload),
 			});
 		} catch (err) {
-			console.error('Failed to send guild create webhook:', err);
+			logger.error(`Failed to send guild create webhook: ${err.message}`, {
+				label: 'guildCreate:webhook',
+			});
+			if (bot.config?.sentry?.dsn) {
+				Sentry.captureException(err);
+			}
 		}
 	}
 
@@ -259,9 +267,13 @@ module.exports = async (bot, guild) => {
 					),
 				);
 			} catch (fallbackError) {
-				console.error(
+				logger.error(
 					`[guildCreate] Gagal kirim welcome message & fallback: ${fallbackError.message}`,
+					{ label: 'guildCreate:fallback' },
 				);
+				if (bot.config?.sentry?.dsn) {
+					Sentry.captureException(fallbackError);
+				}
 			}
 		}
 	}

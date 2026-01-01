@@ -33,7 +33,7 @@ module.exports = {
 				.setRequired(true),
 		),
 	async execute(interaction, container) {
-		const { t } = container;
+		const { t, logger } = container;
 
 		await interaction.deferReply({ ephemeral: true });
 
@@ -90,9 +90,10 @@ module.exports = {
 					typeof response.data.obfuscated !== 'string' ||
 					!response.data.obfuscated.trim()
 				) {
-					console.error(
+					logger.error(
 						'Unexpected response from Lua obfuscator:',
 						response.data,
+						{ label: 'core:tools:obfuscate' },
 					);
 					return interaction.editReply({
 						content: await t(interaction, 'core.tools.obfuscate.failed.lua'),
@@ -105,8 +106,8 @@ module.exports = {
 					'--[[ obfuscated with kythia bot by kenndeclouv ]]',
 				);
 				filename = `${file.name.replace(/\.lua$/i, '')}.obf.lua`;
-			} catch (e) {
-				console.error(e);
+			} catch (error) {
+				logger.error(error, { label: 'core:tools:obfuscate' });
 				return interaction.editReply({
 					content: await t(interaction, 'core.tools.obfuscate.failed.lua'),
 					ephemeral: true,

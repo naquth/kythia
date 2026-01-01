@@ -96,7 +96,6 @@ module.exports = {
 			if (restartTimer) clearTimeout(restartTimer);
 
 			restartTimer = setTimeout(() => {
-				console.log('[Scheduler] Restarting system now...');
 				process.exit(0);
 			}, delayMs);
 
@@ -108,7 +107,7 @@ module.exports = {
 
 			scheduleContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
-					`⏱️ **Restart Scheduled**\n\nSystem will restart ${mode}.\nTarget: <t:${Math.floor(targetTime.getTime() / 1000)}:R>`,
+					`\`⏱️\` **Restart Scheduled**\n\nSystem will restart ${mode}.\nTarget: <t:${Math.floor(targetTime.getTime() / 1000)}:R>`,
 				),
 			);
 

@@ -157,6 +157,7 @@ try {
 
 	kythiaInstance.start();
 } catch (error) {
+	// biome-ignore lint/suspicious/noConsole: not initiate the logger
 	console.error('🔥 FATAL ERROR during initialization:', error);
 	process.exit(1);
 }

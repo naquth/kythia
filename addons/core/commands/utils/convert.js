@@ -130,7 +130,7 @@ function convertVolume(value, from, to) {
 }
 
 async function convertCurrency(container, amount, from, to) {
-	const { kythiaConfig } = container;
+	const { kythiaConfig, logger } = container;
 	const accessKey = kythiaConfig?.addons?.core?.exchangerateApi;
 	if (!accessKey) return null;
 
@@ -144,7 +144,7 @@ async function convertCurrency(container, amount, from, to) {
 		if (typeof data.result !== 'number') return null;
 		return data.result;
 	} catch (err) {
-		console.error('Currency API error:', err);
+		logger.error('Currency API error:', err, { label: 'core:utils:convert' });
 		return null;
 	}
 }
@@ -410,7 +410,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, helpers } = container;
+		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 
 		const sub = interaction.options.getSubcommand();
@@ -454,7 +454,9 @@ module.exports = {
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} catch (e) {
-				console.error('Currency convert error:', e);
+				logger.error('Currency convert error:', e, {
+					label: 'core:utils:convert',
+				});
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'core.utils.convert.currency.error'),

@@ -25,7 +25,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, helpers } = container;
+		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 
 		const instaUrl = interaction.options.getString('link');
@@ -152,7 +152,9 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			console.error('Instagram fetch error:', err, { label: 'tools' });
+			logger.error('Instagram fetch error:', err, {
+				label: 'core:tools:instagram',
+			});
 			let title, desc;
 			if (err.message?.includes('No media found')) {
 				title = await t(

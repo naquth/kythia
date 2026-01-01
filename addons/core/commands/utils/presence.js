@@ -161,7 +161,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, helpers } = container;
+		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
@@ -375,7 +375,9 @@ module.exports = {
 				}
 			}
 		} catch (error) {
-			console.error('Error setting presence:', error);
+			logger.error('Error setting presence:', error, {
+				label: 'core:utils:presence',
+			});
 			const components = await simpleContainer(
 				interaction,
 				`❌ Error: ${error.message}`,

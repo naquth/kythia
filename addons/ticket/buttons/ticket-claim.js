@@ -22,7 +22,7 @@ const {
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { models, t, helpers, kythiaConfig } = container;
+		const { models, t, helpers, kythiaConfig, logger } = container;
 		const { Ticket, TicketConfig } = models;
 		const { simpleContainer } = helpers.discord;
 		const { convertColor } = helpers.color;
@@ -177,7 +177,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			console.error('Error claiming ticket:', error);
+			logger.error('Error claiming ticket:', error, { label: 'ticket' });
 			const descError = await t(interaction, 'ticket.errors.generic');
 			await interaction.followUp({
 				components: await simpleContainer(interaction, descError, {

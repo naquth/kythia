@@ -12,4 +12,6 @@ module.exports = {
 		group
 			.setName('admin')
 			.setDescription('Administrative pet management commands.'),
+	mainGuild: true,
+	teamOnly: true,
 };

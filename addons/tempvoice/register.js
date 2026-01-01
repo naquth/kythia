@@ -47,8 +47,6 @@ const tv_invite_menu = require('./select_menus/tv_invite_menu');
 
 module.exports = {
 	async initialize(bot) {
-		const summary = [];
-
 		await bot.registerButtonHandler('tv_rename', tv_rename.execute);
 		await bot.registerButtonHandler('tv_limit', tv_limit.execute);
 		await bot.registerButtonHandler('tv_privacy', tv_privacy.execute);
@@ -72,16 +70,12 @@ module.exports = {
 
 		await bot.registerButtonHandler('tv_fix_config', tv_fix_config.execute);
 
-		summary.push(' └─ ✅ TempVoice Buttons registered.');
-
 		await bot.registerModalHandler('tv_rename_modal', tv_rename_modal.execute);
 		await bot.registerModalHandler('tv_limit_modal', tv_limit_modal.execute);
 		await bot.registerModalHandler(
 			'tv_fix_config_modal',
 			tv_fix_config_modal.execute,
 		);
-
-		summary.push(' └─ ✅ TempVoice Modals registered.');
 
 		await bot.registerSelectMenuHandler('tv_kick_menu', tv_kick_menu.execute);
 		await bot.registerSelectMenuHandler(
@@ -110,9 +104,5 @@ module.exports = {
 			'tv_invite_menu',
 			tv_invite_menu.execute,
 		);
-
-		summary.push(' └─ ✅ TempVoice Select Menus registered.');
-
-		return summary;
 	},
 };

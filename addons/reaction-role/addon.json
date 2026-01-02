@@ -1,0 +1,8 @@
+{
+	"name": "Reaction Role",
+	"featureName": "ReactionRole",
+	"featureFlag": "reactionRoleOn",
+	"version": "1.0.0",
+	"description": "Manage reaction roles for your server. Automatically assign roles when users react to messages.",
+	"author": "kenndeclouv"
+}

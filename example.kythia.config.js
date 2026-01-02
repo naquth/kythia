@@ -120,7 +120,7 @@ function loadKythiaConfig() {
 			totalShards: 'auto',
 
 			// guild id for main server
-			mainGuildId: '1375167975606452396',
+			mainGuildId: '',
 			// guild id for dev server
 			devGuildId: '',
 

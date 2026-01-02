@@ -7,7 +7,6 @@
  */
 
 const MONSTERS = [
-	// Level 1-2 (increased HP and strength)
 	{
 		name: 'Wild Dog',
 		nameKey: 'adventure.monsters.wild_dog',
@@ -59,7 +58,6 @@ const MONSTERS = [
 		maxLevel: 3,
 	},
 
-	// Level 3-4 (increased HP and strength)
 	{
 		name: 'Orc',
 		nameKey: 'adventure.monsters.orc',
@@ -111,7 +109,6 @@ const MONSTERS = [
 		maxLevel: 5,
 	},
 
-	// Level 5-6 (increased HP and strength)
 	{
 		name: 'Wyvern',
 		nameKey: 'adventure.monsters.wyvern',
@@ -163,7 +160,6 @@ const MONSTERS = [
 		maxLevel: 7,
 	},
 
-	// Level 7-8 (increased HP and strength)
 	{
 		name: 'Behemoth',
 		nameKey: 'adventure.monsters.behemoth',
@@ -215,7 +211,6 @@ const MONSTERS = [
 		maxLevel: 9,
 	},
 
-	// Level 9-10+ (increased HP and strength)
 	{
 		name: 'Dragon',
 		nameKey: 'adventure.monsters.dragon',

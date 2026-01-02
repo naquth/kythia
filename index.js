@@ -59,6 +59,7 @@ require('@dotenvx/dotenvx').config({ quiet: true }); // Loads ENV vars to proces
 const kythiaConfig = require('./kythia.config.js'); // Unified configuration object
 require('module-alias/register'); // Enables @src, @utils, etc. path aliases
 const { Kythia, KythiaModel, createSequelizeInstance } = require('kythia-core');
+const client = require('./src/client');
 
 // ===== 2. Load Core Helpers & Utilities with Meaningful Descriptions =====
 // const translator = require('@coreHelpers/translator'); // I18n (Internationalization) manager
@@ -110,6 +111,7 @@ KythiaModel.setDependencies({
  *  - [o] indicates optional
  */
 const dependencies = {
+	client,
 	config: kythiaConfig,
 	// translator: translator,
 	redis: KythiaModel.redis,

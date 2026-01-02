@@ -70,13 +70,12 @@ async function generateFactsContainer(
 	if (pageFacts.length === 0) {
 		listText = await t(interaction, 'ai.ai.facts.empty');
 	} else {
-		// Group facts by type with numbers
 		const UserFactsManager = require('../../helpers/UserFactsManager');
 		const grouped = {};
 
 		for (let i = 0; i < pageFacts.length; i++) {
 			const fact = pageFacts[i];
-			const factNumber = startIndex + i + 1; // Global fact number
+			const factNumber = startIndex + i + 1;
 			const label = UserFactsManager.typeLabels[fact.type] || 'Lainnya';
 			if (!grouped[label]) grouped[label] = [];
 			grouped[label].push({ number: factNumber, text: fact.fact });

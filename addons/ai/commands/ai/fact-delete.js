@@ -35,7 +35,6 @@ module.exports = {
 
 		const factNumber = interaction.options.getInteger('number');
 
-		// Get all user facts
 		const allFacts = await UserFact.getAllCache({
 			where: { userId: interaction.user.id },
 			order: [['createdAt', 'DESC']],
@@ -53,7 +52,6 @@ module.exports = {
 			});
 		}
 
-		// Check if fact number is valid
 		if (factNumber > allFacts.length) {
 			const msg = await t(interaction, 'ai.ai.fact_delete.invalid_number', {
 				max: allFacts.length,
@@ -67,13 +65,10 @@ module.exports = {
 			});
 		}
 
-		// Get the fact to delete (1-indexed to 0-indexed)
 		const factToDelete = allFacts[factNumber - 1];
 
-		// Delete the fact
 		await factToDelete.destroy();
 
-		// Invalidate cache
 		await UserFact.invalidateCache([`UserFact:byUser:${interaction.user.id}`]);
 
 		const msg = await t(interaction, 'ai.ai.fact_delete.success', {

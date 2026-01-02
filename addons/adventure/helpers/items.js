@@ -8,7 +8,6 @@
 
 const items = {
 	equipment: [
-		// --- Weapons (Common) ---
 		{
 			id: 'stick',
 			emoji: '🪵',
@@ -87,7 +86,6 @@ const items = {
 			stats: { attack: 4 },
 		},
 
-		// --- Weapons (Uncommon) ---
 		{
 			id: 'bronze_sword',
 			emoji: '🥉',
@@ -177,7 +175,6 @@ const items = {
 			stats: { attack: 18 },
 		},
 
-		// --- Weapons (Rare) ---
 		{
 			id: 'steel_sword',
 			emoji: '⚔️',
@@ -256,7 +253,6 @@ const items = {
 			stats: { attack: 30 },
 		},
 
-		// --- Weapons (Epic) ---
 		{
 			id: 'mithril_blade',
 			emoji: '✨',
@@ -313,7 +309,6 @@ const items = {
 			stats: { attack: 45 },
 		},
 
-		// --- Weapons (Legendary) ---
 		{
 			id: 'dragon_slayer',
 			emoji: '🐉',
@@ -359,7 +354,6 @@ const items = {
 			stats: { attack: 80 },
 		},
 
-		// --- Armor (Helmets) ---
 		{
 			id: 'leather_cap',
 			emoji: '🧢',
@@ -449,7 +443,6 @@ const items = {
 			stats: { defense: 30 },
 		},
 
-		// --- Armor (Body) ---
 		{
 			id: 'cloth_tunic',
 			emoji: '👕',
@@ -561,7 +554,6 @@ const items = {
 			stats: { defense: 70 },
 		},
 
-		// --- Shields ---
 		{
 			id: 'wooden_shield',
 			emoji: '🛡️',

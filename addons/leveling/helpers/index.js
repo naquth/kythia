@@ -21,12 +21,11 @@ const levelUpXp = (level) => level * level * 50;
 
 const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 	const { container } = message.client;
-	const { helpers, kythia, t, models, kythiaConfig, logger } = container;
+	const { helpers, t, models, kythiaConfig, logger } = container;
 	const { ServerSetting, User } = models;
 	const { getTextChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
 
-	// 1. Resolve Channel
 	if (!channel) {
 		const setting = await ServerSetting.getCache({ guildId: message.guild.id });
 		if (setting?.levelingChannelId) {
@@ -36,14 +35,12 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		}
 	}
 
-	// 2. Fetch User Data
 	let user = await User.getCache({ userId: userId, guildId: guildId });
 
 	if (!user) {
 		user = await User.create({ guildId, userId, xp: 0, level: 1 });
 	}
 
-	// 3. Logic XP & Level Up
 	user.xp = Number(BigInt(user.xp) + BigInt(xpToAdd));
 	let leveledUp = false;
 	const levelBefore = user.level;
@@ -60,7 +57,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 
 	if (!leveledUp) return;
 
-	// 4. Handle Rewards
 	const member = await helpers.discord.getMemberSafe(message.guild, userId);
 	const serverSetting = await ServerSetting.getCache({
 		guildId: message.guild.id,
@@ -86,7 +82,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		}
 	}
 
-	// 5. Generate Image (Level Up)
 	let buffer;
 	const imageName = 'level-up.png';
 	try {
@@ -120,13 +115,11 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		buffer = null;
 	}
 
-	// 6. 🔥 BUILD CONTAINER
-	const accentColor = convertColor(kythia.bot.color, {
+	const accentColor = convertColor(kythiaConfig.bot.color, {
 		from: 'hex',
 		to: 'decimal',
 	});
 
-	// String content
 	const titleText = `## ${await t(message, 'leveling.helpers.index.leveling.profile.up.title')}`;
 	const descText = await t(
 		message,
@@ -140,7 +133,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		},
 	);
 
-	// Mulai racik Container
 	const containerBuilder = new ContainerBuilder()
 		.setAccentColor(accentColor)
 		.addTextDisplayComponents(new TextDisplayBuilder().setContent(titleText))
@@ -151,7 +143,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		)
 		.addTextDisplayComponents(new TextDisplayBuilder().setContent(descText));
 
-	// Kalau ada Reward Role, tambahin sekat dan infonya
 	if (rewardRoleName && rewardLevel) {
 		const rewardTitle = `### ${await t(message, 'leveling.helpers.index.leveling.role.reward.title')}`;
 		const rewardDesc = await t(
@@ -178,7 +169,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 			);
 	}
 
-	// Kalau ada gambar, masukin sebagai FileComponent dalam container
 	if (buffer && (Buffer.isBuffer(buffer) || typeof buffer === 'string')) {
 		containerBuilder.addMediaGalleryComponents(
 			new MediaGalleryBuilder().addItems([
@@ -187,7 +177,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		);
 	}
 
-	// Footer cantik
 	const footerText = await t(message, 'common.container.footer', {
 		username: message.client.user.username,
 	});
@@ -200,14 +189,12 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		)
 		.addTextDisplayComponents(new TextDisplayBuilder().setContent(footerText));
 
-	// 7. Kirim Pesan
 	if (channel) {
 		const payload = {
 			content: message.author.toString(),
 			components: [containerBuilder],
 		};
 
-		// Attach file fisiknya kalau ada buffer
 		if (buffer && (Buffer.isBuffer(buffer) || typeof buffer === 'string')) {
 			payload.files = [{ attachment: buffer, name: imageName }];
 		}

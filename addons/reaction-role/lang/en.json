@@ -1,0 +1,14 @@
+{
+	"reaction-role": {
+		"invalid_link": "❌ invalid message link provided. Please make sure it's a valid link from this server.",
+		"invalid_guild": "❌ The message link is not from this server.",
+		"invalid_channel": "❌ Invalid channel or channel is not a text channel.",
+		"invalid_message": "❌ Could not find the message. It might have been deleted.",
+		"invalid_emoji": "❌ Failed to react with that emoji. Make sure I have access to it.",
+		"not_found": "❌ Could not find a reaction role configuration for that message and emoji.",
+		"list": {
+			"empty": "ℹ️ No reaction roles configured on this server.",
+			"title": "Reaction Roles Configuration"
+		}
+	}
+}

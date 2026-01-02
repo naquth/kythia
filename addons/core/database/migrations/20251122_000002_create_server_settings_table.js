@@ -9,13 +9,11 @@
 module.exports = {
 	async up(queryInterface, DataTypes) {
 		await queryInterface.createTable('server_settings', {
-			// GENERAL SETTING
 			guildId: { type: DataTypes.STRING, allowNull: false, primaryKey: true },
 			guildName: { type: DataTypes.STRING, allowNull: true },
 			lang: { type: DataTypes.STRING, defaultValue: 'en' },
 			prefix: { type: DataTypes.STRING, allowNull: true },
 
-			// AUTOMOD
 			whitelist: { type: DataTypes.JSON, defaultValue: [] },
 			badwords: { type: DataTypes.JSON, defaultValue: [] },
 			badwordWhitelist: { type: DataTypes.JSON, defaultValue: [] },
@@ -24,11 +22,9 @@ module.exports = {
 			modLogChannelId: { type: DataTypes.STRING },
 			auditLogChannelId: { type: DataTypes.STRING },
 
-			// SERVER STATS
 			serverStats: { type: DataTypes.JSON, defaultValue: [] },
 			serverStatsCategoryId: { type: DataTypes.STRING, allowNull: true },
 
-			// FEATURE ON/OFF
 			antiInviteOn: { type: DataTypes.BOOLEAN, defaultValue: false },
 			antiLinkOn: { type: DataTypes.BOOLEAN, defaultValue: false },
 			antiSpamOn: { type: DataTypes.BOOLEAN, defaultValue: false },
@@ -54,16 +50,13 @@ module.exports = {
 
 			boostLogOn: { type: DataTypes.BOOLEAN, defaultValue: false },
 
-			// LEVELING
-			// 1. XP Formula & Curve
 			levelingCurve: {
 				type: DataTypes.ENUM('linear', 'exponential', 'constant'),
 				defaultValue: 'linear',
 			},
-			levelingMultiplier: { type: DataTypes.FLOAT, defaultValue: 1.0 }, // Bisa koma (misal 1.5x)
-			levelingMaxLevel: { type: DataTypes.INTEGER, allowNull: true }, // Null = Unlimited
+			levelingMultiplier: { type: DataTypes.FLOAT, defaultValue: 1.0 },
+			levelingMaxLevel: { type: DataTypes.INTEGER, allowNull: true },
 
-			// 2. Message XP Config
 			messageXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
 			messageXpMode: {
 				type: DataTypes.ENUM('random', 'per_word', 'fixed'),
@@ -71,17 +64,15 @@ module.exports = {
 			},
 			messageXpMin: { type: DataTypes.INTEGER, defaultValue: 15 },
 			messageXpMax: { type: DataTypes.INTEGER, defaultValue: 25 },
-			messageXpCooldown: { type: DataTypes.INTEGER, defaultValue: 60 }, // Detik
+			messageXpCooldown: { type: DataTypes.INTEGER, defaultValue: 60 },
 
-			// 3. Voice XP Config
 			voiceXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
 			voiceXpMin: { type: DataTypes.INTEGER, defaultValue: 15 },
 			voiceXpMax: { type: DataTypes.INTEGER, defaultValue: 40 },
-			voiceXpCooldown: { type: DataTypes.INTEGER, defaultValue: 180 }, // Detik (biasanya lebih lama)
-			voiceMinMembers: { type: DataTypes.INTEGER, defaultValue: 2 }, // Minimal ada 2 orang biar dapet XP
-			voiceAntiAfk: { type: DataTypes.BOOLEAN, defaultValue: true }, // Gak dapet XP kalau deafen/mute
+			voiceXpCooldown: { type: DataTypes.INTEGER, defaultValue: 180 },
+			voiceMinMembers: { type: DataTypes.INTEGER, defaultValue: 2 },
+			voiceAntiAfk: { type: DataTypes.BOOLEAN, defaultValue: true },
 
-			// 4. Reaction XP (Fitur Baru)
 			reactionXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: false },
 			reactionXpAward: {
 				type: DataTypes.ENUM('none', 'both', 'author', 'reactor'),
@@ -91,41 +82,34 @@ module.exports = {
 			reactionXpMax: { type: DataTypes.INTEGER, defaultValue: 5 },
 			reactionXpCooldown: { type: DataTypes.INTEGER, defaultValue: 10 },
 
-			// 5. Level Up Message
-			levelingChannelId: { type: DataTypes.STRING, allowNull: true }, // Null = Current Channel
+			levelingChannelId: { type: DataTypes.STRING, allowNull: true },
 			levelingMessage: {
 				type: DataTypes.TEXT,
 				defaultValue: 'GG {user.mention}, you reached level **{user.level}**!',
 			},
-			levelingImageEnabled: { type: DataTypes.BOOLEAN, defaultValue: true }, // Kirim gambar rank card pas naik level?
+			levelingImageEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
 
-			// 6. Role Rewards & Boosters
-			roleRewards: { type: DataTypes.JSON, defaultValue: [] }, // [{level: 5, roleId: '123'}]
-			roleRewardStack: { type: DataTypes.BOOLEAN, defaultValue: false }, // Hapus role lama kalau naik level?
+			roleRewards: { type: DataTypes.JSON, defaultValue: [] },
+			roleRewardStack: { type: DataTypes.BOOLEAN, defaultValue: false },
 
-			xpBoosters: { type: DataTypes.JSON, defaultValue: [] }, // [{roleId: '123', multiplier: 2.0}]
-			channelBoosters: { type: DataTypes.JSON, defaultValue: [] }, // [{channelId: '123', multiplier: 1.5}]
-			stackBoosters: { type: DataTypes.BOOLEAN, defaultValue: true }, // Gabungin semua booster?
+			xpBoosters: { type: DataTypes.JSON, defaultValue: [] },
+			channelBoosters: { type: DataTypes.JSON, defaultValue: [] },
+			stackBoosters: { type: DataTypes.BOOLEAN, defaultValue: true },
 
-			// 7. Restrictions (No XP)
-			noXpChannels: { type: DataTypes.JSON, defaultValue: [] }, // Array Channel ID
-			noXpRoles: { type: DataTypes.JSON, defaultValue: [] }, // Array Role ID
+			noXpChannels: { type: DataTypes.JSON, defaultValue: [] },
+			noXpRoles: { type: DataTypes.JSON, defaultValue: [] },
 
-			// 8. Advanced / Misc
 			threadXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
 			forumXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
 			textInVoiceXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
 			slashCommandXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
 
-			// Auto Reset (Kalau member leave)
 			autoResetXp: { type: DataTypes.BOOLEAN, defaultValue: false },
 
-			// WELCOMER GLOBAL
 			welcomeInChannelId: { type: DataTypes.STRING, allowNull: true },
 			welcomeOutChannelId: { type: DataTypes.STRING, allowNull: true },
 			welcomeRoleId: { type: DataTypes.STRING, allowNull: true },
 
-			// WELCOME IN
 			welcomeInEmbedText: { type: DataTypes.TEXT, allowNull: true },
 			welcomeInEmbedColor: { type: DataTypes.STRING, allowNull: true },
 			welcomeInBannerWidth: { type: DataTypes.INTEGER, allowNull: true },
@@ -187,7 +171,6 @@ module.exports = {
 			},
 			welcomeInBorderWidth: { type: DataTypes.INTEGER, allowNull: true },
 
-			// WELCOME OUT (mirror of WELCOME IN)
 			welcomeOutEmbedText: { type: DataTypes.TEXT, allowNull: true },
 			welcomeOutEmbedColor: { type: DataTypes.STRING, allowNull: true },
 			welcomeOutBannerWidth: { type: DataTypes.INTEGER, allowNull: true },
@@ -249,7 +232,6 @@ module.exports = {
 			},
 			welcomeOutBorderWidth: { type: DataTypes.INTEGER, allowNull: true },
 
-			// MINECRAFT
 			minecraftIp: { type: DataTypes.STRING, allowNull: true },
 			minecraftPort: { type: DataTypes.INTEGER, allowNull: true },
 
@@ -258,17 +240,14 @@ module.exports = {
 			minecraftStatusChannelId: { type: DataTypes.STRING, allowNull: true },
 			minecraftPlayersChannelId: { type: DataTypes.STRING, allowNull: true },
 
-			// AI
 			aiChannelIds: { type: DataTypes.JSON, defaultValue: [] },
 
-			// Testimony
 			testimonyChannelId: { type: DataTypes.STRING, allowNull: true },
 			feedbackChannelId: { type: DataTypes.STRING, allowNull: true },
 			testimonyCount: { type: DataTypes.BIGINT, defaultValue: 0 },
-			testimonyCountFormat: { type: DataTypes.STRING, allowNull: true }, // testimony-{count} || {count}-testi
+			testimonyCountFormat: { type: DataTypes.STRING, allowNull: true },
 			testimonyCountChannelId: { type: DataTypes.STRING, allowNull: true },
 
-			// STORE
 			openCloseType: {
 				type: DataTypes.ENUM(
 					'channelname',
@@ -283,7 +262,6 @@ module.exports = {
 			openChannelMessageFormat: { type: DataTypes.JSON, defaultValue: [] },
 			closeChannelMessageFormat: { type: DataTypes.JSON, defaultValue: [] },
 
-			// STREAK
 			streakRoleRewards: { type: DataTypes.JSON, defaultValue: [] },
 			streakEmoji: { type: DataTypes.STRING, allowNull: true },
 			streakMinimum: { type: DataTypes.INTEGER, defaultValue: 3 },

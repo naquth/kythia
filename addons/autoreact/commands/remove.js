@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/autoreply/commands/autoreply/remove.js
+ * @namespace: addons/autoreact/commands/autoreact/remove.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
@@ -13,47 +13,52 @@ module.exports = {
 	slashCommand: (subcommand) => {
 		return subcommand
 			.setName('remove')
-			.setDescription('➖ Remove an auto-reply.')
+			.setDescription('➖ Remove an auto-reaction.')
 			.addStringOption((option) =>
 				option
 					.setName('trigger')
-					.setDescription('The trigger content to remove.')
+					.setDescription('The trigger to remove')
 					.setRequired(true)
 					.setAutocomplete(true),
 			);
 	},
-	/**
-	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
-	 * @param {KythiaDI.Container} container
-	 */
 	async autocomplete(interaction, container) {
 		const { models } = container;
-		const { AutoReply } = models;
+		const { AutoReact } = models;
 		const focusedValue = interaction.options.getFocused();
 
-		const choices = await AutoReply.getAllCache({
+		const choices = await AutoReact.getAllCache({
 			where: {
 				guildId: interaction.guild.id,
-				trigger: { [Op.like]: `%${focusedValue}%` },
+				[Op.or]: [{ trigger: { [Op.like]: `%${focusedValue}%` } }],
 			},
 			limit: 25,
 		});
 
 		await interaction.respond(
-			choices.map((choice) => ({
-				name: choice.trigger,
-				value: `id:${choice.id}`,
-			})),
+			choices.map((choice) => {
+				let display = choice.trigger;
+				if (choice.type === 'channel') {
+					const channel = interaction.guild.channels.cache.get(choice.trigger);
+					display = channel
+						? `#${channel.name}`
+						: `Deleted Channel (${choice.trigger})`;
+				}
+
+				return {
+					name: `${choice.emoji} ${display} (${choice.type})`,
+					value: `id:${choice.id}`,
+				};
+			}),
 		);
 	},
-
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
 		const { t, models, helpers } = container;
-		const { AutoReply } = models;
+		const { AutoReact } = models;
 		const { simpleContainer } = helpers.discord;
 
 		await interaction.deferReply();
@@ -63,7 +68,7 @@ module.exports = {
 
 		if (triggerInput.startsWith('id:')) {
 			const id = triggerInput.split(':')[1];
-			const trigger = await AutoReply.getCache({
+			const trigger = await AutoReact.getCache({
 				where: {
 					guildId: interaction.guild.id,
 					id: id,
@@ -72,7 +77,7 @@ module.exports = {
 			trigger.destroy();
 			deleted = 1;
 		} else {
-			const trigger = await AutoReply.getCache({
+			const trigger = await AutoReact.getCache({
 				where: {
 					guildId: interaction.guild.id,
 					trigger: triggerInput,
@@ -83,7 +88,7 @@ module.exports = {
 		}
 
 		if (!deleted) {
-			const msg = await t(interaction, 'autoreply.remove.error.not_found');
+			const msg = await t(interaction, 'autoreact.remove.error.not_found');
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',
 			});
@@ -93,13 +98,12 @@ module.exports = {
 			});
 		}
 
-		const msg = await t(interaction, 'autoreply.remove.success.plain', {
+		const msg = await t(interaction, 'autoreact.remove.success', {
 			trigger: triggerInput,
 		});
-		const components = await simpleContainer(interaction, msg, {
-			color: 'Red',
-		});
-		return interaction.editReply({
+		const components = await simpleContainer(interaction, msg);
+
+		await interaction.editReply({
 			components,
 			flags: MessageFlags.IsComponentsV2,
 		});

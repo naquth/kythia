@@ -1,0 +1,6 @@
+{
+	"name": "autoreact",
+	"description": "Automatically react to messages with custom triggers or in specific channels.",
+	"version": "1.0.0",
+	"author": "kenndeclouv"
+}

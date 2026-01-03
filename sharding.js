@@ -1,12 +1,11 @@
-require('@dotenvx/dotenvx').config({ quiet: true });
-
 const { ShardingManager } = require('kythia-core');
+const kythiaConfig = require('./kythia.config');
 const path = require('node:path');
 
 const manager = new ShardingManager({
 	scriptPath: path.join(__dirname, 'index.js'),
-	token: process.env.DISCORD_BOT_TOKEN,
-	totalShards: 'auto',
+	token: kythiaConfig.bot.token,
+	totalShards: kythiaConfig.bot.totalShards,
 });
 
 manager.spawn().catch((err) => {

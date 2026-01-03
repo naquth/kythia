@@ -1,0 +1,8 @@
+{
+	"name": "Patreon",
+	"featureName": "Patreon",
+	"featureFlag": "patreonOn",
+	"version": "1.0.0",
+	"description": "Fetch content from Creator Platforms (Patreon, Fanbox, etc) via Kemono API.",
+	"author": "kenndeclouv"
+}

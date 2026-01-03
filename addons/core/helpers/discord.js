@@ -155,6 +155,7 @@ async function createContainer(interaction, options = {}) {
 			}
 		}
 	}
+
 	const container = new ContainerBuilder().setAccentColor(accentColor);
 
 	if (title) {
@@ -165,7 +166,7 @@ async function createContainer(interaction, options = {}) {
 		container.addSeparatorComponents(
 			new SeparatorBuilder()
 				.setSpacing(SeparatorSpacingSize.Small)
-				.setDivider(false),
+				.setDivider(true),
 		);
 	}
 

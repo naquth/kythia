@@ -7,10 +7,12 @@
 		"name": "kenndeclouv",
 		"email": "kenndeclouv@gmail.com"
 	},
-	"license": "CC BY-NC 4.0",
+	"license": "CC-BY-NC-4.0",
 	"scripts": {
 		"start": "node index.js",
 		"start:bun": "bun index.js",
+		"shard": "node sharding.js",
+		"shard:bun": "bun sharding.js",
 		"dev": "bun --watch index.js --dev",
 		"format": "biome format --write .",
 		"fix": "biome check --write .",

@@ -1,0 +1,28 @@
+{
+	"autoreply": {
+		"add": {
+			"error": {
+				"no_content": "You must provide either a response text or an image.",
+				"exists": "An auto-reply with this trigger already exists."
+			},
+			"success": {
+				"plain": "✅ **Auto-reply Added!**\nTrigger: `{trigger}`\n*Using Advanced Container Style*"
+			}
+		},
+		"remove": {
+			"error": {
+				"not_found": "Auto-reply not found."
+			},
+			"success": {
+				"plain": "✅ **Auto-reply Removed!**\nTrigger: `{trigger}`"
+			}
+		},
+		"list": {
+			"title": "## Auto-Replies List ({page}/{totalPages})",
+			"empty": "No auto-replies set for this server.",
+			"entry": "• **{trigger}** {container}\n",
+			"container_tag": "*(Container)*",
+			"footer": "Page {page} of {totalPages}"
+		}
+	}
+}

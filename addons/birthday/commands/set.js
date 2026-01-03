@@ -1,0 +1,103 @@
+/**
+ * @namespace: addons/birthday/commands/birthday/set.js
+ * @type: Command
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+const { MessageFlags } = require('discord.js');
+const { DateTime } = require('luxon');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('set')
+			.setDescription('📅 Set your birthday.')
+			.addIntegerOption((option) =>
+				option
+					.setName('day')
+					.setDescription('The day of your birthday (1-31).')
+					.setRequired(true)
+					.setMinValue(1)
+					.setMaxValue(31),
+			)
+			.addIntegerOption((option) =>
+				option
+					.setName('month')
+					.setDescription('The month of your birthday (1-12).')
+					.setRequired(true)
+					.setMinValue(1)
+					.setMaxValue(12),
+			)
+			.addIntegerOption((option) =>
+				option
+					.setName('year')
+					.setDescription(
+						'The year of your birth (Optional - for age display).',
+					)
+					.setRequired(false)
+					.setMinValue(1900)
+					.setMaxValue(new Date().getFullYear()),
+			),
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, models, helpers } = container;
+		const { UserBirthday } = models;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+		const day = interaction.options.getInteger('day');
+		const month = interaction.options.getInteger('month');
+		const year = interaction.options.getInteger('year');
+
+		// Validate Date
+		// Luxon handles validation better than native Date
+		const dateObj = DateTime.fromObject({ day, month, year: year || 2000 });
+		if (!dateObj.isValid) {
+			const msg = await t(interaction, 'birthday.set.error.invalid_date');
+			const components = await simpleContainer(interaction, msg, {
+				color: 'Red',
+			});
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		// Check if user already has a birthday set
+		const existing = await UserBirthday.getCache({
+			guildId: interaction.guild.id,
+			userId: interaction.user.id,
+		});
+
+		if (existing) {
+			existing.day = day;
+			existing.month = month;
+			existing.year = year;
+			await existing.save();
+		} else {
+			await UserBirthday.create({
+				guildId: interaction.guild.id,
+				userId: interaction.user.id,
+				day,
+				month,
+				year,
+			});
+		}
+
+		const successMsg = await t(interaction, 'birthday.set.success', {
+			date: dateObj.toFormat(year ? 'DDDD' : 'MMMM d'),
+		});
+
+		const components = await simpleContainer(interaction, successMsg);
+		await interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

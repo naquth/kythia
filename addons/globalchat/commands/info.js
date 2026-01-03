@@ -9,10 +9,10 @@
 const {
 	MessageFlags,
 	ContainerBuilder,
-	TextDisplayBuilder,
 	SeparatorBuilder,
-	SeparatorSpacingSize,
+	TextDisplayBuilder,
 	MediaGalleryBuilder,
+	SeparatorSpacingSize,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
 const fetch = require('node-fetch');
@@ -25,6 +25,11 @@ module.exports = {
 			.setDescription(
 				'Show stats and information for the Kythia Global Chat network!',
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { kythiaConfig, helpers, logger } = container;
 		const { convertColor } = helpers.color;

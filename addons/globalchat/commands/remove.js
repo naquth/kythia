@@ -15,6 +15,11 @@ module.exports = {
 		subcommand
 			.setName('remove')
 			.setDescription('Remove this server from the global chat network'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { GlobalChat } = models;

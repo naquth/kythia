@@ -5,11 +5,12 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	MessageFlags,
-	ActionRowBuilder,
-	ButtonBuilder,
 	ButtonStyle,
+	MessageFlags,
+	ButtonBuilder,
+	ActionRowBuilder,
 } = require('discord.js');
 const banks = require('../helpers/banks');
 const { toBigIntSafe } = require('../helpers/bigint');
@@ -32,6 +33,11 @@ module.exports = {
 					.setDescription('Amount of money to transfer')
 					.setRequired(true),
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers, logger } = container;
 		const { KythiaUser } = models;

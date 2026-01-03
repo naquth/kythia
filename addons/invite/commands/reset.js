@@ -18,6 +18,11 @@ module.exports = {
 		PermissionFlagsBits.ManageGuild,
 		PermissionFlagsBits.Administrator,
 	],
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, helpers, t } = container;
 		const { simpleContainer } = helpers.discord;

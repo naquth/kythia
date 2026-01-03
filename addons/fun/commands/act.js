@@ -5,15 +5,14 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-
 const {
-	SlashCommandBuilder,
 	MessageFlags,
 	ContainerBuilder,
-	TextDisplayBuilder,
 	SeparatorBuilder,
-	SeparatorSpacingSize,
+	TextDisplayBuilder,
 	MediaGalleryBuilder,
+	SlashCommandBuilder,
+	SeparatorSpacingSize,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
 const axios = require('axios');

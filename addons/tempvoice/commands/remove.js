@@ -14,6 +14,10 @@ module.exports = {
 			.setName('remove')
 			.setDescription('Disable the tempvoice system and remove the panel.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, logger, client, helpers, t } = container;
 		const { TempVoiceConfig, TempVoiceChannel } = models;

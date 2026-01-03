@@ -5,15 +5,16 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	MessageFlags,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
-	ButtonBuilder,
 	ButtonStyle,
+	MessageFlags,
+	ButtonBuilder,
 	ActionRowBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
 } = require('discord.js');
 const { DateTime } = require('luxon');
 
@@ -51,7 +52,6 @@ async function buildNavButtons(
 	];
 }
 
-// ... code continues
 async function generateUpcomingContainer(
 	interaction,
 	page,
@@ -173,6 +173,11 @@ module.exports = {
 		subcommand
 			.setName('list')
 			.setDescription('📅 See a list of upcoming birthdays.'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, helpers } = container;
 		const { UserBirthday } = models;

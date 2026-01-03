@@ -6,17 +6,17 @@
  * @version 0.11.0-beta
  */
 const {
-	SlashCommandBuilder,
-	ChannelType,
-	PermissionFlagsBits,
-	OverwriteType,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
-	AttachmentBuilder,
-	MessageFlags,
 	InteractionContextType,
+	SeparatorSpacingSize,
+	PermissionFlagsBits,
+	SlashCommandBuilder,
+	TextDisplayBuilder,
+	AttachmentBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	OverwriteType,
+	MessageFlags,
+	ChannelType,
 } = require('discord.js');
 
 const path = require('node:path');
@@ -444,6 +444,9 @@ module.exports = {
 		PermissionFlagsBits.ManageChannels,
 		PermissionFlagsBits.ManageRoles,
 	],
+	/**
+	 * @param {import('discord.js').AutocompleteInteraction} interaction
+	 */
 	autocomplete(interaction) {
 		const sub = interaction.options.getSubcommand();
 		const focused = interaction.options.getFocused();
@@ -485,6 +488,10 @@ module.exports = {
 		return interaction.respond([]);
 	},
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { kythiaConfig, t, logger, helpers } = container;
 		const { simpleContainer } = helpers.discord;

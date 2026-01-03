@@ -56,6 +56,10 @@ module.exports = {
 					.setDescription('For MX only. (Default: 10).'),
 			),
 
+	/**
+	 * @param {import('discord.js').AutocompleteInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async autocomplete(interaction, container) {
 		const { models } = container;
 		const { Subdomain } = models;
@@ -80,6 +84,10 @@ module.exports = {
 		);
 	},
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, helpers } = container;
 		const cloudflareApi = container.services.cloudflare;

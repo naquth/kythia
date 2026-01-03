@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
 	MessageFlags,
 	ContainerBuilder,
@@ -24,6 +25,10 @@ module.exports = {
 			.setName('work')
 			.setDescription('⚒️ Work to earn money with various scenarios!'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, Inventory } = models;

@@ -7,14 +7,14 @@
  */
 
 const {
-	ButtonBuilder,
-	ButtonStyle,
-	ActionRowBuilder,
 	SeparatorSpacingSize,
-	ContainerBuilder,
 	TextDisplayBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
 	SeparatorBuilder,
+	ButtonBuilder,
 	MessageFlags,
+	ButtonStyle,
 } = require('discord.js');
 
 const PETS_PER_PAGE = 10;

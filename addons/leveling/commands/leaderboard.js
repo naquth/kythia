@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -14,6 +15,10 @@ module.exports = {
 			.setName('leaderboard')
 			.setDescription("See the server's level leaderboard."),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, helpers, kythiaConfig } = container;
 		const { simpleContainer } = helpers.discord;

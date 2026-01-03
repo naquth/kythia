@@ -31,6 +31,7 @@ module.exports = {
 			.addStringOption((option) =>
 				option.setName('room').setDescription('Room ID').setRequired(true),
 			),
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

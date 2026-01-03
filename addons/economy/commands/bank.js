@@ -5,11 +5,12 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
 	MessageFlags,
 	ContainerBuilder,
-	TextDisplayBuilder,
 	SeparatorBuilder,
+	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
 const banks = require('../helpers/banks');
@@ -22,6 +23,11 @@ module.exports = {
 		subcommand
 			.setName('bank')
 			.setDescription('💰 Check your kythia bank balance and full bank info.'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;

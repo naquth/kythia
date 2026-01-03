@@ -8,11 +8,11 @@
 
 const {
 	MessageFlags,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	SectionBuilder,
+	ContainerBuilder,
 	ThumbnailBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
 } = require('discord.js');
 const { Op } = require('sequelize');
 
@@ -21,6 +21,11 @@ module.exports = {
 		subcommand
 			.setName('profile')
 			.setDescription('👰 View your marriage profile'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { Marriage } = models;

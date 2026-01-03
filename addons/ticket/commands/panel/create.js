@@ -11,12 +11,12 @@ const {
 	ButtonBuilder,
 	ButtonStyle,
 	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
-	MessageFlags,
 	MediaGalleryBuilder,
 	MediaGalleryItemBuilder,
+	MessageFlags,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	TextDisplayBuilder,
 } = require('discord.js');
 
 module.exports = {
@@ -25,6 +25,10 @@ module.exports = {
 			.setName('create')
 			.setDescription('Creates a new ticket panel (interactive setup)'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;

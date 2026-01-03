@@ -139,6 +139,7 @@ module.exports = {
 			.setName('list')
 			.setDescription('📜 List all auto-replies in this server.');
 	},
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

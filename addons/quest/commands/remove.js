@@ -14,6 +14,10 @@ module.exports = {
 			.setName('remove')
 			.setDescription('Stop receiving Discord Quest notifications.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, t, helpers } = container;
 		const { simpleContainer } = helpers.discord;

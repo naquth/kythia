@@ -5,7 +5,8 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { MessageFlags, ChannelType } = require('discord.js');
+
+const { ChannelType, MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -37,6 +38,7 @@ module.exports = {
 					.setRequired(false),
 			);
 	},
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

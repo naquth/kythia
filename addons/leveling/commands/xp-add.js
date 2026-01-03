@@ -5,7 +5,8 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { MessageFlags, PermissionFlagsBits } = require('discord.js');
+
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { calculateLevelAndXp, levelUpXp } = require('../helpers');
 
 module.exports = {
@@ -28,6 +29,10 @@ module.exports = {
 					.setRequired(true),
 			),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, helpers, kythiaConfig } = container;
 		const { simpleContainer } = helpers.discord;

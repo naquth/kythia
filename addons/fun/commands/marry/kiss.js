@@ -14,6 +14,11 @@ const KISS_COOLDOWN = 3600;
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand.setName('kiss').setDescription('😘 Kiss your partner'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { Marriage } = models;

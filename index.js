@@ -75,6 +75,7 @@ const {
 	isTeam,
 	isPremium,
 	isVoterActive,
+	getGuildSafe,
 } = require('@coreHelpers/discord'); // Discord helper funcs for permissions/identity
 
 const {
@@ -129,6 +130,7 @@ const dependencies = {
 			isTeam,
 			isPremium,
 			isVoterActive,
+			getGuildSafe,
 		},
 		color: { convertColor },
 		time: { checkCooldown, formatDuration, parseDuration },

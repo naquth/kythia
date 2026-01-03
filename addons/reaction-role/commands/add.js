@@ -6,9 +6,9 @@
  * @version 1.0.0
  */
 const {
-	MessageFlags,
-	ContainerBuilder,
 	TextDisplayBuilder,
+	ContainerBuilder,
+	MessageFlags,
 	ChannelType,
 } = require('discord.js');
 

@@ -5,15 +5,16 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	ButtonBuilder,
 	ButtonStyle,
-	ActionRowBuilder,
-	SeparatorSpacingSize,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	MessageFlags,
+	ButtonBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
 } = require('discord.js');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -163,6 +164,10 @@ module.exports = {
 			.setName('leaderboard')
 			.setDescription('🏆 View the global economy leaderboard.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models } = container;
 		const { KythiaUser } = models;

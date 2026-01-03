@@ -49,6 +49,10 @@ module.exports = {
 		await interaction.respond(options);
 	},
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, helpers, logger } = container;
 		const { simpleContainer } = helpers.discord;

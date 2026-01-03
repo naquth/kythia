@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { MessageFlags } = require('discord.js');
 const { toBigIntSafe } = require('../helpers/bigint');
 
@@ -27,6 +28,11 @@ module.exports = {
 						{ name: 'Tails', value: 'tails' },
 					),
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser } = models;

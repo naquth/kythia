@@ -5,7 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-const { ChannelType, MessageFlags } = require('discord.js');
+const { MessageFlags, ChannelType } = require('discord.js');
 const { buildInterface } = require('../helpers/interface');
 
 module.exports = {
@@ -43,6 +43,10 @@ module.exports = {
 					.setRequired(false)
 					.addChannelTypes(ChannelType.GuildText),
 			),
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, logger, client, helpers, t } = container;
 		const { TempVoiceConfig } = models;

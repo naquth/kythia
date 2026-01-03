@@ -6,16 +6,16 @@
  * @version 0.11.0-beta
  */
 
-const { SlashCommandBuilder } = require('discord.js');
 const {
-	ContainerBuilder,
-	MediaGalleryBuilder,
 	MediaGalleryItemBuilder,
+	SlashCommandBuilder,
+	MediaGalleryBuilder,
 	TextDisplayBuilder,
-	ButtonBuilder,
+	ContainerBuilder,
 	ActionRowBuilder,
-	ButtonStyle,
+	ButtonBuilder,
 	MessageFlags,
+	ButtonStyle,
 } = require('discord.js');
 
 const BASE_URL = 'https://kemono.cr/api';

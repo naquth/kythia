@@ -21,6 +21,10 @@ module.exports = {
 					.setRequired(true),
 			),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { logger, kythiaConfig, models, helpers, t } = container;
 		const { KythiaUser, Subdomain } = models;

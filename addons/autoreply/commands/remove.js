@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const { MessageFlags } = require('discord.js');
 const { Op } = require('sequelize');
 
@@ -22,6 +23,7 @@ module.exports = {
 					.setAutocomplete(true),
 			);
 	},
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

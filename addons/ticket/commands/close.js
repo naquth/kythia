@@ -15,6 +15,10 @@ module.exports = {
 			.setName('close')
 			.setDescription('Close the ticket and delete the ticket channel.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, t, helpers } = container;
 		const { Ticket, TicketConfig } = models;

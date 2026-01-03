@@ -47,6 +47,10 @@ module.exports = {
 		);
 	},
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, t, helpers, logger } = container;
 		const { TicketPanel, TicketConfig } = models;

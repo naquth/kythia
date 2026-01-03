@@ -20,6 +20,11 @@ module.exports = {
 					.setDescription('The code of the image to delete')
 					.setRequired(true),
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, t, kythiaConfig, helpers } = container;
 		const { Image } = models;

@@ -6,9 +6,9 @@
  * @version 0.11.0-beta
  */
 const {
+	InteractionContextType,
 	SlashCommandBuilder,
 	PermissionFlagsBits,
-	InteractionContextType,
 } = require('discord.js');
 
 module.exports = {

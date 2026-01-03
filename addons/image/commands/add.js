@@ -20,6 +20,11 @@ module.exports = {
 					.setDescription('The image to add')
 					.setRequired(true),
 			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, helpers, t, kythiaConfig } = container;
 		const { Image } = models;

@@ -7,13 +7,13 @@
  */
 
 const {
+	AttachmentBuilder,
 	ContainerBuilder,
-	TextDisplayBuilder,
+	FileBuilder,
+	MessageFlags,
 	SeparatorBuilder,
 	SeparatorSpacingSize,
-	MessageFlags,
-	AttachmentBuilder,
-	FileBuilder,
+	TextDisplayBuilder,
 } = require('discord.js');
 
 const { createTicketTranscript } = require('../helpers');
@@ -25,6 +25,10 @@ module.exports = {
 			.setName('transcript')
 			.setDescription('Get the transcript of the ticket.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, t, kythiaConfig, helpers, logger } = container;
 		const { Ticket, TicketConfig } = models;

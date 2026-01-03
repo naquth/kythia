@@ -11,14 +11,15 @@ const { MessageFlags, AttachmentBuilder } = require('discord.js');
 const { DateTime } = require('luxon');
 
 module.exports = {
-	taskName: 'daily-greeter',
-	schedule: '0 * * * *', // every 1 hour
+	taskName: 'birthday-announcer',
+	schedule: '0 * * * *',
 	active: true,
 	execute: async (container) => {
 		const { client } = container;
-		const { models, helpers, logger } = client.container;
+		const { models, helpers, logger } = container;
 		const { UserBirthday } = models;
-		const { t } = client.container;
+		const { t } = container;
+		const { getGuildSafe } = helpers.discord;
 
 		logger.info('🎂 Running birthday announcer...', { label: 'birthday' });
 
@@ -40,7 +41,7 @@ module.exports = {
 			for (const record of birthdays) {
 				if (record.lastCelebratedYear === currentYear) continue;
 
-				const guild = client.guilds.cache.get(record.guildId);
+				const guild = await getGuildSafe(client, record.guildId);
 				if (!guild) continue;
 
 				const { BirthdaySetting } = models;
@@ -66,7 +67,7 @@ module.exports = {
 						.catch(() => null);
 					if (!user) continue;
 
-					const roleId = setting?.roleId;
+					// const roleId = setting?.roleId;
 					const pingRoleId = setting?.pingRoleId;
 					const showAge = setting?.showAge ?? true;
 					let contentMsg = setting?.message;
@@ -96,9 +97,16 @@ module.exports = {
 					}
 					const zodiac = getZodiac(currentDay, currentMonth);
 
+					const ageInfo = age ? `Age: ${age}` : '';
+					const zodiacInfo = zodiac ? `Zodiac: ${zodiac}` : '';
+					const pingInfo = pingRoleId ? `<@&${pingRoleId}>` : '';
+
 					if (!contentMsg) {
 						contentMsg = await t(guild, 'birthday.announcement', {
 							user: user.toString(),
+							ageInfo,
+							zodiacInfo,
+							pingInfo,
 						});
 					} else {
 						contentMsg = contentMsg
@@ -107,19 +115,6 @@ module.exports = {
 							.replace(/{zodiac}/g, zodiac);
 					}
 
-					if (roleId) {
-						const member = await guild.members.fetch(user.id).catch(() => null);
-						if (member) {
-							await member.roles.add(roleId).catch((e) => {
-								if (logger)
-									logger.warn(
-										`⚠ [Birthday] Failed to add role ${roleId} to ${user.tag}: ${e.message}`,
-									);
-							});
-						}
-					}
-
-					// KYTHIA ARTS GENERATION
 					const bannerBuffer = await welcomeBanner(user.id, {
 						customUsername: user.username,
 						botToken: client.token,
@@ -131,7 +126,7 @@ module.exports = {
 							width: 6,
 							color: setting?.embedColor || '#FFD700',
 						},
-						type: 'welcome', // Reusing welcome type for now as instructed
+						type: 'welcome',
 					}).catch((e) => {
 						logger?.error(`❌ [Birthday] Failed to generate arts: ${e}`);
 						return null;
@@ -157,12 +152,6 @@ module.exports = {
 					} = require('discord.js');
 					const { convertColor } = helpers.color;
 
-					// let messageContent = `Hey ${user.toString()}!`;
-					// if (pingRoleId) {
-					// 	messageContent += ` <@&${pingRoleId}>`;
-					// }
-
-					// Manually build container
 					const colorInput = setting?.embedColor || '#FFD700';
 					const accentColor = convertColor(colorInput, {
 						from: 'hex',
@@ -177,14 +166,13 @@ module.exports = {
 							),
 						);
 
-					// Add Image (Arts or Background)
 					if (imageUrl) {
 						builder.addSeparatorComponents(
 							new SeparatorBuilder()
 								.setSpacing(SeparatorSpacingSize.Small)
 								.setDivider(true),
 						);
-						// If attaching a file, use attachment:// syntax
+
 						builder.addMediaGalleryComponents(
 							new MediaGalleryBuilder().addItems([
 								new MediaGalleryItemBuilder().setURL(imageUrl),
@@ -202,15 +190,26 @@ module.exports = {
 							]),
 						);
 					}
+					builder
+						.addSeparatorComponents(
+							new SeparatorBuilder()
+								.setSpacing(SeparatorSpacingSize.Small)
+								.setDivider(true),
+						)
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(
+								await t(guild, 'common.container.footer', {
+									username: client.user.username,
+								}),
+							),
+						);
 
 					await channel.send({
-						// content: messageContent,
 						components: [builder],
 						files: files,
 						flags: MessageFlags.IsComponentsV2,
 					});
 
-					// Update DB
 					record.lastCelebratedYear = currentYear;
 					await record.save();
 				} catch (err) {

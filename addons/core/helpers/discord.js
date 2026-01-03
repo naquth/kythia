@@ -261,6 +261,19 @@ async function getMemberSafe(guild, userId) {
 	return member || null;
 }
 
+async function getGuildSafe(client, guildId) {
+	if (!client || !guildId) return null;
+
+	let guild = client.guilds.cache.get(guildId);
+	if (guild) return guild;
+
+	try {
+		guild = await client.guilds.fetch(guildId).catch(() => null);
+	} catch (_e) {}
+
+	return guild || null;
+}
+
 async function isTeam(container, userId) {
 	const { helpers, models } = container;
 	const { KythiaTeam } = models;
@@ -309,6 +322,7 @@ module.exports = {
 	getChannelSafe,
 	getTextChannelSafe,
 	getMemberSafe,
+	getGuildSafe,
 	isTeam,
 	isPremium,
 	isVoterActive,

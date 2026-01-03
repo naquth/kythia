@@ -16,6 +16,10 @@ module.exports = {
 			.addStringOption((option) =>
 				option.setName('name').setDescription('Pet name').setRequired(true),
 			),
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, helpers, kythiaConfig } = container;
 		const { simpleContainer } = helpers.discord;

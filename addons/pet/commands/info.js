@@ -11,6 +11,10 @@ module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand.setName('info').setDescription('View your pet info!'),
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, helpers, kythiaConfig } = container;
 		const { simpleContainer } = helpers.discord;

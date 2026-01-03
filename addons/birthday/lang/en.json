@@ -51,6 +51,6 @@
 				"image_updated": "🖼️ Image updated."
 			}
 		},
-		"announcement": "🎉 Happy Birthday {user}! 🎂🎈 Hope you have a fantastic day!"
+		"announcement": "🎉 Happy Birthday {user}! 🎂🎈 Hope you have a fantastic day!\n{ageInfo}\n{zodiacInfo}\n{pingInfo}"
 	}
 }

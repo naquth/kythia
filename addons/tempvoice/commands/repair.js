@@ -5,20 +5,16 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
-/**
- * @namespace: addons/tempvoice/commands/sync.js
- * @type: Command
- */
 
 const {
-	MessageFlags,
-	ActionRowBuilder,
-	ButtonBuilder,
-	ButtonStyle,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	SeparatorSpacingSize,
+	TextDisplayBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	ButtonBuilder,
+	MessageFlags,
+	ButtonStyle,
 } = require('discord.js');
 const { buildInterface } = require('../helpers/interface');
 
@@ -28,6 +24,10 @@ module.exports = {
 		subcommand
 			.setName('repair')
 			.setDescription('Repair TempVoice configuration.'),
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, t, helpers, kythiaConfig } = container;
 		const { TempVoiceConfig, TempVoiceChannel } = models;

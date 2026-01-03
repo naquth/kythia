@@ -7,9 +7,9 @@
  */
 
 const {
+	PermissionFlagsBits,
 	SlashCommandBuilder,
 	InteractionContextType,
-	PermissionFlagsBits,
 } = require('discord.js');
 const { reloadLavalinkNodes } = require('../helpers/reload-node');
 
@@ -22,6 +22,10 @@ module.exports = {
 	ownerOnly: true,
 	mainGuildOnly: true,
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { logger } = container;
 		await interaction.deferReply({ ephemeral: true });

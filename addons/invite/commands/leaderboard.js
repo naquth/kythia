@@ -7,14 +7,14 @@
  */
 
 const {
-	ButtonBuilder,
 	ButtonStyle,
-	ActionRowBuilder,
-	SeparatorSpacingSize,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	MessageFlags,
+	ButtonBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
 } = require('discord.js');
 
 const USERS_PER_PAGE = 10;
@@ -160,6 +160,10 @@ module.exports = {
 			.setName('leaderboard')
 			.setDescription('View top inviters leaderboard'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models } = container;
 		const { Invite } = models;

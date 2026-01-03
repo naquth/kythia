@@ -7,11 +7,11 @@
  */
 
 const {
-	MessageFlags,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	SeparatorSpacingSize,
+	TextDisplayBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	MessageFlags,
 } = require('discord.js');
 
 module.exports = {
@@ -29,6 +29,10 @@ module.exports = {
 					.setRequired(true)
 					.setAutocomplete(true),
 			),
+	/**
+	 * @param {import('discord.js').AutocompleteInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async autocomplete(interaction, container) {
 		const { models } = container;
 		const { Subdomain } = models;
@@ -51,6 +55,10 @@ module.exports = {
 		);
 	},
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { kythiaConfig, models, helpers, t } = container;
 		const { Subdomain, DnsRecord } = models;

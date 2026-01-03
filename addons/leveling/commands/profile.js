@@ -5,13 +5,14 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
+	MediaGalleryItemBuilder,
 	SeparatorSpacingSize,
 	MediaGalleryBuilder,
-	MediaGalleryItemBuilder,
+	TextDisplayBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
 	MessageFlags,
 } = require('discord.js');
 const { levelUpXp } = require('../helpers');
@@ -30,6 +31,10 @@ module.exports = {
 					.setDescription('The user whose profile you want to see.'),
 			),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { User } = models;

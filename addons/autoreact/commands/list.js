@@ -5,15 +5,16 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
+	ButtonStyle,
 	MessageFlags,
+	ButtonBuilder,
+	ActionRowBuilder,
 	ContainerBuilder,
 	SeparatorBuilder,
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
-	ButtonBuilder,
-	ButtonStyle,
-	ActionRowBuilder,
 } = require('discord.js');
 
 const ITEMS_PER_PAGE = 10;

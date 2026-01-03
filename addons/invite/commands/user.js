@@ -18,6 +18,10 @@ module.exports = {
 				opt.setName('user').setDescription('User').setRequired(false),
 			),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		await interaction.deferReply();
 		const guildId = interaction.guild.id;

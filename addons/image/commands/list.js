@@ -7,17 +7,22 @@
  */
 
 const {
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
 } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand.setName('list').setDescription('List all your uploaded images'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { models, helpers, t, kythiaConfig } = container;
 		const { Image } = models;

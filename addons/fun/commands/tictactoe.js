@@ -7,16 +7,16 @@
  */
 
 const {
-	SlashCommandBuilder,
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
 	ComponentType,
 	ContainerBuilder,
-	TextDisplayBuilder,
+	MessageFlags,
 	SeparatorBuilder,
 	SeparatorSpacingSize,
-	MessageFlags,
+	SlashCommandBuilder,
+	TextDisplayBuilder,
 } = require('discord.js');
 
 function createGame(interaction, opponent, mode) {

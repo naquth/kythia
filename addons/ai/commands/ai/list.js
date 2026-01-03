@@ -7,14 +7,14 @@
  */
 
 const {
-	ButtonBuilder,
 	ButtonStyle,
-	ActionRowBuilder,
-	SeparatorSpacingSize,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
 	MessageFlags,
+	ButtonBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
 } = require('discord.js');
 
 const CHANNELS_PER_PAGE = 10;

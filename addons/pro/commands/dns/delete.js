@@ -23,6 +23,10 @@ module.exports = {
 					.setAutocomplete(true),
 			),
 
+	/**
+	 * @param {import('discord.js').AutocompleteInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async autocomplete(interaction, container) {
 		const { models, logger, kythiaConfig } = container;
 		const { Subdomain, DnsRecord } = models;
@@ -87,6 +91,10 @@ module.exports = {
 		}
 	},
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { logger, kythiaConfig, models, helpers, t } = container;
 		const cloudflareApi = container.services.cloudflare;

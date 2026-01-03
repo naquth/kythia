@@ -7,14 +7,14 @@
  */
 
 const {
-	ButtonBuilder,
-	ButtonStyle,
-	ActionRowBuilder,
 	SeparatorSpacingSize,
-	ContainerBuilder,
 	TextDisplayBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
 	SeparatorBuilder,
+	ButtonBuilder,
 	MessageFlags,
+	ButtonStyle,
 } = require('discord.js');
 
 const USERS_PER_PAGE = 10;

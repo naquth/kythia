@@ -6,21 +6,28 @@
  * @version 0.11.0-beta
  */
 const {
-	ActionRowBuilder,
-	StringSelectMenuBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 	MessageFlags,
+	ButtonBuilder,
+	ActionRowBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	SeparatorSpacingSize,
+	StringSelectMenuBuilder,
 } = require('discord.js');
 const shopData = require('../helpers/items');
 const { toBigIntSafe } = require('../helpers/bigint');
 
 const allItems = Object.values(shopData).flat();
 
+/**
+ * Safely converts a number to its locale string representation,
+ * returning a fallback if the value is not a finite number.
+ * @param {number} value - The number to convert.
+ * @param {string} [fallback='0'] - The fallback string to return if the value is invalid.
+ * @returns {string} The locale string representation of the number or the fallback.
+ */
 function safeLocaleString(value, fallback = '0') {
 	return typeof value === 'number' && Number.isFinite(value)
 		? value.toLocaleString()
@@ -211,6 +218,9 @@ module.exports = {
 			.setName('shop')
 			.setDescription('🛒 Look and buy items from the shop.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 */
 	async execute(interaction) {
 		const { t, kythiaConfig, models } = interaction.client.container;
 		const { KythiaUser, Inventory } = models;

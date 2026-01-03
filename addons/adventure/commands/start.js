@@ -5,6 +5,7 @@
  * @assistant chaa & graa
  * @version 0.11.0-beta
  */
+
 const {
 	MessageFlags,
 	ContainerBuilder,
@@ -14,6 +15,7 @@ const {
 	SeparatorSpacingSize,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
+
 const characters = require('../helpers/characters');
 
 module.exports = {
@@ -42,6 +44,7 @@ module.exports = {
 					),
 			);
 	},
+
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

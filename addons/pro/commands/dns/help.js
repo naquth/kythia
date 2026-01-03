@@ -23,6 +23,10 @@ module.exports = {
 				'📖 Information and examples about each DNS record type.',
 			),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { kythiaConfig, helpers, t } = container;
 		const { convertColor } = helpers.color;

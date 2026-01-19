@@ -29,16 +29,19 @@ module.exports = {
 		const { logger, redis, helpers } = container;
 		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+		await interaction.deferReply({
+			flags: MessageFlags.Ephemeral,
+		});
 
 		if (!redis || redis.status !== 'ready') {
 			const msg =
 				'❌ Redis is not connected or is currently down. Unable to flush.';
 
 			return interaction.editReply({
-				components: simpleContainer(interaction, msg, {
+				components: await simpleContainer(interaction, msg, {
 					color: 'Red',
 				}),
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -59,23 +62,25 @@ module.exports = {
 
 		if (result === 'OK' && dbsize === 0) {
 			await interaction.editReply({
-				components: simpleContainer(
+				components: await simpleContainer(
 					interaction,
 					`## ✅ Redis flush successful!\n🧹 Cleared ${sizeBefore} keys.`,
 					{
 						color: 'Green',
 					},
 				),
+				flags: MessageFlags.IsComponentsV2,
 			});
 		} else {
 			await interaction.editReply({
-				components: simpleContainer(
+				components: await simpleContainer(
 					interaction,
 					`## ⚠️ REDIS FLUSHALL\ncommand sent, but DB size is still: ${dbsize}.`,
 					{
 						color: 'Orange',
 					},
 				),
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	},

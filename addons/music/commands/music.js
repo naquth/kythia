@@ -59,90 +59,186 @@ module.exports = {
 		)
 		.addSubcommand((subcommand) =>
 			subcommand
-				.setName('shuffle')
-				.setDescription('🔀 Shuffle the queue order'),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand.setName('back').setDescription('⏮️ Play the previous song'),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('loop')
-				.setDescription('🔁 Set repeat mode')
+				.setName('radio')
+				.setDescription('📻 Search and play live radio stations worldwide')
 				.addStringOption((option) =>
 					option
-						.setName('mode')
-						.setDescription('Choose repeat mode')
+						.setName('search')
+						.setDescription(
+							'Name of the radio station (e.g., Prambors, BBC, Lofi)',
+						)
 						.setRequired(true)
-						.addChoices(
-							{ name: '❌ Off', value: 'none' },
-							{ name: '🔂 Track', value: 'track' },
-							{ name: '🔁 Queue', value: 'queue' },
-						),
+						.setAutocomplete(true),
 				),
 		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('volume')
-				.setDescription('🔊 Set music volume')
-				.addIntegerOption((option) =>
-					option
-						.setName('level')
-						.setDescription('Volume level (1-1000)')
-						.setRequired(true)
-						.setMinValue(1)
-						.setMaxValue(1000),
-				),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('autoplay')
-				.setDescription('🔄 Enable or disable autoplay')
-				.addStringOption((option) =>
-					option
-						.setName('status')
-						.setDescription('Enable or disable autoplay')
-						.addChoices(
-							{ name: 'Enable', value: 'enable' },
-							{ name: 'Disable', value: 'disable' },
-						),
-				),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('filter')
-				.setDescription('🎧 Apply audio filter (equalizer)'),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('remove')
-				.setDescription('🗑️ Remove a song from queue')
-				.addIntegerOption((option) =>
-					option
-						.setName('position')
-						.setDescription('Position in queue to remove')
-						.setRequired(true),
-				),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('move')
-				.setDescription('🔀 Move a song to different position')
-				.addIntegerOption((option) =>
-					option
-						.setName('from')
-						.setDescription('Current position')
-						.setRequired(true),
+
+		.addSubcommandGroup((group) =>
+			group
+				.setName('playback')
+				.setDescription('Advanced playback controls')
+				.addSubcommand((subcommand) =>
+					subcommand.setName('back').setDescription('⏮️ Play the previous song'),
 				)
-				.addIntegerOption((option) =>
-					option.setName('to').setDescription('New position').setRequired(true),
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('replay')
+						.setDescription('🔄 Replay the current song'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('seek')
+						.setDescription('⏩ Seeks to a specific time in the current song.')
+						.addStringOption((option) =>
+							option
+								.setName('time')
+								.setDescription('The time to seek to. eg. 10, 2:30, 1:20:30')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('loop')
+						.setDescription('🔁 Set repeat mode')
+						.addStringOption((option) =>
+							option
+								.setName('mode')
+								.setDescription('Choose repeat mode')
+								.setRequired(true)
+								.addChoices(
+									{ name: '❌ Off', value: 'none' },
+									{ name: '🔂 Track', value: 'track' },
+									{ name: '🔁 Queue', value: 'queue' },
+								),
+						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('autoplay')
+						.setDescription('🔄 Enable or disable autoplay')
+						.addStringOption((option) =>
+							option
+								.setName('status')
+								.setDescription('Enable or disable autoplay')
+								.addChoices(
+									{ name: 'Enable', value: 'enable' },
+									{ name: 'Disable', value: 'disable' },
+								),
+						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('shuffle')
+						.setDescription('🔀 Shuffle the queue order'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('volume')
+						.setDescription('🔊 Set music volume')
+						.addIntegerOption((option) =>
+							option
+								.setName('level')
+								.setDescription('Volume level (1-1000)')
+								.setRequired(true)
+								.setMinValue(1)
+								.setMaxValue(1000),
+						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('filter')
+						.setDescription('🎧 Apply audio filter (equalizer)'),
 				),
 		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('lyrics')
-				.setDescription('🎤 Show the lyrics of the currently playing song'),
+
+		.addSubcommandGroup((group) =>
+			group
+				.setName('manage')
+				.setDescription('Manage the music queue')
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('remove')
+						.setDescription('🗑️ Remove a song from queue')
+						.addIntegerOption((option) =>
+							option
+								.setName('position')
+								.setDescription('Position in queue to remove')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('move')
+						.setDescription('🔀 Move a song to different position')
+						.addIntegerOption((option) =>
+							option
+								.setName('from')
+								.setDescription('Current position')
+								.setRequired(true),
+						)
+						.addIntegerOption((option) =>
+							option
+								.setName('to')
+								.setDescription('New position')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('clear')
+						.setDescription('🗑️ Clears the current queue.'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('jump')
+						.setDescription('🐇 Jump to a specific song in the queue')
+						.addIntegerOption((option) =>
+							option
+								.setName('position')
+								.setDescription('The position in the queue to jump to')
+								.setRequired(true)
+								.setMinValue(1),
+						),
+				),
 		)
+
+		.addSubcommandGroup((group) =>
+			group
+				.setName('utils')
+				.setDescription('Various music utilities')
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('join')
+						.setDescription('🌸 Make Kythia Join the voice channel'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('leave')
+						.setDescription('🌸 Make Kythia Leave the voice channel'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('247')
+						.setDescription(
+							'🎧 Enable or disable 24/7 mode to keep the bot in the voice channel.',
+						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('grab')
+						.setDescription('📥 Grab the current song to your DMs'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('lyrics')
+						.setDescription('🎤 Show the lyrics of the currently playing song'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('history')
+						.setDescription('📜 Show the history of played songs'),
+				),
+		)
+
 		.addSubcommandGroup((subcommandGroup) =>
 			subcommandGroup
 				.setName('playlist')
@@ -298,20 +394,6 @@ module.exports = {
 						),
 				),
 		)
-		.addSubcommand((subcommand) =>
-			subcommand.setName('clear').setDescription('🗑️ Clears the current queue.'),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('seek')
-				.setDescription('⏩ Seeks to a specific time in the current song.')
-				.addStringOption((option) =>
-					option
-						.setName('time')
-						.setDescription('The time to seek to. eg. 10, 2:30, 1:20:30')
-						.setRequired(true),
-				),
-		)
 		.addSubcommandGroup((subcommandGroup) =>
 			subcommandGroup
 				.setName('favorite')
@@ -355,27 +437,6 @@ module.exports = {
 								.setRequired(true)
 								.setAutocomplete(true),
 						),
-				),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('247')
-				.setDescription(
-					'🎧 Enable or disable 24/7 mode to keep the bot in the voice channel.',
-				),
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName('radio')
-				.setDescription('📻 Search and play live radio stations worldwide')
-				.addStringOption((option) =>
-					option
-						.setName('search')
-						.setDescription(
-							'Name of the radio station (e.g., Prambors, BBC, Lofi)',
-						)
-						.setRequired(true)
-						.setAutocomplete(true),
 				),
 		)
 		.setContexts(InteractionContextType.Guild),
@@ -548,7 +609,6 @@ module.exports = {
 		}
 
 		if (subcommand === 'radio' && focusedOption.name === 'search') {
-			// Cek cache dulu biar irit API
 			if (!client._radioAutocompleteCache)
 				client._radioAutocompleteCache = new Map();
 			if (client._radioAutocompleteCache.has(focusedValue)) {
@@ -558,12 +618,11 @@ module.exports = {
 			}
 
 			if (!focusedValue || focusedValue.trim().length === 0) {
-				return interaction.respond([]); // Kosongin kalo belum ngetik
+				return interaction.respond([]);
 			}
 
 			try {
-				// Fetch ke Radio Browser API (Limit 20 biar muat di autocomplete)
-				const axios = require('axios'); // Pastikan axios ada
+				const axios = require('axios');
 				const response = await axios.get(
 					`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(focusedValue)}&limit=20&hidebroken=true&order=clickcount&reverse=true`,
 					{ timeout: 2000 },
@@ -573,8 +632,6 @@ module.exports = {
 					return interaction.respond([]);
 
 				const choices = response.data.slice(0, 25).map((station) => {
-					// Format: "Nama Radio (ID | 128kbps)"
-					// Kita potong nama biar gak kepanjangan
 					const name =
 						station.name.length > 50
 							? `${station.name.substring(0, 47)}...`
@@ -584,11 +641,10 @@ module.exports = {
 
 					return {
 						name: `📻 ${name} [${country}|${bitrate}k]`,
-						value: station.stationuuid, // Value-nya UUID biar unik & langsung bisa dipake play
+						value: station.stationuuid,
 					};
 				});
 
-				// Simpan ke cache sebentar (misal 60 detik) biar gak spam API kalo user ngetik hapus ngetik hapus
 				client._radioAutocompleteCache.set(focusedValue, choices);
 				setTimeout(
 					() => client._radioAutocompleteCache.delete(focusedValue),
@@ -597,7 +653,6 @@ module.exports = {
 
 				return interaction.respond(choices);
 			} catch (_e) {
-				// Silent error kalo API timeout/down
 				return interaction.respond([]);
 			}
 		}
@@ -613,7 +668,6 @@ module.exports = {
 		const { t, music, musicHandlers, helpers } = container;
 		const { isOwner } = helpers.discord;
 
-		// 🛡️ GUARD 1: User Voice Check
 		if (!(member instanceof GuildMember) || !member.voice.channel) {
 			return interaction.reply({
 				content: await t(interaction, 'music.music.voice.channel.not.found'),
@@ -625,24 +679,32 @@ module.exports = {
 		const subcommand = options.getSubcommand();
 		const group = options.getSubcommandGroup(false);
 
-		// -------------------------------------------------------------
-		// 1️⃣ CREATION HANDLERS (Player Optional / Auto-Create)
-		// -------------------------------------------------------------
+		const dispatchKey = group || subcommand;
+
 		const creationHandlers = {
 			playlist: musicHandlers.handlePlaylist,
 			favorite: musicHandlers.handleFavorite,
 			play: musicHandlers.handlePlay,
 			radio: musicHandlers.handleRadio,
+			join: musicHandlers.handleJoin,
+
+			utils: (i, p) => {
+				const sub = i.options.getSubcommand();
+				if (sub === 'join') return musicHandlers.handleJoin(i, p);
+				if (sub === 'leave') return musicHandlers.handleLeave(i, p);
+				if (sub === '247') return musicHandlers.handle247(i, p);
+
+				if (sub === 'grab') return musicHandlers.handleGrab(i, p);
+				if (sub === 'lyrics') return musicHandlers.handleLyrics(i, p);
+				if (sub === 'history')
+					return musicHandlers.handleHistory(i, p, music.guildStates);
+			},
 		};
 
-		const creationKey = group || subcommand;
-		if (creationHandlers[creationKey]) {
-			return creationHandlers[creationKey](interaction, player);
+		if (creationHandlers[dispatchKey]) {
+			return creationHandlers[dispatchKey](interaction, player);
 		}
 
-		// -------------------------------------------------------------
-		// 🚧 BARRIER: Player & Voice Check
-		// -------------------------------------------------------------
 		if (!player) {
 			return interaction.reply({
 				content: await t(interaction, 'music.music.player.not.found'),
@@ -657,34 +719,45 @@ module.exports = {
 			});
 		}
 
-		// -------------------------------------------------------------
-		// 2️⃣ PUBLIC HANDLERS
-		// -------------------------------------------------------------
-		const publicHandlers = {
+		const topLevelHandlers = {
 			nowplaying: musicHandlers.handleNowPlaying,
-			lyrics: musicHandlers.handleLyrics,
 			queue: musicHandlers.handleQueue,
+			pause: musicHandlers.handlePause,
+			resume: musicHandlers.handleResume,
+			skip: musicHandlers.handleSkip,
+			stop: musicHandlers.handleStop,
 		};
 
-		if (publicHandlers[subcommand]) {
-			return publicHandlers[subcommand](interaction, player);
-		}
-
-		// -------------------------------------------------------------
-		// ⚙️ SYSTEM HANDLERS (Admin Only - BYPASS TRACK CHECK)
-		// -------------------------------------------------------------
-		const systemHandlers = {
-			247: musicHandlers.handle247,
+		const groupHandlers = {
+			playback: (i, p) => {
+				const sub = i.options.getSubcommand();
+				const map = {
+					back: () => musicHandlers.handleBack(i, p, music.guildStates),
+					replay: musicHandlers.handleReplay,
+					seek: musicHandlers.handleSeek,
+					loop: musicHandlers.handleLoop,
+					autoplay: musicHandlers.handleAutoplay,
+					shuffle: musicHandlers.handleShuffle,
+					volume: musicHandlers.handleVolume,
+					filter: musicHandlers.handleFilter,
+				};
+				if (map[sub])
+					return typeof map[sub] === 'function' ? map[sub](i, p) : map[sub];
+			},
+			manage: (i, p) => {
+				const sub = i.options.getSubcommand();
+				const map = {
+					remove: musicHandlers.handleRemove,
+					move: musicHandlers.handleMove,
+					clear: musicHandlers.handleClear,
+					jump: musicHandlers.handleJump,
+				};
+				if (map[sub]) return map[sub](i, p);
+			},
 		};
 
-		if (systemHandlers[subcommand]) {
-			const isAdmin =
-				member.permissions.has(PermissionFlagsBits.ManageGuild) ||
-				member.permissions.has(PermissionFlagsBits.Administrator) ||
-				container.helpers.discord.isOwner(interaction.user.id);
-
-			const owner = isOwner(interaction.user.id);
-			if (!isAdmin && !owner) {
+		if (topLevelHandlers[subcommand] && !group) {
+			if (!hasControlPermission(interaction, player)) {
 				return interaction.reply({
 					content: await t(
 						interaction,
@@ -693,47 +766,24 @@ module.exports = {
 					ephemeral: true,
 				});
 			}
-			return systemHandlers[subcommand](interaction, player);
+			return topLevelHandlers[subcommand](interaction, player);
 		}
 
-		// -------------------------------------------------------------
-		// 🔒 BARRIER: Permission Check
-		// -------------------------------------------------------------
-		if (!hasControlPermission(interaction, player)) {
-			return interaction.reply({
-				content: await t(
-					interaction,
-					'music.helpers.musicManager.music.permission.denied',
-				),
-				ephemeral: true,
-			});
+		if (groupHandlers[group]) {
+			if (['playback', 'manage'].includes(group)) {
+				if (!hasControlPermission(interaction, player)) {
+					return interaction.reply({
+						content: await t(
+							interaction,
+							'music.helpers.musicManager.music.permission.denied',
+						),
+						ephemeral: true,
+					});
+				}
+			}
+			return groupHandlers[group](interaction, player);
 		}
 
-		// -------------------------------------------------------------
-		// 3️⃣ CONTROL HANDLERS
-		// -------------------------------------------------------------
-		const controlHandlers = {
-			pause: musicHandlers.handlePause,
-			resume: musicHandlers.handleResume,
-			skip: musicHandlers.handleSkip,
-			stop: musicHandlers.handleStop,
-			loop: musicHandlers.handleLoop,
-			autoplay: musicHandlers.handleAutoplay,
-			volume: musicHandlers.handleVolume,
-			shuffle: musicHandlers.handleShuffle,
-			filter: musicHandlers.handleFilter,
-			remove: musicHandlers.handleRemove,
-			move: musicHandlers.handleMove,
-			clear: musicHandlers.handleClear,
-			seek: musicHandlers.handleSeek,
-			back: (i, p) => musicHandlers.handleBack(i, p, music.guildStates),
-		};
-
-		if (controlHandlers[subcommand]) {
-			return controlHandlers[subcommand](interaction, player);
-		}
-
-		// ❓ Fallback
 		return interaction.reply({
 			content: await t(interaction, 'music.music.subcommand.not.found'),
 			ephemeral: true,

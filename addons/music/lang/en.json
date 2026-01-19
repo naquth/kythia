@@ -108,6 +108,8 @@
 							"queue": "✅ **Added to queue:** [{title}]({url})"
 						}
 					},
+					"joined": "## `🌸` Kythia Joined\nKythia ready for the party in {channel}!",
+					"left": "## `🌸` Kythia Left\nThanks for using Kythia Music!\nIf you like it, please consider supporting us on Ko-fi.",
 					"paused": "⏸️ The music is already paused.",
 					"playing": {
 						"desc": "❌ Nothing is currently playing.",
@@ -163,6 +165,17 @@
 						"no": {
 							"results": "❌ No results found for your query."
 						}
+					},
+					"jumped": "🐇 Jumped to position **{position}**.",
+					"grab": {
+						"success": "📥 Sent the track info to your DMs!",
+						"failed": "❌ I couldn't send you a DM. Please check your privacy settings."
+					},
+					"replayed": "🔄 Replaying the current track.",
+					"history": {
+						"empty": "📜 No history found.",
+						"title": "## 📜 Music History",
+						"footer": "-# Page {page} of {totalPages} • Total {totalTracks} tracks in history"
 					}
 				},
 				"filter": {

@@ -282,6 +282,369 @@ class MusicHandlers {
 	}
 
 	/**
+	 * 📥 Handles the 'join' subcommand.
+	 * Joins the user's voice channel.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 */
+	async handleJoin(interaction, _player) {
+		const { client, member, guild, channel } = interaction;
+
+		// Check if user is in a voice channel
+		if (!member.voice.channel) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.music.voice.channel.not.found'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
+		}
+
+		// Check if bot is already connected to another channel
+		const existingPlayer = client.poru.players.get(guild.id);
+		if (
+			existingPlayer &&
+			existingPlayer.voiceChannel !== member.voice.channel.id
+		) {
+			existingPlayer.destroy();
+		}
+
+		// Create connection
+		client.poru.createConnection({
+			guildId: guild.id,
+			voiceChannel: member.voice.channel.id,
+			textChannel: channel.id,
+			deaf: true,
+		});
+
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.joined', {
+				channel: member.voice.channel.toString(),
+			}),
+			{ color: this.config.bot.color },
+		);
+
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	/**
+	 * 📤 Handles the 'leave' subcommand.
+	 * Leaves the voice channel and destroys the player.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {object} player - The music player instance.
+	 */
+	async handleLeave(interaction, player) {
+		if (!player) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.music.player.not.found'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
+		}
+
+		player.destroy();
+
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.left'),
+			{ color: this.config.bot.color },
+		);
+
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	/**
+	 * 🐇 Handles the 'jump' subcommand.
+	 * Skips to a specific track in the queue.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {object} player - The music player instance.
+	 */
+	async handleJump(interaction, player) {
+		const position = interaction.options.getInteger('position');
+		if (position < 1 || position > player.queue.length) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.position', {
+					size: player.queue.length,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+		player.queue.splice(0, position - 1);
+		player.skip();
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.jumped', {
+				position,
+			}),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	/**
+	 * 📥 Handles the 'grab' subcommand.
+	 * Sends the current track info to the user's DM.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {object} player - The music player instance.
+	 */
+	async handleGrab(interaction, player) {
+		if (!player.currentTrack) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.playing.desc'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+		const track = player.currentTrack;
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.nowplaying.text',
+				{
+					duration: formatTrackDuration(track.info.length),
+					author: track.info.author,
+				},
+			),
+			{ color: this.config.bot.color },
+		);
+		try {
+			await interaction.user.send({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+			const successComponents = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.grab.success'),
+				{ color: this.config.bot.color },
+			);
+			return interaction.reply({
+				components: successComponents,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
+		} catch (error) {
+			const failedComponents = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.grab.failed'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components: failedComponents,
+				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
+			});
+		}
+	}
+
+	/**
+	 * 🔄 Handles the 'replay' subcommand.
+	 * Replays the current track from the beginning.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {object} player - The music player instance.
+	 */
+	async handleReplay(interaction, player) {
+		player.seekTo(0);
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(interaction, 'music.helpers.handlers.music.replayed'),
+			{ color: this.config.bot.color },
+		);
+		return interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	/**
+	 * [HELPER] Membuat embed dan tombol navigasi untuk halaman history.
+	 * @param {Array} history - Array history tracks.
+	 * @param {number} page - Halaman yang ingin ditampilkan.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 */
+	async _createHistoryEmbed(history, page = 1, interaction) {
+		const itemsPerPage = 10;
+		const totalPages = Math.ceil(history.length / itemsPerPage) || 1;
+		page = Math.max(1, Math.min(page, totalPages));
+
+		const start = (page - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		const currentHistory = history.slice(start, end);
+
+		const historyList = currentHistory
+			.map(
+				(track, index) =>
+					`**${start + index + 1}.** [${track.info.title}](${track.info.uri})`,
+			)
+			.join('\n');
+
+		const buttons = new ActionRowBuilder().addComponents(
+			new ButtonBuilder()
+				.setCustomId(`history_prev_${page}`)
+				.setEmoji('◀️')
+				.setStyle(ButtonStyle.Secondary)
+				.setDisabled(page === 1),
+			new ButtonBuilder()
+				.setCustomId(`history_next_${page}`)
+				.setEmoji('▶️')
+				.setStyle(ButtonStyle.Secondary)
+				.setDisabled(page === totalPages),
+		);
+
+		const container = new ContainerBuilder()
+			.setAccentColor(
+				this.convertColor(this.config.bot.color, {
+					from: 'hex',
+					to: 'decimal',
+				}),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await this.t(
+						interaction,
+						'music.helpers.handlers.music.history.title',
+					),
+				),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(historyList),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addActionRowComponents(buttons)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await this.t(
+						interaction,
+						'music.helpers.handlers.music.history.footer',
+						{
+							page,
+							totalPages,
+							totalTracks: history.length,
+						},
+					),
+				),
+			);
+
+		return {
+			components: [container],
+			flags: MessageFlags.IsComponentsV2,
+			fetchReply: true,
+		};
+	}
+
+	/**
+	 * 📜 Handles the 'history' subcommand.
+	 * Shows the last few played tracks with pagination.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {object} player - The music player instance.
+	 * @param {Map} guildStates - The guild states map.
+	 */
+	async handleHistory(interaction, player, guildStates) {
+		const guildId = interaction.guildId;
+		const guildState = guildStates.get(guildId);
+
+		if (
+			!guildState ||
+			!guildState.previousTracks ||
+			guildState.previousTracks.length === 0
+		) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.history.empty'),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		const history = guildState.previousTracks;
+		const initialPage = 1;
+		const historyMessageOptions = await this._createHistoryEmbed(
+			history,
+			initialPage,
+			interaction,
+		);
+
+		const message = await interaction.reply(historyMessageOptions);
+
+		const collector = message.createMessageComponentCollector({
+			filter: (i) => i.user.id === interaction.user.id,
+			time: 5 * 60 * 1000,
+		});
+
+		collector.on('collect', async (buttonInteraction) => {
+			const [action, currentPageStr] = buttonInteraction.customId
+				.split('_')
+				.slice(1);
+			let currentPage = parseInt(currentPageStr, 10);
+
+			if (action === 'next') {
+				currentPage++;
+			} else if (action === 'prev') {
+				currentPage--;
+			}
+
+			const updatedMessageOptions = await this._createHistoryEmbed(
+				history,
+				currentPage,
+				interaction,
+			);
+
+			await buttonInteraction.update(updatedMessageOptions);
+		});
+
+		collector.on('end', async () => {
+			if (message.editable) {
+				const finalState = await this._createHistoryEmbed(
+					history,
+					1,
+					interaction,
+				);
+				finalState.components = [];
+				await message.edit(finalState).catch(() => {});
+			}
+		});
+	}
+
+	/**
 	 * ⏸️ Handles the 'pause' subcommand.
 	 * Pauses the currently playing track.
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

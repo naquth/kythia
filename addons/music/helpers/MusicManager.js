@@ -492,7 +492,7 @@ class MusicManager {
 				try {
 					this.setVoiceChannelStatus(
 						voiceChannel,
-						'Use /music play and hear the melody',
+						'Use "/music play" and hear the melody',
 					);
 				} catch (_e) {}
 
@@ -549,7 +549,7 @@ class MusicManager {
 			try {
 				this.setVoiceChannelStatus(
 					voiceChannel,
-					'Use /music play and hear the melody',
+					'Use "/music play" and hear the melody',
 				);
 			} catch (e) {
 				this.logger.error('❌ Failed to set voice channel status', e);

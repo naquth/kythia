@@ -118,6 +118,18 @@ async function processOrders(bot) {
  */
 function initializeOrderProcessing(bot, options = {}) {
 	const kythiaConfig = bot.container.kythiaConfig;
+	const client = bot.client;
+	const logger = bot.container.logger;
+
+	// Only process orders on Shard 0 — prevents duplicate fills across shards
+	const isShardZeroOrNoShard = !client.shard || client.shard.ids.includes(0);
+	if (!isShardZeroOrNoShard) {
+		logger.info(
+			`🚫 Economy order processor disabled on Shard ${client.shard.ids[0]} (runs on Shard 0 only)`,
+		);
+		return;
+	}
+
 	const schedule = kythiaConfig.addons.economy.orderProcessorSchedule
 		? kythiaConfig.addons.economy.orderProcessorSchedule
 		: '*/5 * * * *';

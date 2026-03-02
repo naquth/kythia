@@ -166,8 +166,10 @@ Ensure you have the following software installed:
    - **For a quick test (in foreground):**
 
      ```bash
-     npm start
+     npm run shard
      ```
+
+     > **Note:** You can also run `npm start` to launch the bot directly via `index.js`. However, using `npm run shard` (which starts `sharding.js`) is highly recommended for better stability and performance.
 
      _(Press `ctrl + c` to stop the bot)_
 

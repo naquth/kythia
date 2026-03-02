@@ -181,14 +181,14 @@
 ### 🔧 Subcommands
 
 **`/grab sticker <sticker_id>`**
-> grab a sticker from a message
+> Grab a sticker from a message
 
 **Options for this subcommand:**
 - **`sticker_id*`**
   - **Description:** Sticker ID to grab
   - **Type:** Text
 **`/grab emoji <emoji>`**
-> grab a custom emoji from a message
+> Grab a custom emoji from a message
 
 **Options for this subcommand:**
 - **`emoji*`**

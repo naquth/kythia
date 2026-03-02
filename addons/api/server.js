@@ -13,6 +13,7 @@ const { logger: honoLogger } = require('hono/logger');
 const fs = require('node:fs');
 const path = require('node:path');
 const { Server } = require('socket.io');
+// const { rateLimit } = require('./helpers/rateLimit');
 
 module.exports = (bot) => {
 	const client = bot.client;
@@ -23,10 +24,29 @@ module.exports = (bot) => {
 	const PORT = kythiaConfig.addons.api?.port || 3000;
 	const API_SECRET = kythiaConfig.addons.api?.secret || process.env.API_SECRET;
 
+	// Parse comma-separated allowed origins, e.g. "http://localhost:8000,https://kythia.me"
+	const rawAllowedOrigin =
+		kythiaConfig.addons.api?.allowedOrigin ||
+		process.env.API_ALLOWED_ORIGIN ||
+		'';
+	const API_ALLOWED_ORIGINS = rawAllowedOrigin
+		.split(',')
+		.map((o) => o.trim())
+		.filter(Boolean);
+
+	// Only start the API server on Shard 0 to avoid EADDRINUSE errors
+	if (client.shard && !client.shard.ids.includes(0)) {
+		logger.info(
+			`🚫 API Server & Dashboard Socket.io disabled on Shard ${client.shard.ids[0]} (Run only on Shard 0)`,
+		);
+		return;
+	}
+
 	const app = new Hono();
 
 	app.use('*', honoLogger());
 	app.use('*', cors());
+	// app.use('/api/*', rateLimit({ limit: 60, windowMs: 60 * 1000 }));
 
 	app.use('*', async (c, next) => {
 		c.set('client', client);
@@ -39,14 +59,37 @@ module.exports = (bot) => {
 	app.use('/api/*', async (c, next) => {
 		const url = c.req.url;
 
+		const hang = () => {
+			const nodeReq = c.env?.incoming;
+			if (nodeReq?.socket) {
+				nodeReq.socket.destroy();
+			}
+			return new Response(null, { status: 444 });
+		};
+
 		if (url.includes('/api/webhooks')) {
 			return await next();
 		}
 
+		if (API_ALLOWED_ORIGINS.length > 0) {
+			const origin =
+				c.req.header('Origin') ||
+				c.req.header('Referer')?.split('/').slice(0, 3).join('/');
+			if (!origin || !API_ALLOWED_ORIGINS.includes(origin)) {
+				return await hang();
+			}
+		}
+
+		// Layer 2 — Bearer token
+		if (!API_SECRET) {
+			return await hang();
+		}
+
 		const authHeader = c.req.header('Authorization');
 		if (authHeader !== `Bearer ${API_SECRET}`) {
-			return c.json({ message: 'Unauthorized: Invalid Token' }, 401);
+			return await hang();
 		}
+
 		await next();
 	});
 
@@ -100,7 +143,7 @@ module.exports = (bot) => {
 
 	const io = new Server(server, {
 		cors: {
-			origin: '*',
+			origin: API_ALLOWED_ORIGINS.length > 0 ? API_ALLOWED_ORIGINS : '*',
 			methods: ['GET', 'POST'],
 		},
 	});

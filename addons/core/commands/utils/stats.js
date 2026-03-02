@@ -126,7 +126,8 @@ module.exports = {
 		const { client } = interaction;
 
 		const username = interaction.client.user.username;
-		const uptime = await formatDuration(client.uptime, interaction);
+
+		const uptime = container.shutdownManager.getMasterUptime();
 		const memory = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
 		const guilds = client.guilds.cache.size;
 		const users = client.guilds.cache.reduce(
@@ -144,8 +145,6 @@ module.exports = {
 		const djs = version;
 		const cpu = os.cpus()[0].model;
 
-		const botLatency = Math.max(0, Date.now() - interaction.createdTimestamp);
-		const apiLatency = Math.round(client.ws.ping);
 		const owner = `${kythiaConfig.owner.names} (${kythiaConfig.owner.ids})`;
 		const kythiaVersion = kythiaConfig.version;
 		const kythiaCoreVersion = getKythiaCoreVersion() || 'N/A';
@@ -160,8 +159,6 @@ module.exports = {
 			runtime: runtimeDisplay,
 			djs,
 			cpu,
-			botLatency,
-			apiLatency,
 			owner,
 			kythiaVersion,
 			kythiaCoreVersion,
@@ -171,6 +168,35 @@ module.exports = {
 			cacheHits: cacheHits,
 			cacheMisses: cacheMisses,
 		});
+
+		let shardStatusSection = '';
+		if (client.shard) {
+			const shardInfo = await client.shard.broadcastEval((c) => ({
+				id: c.shard.ids[0],
+				ping: Math.round(c.ws.ping),
+				guilds: c.guilds.cache.size,
+				members: c.guilds.cache.reduce(
+					(acc, guild) => acc + guild.memberCount,
+					0,
+				),
+			}));
+
+			const totalShards = shardInfo.length;
+			const shardDetails = shardInfo
+				.sort((a, b) => a.id - b.id)
+				.map(
+					(s) =>
+						`> \`#${s.id}\` 🟢 **Operational** • 📶 ${s.ping}ms • 🛡️ ${s.guilds} • 👥 ${s.members}`,
+				)
+				.join('\n');
+
+			shardStatusSection = `\n\n**Shards (${totalShards})**\n${shardDetails}`;
+		} else {
+			shardStatusSection = '\n\n**Shards**\n> `❌` **Sharding Disabled**';
+		}
+
+		// Append shard stats to the description
+		const descWithShards = desc + shardStatusSection;
 
 		const bannerUrl = kythiaConfig.settings.statsBannerImage;
 
@@ -193,7 +219,7 @@ module.exports = {
 		}
 
 		mainContainer.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(desc),
+			new TextDisplayBuilder().setContent(descWithShards),
 		);
 
 		mainContainer.addSeparatorComponents(

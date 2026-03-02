@@ -62,6 +62,50 @@ class PrefixCommandHandler {
 			remainingArgsString,
 		);
 
+		// Override reply methods so responses quote/ping the original message
+		// (InteractionFactory uses channel.send() which sends without a reply reference)
+		let _replied = false;
+		let _replyMessage = null;
+
+		fakeInteraction.reply = async (opts) => {
+			if (_replied) {
+				// Already replied — edit the existing reply message
+				const payload = typeof opts === 'string' ? { content: opts } : opts;
+				if (_replyMessage) {
+					_replyMessage = await _replyMessage.edit(payload).catch(() => null);
+				} else {
+					_replyMessage = await message.reply(payload).catch(() => null);
+				}
+				return _replyMessage;
+			}
+			_replied = true;
+			const payload = typeof opts === 'string' ? { content: opts } : opts;
+			_replyMessage = await message.reply(payload).catch(() => null);
+			return _replyMessage;
+		};
+
+		fakeInteraction.editReply = async (opts) => {
+			const payload = typeof opts === 'string' ? { content: opts } : opts;
+			if (_replyMessage) {
+				_replyMessage = await _replyMessage.edit(payload).catch(() => null);
+			} else {
+				_replyMessage = await message.reply(payload).catch(() => null);
+			}
+			_replied = true;
+			return _replyMessage;
+		};
+
+		fakeInteraction.followUp = (opts) => {
+			const payload = typeof opts === 'string' ? { content: opts } : opts;
+			return message.reply(payload).catch(() => null);
+		};
+
+		fakeInteraction.deferReply = () => {
+			_replied = true;
+			// No visible typing indicator needed for prefix; just mark as deferred
+			return Promise.resolve(null);
+		};
+
 		const subcommand = fakeInteraction.options.getSubcommand();
 		const subcommandGroup = fakeInteraction.options.getSubcommandGroup();
 

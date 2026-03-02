@@ -1,0 +1,2144 @@
+# Kythia API Documentation
+
+> **Version:** 0.11.0-beta  
+> **Author:** kenndeclouv  
+> **Runtime:** Node.js / Bun  
+> **Framework:** [Hono](https://hono.dev/) + Socket.IO  
+
+The **Kythia API** is an internal REST API addon that acts as the bridge between a running Kythia Discord bot instance and the Kythia Dashboard. It also exposes a Socket.IO server for real-time guild event streaming.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Server Startup](#server-startup)
+- [Authentication](#authentication)
+- [Socket.IO Real-Time Events](#socketio-real-time-events)
+- [Routes](#routes)
+  - [GET /](#get-)
+  - [GET /api/list](#get-apilist)
+  - [GET /api/stats](#get-apistats)
+  - [GET /api/metrics](#get-apimetrics)
+  - [GET /api/meta/stats](#get-apimetastats)
+  - [GET /api/meta/commands](#get-apimetacommands)
+  - [GET /api/meta/changelog](#get-apimetachangelog)
+  - [GET /api/chat/:guildId/channels](#get-apichatguildidchannels)
+  - [GET /api/chat/messages/:channelId](#get-apichatmessageschannelid)
+  - [POST /api/chat/messages/:channelId](#post-apichatmessageschannelidest)
+  - [POST /api/canvas/preview](#post-apicanvaspreview)
+  - [GET /api/guilds](#get-apiguilds)
+  - [GET /api/guilds/:id](#get-apiguildsid)
+  - [GET /api/guilds/settings/:guildId](#get-apiguildssettingsguildid)
+  - [PATCH /api/guilds/settings/:guildId](#patch-apiguildssettingsguildid)
+  - [PATCH /api/guilds/branding/:guildId](#patch-apiguildsbrandingguildid)
+  - [Ticket API (`/api/tickets`)](#ticket-api-apitickets)
+  - [AutoReact API (`/api/autoreact`)](#autoreact-api-apiautoreact)
+  - [AutoReply API (`/api/autoreply`)](#autoreply-api-apiautoreply)
+  - [Invite API (`/api/invite`)](#invite-api-apiinvite)
+  - [Birthday API (`/api/birthday`)](#birthday-api-apibirthday)
+  - [Tempvoice API (`/api/tempvoice`)](#tempvoice-api-apitempvoice)
+  - [Image API (`/api/image`)](#image-api-apiimage)
+  - [POST /api/webhooks/topgg](#post-apiwebhookstopgg)
+  - [POST /api/webhooks/license-created](#post-apiwebhookslicense-created)
+- [Error Reference](#error-reference)
+
+---
+
+### Rate Limiting
+
+The API implements a global rate limit of **60 requests per minute per IP**.
+
+If you exceed this limit, the server will return a `429 Too Many Requests` status:
+
+```json
+{
+  "success": false,
+  "error": "Too many requests, please try again later."
+}
+```
+
+---
+
+## Overview
+
+The API server is only started on **Shard 0** to avoid port conflicts when the bot is running in sharded mode. All other shards skip initialization silently.
+
+All routes under `/api/*` (except `/api/webhooks/*`) require a bearer token. The webhooks routes use their own dedicated authentication mechanisms.
+
+**Base URL:** `http://localhost:{PORT}` (default port: `3000`)
+
+---
+
+## Server Startup
+
+The API server is registered as a Kythia addon via `register.js`, which calls `server.js` during bot initialization. Route files are loaded dynamically from the `routes/` directory.
+
+**Route loading rules:**
+- Files named `index.js` map to the directory path (e.g., `routes/guilds/index.js` → `/api/guilds`)
+- All other `.js` files map to their filename (e.g., `routes/chat.js` → `/api/chat`)
+- Files prefixed with `_` are skipped
+- Subdirectories create nested URL prefixes (e.g., `routes/guilds/settings.js` → `/api/guilds/settings`)
+
+---
+
+## Authentication
+
+### Protected Routes (`/api/*`)
+
+All routes under `/api/*` **except** `/api/webhooks/*` require the following header:
+
+| Header | Value |
+|---|---|
+| `Authorization` | `Bearer <API_SECRET>` |
+
+The `API_SECRET` is read from `kythiaConfig.addons.api.secret` or the `API_SECRET` environment variable.
+
+**Unauthorized response:**
+```json
+HTTP 401
+{ "message": "Unauthorized: Invalid Token" }
+```
+
+### Webhook Routes (`/api/webhooks/*`)
+
+Webhook endpoints use their own auth tokens (see per-route docs below). They are intentionally excluded from the global auth middleware so that external services (e.g. Top.gg) can call them.
+
+---
+
+## Socket.IO Real-Time Events
+
+The API server embeds a **Socket.IO** server on the same HTTP port. The dashboard connects to this to receive real-time guild updates.
+
+**CORS:** All origins are allowed (`*`) for `GET` and `POST` methods.
+
+### Connection
+
+```js
+const socket = io("http://localhost:3000");
+```
+
+### Client → Server Events
+
+| Event | Payload | Description |
+|---|---|---|
+| `join_guild` | `guildId: string` | Joins a guild-specific room to receive guild-scoped real-time events. |
+
+### Server → Client Events
+
+These events are emitted by the bot's event handlers using `container.io.to(guildId).emit(...)`. The specific events depend on what the bot emits during its lifecycle (e.g. member joins, setting changes, etc.).
+
+---
+
+## Routes
+
+---
+
+### `GET /`
+
+Health check. Returns the API status and detected runtime.
+
+**Authentication:** None required.
+
+**Response:**
+```json
+{
+  "message": "Kythia API is running! 🚀",
+  "runtime": "Bun"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `message` | `string` | Status message |
+| `runtime` | `string` | `"Bun"` or `"Node.js"` |
+
+---
+
+### `GET /api/list`
+
+Returns a sorted list of all registered HTTP routes on the server.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 18,
+  "routes": [
+    { "method": "GET", "path": "/api/chat/:guildId/channels" },
+    { "method": "POST", "path": "/api/canvas/preview" }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | Always `true` |
+| `count` | `number` | Total number of registered routes |
+| `routes` | `array` | Sorted list of `{ method, path }` objects |
+
+> Routes with method `ALL` are excluded from the list.
+
+---
+
+### `GET /api/stats`
+
+Returns real-time bot statistics from the running Discord client.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+  "ping": 42,
+  "uptime": 3600000,
+  "guilds": 150,
+  "users": 4200,
+  "ram_usage": "128.45 MB"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `ping` | `number` | WebSocket heartbeat latency in milliseconds |
+| `uptime` | `number` | Bot uptime in milliseconds since last ready event |
+| `guilds` | `number` | Number of guilds in the bot's cache |
+| `users` | `number` | Number of users in the bot's cache |
+| `ram_usage` | `string` | Current RSS memory usage formatted as `"X.XX MB"` |
+
+---
+
+### `GET /api/metrics`
+
+Returns raw Prometheus-compatible metrics from the bot's internal metrics collector.
+
+**Authentication:** Bearer token required.
+
+**Response:** Raw text in Prometheus exposition format (Content-Type depends on the metrics library).
+
+**Error (503):** If the metrics collector is not available:
+```
+Metrics unavailable
+```
+
+---
+
+### `GET /api/meta/stats`
+
+Returns aggregate statistics combining data from all cached guilds.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+  "totalServers": 150,
+  "totalMembers": 48200,
+  "uptime": 3600000,
+  "ping": 42,
+  "ram_usage": "128.45 MB"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `totalServers` | `number` | Total number of guilds the bot is in |
+| `totalMembers` | `number` | Sum of `memberCount` across all cached guilds |
+| `uptime` | `number` | Bot uptime in milliseconds |
+| `ping` | `number` | WebSocket latency in milliseconds |
+| `ram_usage` | `string` | Current RSS memory usage formatted as `"X.XX MB"` |
+
+---
+
+### `GET /api/meta/commands`
+
+Returns a structured list of all publicly visible slash commands and context menu commands registered on the bot, organized by category with full option/subcommand metadata.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+  "commands": [
+    {
+      "name": "adventure",
+      "description": "Start an adventure!",
+      "category": "adventure",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "start",
+          "description": "Start a new adventure",
+          "options": [
+            {
+              "name": "type",
+              "description": "Adventure type",
+              "type": "Text",
+              "required": true,
+              "choices": "`forest` (`forest`), `dungeon` (`dungeon`)"
+            }
+          ],
+          "aliases": []
+        }
+      ],
+      "aliases": [],
+      "type": "slash",
+      "isContextMenu": false
+    },
+    {
+      "name": "Report Message",
+      "description": "Right-click on a message to use this command.",
+      "category": "moderation",
+      "options": [],
+      "subcommands": [],
+      "aliases": [],
+      "type": "message",
+      "isContextMenu": true
+    }
+  ],
+  "categories": ["adventure", "moderation", "utility"],
+  "totalCommands": 57
+}
+```
+
+#### Command Object
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Command name |
+| `description` | `string` | Human-readable description |
+| `category` | `string` | Category derived from the addon/folder structure |
+| `options` | `array` | Top-level options (non-subcommand) |
+| `subcommands` | `array` | Subcommands and subcommand-group entries |
+| `aliases` | `array` | Prefix command aliases, if any |
+| `type` | `string` | `"slash"`, `"user"`, or `"message"` |
+| `isContextMenu` | `boolean` | Whether this is a context menu command |
+
+#### Option Object
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Option name |
+| `description` | `string` | Option description |
+| `type` | `string` | Human-readable type: `"Text"`, `"Integer"`, `"Number"`, `"True/False"`, `"User"`, `"Channel"`, `"Role"`, `"Mention"`, `"Attachment"` |
+| `required` | `boolean` | Whether the option is required |
+| `choices` | `string \| null` | Formatted choices string, e.g. `` `name` (`value`) `` separated by commas |
+
+> Commands marked `ownerOnly: true` are excluded. Commands with empty or placeholder descriptions are also excluded.
+
+---
+
+### `GET /api/meta/changelog`
+
+Reads and parses `changelog.md` from the bot's **working directory** (`process.cwd()`), returning structured version entries.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+[
+  {
+    "version": "0.11.0-beta",
+    "date": "2025-01-15",
+    "html": "<h2>What's New</h2><ul><li>Added canvas preview endpoint</li></ul>"
+  }
+]
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `version` | `string` | Version string parsed from the changelog header |
+| `date` | `string` | Release date in `YYYY-MM-DD` format |
+| `html` | `string` | Full changelog body rendered as HTML via `marked` |
+
+**Error (404):** If `changelog.md` does not exist:
+```json
+{ "error": "Changelog not found: Error: ENOENT: no such file or directory" }
+```
+
+#### Changelog Format
+
+The parser expects entries in one of these header formats:
+
+```markdown
+## [0.11.0-beta](https://github.com/...) (2025-01-15)
+
+## 0.11.0-beta (2025-01-15)
+```
+
+---
+
+### `GET /api/chat/:guildId/channels`
+
+Returns all **text channels** the bot can view in the specified guild, grouped by their parent category. Channels without a category are placed in a `"WITHOUT CATEGORY"` group at the end.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild (server) ID |
+
+**Response:**
+```json
+[
+  {
+    "id": "111111111111111111",
+    "name": "GENERAL",
+    "channels": [
+      { "id": "222222222222222222", "name": "general" },
+      { "id": "333333333333333333", "name": "announcements" }
+    ]
+  },
+  {
+    "id": "no-category",
+    "name": "WITHOUT CATEGORY",
+    "channels": [
+      { "id": "444444444444444444", "name": "bot-commands" }
+    ]
+  }
+]
+```
+
+Each category object:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Category channel ID, or `"no-category"` for uncategorized |
+| `name` | `string` | Category name in UPPERCASE |
+| `channels` | `array` | List of `{ id, name }` text channel objects within this category |
+
+**Filtering:** Only `GuildText` channels that the bot has `ViewChannel` permission for are included. Categories with no visible text channels are omitted.
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "error": "Guild not found" }` | Guild is not in the bot's cache |
+| `500` | `{ "error": "..." }` | Internal fetch error |
+
+---
+
+### `GET /api/chat/messages/:channelId`
+
+Fetches recent messages from a text channel and returns them formatted with Discord markdown parsed into HTML.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `channelId` | `string` | The Discord channel ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `limit` | `number` | `50` | Number of messages to fetch (max 100 per Discord API) |
+
+**Response:** (array, returned in chronological order — oldest first)
+```json
+[
+  {
+    "id": "999999999999999999",
+    "content": "<strong>Hello!</strong> Check out <span class=\"mention\">#general</span>",
+    "author": {
+      "username": "kenndeclouv",
+      "avatar": "https://cdn.discordapp.com/avatars/.../avatar.png",
+      "bot": false
+    },
+    "timestamp": "2025-01-15T08:30:00.000Z",
+    "embeds": [],
+    "attachments": ["https://cdn.discordapp.com/attachments/..."]
+  }
+]
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Discord message snowflake ID |
+| `content` | `string` | Message text parsed via `parseDiscordMarkdown` into HTML |
+| `author.username` | `string` | Author's username |
+| `author.avatar` | `string` | Author's avatar CDN URL |
+| `author.bot` | `boolean` | Whether the author is a bot |
+| `timestamp` | `string` | ISO 8601 creation timestamp |
+| `embeds` | `array` | Raw Discord embed objects |
+| `attachments` | `array` | Array of attachment CDN URLs |
+
+#### Discord Markdown → HTML Conversions
+
+The `parseDiscordMarkdown` helper converts the following:
+
+| Input | Output |
+|---|---|
+| `**bold**` | `<strong>bold</strong>` |
+| `*italic*` or `_italic_` | `<em>italic</em>` |
+| `***bold italic***` | `<strong><em>bold italic</em></strong>` |
+| `__underline__` | `<u>underline</u>` |
+| `~~strikethrough~~` | `<s>strikethrough</s>` |
+| `` `inline code` `` | `<code>inline code</code>` |
+| `\|\|spoiler\|\|` | `<span class="spoiler">spoiler</span>` |
+| ` ``` code block ``` ` | `<pre class="discord-codeblock"><code>...</code></pre>` |
+| `> quote` | `<blockquote>quote</blockquote>` |
+| `# H1` / `## H2` / `### H3` | `<h2>` / `<h3>` / `<h4>` |
+| `[text](url)` | `<a href="url">text</a>` |
+| `<@userId>` | `<span class="mention">@displayName</span>` |
+| `<#channelId>` | `<span class="mention">#channel-name</span>` |
+| `<@&roleId>` | `<span class="mention" style="color: #roleColor">@roleName</span>` |
+| `<:name:id>` | `<img class="emoji" src="...png">` |
+| `<a:name:id>` | `<img class="emoji" src="...gif">` |
+| `<t:timestamp:flag>` | `<span class="timestamp-tag" data-timestamp="...">` |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `403` | `{ "error": "Missing Permissions" }` | Bot lacks `ReadMessageHistory` |
+| `500` | `{ "error": "Failed to fetch messages" }` | Fetch error |
+
+---
+
+### `POST /api/chat/messages/:channelId`
+
+Sends a message to the specified channel as the bot.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `channelId` | `string` | The Discord channel ID to send the message to |
+
+**Request Body:**
+```json
+{
+  "message": "Hello from the dashboard!"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `message` | `string` | Yes | The message content to send |
+
+**Response (success):**
+```json
+{ "success": true }
+```
+
+**Error (500):**
+```json
+{ "error": "Failed to send" }
+```
+
+---
+
+### `POST /api/canvas/preview`
+
+Generates a **welcome banner image preview** using `kythia-arts`, substituting placeholder data for a real user. Returns the rendered image as a base64-encoded data URI.
+
+**Authentication:** Bearer token required.
+
+**Request Body:**
+
+The body accepts a range of prefixed configuration fields. The `type` field determines the prefix used (`"In"` → `welcomeIn`, `"Out"` → `welcomeOut`). All fields are optional.
+
+```json
+{
+  "type": "In",
+
+  "welcomeInBannerWidth": 800,
+  "welcomeInBannerHeight": 250,
+
+  "welcomeInBackgroundUrl": "https://example.com/bg.png",
+  "welcomeInOverlayColor": "#000000",
+
+  "welcomeInAvatarEnabled": true,
+  "welcomeInAvatarSize": 100,
+  "welcomeInAvatarYOffset": 0,
+
+  "welcomeInAvatarBorderWidth": 4,
+  "welcomeInAvatarBorderColor": "#ffffff",
+
+  "welcomeInMainTextContent": "Welcome, {username}!",
+  "welcomeInMainTextColor": "#ffffff",
+  "welcomeInMainTextFontFamily": "Arial",
+  "welcomeInMainTextFontWeight": "bold",
+  "welcomeInMainTextYOffset": 0,
+
+  "welcomeInSubTextColor": "#cccccc",
+
+  "welcomeInShadowColor": "#000000"
+}
+```
+
+#### Request Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | `"In"` (welcome) or `"Out"` (farewell). Defaults to `"In"` |
+| `welcome{Type}BannerWidth` | `integer` | Canvas width in pixels |
+| `welcome{Type}BannerHeight` | `integer` | Canvas height in pixels |
+| `welcome{Type}BackgroundUrl` | `string` | URL of the background image |
+| `welcome{Type}OverlayColor` | `string` | HEX color for a color overlay on the background |
+| `welcome{Type}AvatarEnabled` | `boolean` | Set to `false` to hide the avatar |
+| `welcome{Type}AvatarSize` | `integer` | Avatar diameter in pixels |
+| `welcome{Type}AvatarYOffset` | `integer` | Avatar vertical offset in pixels |
+| `welcome{Type}AvatarBorderWidth` | `integer` | Avatar border width in pixels |
+| `welcome{Type}AvatarBorderColor` | `string` | HEX color for the avatar border |
+| `welcome{Type}MainTextContent` | `string` | Main text with template variables (see below) |
+| `welcome{Type}MainTextColor` | `string` | HEX color for main text |
+| `welcome{Type}MainTextFontFamily` | `string` | Font family name |
+| `welcome{Type}MainTextFontWeight` | `string` | Font weight (e.g. `"bold"`, `"normal"`) |
+| `welcome{Type}MainTextYOffset` | `integer` | Main text vertical offset in pixels |
+| `welcome{Type}SubTextColor` | `string` | HEX color for the username sub-text |
+| `welcome{Type}ShadowColor` | `string` | Enables text shadow when set (any truthy value) |
+
+#### Template Variables in `MainTextContent`
+
+| Variable | Preview Replacement |
+|---|---|
+| `{username}` | `Kythia User` |
+| `{tag}` | `Kythia#0000` |
+| `{userId}` | `123456789012345678` |
+| `{guildName}` | `Kythia Universe` |
+| `{members}` | `1,337` |
+| `{mention}` | `@Kythia User` |
+
+Variables are replaced case-insensitively.
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "image": "data:image/png;base64,iVBORw0KGgoAAAANS..."
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | `true` on success |
+| `image` | `string` | Full data URI of the generated PNG image |
+
+**Error (500):**
+```json
+{
+  "success": false,
+  "message": "Failed to generate preview",
+  "error": "Error message detail"
+}
+```
+
+---
+
+### `GET /api/guilds`
+
+Returns a summary list of all guilds the bot is currently in (from cache).
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+[
+  {
+    "id": "123456789012345678",
+    "name": "Kythia Universe",
+    "icon": "https://cdn.discordapp.com/icons/123.../icon.png",
+    "memberCount": 1337,
+    "ownerId": "987654321098765432"
+  }
+]
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Guild snowflake ID |
+| `name` | `string` | Guild name |
+| `icon` | `string \| null` | Guild icon CDN URL, or `null` if no icon |
+| `memberCount` | `number` | Approximate member count |
+| `ownerId` | `string` | Snowflake ID of the guild owner |
+
+---
+
+### `GET /api/guilds/:id`
+
+Returns detailed information about a specific guild, including its server settings, full channel list, role list, and bot user info.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `string` | The Discord guild ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `data` | `string` | Pass `"all"` to include the full raw Discord guild object instead of just `{ id, name, icon }` |
+
+**Response:**
+```json
+{
+  "guild": {
+    "id": "123456789012345678",
+    "name": "Kythia Universe",
+    "icon": "https://cdn.discordapp.com/icons/..."
+  },
+  "settings": {
+    "guildId": "123456789012345678",
+    "lang": "en",
+    "prefix": "!",
+    "levelingOn": true
+  },
+  "channels": {
+    "text": [{ "id": "111", "name": "general" }],
+    "voice": [{ "id": "222", "name": "Voice Lounge" }],
+    "categories": [{ "id": "333", "name": "General" }]
+  },
+  "roles": [
+    {
+      "id": "444444444444444444",
+      "name": "Admin",
+      "color": "#ff0000",
+      "managed": false
+    }
+  ],
+  "botUser": {
+    "username": "Kythia",
+    "avatar": "https://cdn.discordapp.com/avatars/...",
+    "id": "555555555555555555",
+    "discriminator": "0"
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `guild` | `object` | Basic or full guild object (depends on `?data=all`) |
+| `settings` | `object` | The guild's `ServerSetting` record, or `{}` if none exists |
+| `channels.text` | `array` | All text channels (type 0) — `{ id, name }` |
+| `channels.voice` | `array` | All voice channels (type 2) — `{ id, name }` |
+| `channels.categories` | `array` | All category channels (type 4) — `{ id, name }` |
+| `roles` | `array` | All roles — `{ id, name, color, managed }` |
+| `botUser.username` | `string` | Bot's display username |
+| `botUser.avatar` | `string` | Bot's avatar CDN URL |
+| `botUser.id` | `string` | Bot's snowflake ID |
+| `botUser.discriminator` | `string` | Bot's discriminator (usually `"0"` on newer accounts) |
+
+**Error (404):**
+```json
+{ "error": "Bot is not in this guild" }
+```
+
+---
+
+### `GET /api/guilds/settings/:guildId`
+
+Fetches the stored `ServerSetting` for a guild.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Response:**
+```json
+{
+  "settings": {
+    "guildId": "123456789012345678",
+    "lang": "en",
+    "prefix": "!",
+    "levelingOn": false,
+    "welcomeInOn": true
+  }
+}
+```
+
+Returns `{ "settings": {} }` if no settings record exists for the guild yet.
+
+---
+
+### `PATCH /api/guilds/settings/:guildId`
+
+Partially updates the `ServerSetting` for a guild. Only valid, known attributes are applied. Read-only fields (`id`, `guildId`, `createdAt`, `updatedAt`) are always skipped.
+
+Values are automatically coerced to match the column's database type:
+
+| DB Type | Coercion |
+|---|---|
+| `BOOLEAN` | `true` if `value === true` or `String(value) === "true"` |
+| `INTEGER` / `BIGINT` / `FLOAT` / `DOUBLE` | Parsed with `parseInt`. `NaN` becomes `null` |
+| `JSON` / `JSONB` | Passed as-is if object, otherwise `[]` |
+| `STRING` / others | Trimmed string. Empty string becomes `null` |
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Request Body:**
+
+Any JSON object with valid `ServerSetting` attribute keys and their new values:
+```json
+{
+  "lang": "id",
+  "levelingOn": true,
+  "welcomeInChannelId": "111111111111111111",
+  "prefix": "?"
+}
+```
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "settings": {
+    "guildId": "123456789012345678",
+    "lang": "id",
+    "levelingOn": true,
+    "welcomeInChannelId": "111111111111111111"
+  }
+}
+```
+
+**Error (500):**
+```json
+{ "error": "Failed to save settings", "details": "Error message detail" }
+```
+
+> If no `ServerSetting` row exists for the guild, one is created automatically.
+
+---
+
+### `PATCH /api/guilds/branding/:guildId`
+
+Updates the bot's in-guild appearance. This includes the bot's per-guild **nickname** and **avatar**, and also persists branding metadata (nickname, avatar URL, banner URL, bio) to the guild's `ServerSetting`.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Request Body:**
+```json
+{
+  "nickname": "Kythia Bot",
+  "avatar": "https://example.com/avatar.png",
+  "banner": "https://example.com/banner.png",
+  "bio": "Your friendly Discord companion."
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `nickname` | `string \| null` | No | New in-guild nickname. `null` or empty string resets to default |
+| `avatar` | `string \| null` | No | New avatar URL. `null` or empty string resets to default |
+| `banner` | `string \| null` | No | Banner URL stored in settings only (Discord does not support per-guild bot banners via API) |
+| `bio` | `string \| null` | No | Bio stored in settings only |
+
+**Response (success):**
+```json
+{ "success": true }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "error": "Guild not found" }` | Guild not in cache |
+| `403` | `{ "error": "Bot Missing Permissions: Cannot change nickname/avatar." }` | Discord error code 50013 |
+| `500` | `{ "error": "Failed to update bot profile.", "details": "..." }` | Other Discord API error |
+
+> Only fields present in the request body are applied. Absent fields are ignored.
+
+---
+
+### `POST /api/webhooks/topgg`
+
+**Top.gg vote webhook.** Called by the Top.gg service when a user votes for the bot. Updates the user's vote record in the database, grants 1,000 Kythia Coins, and sends a thank-you DM.
+
+**Authentication:** Uses Top.gg's own webhook authorization header:
+```
+Authorization: <topgg.authToken from kythiaConfig>
+```
+
+**Request Body:** (sent by Top.gg)
+```json
+{
+  "user": "123456789012345678",
+  "type": "upvote",
+  "isWeekend": false
+}
+```
+
+> The `user` field is a large integer snowflake. The handler safely parses it as a string to avoid precision loss.
+
+**Behavior:**
+
+1. Validates the `Authorization` header against `config.api.topgg.authToken`.
+2. Upserts a `KythiaVoter` record with the current timestamp.
+3. Upserts or creates a `KythiaUser`, adding **+1,000** `kythiaCoin`, setting `isVoted: true`, setting `voteExpiresAt` to **12 hours from now**, and incrementing `votePoints` by 1.
+4. Attempts to DM the user a thank-you message (silently fails if DMs are closed).
+5. If `config.api.webhookVoteLogs` is set, posts a rich Components V2 vote log message to that webhook URL, including a vote banner image, user avatar thumbnail, and a link button to vote again.
+
+**Response (success):**
+```json
+{ "success": true }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `401` | `{ "error": "Unauthorized Top.gg" }` | Invalid auth header |
+| `400` | `{ "error": "Invalid JSON Body" }` | Malformed request body |
+| `400` | `{ "error": "No User ID" }` | Missing `user` field |
+| `500` | `{ "error": "Internal Error" }` | Database or Discord API error |
+
+---
+
+### `POST /api/webhooks/license-created`
+
+**License delivery webhook.** Called by an external service (e.g. a purchase platform) to deliver a license key to a Discord user via direct message.
+
+**Authentication:** Bearer token (same as global API secret):
+```
+Authorization: Bearer <API_SECRET>
+```
+
+**Request Body:**
+```json
+{
+  "userId": "123456789012345678",
+  "licenseKey": "XXXX-XXXX-XXXX-XXXX",
+  "transactionId": "TXN-0001"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | Yes | The Discord user ID to DM |
+| `licenseKey` | `string` | Yes | The license key to deliver |
+| `transactionId` | `string` | No | Transaction reference ID to include in the message |
+
+**Behavior:**
+
+1. Validates `Authorization` header against the API secret.
+2. Fetches the Discord user by `userId`.
+3. Sends a formatted Components V2 DM containing the license key and transaction ID, styled with a green accent.
+
+**Response (success):**
+```json
+{ "success": true }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `401` | `{ "error": "Unauthorized" }` | Invalid auth header |
+| `400` | `{ "error": "Missing Data" }` | `userId` or `licenseKey` is missing |
+| `404` | `{ "error": "User Not Found" }` | Discord user not found |
+| `500` | `{ "error": "Failed to DM User", "details": "..." }` | Could not send DM (e.g. DMs disabled) |
+
+---
+
+### Ticket API (`/api/tickets`)
+
+The **Ticket API** provides programmatic access to manage support tickets, ticket types (configs), and reactive panels. All endpoints require bearer token authentication.
+
+---
+
+#### Tickets (`/api/tickets`)
+
+##### `GET /api/tickets`
+Fetches a list of support tickets.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild ID |
+| `userId` | `string` | Filter by ticket opener |
+| `channelId` | `string` | Filter by channel ID |
+| `status` | `string` | Filter by status: `"open"` or `"closed"` |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 1,
+  "data": [
+    {
+      "id": 12,
+      "guildId": "123456789012345678",
+      "userId": "987654321098765432",
+      "channelId": "112233445566778899",
+      "ticketConfigId": 3,
+      "status": "open",
+      "openedAt": "2025-01-15T08:30:00.000Z",
+      "closedAt": null,
+      "closedByUserId": null,
+      "closedReason": null,
+      "createdAt": "2025-01-15T08:30:00.000Z",
+      "updatedAt": "2025-01-15T08:30:00.000Z"
+    }
+  ]
+}
+```
+
+##### `GET /api/tickets/:id`
+Get a single ticket by ID.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+**Error (404):** `{ "success": false, "error": "Ticket not found" }`
+
+##### `PATCH /api/tickets/:id`
+Update ticket fields (e.g. `status`, `closedReason`). Persists and updates the cache.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+##### `DELETE /api/tickets/:id`
+Delete a ticket record. Does **not** delete the Discord channel — use `/close` for that.
+
+**Response:** `{ "success": true, "message": "Ticket deleted successfully" }`
+
+---
+
+#### Ticket Actions
+
+##### `POST /api/tickets/open`
+Opens a new ticket channel for a user, mirroring the bot's slash command behaviour.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Target guild |
+| `userId` | `string` | ✅ | User ID of the ticket creator |
+| `ticketConfigId` | `integer` | ✅ | ID of the `TicketConfig` to use |
+| `reason` | `string` | No | Optional reason |
+
+**Response:** `{ "success": true, "message": "Ticket creation initiated" }`
+
+**Errors:**
+| Status | Condition |
+|---|---|
+| `400` | Missing required fields |
+| `404` | Guild, user, or TicketConfig not found |
+
+##### `POST /api/tickets/:id/close`
+Closes a ticket, generates a transcript, and deletes the channel.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | ✅ | ID of the user performing the close |
+| `reason` | `string` | No | Reason for closing |
+
+**Response:** `{ "success": true, "message": "Ticket closing initiated" }`
+
+**Errors:**
+| Status | Condition |
+|---|---|
+| `400` | Missing `userId`, or ticket already closed |
+| `404` | Ticket, guild, user, or channel not found |
+
+---
+
+#### Ticket Panels (`/api/tickets/panels`)
+
+##### `GET /api/tickets/panels/:guildId`
+List all panels for a guild.
+
+**Response:** `{ "success": true, "count": 1, "data": [ { ... } ] }`
+
+##### `POST /api/tickets/panels`
+Post a new panel to a Discord channel, then create the DB record.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Guild ID |
+| `channelId` | `string` | ✅ | Channel to post the panel in |
+| `title` | `string` | ✅ | Panel heading |
+| `description` | `string` | No | Panel body text |
+| `image` | `string` | No | Image URL to display in the panel |
+
+> `messageId` is assigned by Discord after posting — it is **not** a request field.
+
+**Response:** `{ "success": true, "data": { ...panel } }`
+
+**Error (400):** Missing `guildId`, `channelId`, or `title`.
+
+##### `PATCH /api/tickets/panels/:id`
+Update panel fields and automatically refresh the live Discord message.
+
+**Path Parameters:** `id` — panel's database PK.
+
+**Request Body:** Any panel fields (`title`, `description`, `image`).
+
+**Response:** `{ "success": true, "data": { ...panel } }`
+
+##### `DELETE /api/tickets/panels/:id`
+Delete a panel, all its associated `TicketConfig` types, and the Discord message (best-effort).
+
+**Response:** `{ "success": true, "message": "Panel \"Support\" deleted successfully" }`
+
+##### `POST /api/tickets/panels/:messageId/refresh`
+Force-refresh the live Discord panel for `messageId`.
+
+**Response:** `{ "success": true, "message": "Panel refreshed" }`
+
+---
+
+#### Ticket Types / Configs (`/api/tickets/configs`)
+
+> ⚠️ The path is **`/configs`** (plural), not `/config`.
+
+##### `GET /api/tickets/configs/:guildId`
+List all ticket types for a guild.
+
+**Response:** `{ "success": true, "count": 2, "data": [ { ... } ] }`
+
+##### `GET /api/tickets/configs/id/:id`
+Get a single ticket type by its database PK.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+##### `POST /api/tickets/configs`
+Create a new ticket type and automatically refresh the parent panel.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Guild ID |
+| `panelMessageId` | `string` | ✅ | Message ID of the parent panel |
+| `typeName` | `string` | ✅ | Label for this ticket type |
+| `staffRoleId` | `string` | ✅ | Role that can see tickets |
+| `logsChannelId` | `string` | ✅ | Channel for ticket logs |
+| `transcriptChannelId` | `string` | ✅ | Channel for HTML transcripts |
+| `typeEmoji` | `string` | No | Optional emoji shown on the button |
+| `ticketCategoryId` | `string` | No | Category to create ticket channels in |
+| `ticketOpenMessage` | `string` | No | Message sent when ticket opens |
+| `ticketOpenImage` | `string` | No | Image shown in the ticket open message |
+| `askReason` | `boolean` | No | Whether to ask for a reason on open |
+
+**Response:** `{ "success": true, "data": { ...config } }`
+
+##### `PATCH /api/tickets/configs/:id`
+Update a ticket type and refresh the parent panel.
+
+**Request Body:** Any `TicketConfig` fields.
+
+**Response:** `{ "success": true, "data": { ...config } }`
+
+##### `DELETE /api/tickets/configs/:id`
+Delete a ticket type and refresh the parent panel so the button disappears.
+
+**Response:** `{ "success": true, "message": "Ticket type \"Support\" deleted successfully" }`
+
+---
+
+### AutoReact API (`/api/autoreact`)
+
+Manage automatic reaction rules. Rules trigger the bot to add an emoji to messages matching a specific trigger.
+
+#### `GET /api/autoreact`
+List all autoreact rules.
+- **Query Params:** `guildId`, `userId`, `type` (`text` or `channel`).
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 1,
+  "data": [
+    {
+      "id": 5,
+      "guildId": "...",
+      "trigger": "hello",
+      "emoji": "👋",
+      "type": "text"
+    }
+  ]
+}
+```
+
+#### `GET /api/autoreact/:id`
+Get a specific rule.
+
+#### `POST /api/autoreact`
+Create a new rule.
+- **Body:** `{ guildId, userId, trigger, emoji, type }`
+
+#### `PATCH /api/autoreact/:id`
+Update an existing rule.
+
+#### `DELETE /api/autoreact/:id`
+Delete a rule.
+
+---
+
+### AutoReply API (`/api/autoreply`)
+
+Manage automatic reply rules. Rules trigger the bot to send a text or media response when it sees a specific trigger word.
+
+#### `GET /api/autoreply`
+List all autoreply rules.
+- **Query Params:** `guildId`, `userId`.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 8,
+      "guildId": "...",
+      "trigger": "!help",
+      "response": "How can I help you today?",
+      "media": null,
+      "useContainer": false
+    }
+  ]
+}
+```
+
+#### `GET /api/autoreply/:id`
+Get a specific rule.
+
+#### `POST /api/autoreply`
+Create a new rule.
+- **Body:** `{ guildId, userId, trigger, response, media, useContainer }`
+
+#### `PATCH /api/autoreply/:id`
+Update an existing rule.
+
+#### `DELETE /api/autoreply/:id`
+Delete a rule.
+
+---
+
+### Invite API (`/api/invite`)
+
+Track and manage server invites and historical member joining data.
+
+#### `GET /api/invite`
+List aggregate invite statistics for users.
+- **Query Params:** `guildId`, `userId`.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "guildId": "...",
+      "userId": "...",
+      "invites": 10,
+      "fake": 1,
+      "leaves": 2
+    }
+  ]
+}
+```
+
+#### `GET /api/invite/histories`
+List individual join/leave history records.
+- **Query Params:** `guildId`, `inviterId`, `memberId`, `status`.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 101,
+      "inviterId": "...",
+      "memberId": "...",
+      "status": "active",
+      "isFake": false,
+      "createdAt": "..."
+    }
+  ]
+}
+```
+
+#### `GET /api/invite/:id`
+Get a specific invite record.
+
+#### `POST /api/invite`
+Create or update an invite counter for a user.
+
+#### `DELETE /api/invite/:id`
+Delete an invite record.
+
+#### `DELETE /api/invite/histories/:id`
+Delete a specific history entry.
+
+---
+
+## Error Reference
+
+### Standard Error Shape
+
+Most error responses follow this shape:
+
+```json
+{ "error": "A human-readable error description" }
+```
+
+Some additionally include a `details` field with the raw error message for debugging:
+
+```json
+{ "error": "Failed to save settings", "details": "SequelizeValidationError: ..." }
+```
+
+### Common HTTP Status Codes
+
+| Status | Meaning |
+|---|---|
+| `200` | Success |
+| `400` | Bad request — malformed body or missing required fields |
+| `401` | Unauthorized — missing or invalid auth token |
+| `403` | Forbidden — bot lacks Discord permissions for the operation |
+| `404` | Not found — resource (guild, channel, user) does not exist or is inaccessible |
+| `500` | Internal server error — unexpected error during processing |
+| `503` | Service unavailable — a required subsystem (e.g. metrics) is not initialized |
+
+---
+
+## Reaction Roles API (`/api/reaction-roles`)
+
+Manages reaction-role bindings. Every mutating action automatically re-edits the live Discord message (Components V2) to reflect the current state.
+
+---
+
+### `GET /api/reaction-roles`
+
+List all reaction-role records with optional filters.
+
+**Authentication:** Bearer token required.
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild ID |
+| `channelId` | `string` | Filter by channel ID |
+| `messageId` | `string` | Filter by message ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 3,
+  "data": [
+    {
+      "id": 1,
+      "guildId": "123456789012345678",
+      "channelId": "111111111111111111",
+      "messageId": "222222222222222222",
+      "emoji": "✅",
+      "roleId": "333333333333333333",
+      "createdAt": "2026-01-02T00:00:00.000Z",
+      "updatedAt": "2026-01-02T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/reaction-roles/:id`
+
+Get a single reaction-role record by primary key.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key of the ReactionRole record |
+
+**Response:**
+```json
+{ "success": true, "data": { ... } }
+```
+
+**Error (404):**
+```json
+{ "success": false, "error": "ReactionRole not found" }
+```
+
+---
+
+### `POST /api/reaction-roles`
+
+Create a new reaction-role entry (or update existing if same `guildId + messageId + emoji` already exists).
+
+- Validates the emoji by actually reacting to the target Discord message.
+- Upserts the DB record.
+- Automatically calls `refreshReactionRoleMessage` to edit the live Discord message.
+
+**Authentication:** Bearer token required.
+
+**Request Body:**
+```json
+{
+  "guildId": "123456789012345678",
+  "channelId": "111111111111111111",
+  "messageId": "222222222222222222",
+  "emoji": "🎉",
+  "roleId": "444444444444444444"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID |
+| `channelId` | `string` | ✅ | Channel where the target message lives |
+| `messageId` | `string` | ✅ | Discord message ID to attach the reaction-role to |
+| `emoji` | `string` | ✅ | Emoji to react with (unicode `✅` or custom `<:name:id>`) |
+| `roleId` | `string` | ✅ | Discord role ID to assign on reaction |
+
+**Response:**
+```json
+{
+  "success": true,
+  "created": true,
+  "data": { "id": 1, "guildId": "...", "channelId": "...", "messageId": "...", "emoji": "🎉", "roleId": "..." }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `created` | `boolean` | `true` if a new record was inserted, `false` if an existing record was updated |
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `400` | Missing required fields |
+| `400` | Invalid or unsupported emoji |
+| `404` | Channel or message not found |
+
+---
+
+### `PATCH /api/reaction-roles/:id`
+
+Partially update an existing reaction-role entry.
+
+- If `emoji` is changed: removes the old bot reaction and adds the new one.
+- Saves the updated record.
+- Calls `refreshReactionRoleMessage` automatically.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key of the ReactionRole record |
+
+**Request Body (all fields optional):**
+```json
+{
+  "emoji": "🚀",
+  "roleId": "555555555555555555",
+  "channelId": "666666666666666666"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `emoji` | `string` | New emoji (old bot reaction removed, new one added & validated) |
+| `roleId` | `string` | New role ID to assign on reaction |
+| `channelId` | `string` | Updated channel ID (if the message was moved) |
+
+**Response:**
+```json
+{ "success": true, "data": { ... } }
+```
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `400` | New emoji is invalid |
+| `404` | ReactionRole record not found |
+
+---
+
+### `DELETE /api/reaction-roles/:id`
+
+Delete a single reaction-role record.
+
+- Removes the bot's reaction from the Discord message (best-effort).
+- Destroys the DB record.
+- Calls `refreshReactionRoleMessage` for the remaining entries on that message.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key of the ReactionRole record |
+
+**Response:**
+```json
+{ "success": true, "message": "ReactionRole (id=1) deleted successfully" }
+```
+
+**Error (404):**
+```json
+{ "success": false, "error": "ReactionRole not found" }
+```
+
+---
+
+### `DELETE /api/reaction-roles/message/:messageId`
+
+Bulk-delete **all** reaction-role bindings for a specific Discord message.
+
+- Removes every bot reaction from the message (best-effort, per-emoji).
+- Destroys all matching DB records in one query.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `messageId` | `string` | Discord message ID |
+
+**Response:**
+```json
+{ "success": true, "message": "Deleted 3 reaction role(s) for message 222222222222222222" }
+```
+
+**Error (404):**
+```json
+{ "success": false, "error": "No reaction roles found for this message" }
+```
+
+---
+
+### `POST /api/reaction-roles/message/:messageId/refresh`
+
+Force-refresh the live Discord message for a given `messageId`. Reads all current DB records and re-edits the message with an up-to-date Components V2 container.
+
+Useful after manual DB edits, or as a recovery action if the message got out of sync.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `messageId` | `string` | Discord message ID to refresh |
+
+**Response:**
+```json
+{ "success": true, "message": "Message 222222222222222222 refreshed" }
+```
+
+**Error (500):**
+```json
+{ "success": false, "error": "..." }
+```
+
+---
+
+## Birthday API (`/api/birthday`)
+
+Provides full CRUD access to birthday data and per-guild birthday settings from the `birthday` addon.
+
+**All endpoints require bearer token authentication.**
+
+---
+
+### `GET /api/birthday`
+
+List all user birthdays with optional filters.
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild ID |
+| `userId` | `string` | Filter by user ID |
+| `month` | `integer` | Filter by birth month (1–12) |
+| `day` | `integer` | Filter by birth day (1–31) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "id": 1,
+      "guildId": "123456789012345678",
+      "userId": "987654321098765432",
+      "day": 15,
+      "month": 3,
+      "year": 2000,
+      "lastCelebratedYear": 2025,
+      "createdAt": "2026-01-03T00:00:00.000Z",
+      "updatedAt": "2026-01-03T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/birthday/:id`
+
+Get a single birthday record by primary key.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key of the `UserBirthday` record |
+
+**Response:**
+```json
+{ "success": true, "data": { ... } }
+```
+
+**Error (404):**
+```json
+{ "success": false, "error": "Birthday not found" }
+```
+
+---
+
+### `POST /api/birthday`
+
+Create or update a user's birthday (upsert by `guildId + userId`).
+
+**Request Body:**
+```json
+{
+  "guildId": "123456789012345678",
+  "userId": "987654321098765432",
+  "day": 15,
+  "month": 3,
+  "year": 2000
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID |
+| `userId` | `string` | ✅ | Discord user ID |
+| `day` | `integer` | ✅ | Birth day (1–31) |
+| `month` | `integer` | ✅ | Birth month (1–12) |
+| `year` | `integer` | No | Birth year for age display. Pass `null` to clear |
+
+**Response:**
+```json
+{
+  "success": true,
+  "created": true,
+  "data": { "id": 1, "guildId": "...", "userId": "...", "day": 15, "month": 3, "year": 2000, ... }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `created` | `boolean` | `true` if a new row was inserted, `false` if an existing row was updated |
+
+**Error (400):** Missing required fields.
+
+---
+
+### `PATCH /api/birthday/:id`
+
+Partially update an existing birthday record.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key of the `UserBirthday` record |
+
+**Request Body (all fields optional):**
+```json
+{ "day": 20, "month": 6, "year": 1999 }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `day` | `integer` | New birth day |
+| `month` | `integer` | New birth month |
+| `year` | `integer \| null` | New birth year. Pass `null` to remove the year |
+
+**Response:**
+```json
+{ "success": true, "data": { ... } }
+```
+
+**Error (404):**
+```json
+{ "success": false, "error": "Birthday not found" }
+```
+
+---
+
+### `DELETE /api/birthday/:id`
+
+Delete a birthday record by primary key.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key of the `UserBirthday` record |
+
+**Response:**
+```json
+{ "success": true, "message": "Birthday (id=1) deleted successfully" }
+```
+
+**Error (404):**
+```json
+{ "success": false, "error": "Birthday not found" }
+```
+
+---
+
+### `GET /api/birthday/settings/:guildId`
+
+Fetch the birthday configuration for a guild.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "guildId": "123456789012345678",
+    "channelId": "111111111111111111",
+    "message": "Happy birthday {user}! 🎂",
+    "roleId": "222222222222222222",
+    "pingRoleId": "333333333333333333",
+    "showAge": true,
+    "embedColor": "#FF69B4",
+    "bgUrl": "https://example.com/birthday-banner.png",
+    "createdAt": "2026-01-03T00:00:00.000Z",
+    "updatedAt": "2026-01-03T00:00:00.000Z"
+  }
+}
+```
+
+Returns `{ "success": true, "data": null }` if no settings exist for the guild yet.
+
+| Field | Type | Description |
+|---|---|---|
+| `channelId` | `string \| null` | Channel ID for birthday announcements |
+| `message` | `string \| null` | Custom announcement message. Variables: `{user}`, `{age}`, `{zodiac}` |
+| `roleId` | `string \| null` | Role to temporarily assign to the birthday user |
+| `pingRoleId` | `string \| null` | Role to ping in the announcement |
+| `showAge` | `boolean` | Whether to display the user's age in announcements |
+| `embedColor` | `string \| null` | Hex color for the birthday embed (e.g. `#FF69B4`) |
+| `bgUrl` | `string \| null` | Background image URL for the birthday banner |
+
+---
+
+### `PATCH /api/birthday/settings/:guildId`
+
+Create or update the birthday settings for a guild. If no row exists, one is created automatically.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID |
+
+**Request Body (all fields optional):**
+```json
+{
+  "channelId": "111111111111111111",
+  "message": "Happy birthday {user}! 🎉",
+  "roleId": "222222222222222222",
+  "pingRoleId": "333333333333333333",
+  "showAge": false,
+  "embedColor": "#FF69B4",
+  "bgUrl": "https://example.com/banner.png"
+}
+```
+
+Only keys present in the request body are applied. Unlisted keys are ignored.
+
+**Response:**
+```json
+{
+  "success": true,
+  "created": false,
+  "data": { "guildId": "...", "channelId": "...", "showAge": false, ... }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `created` | `boolean` | `true` if a new settings row was created, `false` if an existing row was updated |
+
+**Error (500):**
+```json
+{ "success": false, "error": "..." }
+```
+
+
+---
+
+## Tempvoice API (`/api/tempvoice`)
+
+Manages the **Temporary Voice Channel** system. Three resource types:
+
+- **Setup** — Automatically configures the "Join to Create" system (channels, category, interface).
+- **`TempVoiceConfig`** — per-guild setup (trigger channel, category, control panel).
+- **`TempVoiceChannel`** — a live temporary channel that was created from the trigger.
+
+All endpoints require a bearer token.
+
+---
+
+### TempVoice Setup (`/api/tempvoice/setup`)
+
+#### `POST /api/tempvoice/setup`
+
+Automatically set up the "Join to Create" voice system for a guild. This mirrors the `/tempvoice setup` command. It will create any missing channels/categories and post the control panel interface.
+
+**Request Body:**
+
+| Field | Type | Description |
+|---|---|---|
+| `guildId` | `string` | **Required.** The Discord Guild ID. |
+| `triggerChannelId` | `string` | *Optional.* Existing voice channel to use as the "Join to Create" trigger. |
+| `categoryId` | `string` | *Optional.* Existing category to house the temp channels. |
+| `controlPanelChannelId` | `string` | *Optional.* Existing text channel to post the control panel interface. |
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "guildId": "123...",
+    "triggerChannelId": "456...",
+    "categoryId": "789...",
+    "controlPanelChannelId": "012...",
+    "interfaceMessageId": "345..."
+  }
+}
+```
+
+---
+
+---
+
+### TempVoice Config (`/api/tempvoice/configs`)
+
+#### `GET /api/tempvoice/configs/:guildId`
+
+Fetch the tempvoice configuration for a guild.
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID (primary key) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "guildId": "123456789012345678",
+    "triggerChannelId": "111111111111111111",
+    "controlPanelChannelId": "222222222222222222",
+    "interfaceMessageId": "333333333333333333",
+    "categoryId": "444444444444444444",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Error (404):** `{ "success": false, "error": "TempVoiceConfig not found" }`
+
+#### `POST /api/tempvoice/configs`
+
+Create or update a guild's tempvoice configuration (upsert by `guildId`).
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Guild ID |
+| `triggerChannelId` | `string` | ✅ | Voice channel users join to create a temp channel |
+| `categoryId` | `string` | ✅ | Category ID where temp channels are created |
+| `controlPanelChannelId` | `string` | No | Channel where the control panel message is posted |
+| `interfaceMessageId` | `string` | No | Message ID of the control panel interface |
+
+**Response:**
+```json
+{ "success": true, "created": true, "data": { ... } }
+```
+
+`created` is `true` when a new row was inserted, `false` when an existing row was updated.
+
+**Error (400):** `{ "success": false, "error": "Missing required fields: guildId, triggerChannelId, categoryId" }`
+
+#### `PATCH /api/tempvoice/configs/:guildId`
+
+Partially update a guild's tempvoice configuration.
+
+**Path Parameters:** `guildId` — guild ID.
+
+**Request Body (all optional):**
+| Field | Type | Description |
+|---|---|---|
+| `triggerChannelId` | `string` | New trigger channel |
+| `categoryId` | `string` | New category |
+| `controlPanelChannelId` | `string \| null` | New control panel channel |
+| `interfaceMessageId` | `string \| null` | New message ID |
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+#### `DELETE /api/tempvoice/configs/:guildId`
+
+Delete a guild's tempvoice configuration.
+
+**Response:** `{ "success": true, "message": "TempVoiceConfig deleted successfully" }`
+
+#### `POST /api/tempvoice/configs/:guildId/refresh`
+
+Force-refresh the control panel interface message for a guild. If the message already exists, it will be edited; otherwise, a new one will be sent and the database updated.
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Interface message refreshed",
+  "data": { "interfaceMessageId": "..." }
+}
+```
+
+---
+
+### TempVoice Channels (`/api/tempvoice/channels`)
+
+Represents active temporary voice channels tracked in the database.
+
+#### `GET /api/tempvoice/channels`
+
+List active temporary voice channels.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild |
+| `ownerId` | `string` | Filter by channel owner |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "channelId": "555555555555555555",
+      "guildId": "123456789012345678",
+      "ownerId": "987654321098765432",
+      "waitingRoomChannelId": null,
+      "pendingJoinRequests": {},
+      "createdAt": "2025-06-01T12:00:00.000Z",
+      "updatedAt": "2025-06-01T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### `GET /api/tempvoice/channels/:channelId`
+
+Get a single temp voice channel by its Discord channel ID (primary key).
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+**Error (404):** `{ "success": false, "error": "TempVoiceChannel not found" }`
+
+#### `PATCH /api/tempvoice/channels/:channelId`
+
+Update a temp voice channel record.
+
+**Request Body (all optional):**
+| Field | Type | Description |
+|---|---|---|
+| `ownerId` | `string` | Transfer ownership |
+| `waitingRoomChannelId` | `string \| null` | Associated waiting room channel |
+| `pendingJoinRequests` | `object` | JSON map of pending join requests |
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+#### `DELETE /api/tempvoice/channels/:channelId`
+
+Delete a temp voice channel record from the database. Does **not** delete the Discord channel itself.
+
+**Response:** `{ "success": true, "message": "TempVoiceChannel deleted successfully" }`
+
+---
+
+## Image API (`/api/image`)
+
+Manages user-uploaded image records stored in the `images` table. The API operates on **database records only** — it does not handle file uploads directly; use the storage layer for that.
+
+All endpoints require a bearer token.
+
+#### `GET /api/image`
+
+List image records with optional filters.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | Filter by the user who uploaded the image |
+| `mimetype` | `string` | Filter by MIME type (e.g. `image/png`) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 1,
+  "data": [
+    {
+      "id": 1,
+      "userId": "987654321098765432",
+      "filename": "abc123.png",
+      "originalName": "my-image.png",
+      "fileId": "file_abc123",
+      "storageUrl": "https://storage.example.com/abc123.png",
+      "mimetype": "image/png",
+      "fileSize": 204800,
+      "createdAt": "2025-06-01T10:00:00.000Z",
+      "updatedAt": "2025-06-01T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### `GET /api/image/:id`
+
+Get a single image record by its database ID.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+**Error (404):** `{ "success": false, "error": "Image not found" }`
+
+#### `POST /api/image/upload`
+
+Upload an image file directly to the Kythia Storage server and save its metadata to the database. This mirrors the `/image add` slash command.
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Description |
+|---|---|---|
+| `file` | `File` | **Required.** The image file to upload. Must be an image type (`image/*`). |
+| `userId` | `string` | **Required.** Discord user ID of the owner. |
+| `fileName` | `string` | *Optional.* Override the filename on storage. |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "userId": "987654321098765432",
+    "filename": "abc123.png",
+    "originalName": "my-photo.png",
+    "fileId": "file_abc123",
+    "storageUrl": "https://storage.example.com/abc123.png",
+    "mimetype": "image/png",
+    "fileSize": 204800
+  }
+}
+```
+
+**Errors:**
+- `400` — Missing `file` or `userId`.
+- `415` — File is not an image.
+- `500` — Storage server error or API key not configured.
+
+---
+
+#### `POST /api/image`
+
+Create a new image record.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | ✅ | Discord user ID of the uploader |
+| `filename` | `string` | ✅ | Unique filename on storage (e.g. `abc123.png`) |
+| `originalName` | `string` | ✅ | Original filename before upload |
+| `fileId` | `string` | ✅ | Unique file identifier from the storage backend |
+| `storageUrl` | `string` | ✅ | Full URL to access the file |
+| `mimetype` | `string` | ✅ | MIME type (e.g. `image/png`, `image/webp`) |
+| `fileSize` | `integer` | ✅ | File size in bytes |
+
+**Response (201):** `{ "success": true, "data": { ... } }`
+
+**Error (400):** Missing any required field.
+
+#### `PATCH /api/image/:id`
+
+Update an existing image record. Only metadata fields can be updated — `filename` and `fileId` are immutable.
+
+**Request Body (all optional):**
+| Field | Type | Description |
+|---|---|---|
+| `storageUrl` | `string` | New storage URL |
+| `originalName` | `string` | Updated original filename |
+| `mimetype` | `string` | Updated MIME type |
+| `fileSize` | `integer` | Updated file size |
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+#### `DELETE /api/image/:id`
+
+Delete an image record from the database. Does **not** delete the file from storage.
+
+**Response:** `{ "success": true, "message": "Image deleted successfully" }`
+
+---
+
+*© 2025 kenndeclouv — Kythia API v0.11.0-beta*

@@ -26,8 +26,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const EXCLUDED_ADDONS = ['api'];
-const EXCLUDED_CORE_CATEGORIES = [];
+const EXCLUDED_CORE_CATEGORIES = ['premium']; // has no public commands
 const CATEGORIES_PER_PAGE = 25;
+
+// When a category folder name doesn't match its doc filename, map it here
+const CATEGORY_DOC_ALIAS = {
+	premium: 'pro', // core/premium folder → docs/pro.md
+};
 
 module.exports = {
 	aliases: ['h', 'ℹ️'],
@@ -155,13 +160,8 @@ module.exports = {
 		}
 
 		function getMarkdownContent(category) {
-			const filePath = path.join(
-				rootDir,
-				'src',
-				'docs',
-				'commands',
-				`${category}.md`,
-			);
+			const docName = CATEGORY_DOC_ALIAS[category] ?? category;
+			const filePath = path.join(rootDir, 'docs', 'commands', `${docName}.md`);
 			if (!fs.existsSync(filePath)) return [null];
 			const content = fs.readFileSync(filePath, 'utf-8');
 			return smartSplit(content);
@@ -169,7 +169,12 @@ module.exports = {
 
 		const addonFolders = fs.readdirSync(addonsDir, { withFileTypes: true });
 		for (const addon of addonFolders) {
-			if (!addon.isDirectory() || EXCLUDED_ADDONS.includes(addon.name))
+			// Skip non-directories, excluded addons, and disabled (_prefix) addons
+			if (
+				!addon.isDirectory() ||
+				EXCLUDED_ADDONS.includes(addon.name) ||
+				addon.name.startsWith('_')
+			)
 				continue;
 			const addonName = addon.name;
 			if (!isAddonActive(addonName)) continue;

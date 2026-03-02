@@ -2,460 +2,714 @@
  * @namespace: addons/core/commands/tools/testall.js
  * @type: Command
  * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa & gemini
- * @version 1.8.0-smart-data
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
  */
 
 const {
 	SlashCommandBuilder,
-	SlashCommandSubcommandBuilder,
 	MessageFlags,
-	ButtonBuilder,
-	ButtonStyle,
-	ActionRowBuilder,
+	PermissionFlagsBits,
+	ApplicationCommandOptionType,
+	ChannelType,
 	ContainerBuilder,
 	TextDisplayBuilder,
 	SeparatorBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
-const { utils } = require('kythia-core');
 
-const RESULTS_PER_PAGE = 8; // Multi-line entries enabled
+const BLACKLIST_COMMANDS = [
+	'ban',
+	'kick',
+	'mute',
+	'nuke',
+	'prune',
+	'purge',
+	'shutdown',
+	'restart',
+	'eval',
+	'exec',
+	'testall', // Prevent recursion
+	'giveaway-start',
+	'giveaway-end',
+	'giveaway-reroll',
+];
 
+// ─── Mock Message ─────────────────────────────────────────────────────────────
+/**
+ * A mock Discord Message that is returned from reply/editReply/followUp.
+ * Implements every method that commands typically call on a sent message.
+ */
+function createMockMessage(channel) {
+	const noop = () => {};
+	const asyncNoop = async () => {};
+
+	const collectorEvents = {};
+
+	const mockCollector = {
+		on(event, fn) {
+			collectorEvents[event] = fn;
+			return mockCollector;
+		},
+		off: () => mockCollector,
+		once: () => mockCollector,
+		stop: noop,
+		resetTimer: noop,
+		// Never fire 'collect' or 'end' automatically — this is a dry run.
+	};
+
+	const mockMessage = {
+		id: '000000000000000000',
+		content: '',
+		embeds: [],
+		components: [],
+		attachments: new Map(),
+		channel: channel,
+		author: channel?.guild?.members?.me?.user ?? {
+			id: '0',
+			username: 'MockBot',
+			bot: true,
+		},
+		guild: channel?.guild ?? null,
+		createdTimestamp: Date.now(),
+		url: 'https://discord.com/channels/0/0/0',
+		flags: { has: () => false },
+
+		// Core message methods
+		edit: async () => mockMessage,
+		delete: asyncNoop,
+		reply: async () => mockMessage,
+		react: asyncNoop,
+		pin: asyncNoop,
+		unpin: asyncNoop,
+		fetch: async () => mockMessage,
+		crosspost: async () => mockMessage,
+		suppressEmbeds: async () => mockMessage,
+		removeAttachments: async () => mockMessage,
+		startThread: async () => ({
+			id: '000000000000000001',
+			send: async () => mockMessage,
+			join: asyncNoop,
+		}),
+
+		// Collectors — the most commonly missing thing
+		createMessageComponentCollector: (options) => {
+			void options;
+			return mockCollector;
+		},
+		createReactionCollector: (options) => {
+			void options;
+			return mockCollector;
+		},
+		awaitMessageComponent: async () => null,
+		awaitReactions: async () => new Map(),
+
+		// Permissions / misc
+		inGuild: () => true,
+		inCachedGuild: () => true,
+		toString: () => '[Mock Message]',
+	};
+
+	return mockMessage;
+}
+
+// ─── Mock Interaction ─────────────────────────────────────────────────────────
+/**
+ * Creates a mock ChatInputCommandInteraction that looks exactly like what
+ * Discord.js hands to a command's execute() function.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} originalInteraction
+ * @param {string} commandName
+ * @param {Record<string,*>} optionsData - pre-populated option values
+ */
+function createMockInteraction(originalInteraction, commandName, optionsData) {
+	let _replied = false;
+	let _deferred = false;
+	const _mockMessage = createMockMessage(originalInteraction.channel);
+
+	// ── Options proxy ─────────────────────────────────────────────────────
+	const guild = originalInteraction.guild;
+	const firstRole = guild?.roles?.cache?.first() ?? null;
+	const firstChannel =
+		guild?.channels?.cache
+			?.filter((c) => c.type === ChannelType.GuildText)
+			?.first() ?? originalInteraction.channel;
+	const firstMember =
+		guild?.members?.cache?.first() ?? originalInteraction.member;
+	const firstUser = firstMember?.user ?? originalInteraction.user;
+	// const firstCategoryChannel = // Unused
+	// 	guild?.channels?.cache
+	// 		?.filter((c) => c.type === ChannelType.GuildCategory)
+	// 		?.first() ?? null;
+
+	// Mock attachment with a valid contentType (image/png)
+	const mockAttachment = {
+		id: '000000000000000000',
+		url: 'https://cdn.discordapp.com/attachments/0/0/mock.png',
+		proxyURL: 'https://media.discordapp.net/attachments/0/0/mock.png',
+		name: 'mock.png',
+		filename: 'mock.png',
+		contentType: 'image/png',
+		size: 1024,
+		height: 100,
+		width: 100,
+		ephemeral: false,
+		duration: null,
+		waveform: null,
+		description: null,
+		title: null,
+	};
+
+	// Sensible defaults per option type
+	const TYPE_DEFAULTS = {
+		[ApplicationCommandOptionType.String]: 'test_string',
+		[ApplicationCommandOptionType.Integer]: 1,
+		[ApplicationCommandOptionType.Number]: 1.0,
+		[ApplicationCommandOptionType.Boolean]: true,
+		[ApplicationCommandOptionType.User]: firstUser,
+		[ApplicationCommandOptionType.Member]: firstMember,
+		[ApplicationCommandOptionType.Role]: firstRole,
+		[ApplicationCommandOptionType.Channel]: firstChannel,
+		[ApplicationCommandOptionType.Mentionable]: firstMember ?? firstRole,
+		[ApplicationCommandOptionType.Attachment]: mockAttachment,
+	};
+
+	// Smart string defaults based on option name — avoids DB/validation errors
+	const STRING_NAME_DEFAULTS = {
+		color: '#FFFFFF',
+		embed_color: '#FFFFFF',
+		embed_colour: '#FFFFFF',
+		rarity: 'common',
+		status: 'active',
+		type: 'text',
+		mode: 'default',
+		hex: '#FFFFFF',
+		url: 'https://example.com',
+		image: 'https://example.com/image.png',
+		banner: 'https://example.com/banner.png',
+		emoji: '😀',
+		link: 'https://example.com',
+		message: 'Test message',
+		reason: 'Testing',
+		description: 'Test description',
+		code: 'TESTCODE',
+	};
+
+	const resolveString = (name) => {
+		const key = name?.toLowerCase().replace(/-/g, '_');
+		return (
+			STRING_NAME_DEFAULTS[key] ??
+			TYPE_DEFAULTS[ApplicationCommandOptionType.String]
+		);
+	};
+
+	const mockOptions = {
+		// Subcommands
+		getSubcommand: (required = false) => {
+			void required;
+			return null;
+		},
+		getSubcommandGroup: (required = false) => {
+			void required;
+			return null;
+		},
+
+		// Typed getters — all follow the same pattern
+		getString: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? resolveString(name);
+		},
+		getInteger: (name, required = false) => {
+			void required;
+			return (
+				optionsData[name] ?? TYPE_DEFAULTS[ApplicationCommandOptionType.Integer]
+			);
+		},
+		getNumber: (name, required = false) => {
+			void required;
+			return (
+				optionsData[name] ?? TYPE_DEFAULTS[ApplicationCommandOptionType.Number]
+			);
+		},
+		getBoolean: (name, required = false) => {
+			void required;
+			return (
+				optionsData[name] ?? TYPE_DEFAULTS[ApplicationCommandOptionType.Boolean]
+			);
+		},
+		getUser: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? firstUser;
+		},
+		getMember: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? firstMember;
+		},
+		getRole: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? firstRole;
+		},
+		getChannel: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? firstChannel;
+		},
+		getMentionable: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? firstMember ?? firstRole;
+		},
+		getAttachment: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? mockAttachment;
+		},
+
+		// Focused option (autocomplete)
+		getFocused: (full = false) => {
+			void full;
+			return full
+				? {
+						name: 'query',
+						value: 'test',
+						focused: true,
+						type: ApplicationCommandOptionType.String,
+					}
+				: 'test';
+		},
+
+		// Generic resolved getter
+		get: (name, required = false) => {
+			void required;
+			return optionsData[name] ?? null;
+		},
+
+		// Resolved data (users, members, roles, channels, attachments)
+		resolved: {
+			users: new Map(),
+			members: new Map(),
+			roles: new Map(),
+			channels: new Map(),
+			attachments: new Map([[mockAttachment.id, mockAttachment]]),
+			messages: new Map(),
+		},
+
+		data: [],
+		_group: null,
+		_subcommand: null,
+		_hoistedOptions: [],
+	};
+
+	// ── Interaction object ────────────────────────────────────────────────
+	return {
+		// ── Identity ──────────────────────────────────────────────────────
+		id: '000000000000000000',
+		applicationId: originalInteraction.applicationId,
+		token: 'mock_token',
+		version: 1,
+		type: 2, // APPLICATION_COMMAND
+		commandType: 1, // CHAT_INPUT
+		commandName: commandName,
+		commandId: '000000000000000000',
+		commandGuildId: guild?.id ?? null,
+		appPermissions: originalInteraction.appPermissions ?? null,
+		locale: originalInteraction.locale ?? 'en-US',
+		guildLocale: originalInteraction.guildLocale ?? 'en-US',
+		createdTimestamp: Date.now(),
+		deferred: false,
+		replied: false,
+		ephemeral: null,
+
+		// ── Context ───────────────────────────────────────────────────────
+		client: originalInteraction.client,
+		guild: guild,
+		channel: originalInteraction.channel,
+		channelId: originalInteraction.channelId,
+		guildId: guild?.id ?? null,
+		user: originalInteraction.user,
+		member: originalInteraction.member,
+		memberPermissions: originalInteraction.memberPermissions ?? null,
+
+		// ── Options ───────────────────────────────────────────────────────
+		options: mockOptions,
+
+		// ── Reply methods — all resolve with a MockMessage ────────────────
+		deferReply: (options) => {
+			void options;
+			_deferred = true;
+			return _mockMessage;
+		},
+		reply: (options) => {
+			void options;
+			_replied = true;
+			return _mockMessage;
+		},
+		editReply: (options) => {
+			void options;
+			_replied = true;
+			return _mockMessage;
+		},
+		followUp: (options) => {
+			void options;
+			return _mockMessage;
+		},
+		deleteReply: () => {},
+		fetchReply: () => _mockMessage,
+		deferUpdate: () => {},
+		update: async () => _mockMessage,
+		showModal: async () => {},
+
+		// ── Utility ───────────────────────────────────────────────────────
+		isCommand: () => true,
+		isChatInputCommand: () => true,
+		isContextMenuCommand: () => false,
+		isUserContextMenuCommand: () => false,
+		isMessageContextMenuCommand: () => false,
+		isAutocomplete: () => false,
+		isButton: () => false,
+		isSelectMenu: () => false,
+		isStringSelectMenu: () => false,
+		isModalSubmit: () => false,
+		isRepliable: () => true,
+		inGuild: () => !!guild,
+		inCachedGuild: () => !!guild,
+		toString: () => `[MockInteraction: ${commandName}]`,
+
+		// ── Internal helpers (testall introspection) ──────────────────────
+		_hasReplied: () => _replied,
+		_isDeferred: () => _deferred,
+	};
+}
+
+// ─── Command export ───────────────────────────────────────────────────────────
+/**
+ * Creates a mock interaction that forwards replies to the real channel.
+ * Pass `realChannel` so that every reply/editReply/followUp the tested command
+ * sends will appear in Discord as a real message.
+ */
+function createForwardingMockInteraction(
+	originalInteraction,
+	commandName,
+	optionsData,
+) {
+	const realChannel = originalInteraction.channel;
+	const mockBase = createMockInteraction(
+		originalInteraction,
+		commandName,
+		optionsData,
+	);
+
+	// The collector on interaction.channel (some commands call this directly)
+	const collectorEvents = {};
+	const mockCollector = {
+		on(event, fn) {
+			collectorEvents[event] = fn;
+			return mockCollector;
+		},
+		off: () => mockCollector,
+		once: () => mockCollector,
+		stop: () => {},
+		resetTimer: () => {},
+	};
+
+	let _replied = false;
+	let _deferred = false;
+
+	// Forward any reply payload to the real channel so the user sees it
+	const forward = async (payload) => {
+		if (!payload) return createMockMessage(realChannel);
+		try {
+			// Strip ephemeral flag for forwarding so it actually shows
+			const sent =
+				payload.flags !== undefined
+					? await realChannel.send({ ...payload, flags: payload.flags & ~64 })
+					: await realChannel.send(payload);
+			// Attach collector stubs onto real message
+			return sent;
+		} catch (_e) {
+			return createMockMessage(realChannel);
+		}
+	};
+
+	return {
+		...mockBase,
+		// Expose a real channel reference (used by eco give etc.)
+		channel: {
+			...realChannel,
+			createMessageComponentCollector: (_opts) => mockCollector,
+			createReactionCollector: (_opts) => mockCollector,
+		},
+		deferReply: async (options) => {
+			void options;
+			_deferred = true;
+			return createMockMessage(realChannel);
+		},
+		reply: async (payload) => {
+			_replied = true;
+			return forward(payload);
+		},
+		editReply: async (payload) => {
+			_replied = true;
+			return forward(payload);
+		},
+		followUp: async (payload) => {
+			return forward(payload);
+		},
+		_hasReplied: () => _replied,
+		_isDeferred: () => _deferred,
+	};
+}
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('testall')
-		.setDescription('🛠️ Developer Tool: Mock and test ALL registered commands.')
-		.addBooleanOption((option) =>
-			option
-				.setName('verbose')
-				.setDescription('Show detailed logs for each command')
-				.setRequired(false),
+		.setDescription(
+			'🛠️ Developer Tool: Test all registered commands (DRY RUN-ish).',
 		)
-		.addBooleanOption((option) =>
-			option
-				.setName('stop_on_error')
-				.setDescription('Stop testing if a command throws an error')
-				.setRequired(false),
-		)
-		.addStringOption((option) =>
-			option
-				.setName('exclude')
-				.setDescription(
-					'Comma-separated list of commands to skip (e.g. "ban, kick")',
-				)
-				.setRequired(false),
-		),
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+
 	ownerOnly: true,
 	mainGuildOnly: true,
-
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { helpers, logger } = container;
-		const { convertColor } = helpers.color;
+		const { t, logger, kythiaConfig } = container;
 
-		await interaction.deferReply();
-
-		const verbose = interaction.options.getBoolean('verbose') || false;
-		const stopOnError =
-			interaction.options.getBoolean('stop_on_error') || false;
-		const excludeInput = interaction.options.getString('exclude') || '';
-
-		const commands = interaction.client.commands;
-
-		// Define Default Exclusions (Critical commands that stop the bot or the test)
-		const ALWAYS_EXCLUDED = ['testall', 'restart', 'shutdown'];
-
-		// Parse User Exclusions
-		const userExclusions = excludeInput
-			.split(',')
-			.map((s) => s.trim().toLowerCase())
-			.filter((s) => s.length > 0);
-		const allExclusions = new Set([...ALWAYS_EXCLUDED, ...userExclusions]);
+		// Acknowledge immediately so the interaction token stays alive
+		await interaction.deferReply({ ephemeral: true });
 
 		const results = {
-			total: 0,
-			success: 0,
-			failed: 0,
-			skipped: 0,
-			executionTimes: [],
-			details: [],
+			success: [],
+			failed: [],
+			skipped: [],
 		};
 
-		// --- 1. Helper: Mock Argument Generator ---
-		const generateMockArgs = (rawSchema) => {
-			// Ensure we work with Cloned JSON data to avoid Builder quirks
-			const schema =
-				rawSchema && typeof rawSchema.toJSON === 'function'
-					? rawSchema.toJSON()
-					: rawSchema;
-
-			if (!schema || !schema.options) return '';
-
-			const args = [];
-			// Filter options to only include valid types (non-subcommand)
-			const options = schema.options.filter((opt) => opt.type > 2);
-
-			for (const opt of options) {
-				// Determine if we should include this option
-				// Always include required options.
-				// For optional ones, keep 50% chance
-				if (!opt.required && Math.random() > 0.5) continue;
-
-				const name = opt.name.toLowerCase();
-				let val = '';
-
-				switch (opt.type) {
-					case 3: // STRING
-						if (opt.choices && opt.choices.length > 0) {
-							val = opt.choices[0].value;
-						} else {
-							// Smart Inference based on Option Name
-							if (
-								name.includes('id') ||
-								name.includes('user') ||
-								name.includes('target')
-							)
-								val = interaction.user.id;
-							else if (name.includes('channel')) val = interaction.channel.id;
-							else if (name.includes('role'))
-								val = interaction.guild.roles.cache.first()?.id || '123';
-							else if (name.includes('url') || name.includes('link'))
-								val = interaction.user.displayAvatarURL();
-							else if (name.includes('color')) val = '#FFFFFF';
-							else if (name.includes('reason'))
-								val = 'Automated Test Execution';
-							else if (name.includes('name'))
-								val = `Test-${Date.now().toString().slice(-4)}`;
-							else val = 'test_string';
-
-							// Respect Min/Max Length
-							if (opt.min_length && val.length < opt.min_length)
-								val = val.padEnd(opt.min_length, '_');
-							if (opt.max_length && val.length > opt.max_length)
-								val = val.substring(0, opt.max_length);
-						}
-						break;
-					case 4: // INTEGER
-					case 10: // NUMBER
-						if (opt.choices && opt.choices.length > 0) {
-							val = opt.choices[0].value.toString();
-						} else {
-							// Smart Number Inference
-							let num = 10;
-							if (name.includes('amount') || name.includes('count')) num = 50;
-							if (name.includes('age') || name.includes('level')) num = 5;
-							if (name.includes('duration')) num = 60;
-
-							// Respect Constraints
-							if (opt.min_value !== undefined)
-								num = Math.max(num, opt.min_value);
-							if (opt.max_value !== undefined)
-								num = Math.min(num, opt.max_value);
-
-							val = num.toString();
-						}
-						break;
-					case 5: // BOOLEAN
-						val = 'true';
-						break;
-					case 6: // USER
-						// Always use the real executor's ID for safety and validity
-						val = interaction.user.id;
-						break;
-					case 7: // CHANNEL
-						// Smart Channel Selection
-						if (name.includes('category') || name.includes('parent')) {
-							const category = interaction.guild.channels.cache.find(
-								(c) => c.type === 4,
-							); // 4 = Category
-							val = category ? category.id : interaction.channel.id;
-						} else {
-							// Try to match specific channel types if defined
-							if (opt.channel_types && opt.channel_types.length > 0) {
-								const matched = interaction.guild.channels.cache.find((c) =>
-									opt.channel_types.includes(c.type),
-								);
-								val = matched ? matched.id : interaction.channel.id;
-							} else {
-								val = interaction.channel.id;
-							}
-						}
-						break;
-					case 8: // ROLE
-						// Try to find a role that ISN'T @everyone to be safe
-						val =
-							interaction.guild.roles.cache
-								.filter((r) => r.name !== '@everyone')
-								.first()?.id || interaction.guild.id;
-						break;
-					case 9: // MENTIONABLE
-						val = interaction.user.id;
-						break;
-					case 11: // ATTACHMENT
-						// Handled in mock interaction customization
-						break;
-					default:
-						val = '123';
-				}
-				if (val) args.push(`${opt.name}:${val}`);
-			}
-			return args.join(' ');
-		};
-
-		// --- 2. Helper: UI Report Generator ---
-		const generateReport = (page) => {
-			const totalPages = Math.max(
-				1,
-				Math.ceil(results.details.length / RESULTS_PER_PAGE),
-			);
-			const safePage = Math.max(1, Math.min(page, totalPages));
-			const start = (safePage - 1) * RESULTS_PER_PAGE;
-			const pageData = results.details.slice(start, start + RESULTS_PER_PAGE);
-
-			const statusEmoji =
-				results.failed > 0 ? '`⚠️` Issues Found' : '`✅` Stable';
-			const accent = results.failed > 0 ? '#ED4245' : '#57F287';
-
-			const avgTime =
-				results.executionTimes.length > 0
-					? (
-							results.executionTimes.reduce((a, b) => a + b, 0) /
-							results.executionTimes.length
-						).toFixed(1)
-					: 0;
-
-			const containerUI = new ContainerBuilder()
-				.setAccentColor(convertColor(accent, { from: 'hex', to: 'decimal' }))
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						`## 🛠️ Command Integrity Report\n` +
-							`**Status**: ${statusEmoji}\n` +
-							`**Stats**: \`🟢\` ${results.success} Pass | \`🔴\` ${results.failed} Fail | \`⚪\` ${results.skipped} Skip\n` +
-							`**Performance**: \`⏱️\` Avg ${avgTime}ms / command`,
-					),
-				)
-				.addSeparatorComponents(
-					new SeparatorBuilder()
-						.setSpacing(SeparatorSpacingSize.Small)
-						.setDivider(true),
-				)
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						pageData.join('\n') || '*Testing in progress...*',
-					),
-				)
-				.addSeparatorComponents(
-					new SeparatorBuilder()
-						.setSpacing(SeparatorSpacingSize.Small)
-						.setDivider(true),
-				)
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						`Page ${safePage} of ${totalPages}`,
-					),
-				)
-				.addActionRowComponents(
-					new ActionRowBuilder().addComponents(
-						new ButtonBuilder()
-							.setCustomId('prev')
-							.setLabel('⬅️')
-							.setStyle(ButtonStyle.Secondary)
-							.setDisabled(safePage === 1),
-						new ButtonBuilder()
-							.setCustomId('next')
-							.setLabel('➡️')
-							.setStyle(ButtonStyle.Secondary)
-							.setDisabled(safePage === totalPages),
-						new ButtonBuilder()
-							.setCustomId('refresh')
-							.setLabel('🔄 Refresh')
-							.setStyle(ButtonStyle.Primary),
-					),
-				);
-
-			return { components: [containerUI], page: safePage };
-		};
-
-		// --- 3. Filtering Target Commands ---
-		const targetKeys = Array.from(commands.keys()).filter(
-			(key) => !allExclusions.has(key),
-		);
-		results.total = targetKeys.length;
-
-		// Visual feedback for excluded commands
-		const skippedMsg =
-			userExclusions.length > 0
-				? `\n🚫 **User Excluded**: \`${userExclusions.join(', ')}\``
-				: '';
-		const systemSkippedMsg = `\n🔒 **System Protected**: \`${ALWAYS_EXCLUDED.join(', ')}\``;
-
-		await interaction.editReply({
-			content: `🚀 Starting detailed test for **${results.total}** command entities...${skippedMsg}${systemSkippedMsg}`,
-		});
-
-		// --- 4. Main Loop ---
-		for (const key of targetKeys) {
-			const module = commands.get(key);
-			if (!module || typeof module.execute !== 'function') {
-				results.skipped++;
-				continue;
-			}
-			let schema = module.data || module.slashCommand;
-			const argsString = generateMockArgs(schema);
-
-			try {
-				// Determine Schema for Arg Mocking
-				// CRITICAL FIX: Handle Builder Functions for Subcommands
-				// If module.slashCommand is a function, we MUST call it with a builder to get options
-
-				if (typeof schema === 'function') {
-					const builder = new SlashCommandSubcommandBuilder();
-					schema = schema(builder);
-				}
-				// Fallback empty object if schema is still missing
-				if (!schema) schema = {};
-
-				// Mock Interaction Environment
-				const mockMessage = {
-					client: interaction.client,
-					guild: interaction.guild,
-					channel: interaction.channel,
-					author: interaction.user,
-					member: interaction.member,
-					content: `/${key} ${argsString}`,
-					createdTimestamp: Date.now(),
-					attachments: new Map(),
-					mentions: { users: new Map(), roles: new Map(), everyone: false },
-				};
-
-				const fakeInteraction = utils.InteractionFactory.create(
-					mockMessage,
-					key,
-					argsString,
-				);
-
-				// Ensure Attachment Mock is present if needed
-				if (schema.options?.some((o) => o.type === 11)) {
-					fakeInteraction.options.getAttachment = () => ({
-						id: 'mock_att_id',
-						url: 'https://mock.com/img.png',
-						contentType: 'image/png',
-						name: 'mock.png',
-					});
-				}
-
-				// --- HIJACK REPLIES ---
-				const proxy = async (payload) => {
-					const prefix =
-						`> 🧪 **Test:** \`/${key}\`\n` +
-						`> 📝 **Args:** \`${argsString || 'None'}\`\n` +
-						`> 👇 **Output:**\n`;
-
-					let finalPayload = {};
-
-					if (typeof payload === 'string') {
-						finalPayload = { content: prefix + payload };
-					} else {
-						finalPayload = { ...payload };
-
-						// Handle Components V2
-						if (finalPayload.flags & MessageFlags.IsComponentsV2) {
-							if (!finalPayload.components) finalPayload.components = [];
-							finalPayload.components.unshift(
-								new TextDisplayBuilder().setContent(prefix),
-							);
-							delete finalPayload.content; // Strict V2 rule
-						} else {
-							// Legacy Content
-							if (finalPayload.content)
-								finalPayload.content = prefix + finalPayload.content;
-							else finalPayload.content = prefix;
-						}
-					}
-
-					try {
-						return await interaction.followUp(finalPayload);
-					} catch (e) {
-						logger.warn(`Test Proxy Err: ${e.message}`);
-						// Swallow error to keep test running
-						return {
-							createMessageComponentCollector: () => ({
-								on: () => {},
-								stop: () => {},
-							}),
-							delete: async () => {},
-							edit: async () => {},
-						};
-					}
-				};
-
-				fakeInteraction.reply = proxy;
-				fakeInteraction.editReply = proxy;
-				fakeInteraction.followUp = proxy;
-				fakeInteraction.deferReply = async () => {}; // Absorbed
-
-				// Execution
-				const start = Date.now();
-				await module.execute(fakeInteraction, container);
-				const duration = Date.now() - start;
-
-				results.success++;
-				results.executionTimes.push(duration);
-				// Detailed Success Entry
-				results.details.push(
-					`\`🟢\` **/${key}** • \`⏱️\` ${duration}ms\n` +
-						`   └ 📥 \`${argsString || 'No Args'}\``,
-				);
-			} catch (err) {
-				results.failed++;
-				const errMsg =
-					err.message.length > 80
-						? `${err.message.substring(0, 80)}...`
-						: err.message;
-				// Detailed Failure Entry
-				results.details.push(
-					`\`🔴\` **/${key}**\n` +
-						`   ├ \`⚠️\` *${errMsg}*\n` +
-						`   └ \`📥\` \`${argsString || 'No Args'}\``,
-				);
-				// Reduce log noise by guarding logging
-				if (verbose) logger.error(`[TestAll] Failed /${key}:`, err);
-
-				if (stopOnError) break;
-			}
-
-			// Spacing out to avoid rate limits
-			await new Promise((r) => setTimeout(r, 2000));
+		const commands = interaction.client.commands;
+		if (!commands || commands.size === 0) {
+			return interaction.editReply('❌ No commands found to test.');
 		}
 
-		// --- 5. Final Reporting ---
-		let currentPage = 1;
-		const finalReport = generateReport(currentPage);
-		const reportMsg = await interaction.followUp({
-			...finalReport,
-			flags: MessageFlags.IsComponentsV2,
-			fetchReply: true,
-		});
+		const totalCommands = commands.size;
+		let processed = 0;
 
-		const collector = reportMsg.createMessageComponentCollector({
-			time: 600000,
-		});
-		collector.on('collect', async (i) => {
-			if (i.user.id !== interaction.user.id)
-				return i.reply({ content: 'Not for you', ephemeral: true });
+		await interaction.editReply(
+			`🔄 Starting test of ${totalCommands} commands...`,
+		);
 
-			if (i.customId === 'prev') currentPage--;
-			if (i.customId === 'next') currentPage++;
-			if (i.customId === 'refresh') {
-				/* Just update view */
+		// ── Iterate and mock-execute every command ─────────────────────────────
+		for (const [name, command] of commands) {
+			processed++;
+
+			// SKIP checks
+			if (BLACKLIST_COMMANDS.includes(name)) {
+				results.skipped.push(name);
+				continue;
+			}
+			if (!command.execute) {
+				results.skipped.push(`${name} (no execute)`);
+				continue;
 			}
 
-			const updated = generateReport(currentPage);
-			await i.update({ ...updated, flags: MessageFlags.IsComponentsV2 });
+			// Build option data from the slash command builder definition
+			const optionsData = {};
+			const slashBuilder = command.slashCommand;
+
+			if (slashBuilder?.options) {
+				for (const opt of slashBuilder.options) {
+					const optName = opt.name;
+					const optType = opt.type;
+
+					// Resolve a sensible guild-aware value for each option type
+					const guild = interaction.guild;
+
+					if (optType === ApplicationCommandOptionType.Role) {
+						optionsData[optName] =
+							guild?.roles?.cache
+								?.filter((r) => !r.managed && r.id !== guild.id)
+								?.random() ??
+							guild?.roles?.cache?.first() ??
+							null;
+					} else if (optType === ApplicationCommandOptionType.User) {
+						const member = guild?.members?.cache?.random();
+						optionsData[optName] = member?.user ?? interaction.user;
+					} else if (optType === ApplicationCommandOptionType.Member) {
+						optionsData[optName] =
+							guild?.members?.cache?.random() ?? interaction.member;
+					} else if (optType === ApplicationCommandOptionType.Channel) {
+						// Respect channelTypes restriction from the slash builder option
+						const allowedTypes = opt.channel_types ?? opt.channelTypes ?? [];
+						const wantsCategory = allowedTypes.includes(
+							ChannelType.GuildCategory,
+						);
+						if (wantsCategory) {
+							optionsData[optName] =
+								guild?.channels?.cache
+									?.filter((c) => c.type === ChannelType.GuildCategory)
+									?.first() ?? null;
+						} else if (allowedTypes.length > 0) {
+							optionsData[optName] =
+								guild?.channels?.cache
+									?.filter((c) => allowedTypes.includes(c.type))
+									?.random() ?? interaction.channel;
+						} else {
+							optionsData[optName] =
+								guild?.channels?.cache
+									?.filter((c) => c.type === ChannelType.GuildText)
+									?.random() ?? interaction.channel;
+						}
+					} else if (optType === ApplicationCommandOptionType.Mentionable) {
+						optionsData[optName] =
+							guild?.members?.cache?.random() ??
+							guild?.roles?.cache?.first() ??
+							interaction.member;
+					}
+					// All other types fall back to the TYPE_DEFAULTS inside createMockInteraction
+				}
+			}
+
+			// Execute with mock interaction
+			try {
+				const mock = createForwardingMockInteraction(
+					interaction,
+					name,
+					optionsData,
+				);
+				logger.info(`🧪 Testing command: ${name}`);
+
+				await command.execute(mock, container);
+
+				if (mock._hasReplied() || mock._isDeferred()) {
+					results.success.push(name);
+				} else {
+					results.failed.push(`${name} (no reply)`);
+				}
+			} catch (err) {
+				logger.error(`❌ Test failed for ${name}:`, err);
+				results.failed.push(`${name} (${err.message})`);
+			}
+
+			// Small delay to prevent rate limits
+			await new Promise((r) => setTimeout(r, 100));
+		}
+
+		// ── Build a beautiful Components V2 report ────────────────────────────
+		const { helpers, kythiaConfig: cfg } = container;
+		const { convertColor } = helpers.color;
+		const accentColor = convertColor(cfg.bot.color, {
+			from: 'hex',
+			to: 'decimal',
 		});
+
+		// Chunk long lists so they stay within Discord's 2000-char text display limit
+		const chunk = (arr) => {
+			if (arr.length === 0) return [`*None*`];
+			const lines = [];
+			let current = '';
+			for (const item of arr) {
+				const next = current ? `${current}, ${item}` : item;
+				if (next.length > 1800) {
+					lines.push(current);
+					current = item;
+				} else current = next;
+			}
+			if (current) lines.push(current);
+			return lines;
+		};
+
+		const successRate =
+			totalCommands > 0
+				? Math.round(
+						(results.success.length /
+							(results.success.length + results.failed.length || 1)) *
+							100,
+					)
+				: 100;
+		const statusLine =
+			results.failed.length === 0
+				? '✅ **All commands passed!**'
+				: `⚠️ **${results.failed.length} command(s) need attention**`;
+
+		const report = new ContainerBuilder().setAccentColor(accentColor);
+
+		// ── Header ────────────────────────────────────────────────────────────
+		report.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`## 🧪 Command Test Results\n${statusLine}\n-# Tested **${processed}/${totalCommands}** commands · Pass rate **${successRate}%** · <t:${Math.floor(Date.now() / 1000)}:R>`,
+			),
+		);
+		report.addSeparatorComponents(
+			new SeparatorBuilder()
+				.setSpacing(SeparatorSpacingSize.Small)
+				.setDivider(true),
+		);
+
+		// ── Success section ───────────────────────────────────────────────────
+		report.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`### ✅ Passed (${results.success.length})`,
+			),
+		);
+		for (const line of chunk(results.success)) {
+			report.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`\`\`\`${line}\`\`\``),
+			);
+		}
+
+		// ── Failures section ──────────────────────────────────────────────────
+		if (results.failed.length > 0) {
+			report.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			);
+			report.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`### ❌ Failed (${results.failed.length})`,
+				),
+			);
+			for (const line of chunk(results.failed)) {
+				report.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(`\`\`\`${line}\`\`\``),
+				);
+			}
+		}
+
+		// ── Skipped section ───────────────────────────────────────────────────
+		if (results.skipped.length > 0) {
+			report.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			);
+			report.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`### ⏭️ Skipped (${results.skipped.length})\n-# ${results.skipped.join(', ')}`,
+				),
+			);
+		}
+
+		// ── Footer ────────────────────────────────────────────────────────────
+		report.addSeparatorComponents(
+			new SeparatorBuilder()
+				.setSpacing(SeparatorSpacingSize.Small)
+				.setDivider(true),
+		);
+		report.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`-# 🛠️ ${interaction.client.user.username} · Developer Dry-Run`,
+			),
+		);
+
+		// Send via channel.send to avoid the deferred token expiring during long runs
+		try {
+			await interaction.channel.send({
+				components: [report],
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (err) {
+			logger.error('❌ testall: failed to send final report:', err);
+		}
+
+		await interaction
+			.editReply({ content: '✅ Done! Results posted above.' })
+			.catch((err) => logger.warn('testall editReply failed:', err.message));
 	},
 };

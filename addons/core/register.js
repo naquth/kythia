@@ -16,18 +16,30 @@ const path = require('node:path');
 const initialize = (bot) => {
 	const container = bot.client.container;
 	const { logger } = container;
+	const client = bot.client;
 	const summary = [];
 
-	const topGGPoster = setupTopGGPoster(bot);
-	if (topGGPoster) {
-		summary.push('  └─ Task: Top.gg auto-poster initialized');
-		process.on('exit', () => {
-			topGGPoster.cleanup();
-		});
-	}
+	// Only run background tasks on Shard 0 to prevent duplicate executions
+	const isShardZeroOrNoShard = !client.shard || client.shard.ids.includes(0);
 
-	cron.schedule('*/5 * * * *', () => runStatsUpdater(bot.client));
-	summary.push('  └─ Cron: cleanup user cache (every 5 minutes)');
+	if (isShardZeroOrNoShard) {
+		const topGGPoster = setupTopGGPoster(bot);
+		if (topGGPoster) {
+			summary.push('  └─ Task: Top.gg auto-poster initialized');
+			process.on('exit', () => {
+				topGGPoster.cleanup();
+			});
+		}
+
+		cron.schedule('*/5 * * * *', () => runStatsUpdater(bot.client));
+		summary.push(
+			'  └─ Cron: server stats updater (every 5 minutes, Shard 0 only)',
+		);
+	} else {
+		logger.info(
+			`🚫 Core background tasks (Top.gg, Stats Cron) disabled on Shard ${client.shard.ids[0]}`,
+		);
+	}
 
 	bot.addClientReadyHook(() => {
 		logger.info(

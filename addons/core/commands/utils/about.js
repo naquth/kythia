@@ -34,6 +34,8 @@ module.exports = {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;
 
+		await interaction.deferReply();
+
 		const components = [
 			new ContainerBuilder()
 				.setAccentColor(
@@ -106,7 +108,7 @@ module.exports = {
 				),
 		];
 
-		await interaction.reply({
+		await interaction.editReply({
 			components: components,
 			flags: MessageFlags.IsComponentsV2,
 		});

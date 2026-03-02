@@ -236,6 +236,19 @@ module.exports = {
 					subcommand
 						.setName('history')
 						.setDescription('📜 Show the history of played songs'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('download')
+						.setDescription('📥 Download the current song')
+						.addStringOption((option) =>
+							option
+								.setName('query')
+								.setDescription(
+									'The song to download (optional, if not specified, the current song will be downloaded)',
+								)
+								.setRequired(false),
+						),
 				),
 		)
 
@@ -665,8 +678,8 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { client, member, guild, options } = interaction;
-		const { t, music, musicHandlers, helpers } = container;
-		const { isOwner } = helpers.discord;
+		const { t, music, musicHandlers } = container;
+		// const { isOwner } = helpers.discord;
 
 		if (!(member instanceof GuildMember) || !member.voice.channel) {
 			return interaction.reply({
@@ -698,6 +711,8 @@ module.exports = {
 				if (sub === 'lyrics') return musicHandlers.handleLyrics(i, p);
 				if (sub === 'history')
 					return musicHandlers.handleHistory(i, p, music.guildStates);
+
+				if (sub === 'download') return musicHandlers.handleDownload(i, p);
 			},
 		};
 

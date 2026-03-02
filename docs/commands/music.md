@@ -38,6 +38,7 @@
 `/music utils grab`
 `/music utils lyrics`
 `/music utils history`
+`/music utils download [query]`
 `/music playlist save <name>`
 `/music playlist load <name>`
 `/music playlist append <name>`
@@ -192,6 +193,13 @@
 > 📜 Show the history of played songs
 
 
+**`/music utils download [<query>]`**
+> 📥 Download the current song
+
+**Options for this subcommand:**
+- **`query`**
+  - **Description:** The song to download (optional, if not specified, the current song will be downloaded)
+  - **Type:** Text
 **`/music playlist save <name>`**
 > Saves the current queue as a new playlist.
 

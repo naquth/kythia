@@ -7,11 +7,7 @@
  */
 
 const {
-	ButtonStyle,
 	MessageFlags,
-	ButtonBuilder,
-	ComponentType,
-	ActionRowBuilder,
 	SeparatorBuilder,
 	ContainerBuilder,
 	TextDisplayBuilder,
@@ -171,167 +167,6 @@ async function getRedisPings(container) {
 	return nodes;
 }
 
-async function buildPingEmbed(interaction, container, initialLatencies = null) {
-	const { t, kythiaConfig, helpers } = container;
-	const { convertColor } = helpers.color;
-
-	const botLatency = initialLatencies
-		? initialLatencies.bot
-		: Math.max(0, Date.now() - interaction.createdTimestamp);
-	const apiLatency = initialLatencies
-		? initialLatencies.api
-		: Math.round(interaction.client.ws.ping);
-
-	const [lavalinkNodes, dbPingInfo, redisNodes] = await Promise.all([
-		getLavalinkNodesPings(interaction.client),
-		getDbPing(container),
-		getRedisPings(container),
-	]);
-
-	const embedContainer = new ContainerBuilder().setAccentColor(
-		convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
-	);
-
-	embedContainer.addTextDisplayComponents(
-		new TextDisplayBuilder().setContent(
-			await t(interaction, 'core.utils.ping.embed.title'),
-		),
-	);
-	embedContainer.addSeparatorComponents(
-		new SeparatorBuilder()
-			.setSpacing(SeparatorSpacingSize.Small)
-			.setDivider(true),
-	);
-
-	embedContainer.addTextDisplayComponents(
-		new TextDisplayBuilder().setContent(
-			`**${await t(interaction, 'core.utils.ping.field.bot.latency')}**\n\`\`\`${botLatency}ms\`\`\``,
-		),
-	);
-	embedContainer.addTextDisplayComponents(
-		new TextDisplayBuilder().setContent(
-			`**${await t(interaction, 'core.utils.ping.field.api.latency')}**\n\`\`\`${apiLatency}ms\`\`\``,
-		),
-	);
-	embedContainer.addTextDisplayComponents(
-		new TextDisplayBuilder().setContent(
-			`**${await t(interaction, 'core.utils.ping.field.db.latency')}**\n\`\`\`${
-				dbPingInfo.status === 'connected'
-					? `${dbPingInfo.ping}ms`
-					: dbPingInfo.status === 'not_configured'
-						? 'Not Configured'
-						: dbPingInfo.status === 'error'
-							? 'Error'
-							: 'Unknown'
-			}\`\`\`` +
-				(dbPingInfo.status === 'error' && dbPingInfo.error
-					? `\n\`\`\`Error: ${dbPingInfo.error}\`\`\``
-					: ''),
-		),
-	);
-
-	if (redisNodes.length > 0) {
-		embedContainer.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
-				`**${await t(interaction, 'core.utils.ping.field.redis.nodes')}**`,
-			),
-		);
-		for (const node of redisNodes) {
-			let statusEmoji = '❓';
-			let pingText = 'N/A';
-			if (node.status === 'active') {
-				statusEmoji = '`✅`';
-				if (node.ping === -2) pingText = 'Ping Failed';
-				else if (node.ping === -1) pingText = 'Pinging...';
-				else pingText = `${node.ping}ms`;
-			} else if (node.status === 'standby') {
-				statusEmoji = '`⚪`';
-				pingText = 'Standby';
-			} else if (node.status === 'failed') {
-				statusEmoji = '`❌`';
-				pingText = 'Failed';
-			}
-			embedContainer.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(
-					`${statusEmoji} **${node.name}**\n\`\`\`${pingText}\`\`\``,
-				),
-			);
-		}
-	}
-
-	if (lavalinkNodes.length > 0) {
-		embedContainer.addSeparatorComponents(
-			new SeparatorBuilder()
-				.setSpacing(SeparatorSpacingSize.Small)
-				.setDivider(true),
-		);
-		embedContainer.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
-				`**${await t(interaction, 'core.utils.ping.field.lavalink.nodes')}**`,
-			),
-		);
-		for (const node of lavalinkNodes) {
-			let statusEmoji = '❓';
-			let pingText = 'N/A';
-			if (node.status === 'operational') {
-				statusEmoji = '`🟢`';
-				pingText = `${node.ping}ms`;
-			} else if (node.status === 'no_stats') {
-				statusEmoji = '`🟡`';
-				pingText = 'Stats OK, Ping Data Missing';
-			} else if (node.status === 'disconnected') {
-				statusEmoji = '`🔴`';
-				pingText = 'Disconnected';
-			} else if (node.status === 'error') {
-				statusEmoji = '`❌`';
-				pingText = 'Error';
-			}
-			const playersText = node.players > 0 ? ` (${node.players} players)` : '';
-			embedContainer.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(
-					`${statusEmoji} **${node.name}**\n\`\`\`${pingText}${playersText}\`\`\``,
-				),
-			);
-		}
-	}
-
-	embedContainer.addSeparatorComponents(
-		new SeparatorBuilder()
-			.setSpacing(SeparatorSpacingSize.Small)
-			.setDivider(true),
-	);
-	embedContainer.addActionRowComponents(
-		new ActionRowBuilder().addComponents(
-			new ButtonBuilder()
-				.setCustomId('ping_refresh')
-				.setLabel(await t(interaction, 'core.utils.ping.button.refresh'))
-				.setStyle(ButtonStyle.Secondary)
-				.setDisabled(false),
-		),
-	);
-	embedContainer.addSeparatorComponents(
-		new SeparatorBuilder()
-			.setSpacing(SeparatorSpacingSize.Small)
-			.setDivider(true),
-	);
-	embedContainer.addTextDisplayComponents(
-		new TextDisplayBuilder().setContent(
-			await t(interaction, 'common.container.footer', {
-				username: interaction.client.user.username,
-			}),
-		),
-	);
-
-	return {
-		embedContainer,
-		botLatency,
-		apiLatency,
-		lavalinkNodes,
-		dbPingInfo,
-		redisNodes,
-	};
-}
-
 module.exports = {
 	slashCommand: new SlashCommandBuilder()
 		.setName('ping')
@@ -348,107 +183,146 @@ module.exports = {
 		const { t, kythiaConfig, helpers } = container;
 		const { convertColor } = helpers.color;
 
+		await interaction.deferReply();
+
 		const botLatency = Math.max(0, Date.now() - interaction.createdTimestamp);
 		const apiLatency = Math.round(interaction.client.ws.ping);
 
-		const loadingEmbed = new ContainerBuilder()
-			.setAccentColor(
-				convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
-			)
-			.addTextDisplayComponents(
+		const [lavalinkNodes, dbPingInfo, redisNodes] = await Promise.all([
+			getLavalinkNodesPings(interaction.client),
+			getDbPing(container),
+			getRedisPings(container),
+		]);
+
+		const embedContainer = new ContainerBuilder().setAccentColor(
+			convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
+		);
+
+		embedContainer.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				await t(interaction, 'core.utils.ping.embed.title'),
+			),
+		);
+		embedContainer.addSeparatorComponents(
+			new SeparatorBuilder()
+				.setSpacing(SeparatorSpacingSize.Small)
+				.setDivider(true),
+		);
+
+		embedContainer.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`**${await t(interaction, 'core.utils.ping.field.bot.latency')}**\n\`\`\`${botLatency}ms\`\`\``,
+			),
+		);
+		embedContainer.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`**${await t(interaction, 'core.utils.ping.field.api.latency')}**\n\`\`\`${apiLatency}ms\`\`\``,
+			),
+		);
+		embedContainer.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`**Shard**\n\`\`\`#${interaction.guild?.shardId ?? 0}\`\`\``,
+			),
+		);
+		embedContainer.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`**${await t(interaction, 'core.utils.ping.field.db.latency')}**\n\`\`\`${
+					dbPingInfo.status === 'connected'
+						? `${dbPingInfo.ping}ms`
+						: dbPingInfo.status === 'not_configured'
+							? 'Not Configured'
+							: dbPingInfo.status === 'error'
+								? 'Error'
+								: 'Unknown'
+				}\`\`\`` +
+					(dbPingInfo.status === 'error' && dbPingInfo.error
+						? `\n\`\`\`Error: ${dbPingInfo.error}\`\`\``
+						: ''),
+			),
+		);
+
+		if (redisNodes.length > 0) {
+			embedContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
-					await t(interaction, 'core.utils.ping.embed.title'),
-				),
-			)
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(
-					`**${await t(interaction, 'core.utils.ping.field.bot.latency')}**\n\`\`\`${botLatency}ms\`\`\``,
-				),
-			)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(
-					`**${await t(interaction, 'core.utils.ping.field.api.latency')}**\n\`\`\`${apiLatency}ms\`\`\``,
-				),
-			)
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(
-					await t(interaction, 'core.utils.ping.loading'),
-				),
-			)
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			)
-			.addActionRowComponents(
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder()
-						.setCustomId('ping_refresh')
-						.setLabel(await t(interaction, 'core.utils.ping.button.refresh'))
-						.setStyle(ButtonStyle.Secondary)
-						.setDisabled(true),
-				),
-			)
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(
-					await t(interaction, 'common.container.footer', {
-						username: interaction.client.user.username,
-					}),
+					`**${await t(interaction, 'core.utils.ping.field.redis.nodes')}**`,
 				),
 			);
+			for (const node of redisNodes) {
+				let statusEmoji = '❓';
+				let pingText = 'N/A';
+				if (node.status === 'active') {
+					statusEmoji = '`✅`';
+					if (node.ping === -2) pingText = 'Ping Failed';
+					else if (node.ping === -1) pingText = 'Pinging...';
+					else pingText = `${node.ping}ms`;
+				} else if (node.status === 'standby') {
+					statusEmoji = '`⚪`';
+					pingText = 'Standby';
+				} else if (node.status === 'failed') {
+					statusEmoji = '`❌`';
+					pingText = 'Failed';
+				}
+				embedContainer.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`${statusEmoji} **${node.name}**\n\`\`\`${pingText}\`\`\``,
+					),
+				);
+			}
+		}
 
-		const sent = await interaction.reply({
-			content: ' ',
-			components: [loadingEmbed],
-			flags: MessageFlags.IsComponentsV2,
-			fetchReply: true,
-		});
+		if (lavalinkNodes.length > 0) {
+			embedContainer.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			);
+			embedContainer.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`**${await t(interaction, 'core.utils.ping.field.lavalink.nodes')}**`,
+				),
+			);
+			for (const node of lavalinkNodes) {
+				let statusEmoji = '❓';
+				let pingText = 'N/A';
+				if (node.status === 'operational') {
+					statusEmoji = '`🟢`';
+					pingText = `${node.ping}ms`;
+				} else if (node.status === 'no_stats') {
+					statusEmoji = '`🟡`';
+					pingText = 'Stats OK, Ping Data Missing';
+				} else if (node.status === 'disconnected') {
+					statusEmoji = '`🔴`';
+					pingText = 'Disconnected';
+				} else if (node.status === 'error') {
+					statusEmoji = '`❌`';
+					pingText = 'Error';
+				}
+				const playersText =
+					node.players > 0 ? ` (${node.players} players)` : '';
+				embedContainer.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`${statusEmoji} **${node.name}**\n\`\`\`${pingText}${playersText}\`\`\``,
+					),
+				);
+			}
+		}
 
-		const { embedContainer } = await buildPingEmbed(interaction, container, {
-			bot: botLatency,
-			api: apiLatency,
-		});
+		embedContainer.addSeparatorComponents(
+			new SeparatorBuilder()
+				.setSpacing(SeparatorSpacingSize.Small)
+				.setDivider(true),
+		);
+		embedContainer.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				await t(interaction, 'common.container.footer', {
+					username: interaction.client.user.username,
+				}),
+			),
+		);
 
 		await interaction.editReply({
 			components: [embedContainer],
+			flags: MessageFlags.IsComponentsV2,
 		});
-
-		const collector = sent.createMessageComponentCollector({
-			componentType: ComponentType.Button,
-			filter: (i) => i.customId === 'ping_refresh',
-		});
-
-		collector.on('collect', async (i) => {
-			const botLatency = Math.max(0, Date.now() - i.createdTimestamp);
-			const apiLatency = Math.round(i.client.ws.ping);
-
-			await i.deferUpdate();
-
-			const refreshed = await buildPingEmbed(i, container, {
-				bot: botLatency,
-				api: apiLatency,
-			});
-
-			await i.editReply({
-				components: [refreshed.embedContainer],
-			});
-		});
-
-		return { botLatency, apiLatency };
 	},
 };

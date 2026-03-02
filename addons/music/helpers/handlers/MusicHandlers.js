@@ -23,10 +23,15 @@ const {
 	StringSelectMenuBuilder,
 	SectionBuilder,
 	ThumbnailBuilder,
+	AttachmentBuilder,
+	FileBuilder,
 } = require('discord.js');
 
 const { customFilter } = require('poru');
+const ytDlp = require('yt-dlp-exec');
+const path = require('node:path');
 const axios = require('axios');
+const fs = require('node:fs');
 
 /**
  * 🎵 Music Handlers Service
@@ -49,17 +54,14 @@ const axios = require('axios');
  */
 class MusicHandlers {
 	constructor(container) {
-		// 1. Destructure dependencies from container
 		const { client, logger, t, kythiaConfig, helpers } = container;
 
-		// 2. Attach to instance
 		this.container = container;
 		this.client = client;
 		this.logger = logger;
 		this.t = t;
 		this.config = kythiaConfig;
 
-		// 3. Helpers
 		this.setVoiceChannelStatus = helpers.discord.setVoiceChannelStatus;
 		this.convertColor = helpers.color.convertColor;
 		this.isOwner = helpers.discord.isOwner;
@@ -67,7 +69,6 @@ class MusicHandlers {
 		this.isPremium = helpers.discord.isPremium;
 		this.simpleContainer = helpers.discord.simpleContainer;
 
-		// 4. State & Config Internal
 		this.guildStates = new Map();
 		this.TICKER_INTERVAL = 5000;
 
@@ -289,7 +290,6 @@ class MusicHandlers {
 	async handleJoin(interaction, _player) {
 		const { client, member, guild, channel } = interaction;
 
-		// Check if user is in a voice channel
 		if (!member.voice.channel) {
 			const components = await this.simpleContainer(
 				interaction,
@@ -303,7 +303,6 @@ class MusicHandlers {
 			});
 		}
 
-		// Check if bot is already connected to another channel
 		const existingPlayer = client.poru.players.get(guild.id);
 		if (
 			existingPlayer &&
@@ -312,7 +311,6 @@ class MusicHandlers {
 			existingPlayer.destroy();
 		}
 
-		// Create connection
 		client.poru.createConnection({
 			guildId: guild.id,
 			voiceChannel: member.voice.channel.id,
@@ -450,7 +448,7 @@ class MusicHandlers {
 				flags: MessageFlags.IsComponentsV2,
 				ephemeral: true,
 			});
-		} catch (error) {
+		} catch (_e) {
 			const failedComponents = await this.simpleContainer(
 				interaction,
 				await this.t(interaction, 'music.helpers.handlers.music.grab.failed'),
@@ -575,7 +573,7 @@ class MusicHandlers {
 	 * @param {object} player - The music player instance.
 	 * @param {Map} guildStates - The guild states map.
 	 */
-	async handleHistory(interaction, player, guildStates) {
+	async handleHistory(interaction, _player, guildStates) {
 		const guildId = interaction.guildId;
 		const guildState = guildStates.get(guildId);
 
@@ -660,12 +658,13 @@ class MusicHandlers {
 			return interaction.reply({
 				components,
 				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
 			});
 		}
 		player.pause(true);
 		const components = await this.simpleContainer(
 			interaction,
-			await this.t(interaction, 'music.helpers.handlers.music.paused'),
+			await this.t(interaction, 'music.helpers.handlers.manager.paused'),
 			{ color: this.config.bot.color },
 		);
 		return interaction.reply({
@@ -690,12 +689,13 @@ class MusicHandlers {
 			return interaction.reply({
 				components,
 				flags: MessageFlags.IsComponentsV2,
+				ephemeral: true,
 			});
 		}
 		player.pause(false);
 		const components = await this.simpleContainer(
 			interaction,
-			await this.t(interaction, 'music.helpers.handlers.music.resume'),
+			await this.t(interaction, 'music.helpers.handlers.manager.resumed'),
 			{ color: this.config.bot.color },
 		);
 		return interaction.reply({
@@ -3905,6 +3905,168 @@ class MusicHandlers {
 				);
 			return interaction.editReply({
 				components: [errContainer],
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	}
+
+	async handleDownload(interaction, player) {
+		await interaction.deferReply();
+
+		const query = interaction.options.getString('query');
+		const track = query ? null : player?.currentTrack;
+
+		if (!query && !track) {
+			return interaction.editReply({
+				components: await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.handlers.music.download.no_track_playing',
+					),
+					{ color: 'Red' },
+				),
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		const downloadQuery = query || track.info.uri;
+
+		let baseName = 'downloaded_song';
+		if (track?.info.title) {
+			baseName = track.info.title;
+		}
+
+		const safeName =
+			baseName
+				.replace(/[/\\?%*:|"<>]/g, '')
+				.replace(/[^a-zA-Z0-9 \-_]/g, '')
+				.trim()
+				.substring(0, 50) || `song_${Date.now()}`;
+
+		const fileName = `${safeName}.mp3`;
+		const filePath = path.join(__dirname, '../../../temp', fileName);
+
+		const maxLength = 600000; // 10 minutes
+		if (track && track.info.length > maxLength) {
+			return interaction.editReply({
+				components: await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.handlers.music.download.duration_too_long',
+					),
+					{ color: 'Red' },
+				),
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		try {
+			await ytDlp(downloadQuery, {
+				extractAudio: true,
+				audioFormat: 'mp3',
+				output: filePath,
+				noCheckCertificates: true,
+			});
+
+			const stats = fs.statSync(filePath);
+			const fileSizeInMB = stats.size / (1024 * 1024);
+
+			if (fileSizeInMB > 10) {
+				fs.unlinkSync(filePath);
+				return interaction.editReply({
+					components: await this.simpleContainer(
+						interaction,
+						await this.t(
+							interaction,
+							'music.helpers.handlers.music.download.file_too_large',
+						),
+						{ color: 'Orange' },
+					),
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+
+			const fileDescription = `Audio file for: ${track?.info.title || query}`;
+			const attachment = new AttachmentBuilder(filePath)
+				.setName(fileName)
+				.setDescription(fileDescription);
+
+			const fileComponent = new FileBuilder()
+				.setURL(`attachment://${fileName}`)
+				.setSpoiler(false);
+
+			const title = await this.t(
+				interaction,
+				'music.helpers.handlers.music.download.success',
+			);
+			const accentColor = this.convertColor(this.config.bot.color, {
+				from: 'hex',
+				to: 'decimal',
+			});
+
+			let contentText;
+			if (track) {
+				const titleText = await this.t(
+					interaction,
+					'music.helpers.handlers.music.download.title',
+					{ title: track.info.title },
+				);
+				const authorText = await this.t(
+					interaction,
+					'music.helpers.handlers.music.download.author',
+					{ author: track.info.author },
+				);
+				contentText = `${titleText}\n${authorText}`;
+			} else {
+				contentText = await this.t(
+					interaction,
+					'music.helpers.handlers.music.download.query',
+					{ query },
+				);
+			}
+
+			const v2Components = [
+				new ContainerBuilder()
+					.setAccentColor(accentColor)
+					.addTextDisplayComponents(new TextDisplayBuilder().setContent(title))
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(contentText),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(false),
+					)
+					.addFileComponents(fileComponent),
+			];
+
+			await interaction.editReply({
+				components: v2Components,
+				files: [attachment],
+				flags: MessageFlags.IsComponentsV2,
+			});
+
+			fs.unlinkSync(filePath);
+		} catch (error) {
+			this.logger.error('Download Error:', error);
+			if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+			return interaction.editReply({
+				components: await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.handlers.music.download.failed',
+					),
+					{ color: 'Red' },
+				),
 				flags: MessageFlags.IsComponentsV2,
 			});
 		}

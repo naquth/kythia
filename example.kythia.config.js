@@ -78,13 +78,13 @@ function loadKythiaConfig() {
 		 *   2. Right-click your username anywhere and select "Copy User ID"
 		 */
 		owner: {
-			// Your Discord User ID (NOT kenndeclouv's!)
-			// Multiple owners: '123456789,987654321'
-			ids: '1158654757183959091', // ⚠️  CHANGE THIS TO YOUR ID!
+			// Your Discord User ID
+			// Can be multiple owners: '123456789,987654321'
+			ids: '1158654757183959091',
 
 			// Your display name (shown in bot info)
-			// Multiple names: 'owner1,owner2'
-			names: 'kenndeclouv', // ⚠️  CHANGE THIS TO YOUR NAME!
+			// Can be multiple names: 'owner1,owner2'
+			names: 'kenndeclouv',
 		},
 		/**
 		 * Sentry for error logging
@@ -109,14 +109,6 @@ function loadKythiaConfig() {
 			// Discord application client secret (keep this secret!)
 			clientSecret: process.env.DISCORD_BOT_CLIENT_SECRET,
 
-			/*
-			 * Total shards
-			 * shard is system to distribute the bot to multiple servers
-			 * you can set it to 'auto' to let discord decide the best number of shards
-			 * or you can set it to a specific number of shards
-			 *
-			 * [!] not yet effective, under development
-			 */
 			totalShards: 'auto',
 
 			// guild id for main server

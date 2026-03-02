@@ -135,7 +135,7 @@ module.exports = async (bot, guild) => {
 				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`-# Guild Create Event | ${bot.client.user.username}`,
+						`-# ${bot.client.user.username} by kenndeclouv`,
 					),
 				);
 

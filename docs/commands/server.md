@@ -18,7 +18,7 @@
 ### 🔧 Subcommands
 
 **`/server autobuild <template> <reset> [<dry_run>] [<include_voice>] [<private_staff>] [<locale>]`**
-> automatically build server structure from a JSON template
+> Automatically build server structure from a JSON template
 
 **Options for this subcommand:**
 - **`template*`**

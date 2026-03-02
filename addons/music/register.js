@@ -6,8 +6,10 @@
  * @version 0.11.0-beta
  */
 
-const MusicManager = require('./helpers/MusicManager');
 const MusicHandlers = require('./helpers/handlers/MusicHandlers');
+const MusicManager = require('./helpers/MusicManager');
+const path = require('node:path');
+const fs = require('node:fs');
 
 module.exports = {
 	async initialize(bot) {
@@ -44,15 +46,13 @@ module.exports = {
 			let restoredCount = 0;
 			for (const session of sessions) {
 				try {
-					const guild = await client.guilds.fetch(session.guildId);
-					const voiceChannel = await getChannelSafe(
-						guild,
-						session.voiceChannelId,
-					);
-					const textChannel = await getChannelSafe(
-						guild,
-						session.textChannelId,
-					);
+					const guild = client.guilds.cache.get(session.guildId);
+					const voiceChannel = guild
+						? await getChannelSafe(guild, session.voiceChannelId)
+						: null;
+					const textChannel = guild
+						? await getChannelSafe(guild, session.textChannelId)
+						: null;
 
 					if (!guild || !voiceChannel || !textChannel) {
 						throw new Error('Guild/Channel not found');
@@ -79,7 +79,14 @@ module.exports = {
 				`🎵 [24/7 Resurrector] Successfully restored ${restoredCount}/${sessions.length} sessions.`,
 			);
 		});
+
 		summary.push('   └─ 🎵 24/7 Resurrector Hook is Active');
+
+		const tempPath = path.join(__dirname, '../../../temp');
+		if (!fs.existsSync(tempPath)) {
+			fs.mkdirSync(tempPath, { recursive: true });
+			summary.push('   └─ 📁 Temp Folder Created');
+		}
 
 		return summary;
 	},

@@ -48,7 +48,7 @@ module.exports = {
 				.setTitle(await t(interaction, 'ticket.reason_modal.title'))
 				.addLabelComponents(
 					new LabelBuilder()
-						.setLabel(ticketConfig.askReason)
+						.setLabel(ticketConfig.askReason.slice(0, 45))
 						.setDescription(await t(interaction, 'ticket.reason_modal.desc'))
 						.setTextInputComponent(
 							new TextInputBuilder()

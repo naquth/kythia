@@ -195,4 +195,48 @@ app.post('/topgg', async (c) => {
 	}
 });
 
+app.post('/license-created', async (c) => {
+	const client = c.get('client');
+	const { logger, helpers } = client.container;
+	const { simpleContainer } = helpers.discord;
+	const config = c.get('config');
+
+	const secret = c.req.header('Authorization');
+	const API_SECRET = config.addons.api?.secret || process.env.API_SECRET;
+
+	if (secret !== `Bearer ${API_SECRET}`) {
+		return c.json({ error: 'Unauthorized' }, 401);
+	}
+
+	const body = await c.req.json();
+	const { userId, licenseKey, transactionId } = body;
+
+	if (!userId || !licenseKey) {
+		return c.json({ error: 'Missing Data' }, 400);
+	}
+
+	try {
+		const user = await client.users.fetch(userId);
+		if (!user) return c.json({ error: 'User Not Found' }, 404);
+
+		const msg = `## \`🎉\` Purchase Successful!\nThank you for purchasing **Kythia Dashboard / Addons**.\n\nHere is your **License Key**:\n\`\`\`${licenseKey}\`\`\`\n\n**Transaction ID**: \`${transactionId}\`\n\n> *Please keep this key safe. Do not share it with anyone.*`;
+
+		const components = await simpleContainer({ client }, msg, {
+			color: '#00ff00', // Green for success
+			footer: 'Kythia Automated Delivery System',
+		});
+
+		await user.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+
+		logger.info(`License key sent to ${user.tag} (${userId})`);
+		return c.json({ success: true });
+	} catch (err) {
+		logger.error(`Failed to send license to ${userId}: ${err.message}`);
+		return c.json({ error: 'Failed to DM User', details: err.message }, 500);
+	}
+});
+
 module.exports = app;

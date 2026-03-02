@@ -11,8 +11,10 @@ const initializeServer = require('./server');
 module.exports = {
 	async initialize(bot) {
 		const summary = [];
-		await initializeServer(bot);
-		summary.push('   └─ 🚀 Initializing API...');
+		const server = await initializeServer(bot);
+		if (server) {
+			summary.push('   └─ 🚀 Initializing API...');
+		}
 
 		return summary;
 	},

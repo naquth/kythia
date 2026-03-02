@@ -27,6 +27,7 @@ app.get('/stats', (c) => {
 		totalMembers,
 		uptime: client.uptime,
 		ping: client.ws.ping,
+		ram_usage: `${(process.memoryUsage().rss / 1024 / 1024).toFixed(2)} MB`,
 	});
 });
 

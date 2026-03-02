@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 6 August 2025_
+_Last updated: 22 February 2026_
 
 This Privacy Policy explains how we collect, use, and disclose information when you use the Kythia Discord bot and its associated services and website ("Service").
 
@@ -25,6 +25,10 @@ We only collect data that is necessary for the Service to function properly. **W
 
 - **Cookies and Session Data:** When you log in to our dashboard, we use secure cookies to keep you authenticated. This data is linked to your Discord profile (ID, username, guilds) as provided by the Discord API during authentication.
 
+- **Hardware Information:** Basic OS and system specifications (HWID).
+
+- **Sanitized Configuration Data:** A securely redacted version of your configuration file. Our system employs strict masking to ensure that no sensitive credentials (such as Discord tokens, database passwords, or third-party API keys) are ever transmitted to or stored on our servers.
+
 ## 2. How We Use Your Information
 
 We use the collected information for the following purposes:
@@ -33,6 +37,7 @@ We use the collected information for the following purposes:
 - To personalize your experience (e.g., showing your level or balance).
 - To provide customer support and respond to your inquiries.
 - To monitor the usage of the Service for performance and security analysis.
+- To verify software licenses, monitor the performance of self-hosted instances, and provide remote debugging assistance.
 
 ## 3. Data Storage and Security
 
@@ -66,4 +71,4 @@ We may update this Privacy Policy from time to time. We will notify you of any c
 
 ## 9. Contact Us
 
-If you have any questions about this Privacy Policy, please contact us at [me@kenn.my.id](mailto:me@kenn.my.id) or by joining our Support Server.
+If you have any questions about this Privacy Policy, please contact us at [kenndeclouv@gmail.com](mailto:kenndeclouv@gmail.com) or by joining our Support Server.

@@ -6,7 +6,8 @@
  * @version 0.11.0-beta
  */
 
-const { closeTicket, MessageFlags } = require('../helpers');
+const { MessageFlags } = require('discord.js');
+const { closeTicket } = require('../helpers');
 
 module.exports = {
 	subcommand: true,

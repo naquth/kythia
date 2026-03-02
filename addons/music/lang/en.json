@@ -171,6 +171,16 @@
 						"success": "📥 Sent the track info to your DMs!",
 						"failed": "❌ I couldn't send you a DM. Please check your privacy settings."
 					},
+					"download": {
+						"no_track_playing": "❌ No song is currently playing. Please provide a link/query!",
+						"duration_too_long": "❌ The song is too long (over 10 minutes). I cannot download it.",
+						"file_too_large": "❌ The file is too large (over 10MB), I cannot upload it. 😭",
+						"success": "## ✅ Download Ready",
+						"title": "**Title:** {title}",
+						"author": "**Author:** {author}",
+						"query": "**Query:** {query}",
+						"failed": "❌ Failed to download the song. The link might be protected. 😭"
+					},
 					"replayed": "🔄 Replaying the current track.",
 					"history": {
 						"empty": "📜 No history found.",

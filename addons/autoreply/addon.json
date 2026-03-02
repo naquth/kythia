@@ -1,11 +1,6 @@
 {
-	"name": "autoreply",
+	"name": "Autoreply",
 	"description": "Create custom auto-replies for your server.",
 	"version": "0.0.1",
-	"author": "kenndeclouv",
-	"license": "MIT",
-	"commands": "commands",
-	"events": "events",
-	"database": "database",
-	"dependencies": []
+	"author": "kenndeclouv"
 }

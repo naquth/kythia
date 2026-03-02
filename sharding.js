@@ -1,3 +1,17 @@
+/**
+ * @file sharding.js
+ * @description Entry point for the Kythia Discord Bot using Discord.js ShardingManager.
+ * This file is responsible for spawning and managing multiple shards of the bot,
+ * ensuring optimal performance and stability across large numbers of guilds.
+ *
+ * It uses the 'kythia-core' ShardingManager to spawn the main bot process ('index.js').
+ *
+ * @author kenndeclouv
+ * @license CC-BY-NC-4.0
+ * @copyright 2025 Kythia Labs
+ * @version 0.11.0-beta
+ */
+
 const { ShardingManager } = require('kythia-core');
 const kythiaConfig = require('./kythia.config');
 const path = require('node:path');
@@ -9,6 +23,5 @@ const manager = new ShardingManager({
 });
 
 manager.spawn().catch((err) => {
-	// biome-ignore lint/suspicious/noConsole: logger not initialized yet
 	console.error('❌ Failed to spawn shards:', err);
 });

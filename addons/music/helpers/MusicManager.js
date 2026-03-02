@@ -505,7 +505,8 @@ class MusicManager {
 				await this.shutdownPlayerUI(player, lastPlayable);
 				player.nowPlayingMessage = null;
 
-				const IDLE_TIMEOUT_MS = 1000;
+				// 3 minutes
+				const IDLE_TIMEOUT_MS = 180000;
 
 				if (player.disconnectTimeout) clearTimeout(player.disconnectTimeout);
 
@@ -941,6 +942,7 @@ class MusicManager {
 				const collector = message.createMessageComponentCollector({
 					componentType: ComponentType.Button,
 					filter,
+					unsafe: true,
 				});
 				player.buttonCollector = collector;
 

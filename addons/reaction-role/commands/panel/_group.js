@@ -1,0 +1,15 @@
+/**
+ * @namespace: addons/reaction-role/commands/panel/_group.js
+ * @type: Subcommand Group Definition
+ * @copyright © 2026 kenndeclouv
+ * @assistant chaa & graa
+ * @version 2.0.0
+ */
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommandGroup) =>
+		subcommandGroup
+			.setName('panel')
+			.setDescription('📋 Manage reaction role panels.'),
+};

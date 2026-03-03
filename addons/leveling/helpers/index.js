@@ -17,7 +17,60 @@ const {
 	MediaGalleryItemBuilder,
 } = require('discord.js');
 
-const levelUpXp = (level) => level * level * 50;
+/**
+ * Calculate the XP required to level up from the given level,
+ * based on the server's leveling curve and multiplier.
+ *
+ * @param {number} level - The current level.
+ * @param {'linear'|'exponential'|'constant'} [curve='linear'] - The curve type.
+ * @param {number} [multiplier=1.0] - The XP multiplier.
+ * @returns {number}
+ */
+const levelUpXp = (level, curve = 'linear', multiplier = 1.0) => {
+	let base;
+	switch (curve) {
+		case 'exponential':
+			base = Math.floor(100 * Math.pow(1.5, level - 1));
+			break;
+		case 'constant':
+			base = 100;
+			break;
+		case 'linear':
+		default:
+			base = level * level * 50;
+			break;
+	}
+	return Math.max(1, Math.floor(base * multiplier));
+};
+
+/**
+ * Calculate level and remaining XP from total XP,
+ * respecting curve type, multiplier, and optional max level.
+ *
+ * @param {number} totalXp
+ * @param {'linear'|'exponential'|'constant'} [curve='linear']
+ * @param {number} [multiplier=1.0]
+ * @param {number|null} [maxLevel=null]
+ * @returns {{ newLevel: number, newXp: number }}
+ */
+const calculateLevelAndXp = (
+	totalXp,
+	curve = 'linear',
+	multiplier = 1.0,
+	maxLevel = null,
+) => {
+	let level = 1;
+	let xp = totalXp;
+	while (xp >= levelUpXp(level, curve, multiplier)) {
+		if (maxLevel !== null && level >= maxLevel) {
+			xp = Math.min(xp, levelUpXp(level, curve, multiplier) - 1);
+			break;
+		}
+		xp -= levelUpXp(level, curve, multiplier);
+		level += 1;
+	}
+	return { newLevel: level, newXp: xp };
+};
 
 const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 	const { container } = message.client;
@@ -26,12 +79,27 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 	const { getTextChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
 
+	const serverSetting = await ServerSetting.getCache({
+		guildId: message.guild.id,
+	});
+
+	const curve = serverSetting?.levelingCurve || 'linear';
+	const multiplier =
+		typeof serverSetting?.levelingMultiplier === 'number'
+			? serverSetting.levelingMultiplier
+			: 1.0;
+	const maxLevel =
+		typeof serverSetting?.levelingMaxLevel === 'number'
+			? serverSetting.levelingMaxLevel
+			: null;
+
 	if (!channel) {
-		const setting = await ServerSetting.getCache({ guildId: message.guild.id });
-		if (setting?.levelingChannelId) {
+		if (serverSetting?.levelingChannelId) {
 			channel =
-				(await getTextChannelSafe(message.guild, setting.levelingChannelId)) ||
-				null;
+				(await getTextChannelSafe(
+					message.guild,
+					serverSetting.levelingChannelId,
+				)) || null;
 		}
 	}
 
@@ -41,12 +109,19 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		user = await User.create({ guildId, userId, xp: 0, level: 1 });
 	}
 
+	// If user is already at max level, do nothing
+	if (maxLevel !== null && user.level >= maxLevel) return;
+
 	user.xp = Number(BigInt(user.xp) + BigInt(xpToAdd));
 	let leveledUp = false;
 	const levelBefore = user.level;
 
-	while (user.xp >= levelUpXp(user.level)) {
-		user.xp -= levelUpXp(user.level);
+	while (user.xp >= levelUpXp(user.level, curve, multiplier)) {
+		if (maxLevel !== null && user.level >= maxLevel) {
+			user.xp = levelUpXp(user.level, curve, multiplier) - 1;
+			break;
+		}
+		user.xp -= levelUpXp(user.level, curve, multiplier);
 		user.level += 1;
 		leveledUp = true;
 	}
@@ -58,9 +133,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 	if (!leveledUp) return;
 
 	const member = await helpers.discord.getMemberSafe(message.guild, userId);
-	const serverSetting = await ServerSetting.getCache({
-		guildId: message.guild.id,
-	});
 
 	let rewardRoleName = null;
 	let rewardLevel = null;
@@ -96,7 +168,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 			borderColor: kythiaConfig.bot.color || '#5865F2',
 			rankData: {
 				currentXp: user.xp,
-				requiredXp: levelUpXp(user.level),
+				requiredXp: levelUpXp(user.level, curve, multiplier),
 				level: user.level,
 				barColor: kythiaConfig.bot.color || '#5865F2',
 				levelColor: kythiaConfig.bot.color || '#5865F2',
@@ -129,7 +201,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 			mention: message.author.toString(),
 			level: user.level || 0,
 			xp: user.xp || 0,
-			nextLevelXp: levelUpXp(user.level),
+			nextLevelXp: levelUpXp(user.level, curve, multiplier),
 		},
 	);
 
@@ -202,25 +274,6 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		await channel.send(payload).catch(() => {});
 	}
 };
-
-const _calculateLevel = (xp) => {
-	let level = 1;
-	while (xp >= levelUpXp(level)) {
-		xp -= levelUpXp(level);
-		level += 1;
-	}
-	return level;
-};
-
-function calculateLevelAndXp(totalXp) {
-	let level = 1;
-	let xp = totalXp;
-	while (xp >= levelUpXp(level)) {
-		xp -= levelUpXp(level);
-		level += 1;
-	}
-	return { newLevel: level, newXp: xp };
-}
 
 module.exports = {
 	levelUpXp,

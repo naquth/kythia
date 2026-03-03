@@ -7,15 +7,20 @@
  */
 
 const { Hono } = require('hono');
+const { broadcastGetStats } = require('../helpers/shard');
+
 const app = new Hono();
 
-app.get('/', (c) => {
+app.get('/', async (c) => {
 	const client = c.get('client');
+
+	const { guilds, users } = await broadcastGetStats(client);
+
 	return c.json({
 		ping: client.ws.ping,
 		uptime: client.uptime,
-		guilds: client.guilds.cache.size,
-		users: client.users.cache.size,
+		guilds,
+		users,
 		ram_usage: `${(process.memoryUsage().rss / 1024 / 1024).toFixed(2)} MB`,
 	});
 });

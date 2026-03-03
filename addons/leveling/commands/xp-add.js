@@ -36,9 +36,22 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, helpers, kythiaConfig } = container;
 		const { simpleContainer } = helpers.discord;
-		const { User } = models;
+		const { User, ServerSetting } = models;
 
 		await interaction.deferReply({ ephemeral: true });
+
+		const serverSetting = await ServerSetting.getCache({
+			guildId: interaction.guild.id,
+		});
+		const curve = serverSetting?.levelingCurve || 'linear';
+		const multiplier =
+			typeof serverSetting?.levelingMultiplier === 'number'
+				? serverSetting.levelingMultiplier
+				: 1.0;
+		const maxLevel =
+			typeof serverSetting?.levelingMaxLevel === 'number'
+				? serverSetting.levelingMaxLevel
+				: null;
 
 		const targetUser = interaction.options.getUser('user');
 		const xpToAdd = interaction.options.getInteger('xp');
@@ -61,11 +74,16 @@ module.exports = {
 
 		let totalXp = user.xp;
 		for (let i = 1; i < user.level; i++) {
-			totalXp += levelUpXp(i);
+			totalXp += levelUpXp(i, curve, multiplier);
 		}
 		totalXp += xpToAdd;
 
-		const { newLevel, newXp } = calculateLevelAndXp(totalXp);
+		const { newLevel, newXp } = calculateLevelAndXp(
+			totalXp,
+			curve,
+			multiplier,
+			maxLevel,
+		);
 
 		user.level = newLevel;
 		user.xp = newXp;

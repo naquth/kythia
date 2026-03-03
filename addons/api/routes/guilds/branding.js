@@ -7,6 +7,11 @@
  */
 
 const { Hono } = require('hono');
+const {
+	broadcastFindGuild,
+	broadcastEditMember,
+} = require('../../helpers/shard');
+
 const app = new Hono();
 
 app.patch('/:guildId', async (c) => {
@@ -17,12 +22,11 @@ app.patch('/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 	const body = await c.req.json();
 
-	const guild = client.guilds.cache.get(guildId);
-	if (!guild) return c.json({ error: 'Guild not found' }, 404);
+	// Verify bot is in the guild (cross-shard aware)
+	const shardData = await broadcastFindGuild(client, guildId);
+	if (!shardData) return c.json({ error: 'Guild not found' }, 404);
 
 	try {
-		const me = guild.members.me;
-
 		const updatePayload = {};
 
 		if (body.nickname !== undefined) {
@@ -34,14 +38,15 @@ app.patch('/:guildId', async (c) => {
 		}
 
 		if (Object.keys(updatePayload).length > 0) {
-			await me.edit(updatePayload);
+			// Edit the bot member on whichever shard owns this guild
+			await broadcastEditMember(client, guildId, updatePayload);
 		}
 
 		let settings = await ServerSetting.getCache({ where: { guildId } });
 		if (!settings) {
 			settings = await ServerSetting.create({
 				guildId: guildId,
-				guildName: guild.name,
+				guildName: shardData.guild.name,
 			});
 		}
 

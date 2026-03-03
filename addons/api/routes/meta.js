@@ -11,16 +11,14 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { getCommandsData } = require('../helpers/commands');
 const { parseChangelog } = require('../helpers/changelog');
+const { broadcastGetMeta } = require('../helpers/shard');
 
 const app = new Hono();
 
-app.get('/stats', (c) => {
+app.get('/stats', async (c) => {
 	const client = c.get('client');
-	const totalServers = client.guilds.cache.size;
-	const totalMembers = client.guilds.cache.reduce(
-		(acc, guild) => acc + (guild.memberCount || 0),
-		0,
-	);
+
+	const { totalServers, totalMembers } = await broadcastGetMeta(client);
 
 	return c.json({
 		totalServers,

@@ -37,10 +37,19 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
-		const { User } = models;
+		const { User, ServerSetting } = models;
 		const { convertColor } = helpers.color;
 
 		await interaction.deferReply();
+
+		const serverSetting = await ServerSetting.getCache({
+			guildId: interaction.guild.id,
+		});
+		const curve = serverSetting?.levelingCurve || 'linear';
+		const multiplier =
+			typeof serverSetting?.levelingMultiplier === 'number'
+				? serverSetting.levelingMultiplier
+				: 1.0;
 
 		const targetUser = interaction.options.getUser('user') || interaction.user;
 
@@ -111,7 +120,7 @@ module.exports = {
 
 			rankData: {
 				currentXp: user.xp,
-				requiredXp: levelUpXp(user.level),
+				requiredXp: levelUpXp(user.level, curve, multiplier),
 				level: user.level,
 				barColor: kythiaConfig.bot.color || '#5865F2',
 				levelColor: kythiaConfig.bot.color || '#5865F2',
@@ -140,7 +149,7 @@ module.exports = {
 				username: targetUser.username,
 				level: user.level || 0,
 				xp: user.xp || 0,
-				nextLevelXp: levelUpXp(user.level),
+				nextLevelXp: levelUpXp(user.level, curve, multiplier),
 			},
 		);
 

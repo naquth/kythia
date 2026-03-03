@@ -3,13 +3,13 @@
  * @type: Event Handler
  * @copyright © 2026 kenndeclouv
  * @assistant chaa & graa
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 module.exports = async (bot, reaction, user) => {
 	const container = bot.client.container;
 	const { models, logger } = container;
-	const { ReactionRole } = models;
+	const { ReactionRole, ReactionRolePanel } = models;
 
 	try {
 		// Ignore bots
@@ -57,15 +57,48 @@ module.exports = async (bot, reaction, user) => {
 		});
 
 		if (rr) {
-			const member = await reaction.message.guild.members.fetch(user.id);
-			if (member) {
-				await member.roles.add(rr.roleId).catch((err) => {
-					logger.warn(
-						`Failed to add role ${rr.roleId} to user ${user.id}: ${err.message}`,
-						{ label: 'reactionRole:addRole' },
-					);
-				});
+			const member = await reaction.message.guild.members
+				.fetch(user.id)
+				.catch(() => null);
+			if (!member) return;
+
+			// --- Panel whitelist / blacklist enforcement ---
+			if (rr.panelId != null) {
+				try {
+					const panel = await ReactionRolePanel.findByPk(rr.panelId);
+					if (panel) {
+						const memberRoleIds = member.roles.cache.map((r) => r.id);
+
+						// Blacklist check — if member has ANY blacklisted role, skip
+						const blacklist = panel.blacklistRoles || [];
+						if (
+							blacklist.length > 0 &&
+							memberRoleIds.some((id) => blacklist.includes(id))
+						) {
+							return;
+						}
+
+						// Whitelist check — if defined, member must have AT LEAST ONE whitelisted role
+						const whitelist = panel.whitelistRoles || [];
+						if (
+							whitelist.length > 0 &&
+							!memberRoleIds.some((id) => whitelist.includes(id))
+						) {
+							return;
+						}
+					}
+				} catch (err) {
+					logger.warn(err, { label: 'reactionRole:panelCheck' });
+					// Non-blocking — fall through and assign role anyway
+				}
 			}
+
+			await member.roles.add(rr.roleId).catch((err) => {
+				logger.warn(
+					`Failed to add role ${rr.roleId} to user ${user.id}: ${err.message}`,
+					{ label: 'reactionRole:addRole' },
+				);
+			});
 		}
 	} catch (err) {
 		logger.error(err, { label: 'reactionRole:messageReactionAdd' });

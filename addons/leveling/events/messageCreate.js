@@ -10,7 +10,7 @@ const { addXp } = require('../helpers');
 const cooldown = new Map();
 
 /**
- * Auto-claim streak on any message in a guild (except bots).
+ * Award XP on a message in a guild (except bots).
  * @param {import('kythia-core').Kythia} bot - Instance of main Bot class.
  * @param {import('discord.js').Message} message - The message object.
  */
@@ -25,12 +25,43 @@ module.exports = async (bot, message) => {
 	const setting = await ServerSetting.getCache({ guildId });
 	if (!setting || !setting.levelingOn) return;
 
-	const xpPerMessage =
-		typeof setting.levelingXp === 'number' ? setting.levelingXp : 15;
-	const cooldownTime =
-		typeof setting.levelingCooldown === 'number'
-			? setting.levelingCooldown
-			: 60000;
+	// Check if message XP is enabled for this guild
+	if (setting.messageXpEnabled === false) return;
+
+	// Respect noXpChannels and noXpRoles
+	if (
+		Array.isArray(setting.noXpChannels) &&
+		setting.noXpChannels.includes(message.channel.id)
+	)
+		return;
+	if (Array.isArray(setting.noXpRoles)) {
+		const member =
+			message.member ||
+			(await message.guild.members.fetch(userId).catch(() => null));
+		if (
+			member &&
+			setting.noXpRoles.some((roleId) => member.roles.cache.has(roleId))
+		)
+			return;
+	}
+
+	// Determine XP to award (random between min and max)
+	const xpMin =
+		typeof setting.messageXpMin === 'number' ? setting.messageXpMin : 15;
+	const xpMax =
+		typeof setting.messageXpMax === 'number' ? setting.messageXpMax : 25;
+	const xpToAdd =
+		xpMin === xpMax
+			? xpMin
+			: Math.floor(Math.random() * (xpMax - xpMin + 1)) + xpMin;
+
+	// Cooldown in seconds (DB stores seconds), convert to ms
+	const cooldownSeconds =
+		typeof setting.messageXpCooldown === 'number'
+			? setting.messageXpCooldown
+			: 60;
+	const cooldownTime = cooldownSeconds * 1000;
+
 	const key = `${guildId}-${userId}`;
 	const now = Date.now();
 
@@ -38,7 +69,7 @@ module.exports = async (bot, message) => {
 		const channel =
 			(await getChannelSafe(message.guild, setting.levelingChannelId)) ||
 			message.channel;
-		await addXp(guildId, userId, xpPerMessage, message, channel);
+		await addXp(guildId, userId, xpToAdd, message, channel);
 		cooldown.set(key, now);
 	}
 };

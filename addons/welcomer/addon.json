@@ -1,0 +1,8 @@
+{
+	"name": "Welcomer",
+	"featureName": "Welcomer",
+	"featureFlag": "welcomeInOn",
+	"version": "1.0.0",
+	"description": "Welcome and farewell messages with banner cards, role assignment, and direct messages for new members.",
+	"author": "kenndeclouv"
+}

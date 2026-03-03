@@ -16,31 +16,34 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [Authentication](#authentication)
 - [Socket.IO Real-Time Events](#socketio-real-time-events)
 - [Routes](#routes)
-  - [GET /](#get-)
-  - [GET /api/list](#get-apilist)
-  - [GET /api/stats](#get-apistats)
-  - [GET /api/metrics](#get-apimetrics)
-  - [GET /api/meta/stats](#get-apimetastats)
-  - [GET /api/meta/commands](#get-apimetacommands)
-  - [GET /api/meta/changelog](#get-apimetachangelog)
-  - [GET /api/chat/:guildId/channels](#get-apichatguildidchannels)
-  - [GET /api/chat/messages/:channelId](#get-apichatmessageschannelid)
-  - [POST /api/chat/messages/:channelId](#post-apichatmessageschannelidest)
-  - [POST /api/canvas/preview](#post-apicanvaspreview)
-  - [GET /api/guilds](#get-apiguilds)
-  - [GET /api/guilds/:id](#get-apiguildsid)
-  - [GET /api/guilds/settings/:guildId](#get-apiguildssettingsguildid)
-  - [PATCH /api/guilds/settings/:guildId](#patch-apiguildssettingsguildid)
-  - [PATCH /api/guilds/branding/:guildId](#patch-apiguildsbrandingguildid)
-  - [Ticket API (`/api/tickets`)](#ticket-api-apitickets)
-  - [AutoReact API (`/api/autoreact`)](#autoreact-api-apiautoreact)
-  - [AutoReply API (`/api/autoreply`)](#autoreply-api-apiautoreply)
-  - [Invite API (`/api/invite`)](#invite-api-apiinvite)
-  - [Birthday API (`/api/birthday`)](#birthday-api-apibirthday)
-  - [Tempvoice API (`/api/tempvoice`)](#tempvoice-api-apitempvoice)
-  - [Image API (`/api/image`)](#image-api-apiimage)
-  - [POST /api/webhooks/topgg](#post-apiwebhookstopgg)
-  - [POST /api/webhooks/license-created](#post-apiwebhookslicense-created)
+- [GET /](#get-)
+- [GET /api/list](#get-apilist)
+- [GET /api/stats](#get-apistats)
+- [GET /api/metrics](#get-apimetrics)
+- [GET /api/meta/stats](#get-apimetastats)
+- [GET /api/meta/commands](#get-apimetacommands)
+- [GET /api/meta/changelog](#get-apimetachangelog)
+- [GET /api/chat/:guildId/channels](#get-apichatguildidchannels)
+- [GET /api/chat/messages/:channelId](#get-apichatmessageschannelid)
+- [POST /api/chat/messages/:channelId](#post-apichatmessageschannelidest)
+- [POST /api/canvas/preview](#post-apicanvaspreview)
+- [GET /api/guilds](#get-apiguilds)
+- [GET /api/guilds/:id](#get-apiguildsid)
+- [GET /api/guilds/settings/:guildId](#get-apiguildssettingsguildid)
+- [PATCH /api/guilds/settings/:guildId](#patch-apiguildssettingsguildid)
+- [PATCH /api/guilds/branding/:guildId](#patch-apiguildsbrandingguildid)
+- [Ticket API (`/api/tickets`)](#ticket-api-apitickets)
+- [AutoReact API (`/api/autoreact`)](#autoreact-api-apiautoreact)
+- [AutoReply API (`/api/autoreply`)](#autoreply-api-apiautoreply)
+- [Invite API (`/api/invite`)](#invite-api-apiinvite)
+- [Reaction Roles API (`/api/reaction-roles`)](#reaction-roles-api-apireaction-roles)
+- [Reaction Role Panels API (`/api/reaction-roles/panels`)](#reaction-role-panels-api-apireaction-rolespanels)
+- [Birthday API (`/api/birthday`)](#birthday-api-apibirthday)
+- [Tempvoice API (`/api/tempvoice`)](#tempvoice-api-apitempvoice)
+- [Image API (`/api/image`)](#image-api-apiimage)
+- [Welcomer API (`/api/welcome`)](#welcomer-api-apiwelcome)
+- [POST /api/webhooks/topgg](#post-apiwebhookstopgg)
+- [POST /api/webhooks/license-created](#post-apiwebhookslicense-created)
 - [Error Reference](#error-reference)
 
 ---
@@ -53,8 +56,8 @@ If you exceed this limit, the server will return a `429 Too Many Requests` statu
 
 ```json
 {
-  "success": false,
-  "error": "Too many requests, please try again later."
+"success": false,
+"error": "Too many requests, please try again later."
 }
 ```
 
@@ -143,8 +146,8 @@ Health check. Returns the API status and detected runtime.
 **Response:**
 ```json
 {
-  "message": "Kythia API is running! 🚀",
-  "runtime": "Bun"
+"message": "Kythia API is running! 🚀",
+"runtime": "Bun"
 }
 ```
 
@@ -164,12 +167,12 @@ Returns a sorted list of all registered HTTP routes on the server.
 **Response:**
 ```json
 {
-  "success": true,
-  "count": 18,
-  "routes": [
-    { "method": "GET", "path": "/api/chat/:guildId/channels" },
-    { "method": "POST", "path": "/api/canvas/preview" }
-  ]
+"success": true,
+"count": 18,
+"routes": [
+  { "method": "GET", "path": "/api/chat/:guildId/channels" },
+  { "method": "POST", "path": "/api/canvas/preview" }
+]
 }
 ```
 
@@ -192,11 +195,11 @@ Returns real-time bot statistics from the running Discord client.
 **Response:**
 ```json
 {
-  "ping": 42,
-  "uptime": 3600000,
-  "guilds": 150,
-  "users": 4200,
-  "ram_usage": "128.45 MB"
+"ping": 42,
+"uptime": 3600000,
+"guilds": 150,
+"users": 4200,
+"ram_usage": "128.45 MB"
 }
 ```
 
@@ -234,11 +237,11 @@ Returns aggregate statistics combining data from all cached guilds.
 **Response:**
 ```json
 {
-  "totalServers": 150,
-  "totalMembers": 48200,
-  "uptime": 3600000,
-  "ping": 42,
-  "ram_usage": "128.45 MB"
+"totalServers": 150,
+"totalMembers": 48200,
+"uptime": 3600000,
+"ping": 42,
+"ram_usage": "128.45 MB"
 }
 ```
 
@@ -261,45 +264,45 @@ Returns a structured list of all publicly visible slash commands and context men
 **Response:**
 ```json
 {
-  "commands": [
-    {
-      "name": "adventure",
-      "description": "Start an adventure!",
-      "category": "adventure",
-      "options": [],
-      "subcommands": [
-        {
-          "name": "start",
-          "description": "Start a new adventure",
-          "options": [
-            {
-              "name": "type",
-              "description": "Adventure type",
-              "type": "Text",
-              "required": true,
-              "choices": "`forest` (`forest`), `dungeon` (`dungeon`)"
-            }
-          ],
-          "aliases": []
-        }
-      ],
-      "aliases": [],
-      "type": "slash",
-      "isContextMenu": false
-    },
-    {
-      "name": "Report Message",
-      "description": "Right-click on a message to use this command.",
-      "category": "moderation",
-      "options": [],
-      "subcommands": [],
-      "aliases": [],
-      "type": "message",
-      "isContextMenu": true
-    }
-  ],
-  "categories": ["adventure", "moderation", "utility"],
-  "totalCommands": 57
+"commands": [
+  {
+    "name": "adventure",
+    "description": "Start an adventure!",
+    "category": "adventure",
+    "options": [],
+    "subcommands": [
+      {
+        "name": "start",
+        "description": "Start a new adventure",
+        "options": [
+          {
+            "name": "type",
+            "description": "Adventure type",
+            "type": "Text",
+            "required": true,
+            "choices": "`forest` (`forest`), `dungeon` (`dungeon`)"
+          }
+        ],
+        "aliases": []
+      }
+    ],
+    "aliases": [],
+    "type": "slash",
+    "isContextMenu": false
+  },
+  {
+    "name": "Report Message",
+    "description": "Right-click on a message to use this command.",
+    "category": "moderation",
+    "options": [],
+    "subcommands": [],
+    "aliases": [],
+    "type": "message",
+    "isContextMenu": true
+  }
+],
+"categories": ["adventure", "moderation", "utility"],
+"totalCommands": 57
 }
 ```
 
@@ -339,11 +342,11 @@ Reads and parses `changelog.md` from the bot's **working directory** (`process.c
 **Response:**
 ```json
 [
-  {
-    "version": "0.11.0-beta",
-    "date": "2025-01-15",
-    "html": "<h2>What's New</h2><ul><li>Added canvas preview endpoint</li></ul>"
-  }
+{
+  "version": "0.11.0-beta",
+  "date": "2025-01-15",
+  "html": "<h2>What's New</h2><ul><li>Added canvas preview endpoint</li></ul>"
+}
 ]
 ```
 
@@ -385,21 +388,21 @@ Returns all **text channels** the bot can view in the specified guild, grouped b
 **Response:**
 ```json
 [
-  {
-    "id": "111111111111111111",
-    "name": "GENERAL",
-    "channels": [
-      { "id": "222222222222222222", "name": "general" },
-      { "id": "333333333333333333", "name": "announcements" }
-    ]
-  },
-  {
-    "id": "no-category",
-    "name": "WITHOUT CATEGORY",
-    "channels": [
-      { "id": "444444444444444444", "name": "bot-commands" }
-    ]
-  }
+{
+  "id": "111111111111111111",
+  "name": "GENERAL",
+  "channels": [
+    { "id": "222222222222222222", "name": "general" },
+    { "id": "333333333333333333", "name": "announcements" }
+  ]
+},
+{
+  "id": "no-category",
+  "name": "WITHOUT CATEGORY",
+  "channels": [
+    { "id": "444444444444444444", "name": "bot-commands" }
+  ]
+}
 ]
 ```
 
@@ -443,18 +446,18 @@ Fetches recent messages from a text channel and returns them formatted with Disc
 **Response:** (array, returned in chronological order — oldest first)
 ```json
 [
-  {
-    "id": "999999999999999999",
-    "content": "<strong>Hello!</strong> Check out <span class=\"mention\">#general</span>",
-    "author": {
-      "username": "kenndeclouv",
-      "avatar": "https://cdn.discordapp.com/avatars/.../avatar.png",
-      "bot": false
-    },
-    "timestamp": "2025-01-15T08:30:00.000Z",
-    "embeds": [],
-    "attachments": ["https://cdn.discordapp.com/attachments/..."]
-  }
+{
+  "id": "999999999999999999",
+  "content": "<strong>Hello!</strong> Check out <span class=\"mention\">#general</span>",
+  "author": {
+    "username": "kenndeclouv",
+    "avatar": "https://cdn.discordapp.com/avatars/.../avatar.png",
+    "bot": false
+  },
+  "timestamp": "2025-01-15T08:30:00.000Z",
+  "embeds": [],
+  "attachments": ["https://cdn.discordapp.com/attachments/..."]
+}
 ]
 ```
 
@@ -517,7 +520,7 @@ Sends a message to the specified channel as the bot.
 **Request Body:**
 ```json
 {
-  "message": "Hello from the dashboard!"
+"message": "Hello from the dashboard!"
 }
 ```
 
@@ -549,30 +552,30 @@ The body accepts a range of prefixed configuration fields. The `type` field dete
 
 ```json
 {
-  "type": "In",
+"type": "In",
 
-  "welcomeInBannerWidth": 800,
-  "welcomeInBannerHeight": 250,
+"welcomeInBannerWidth": 800,
+"welcomeInBannerHeight": 250,
 
-  "welcomeInBackgroundUrl": "https://example.com/bg.png",
-  "welcomeInOverlayColor": "#000000",
+"welcomeInBackgroundUrl": "https://example.com/bg.png",
+"welcomeInOverlayColor": "#000000",
 
-  "welcomeInAvatarEnabled": true,
-  "welcomeInAvatarSize": 100,
-  "welcomeInAvatarYOffset": 0,
+"welcomeInAvatarEnabled": true,
+"welcomeInAvatarSize": 100,
+"welcomeInAvatarYOffset": 0,
 
-  "welcomeInAvatarBorderWidth": 4,
-  "welcomeInAvatarBorderColor": "#ffffff",
+"welcomeInAvatarBorderWidth": 4,
+"welcomeInAvatarBorderColor": "#ffffff",
 
-  "welcomeInMainTextContent": "Welcome, {username}!",
-  "welcomeInMainTextColor": "#ffffff",
-  "welcomeInMainTextFontFamily": "Arial",
-  "welcomeInMainTextFontWeight": "bold",
-  "welcomeInMainTextYOffset": 0,
+"welcomeInMainTextContent": "Welcome, {username}!",
+"welcomeInMainTextColor": "#ffffff",
+"welcomeInMainTextFontFamily": "Arial",
+"welcomeInMainTextFontWeight": "bold",
+"welcomeInMainTextYOffset": 0,
 
-  "welcomeInSubTextColor": "#cccccc",
+"welcomeInSubTextColor": "#cccccc",
 
-  "welcomeInShadowColor": "#000000"
+"welcomeInShadowColor": "#000000"
 }
 ```
 
@@ -614,8 +617,8 @@ Variables are replaced case-insensitively.
 **Response (success):**
 ```json
 {
-  "success": true,
-  "image": "data:image/png;base64,iVBORw0KGgoAAAANS..."
+"success": true,
+"image": "data:image/png;base64,iVBORw0KGgoAAAANS..."
 }
 ```
 
@@ -627,9 +630,9 @@ Variables are replaced case-insensitively.
 **Error (500):**
 ```json
 {
-  "success": false,
-  "message": "Failed to generate preview",
-  "error": "Error message detail"
+"success": false,
+"message": "Failed to generate preview",
+"error": "Error message detail"
 }
 ```
 
@@ -644,13 +647,13 @@ Returns a summary list of all guilds the bot is currently in (from cache).
 **Response:**
 ```json
 [
-  {
-    "id": "123456789012345678",
-    "name": "Kythia Universe",
-    "icon": "https://cdn.discordapp.com/icons/123.../icon.png",
-    "memberCount": 1337,
-    "ownerId": "987654321098765432"
-  }
+{
+  "id": "123456789012345678",
+  "name": "Kythia Universe",
+  "icon": "https://cdn.discordapp.com/icons/123.../icon.png",
+  "memberCount": 1337,
+  "ownerId": "987654321098765432"
+}
 ]
 ```
 
@@ -685,36 +688,36 @@ Returns detailed information about a specific guild, including its server settin
 **Response:**
 ```json
 {
-  "guild": {
-    "id": "123456789012345678",
-    "name": "Kythia Universe",
-    "icon": "https://cdn.discordapp.com/icons/..."
-  },
-  "settings": {
-    "guildId": "123456789012345678",
-    "lang": "en",
-    "prefix": "!",
-    "levelingOn": true
-  },
-  "channels": {
-    "text": [{ "id": "111", "name": "general" }],
-    "voice": [{ "id": "222", "name": "Voice Lounge" }],
-    "categories": [{ "id": "333", "name": "General" }]
-  },
-  "roles": [
-    {
-      "id": "444444444444444444",
-      "name": "Admin",
-      "color": "#ff0000",
-      "managed": false
-    }
-  ],
-  "botUser": {
-    "username": "Kythia",
-    "avatar": "https://cdn.discordapp.com/avatars/...",
-    "id": "555555555555555555",
-    "discriminator": "0"
+"guild": {
+  "id": "123456789012345678",
+  "name": "Kythia Universe",
+  "icon": "https://cdn.discordapp.com/icons/..."
+},
+"settings": {
+  "guildId": "123456789012345678",
+  "lang": "en",
+  "prefix": "!",
+  "levelingOn": true
+},
+"channels": {
+  "text": [{ "id": "111", "name": "general" }],
+  "voice": [{ "id": "222", "name": "Voice Lounge" }],
+  "categories": [{ "id": "333", "name": "General" }]
+},
+"roles": [
+  {
+    "id": "444444444444444444",
+    "name": "Admin",
+    "color": "#ff0000",
+    "managed": false
   }
+],
+"botUser": {
+  "username": "Kythia",
+  "avatar": "https://cdn.discordapp.com/avatars/...",
+  "id": "555555555555555555",
+  "discriminator": "0"
+}
 }
 ```
 
@@ -753,13 +756,13 @@ Fetches the stored `ServerSetting` for a guild.
 **Response:**
 ```json
 {
-  "settings": {
-    "guildId": "123456789012345678",
-    "lang": "en",
-    "prefix": "!",
-    "levelingOn": false,
-    "welcomeInOn": true
-  }
+"settings": {
+  "guildId": "123456789012345678",
+  "lang": "en",
+  "prefix": "!",
+  "levelingOn": false,
+  "welcomeInOn": true
+}
 }
 ```
 
@@ -793,23 +796,23 @@ Values are automatically coerced to match the column's database type:
 Any JSON object with valid `ServerSetting` attribute keys and their new values:
 ```json
 {
-  "lang": "id",
-  "levelingOn": true,
-  "welcomeInChannelId": "111111111111111111",
-  "prefix": "?"
+"lang": "id",
+"levelingOn": true,
+"welcomeInChannelId": "111111111111111111",
+"prefix": "?"
 }
 ```
 
 **Response (success):**
 ```json
 {
-  "success": true,
-  "settings": {
-    "guildId": "123456789012345678",
-    "lang": "id",
-    "levelingOn": true,
-    "welcomeInChannelId": "111111111111111111"
-  }
+"success": true,
+"settings": {
+  "guildId": "123456789012345678",
+  "lang": "id",
+  "levelingOn": true,
+  "welcomeInChannelId": "111111111111111111"
+}
 }
 ```
 
@@ -837,10 +840,10 @@ Updates the bot's in-guild appearance. This includes the bot's per-guild **nickn
 **Request Body:**
 ```json
 {
-  "nickname": "Kythia Bot",
-  "avatar": "https://example.com/avatar.png",
-  "banner": "https://example.com/banner.png",
-  "bio": "Your friendly Discord companion."
+"nickname": "Kythia Bot",
+"avatar": "https://example.com/avatar.png",
+"banner": "https://example.com/banner.png",
+"bio": "Your friendly Discord companion."
 }
 ```
 
@@ -880,9 +883,9 @@ Authorization: <topgg.authToken from kythiaConfig>
 **Request Body:** (sent by Top.gg)
 ```json
 {
-  "user": "123456789012345678",
-  "type": "upvote",
-  "isWeekend": false
+"user": "123456789012345678",
+"type": "upvote",
+"isWeekend": false
 }
 ```
 
@@ -924,9 +927,9 @@ Authorization: Bearer <API_SECRET>
 **Request Body:**
 ```json
 {
-  "userId": "123456789012345678",
-  "licenseKey": "XXXX-XXXX-XXXX-XXXX",
-  "transactionId": "TXN-0001"
+"userId": "123456789012345678",
+"licenseKey": "XXXX-XXXX-XXXX-XXXX",
+"transactionId": "TXN-0001"
 }
 ```
 
@@ -980,24 +983,24 @@ Fetches a list of support tickets.
 **Response:**
 ```json
 {
-  "success": true,
-  "count": 1,
-  "data": [
-    {
-      "id": 12,
-      "guildId": "123456789012345678",
-      "userId": "987654321098765432",
-      "channelId": "112233445566778899",
-      "ticketConfigId": 3,
-      "status": "open",
-      "openedAt": "2025-01-15T08:30:00.000Z",
-      "closedAt": null,
-      "closedByUserId": null,
-      "closedReason": null,
-      "createdAt": "2025-01-15T08:30:00.000Z",
-      "updatedAt": "2025-01-15T08:30:00.000Z"
-    }
-  ]
+"success": true,
+"count": 1,
+"data": [
+  {
+    "id": 12,
+    "guildId": "123456789012345678",
+    "userId": "987654321098765432",
+    "channelId": "112233445566778899",
+    "ticketConfigId": 3,
+    "status": "open",
+    "openedAt": "2025-01-15T08:30:00.000Z",
+    "closedAt": null,
+    "closedByUserId": null,
+    "closedReason": null,
+    "createdAt": "2025-01-15T08:30:00.000Z",
+    "updatedAt": "2025-01-15T08:30:00.000Z"
+  }
+]
 }
 ```
 
@@ -1165,17 +1168,17 @@ List all autoreact rules.
 **Response:**
 ```json
 {
-  "success": true,
-  "count": 1,
-  "data": [
-    {
-      "id": 5,
-      "guildId": "...",
-      "trigger": "hello",
-      "emoji": "👋",
-      "type": "text"
-    }
-  ]
+"success": true,
+"count": 1,
+"data": [
+  {
+    "id": 5,
+    "guildId": "...",
+    "trigger": "hello",
+    "emoji": "👋",
+    "type": "text"
+  }
+]
 }
 ```
 
@@ -1205,17 +1208,17 @@ List all autoreply rules.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": 8,
-      "guildId": "...",
-      "trigger": "!help",
-      "response": "How can I help you today?",
-      "media": null,
-      "useContainer": false
-    }
-  ]
+"success": true,
+"data": [
+  {
+    "id": 8,
+    "guildId": "...",
+    "trigger": "!help",
+    "response": "How can I help you today?",
+    "media": null,
+    "useContainer": false
+  }
+]
 }
 ```
 
@@ -1245,16 +1248,16 @@ List aggregate invite statistics for users.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "guildId": "...",
-      "userId": "...",
-      "invites": 10,
-      "fake": 1,
-      "leaves": 2
-    }
-  ]
+"success": true,
+"data": [
+  {
+    "guildId": "...",
+    "userId": "...",
+    "invites": 10,
+    "fake": 1,
+    "leaves": 2
+  }
+]
 }
 ```
 
@@ -1265,17 +1268,17 @@ List individual join/leave history records.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": 101,
-      "inviterId": "...",
-      "memberId": "...",
-      "status": "active",
-      "isFake": false,
-      "createdAt": "..."
-    }
-  ]
+"success": true,
+"data": [
+  {
+    "id": 101,
+    "inviterId": "...",
+    "memberId": "...",
+    "status": "active",
+    "isFake": false,
+    "createdAt": "..."
+  }
+]
 }
 ```
 
@@ -1290,6 +1293,188 @@ Delete an invite record.
 
 #### `DELETE /api/invite/histories/:id`
 Delete a specific history entry.
+
+---
+
+---
+
+## Welcomer API (`/api/welcome`)
+
+Manages welcome-in, welcome-out, welcome DM, and style settings for a guild. All settings are stored in the dedicated `WelcomeSetting` model (`welcome_settings` table).
+
+**Authentication:** Bearer token required for all routes.
+
+---
+
+### `GET /api/welcome/:guildId`
+
+Returns all welcome-related settings for the specified guild.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "welcomeInOn": true,
+    "welcomeInChannelId": "111111111111111111",
+    "welcomeInEmbedText": "Welcome, {username}!",
+    "welcomeInEmbedColor": "#5865F2",
+    "welcomeInBackgroundUrl": "https://example.com/bg.png",
+    "welcomeInOverlayColor": "#000000",
+    "welcomeInBannerWidth": 1024,
+    "welcomeInBannerHeight": 450,
+    "welcomeInAvatarEnabled": true,
+    "welcomeInAvatarSize": null,
+    "welcomeInAvatarShape": "circle",
+    "welcomeInAvatarYOffset": null,
+    "welcomeInAvatarBorderWidth": null,
+    "welcomeInAvatarBorderColor": null,
+    "welcomeInMainTextContent": "WELCOME",
+    "welcomeInMainTextColor": "#FFFFFF",
+    "welcomeInMainTextFontFamily": null,
+    "welcomeInMainTextFontWeight": null,
+    "welcomeInMainTextYOffset": null,
+    "welcomeInSubTextContent": null,
+    "welcomeInSubTextColor": null,
+    "welcomeInSubTextYOffset": null,
+    "welcomeInBorderColor": null,
+    "welcomeInBorderWidth": null,
+    "welcomeInShadowColor": null,
+    "welcomeInLayout": null,
+    "welcomeOutOn": false,
+    "welcomeOutChannelId": null,
+    "welcomeOutEmbedText": null,
+    "welcomeOutEmbedColor": null,
+    "welcomeOutBackgroundUrl": null,
+    "welcomeOutOverlayColor": null,
+    "welcomeOutBannerWidth": null,
+    "welcomeOutBannerHeight": null,
+    "welcomeOutAvatarEnabled": true,
+    "welcomeOutAvatarSize": null,
+    "welcomeOutAvatarShape": null,
+    "welcomeOutAvatarYOffset": null,
+    "welcomeOutAvatarBorderWidth": null,
+    "welcomeOutAvatarBorderColor": null,
+    "welcomeOutMainTextContent": null,
+    "welcomeOutMainTextColor": null,
+    "welcomeOutMainTextFontFamily": null,
+    "welcomeOutMainTextFontWeight": null,
+    "welcomeOutMainTextYOffset": null,
+    "welcomeOutSubTextContent": null,
+    "welcomeOutSubTextColor": null,
+    "welcomeOutSubTextYOffset": null,
+    "welcomeOutBorderColor": null,
+    "welcomeOutBorderWidth": null,
+    "welcomeOutLayout": null,
+    "welcomeRoleId": null,
+    "welcomeDmOn": false,
+    "welcomeDmText": null
+  }
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "WelcomeSetting not found" }` | No settings record for guild |
+
+---
+
+### `PATCH /api/welcome/:guildId`
+
+Partially updates welcome settings for a guild. Only the fields listed in the allowed set below are accepted; all other keys are silently ignored.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Request Body:**
+
+Send any subset of the fields below:
+
+| Field | Type | Description |
+|---|---|---|
+| `welcomeInOn` | `boolean` | Enable/disable welcome-in messages |
+| `welcomeInChannelId` | `string` | Channel ID for welcome-in messages |
+| `welcomeInEmbedText` | `string` | Text displayed in the welcome card. Supports placeholders |
+| `welcomeInEmbedColor` | `string` | HEX accent color for the welcome card |
+| `welcomeInBackgroundUrl` | `string` | URL of the banner background image |
+| `welcomeInOverlayColor` | `string` | HEX color overlay on the background |
+| `welcomeInBannerWidth` | `integer` | Canvas width in pixels |
+| `welcomeInBannerHeight` | `integer` | Canvas height in pixels |
+| `welcomeInAvatarEnabled` | `boolean` | Enable/disable avatar on banner (default `true`) |
+| `welcomeInAvatarSize` | `integer` | Avatar diameter in pixels |
+| `welcomeInAvatarShape` | `string` | `"circle"` or `"square"` |
+| `welcomeInAvatarYOffset` | `integer` | Avatar vertical offset |
+| `welcomeInAvatarBorderWidth` | `integer` | Avatar border width |
+| `welcomeInAvatarBorderColor` | `string` | Avatar border HEX color |
+| `welcomeInMainTextContent` | `string` | Main banner text (default `WELCOME`) |
+| `welcomeInMainTextColor` | `string` | HEX color for main banner text |
+| `welcomeInMainTextFontFamily` | `string` | Font family name for main text |
+| `welcomeInMainTextFontWeight` | `string` | Font weight for main text |
+| `welcomeInMainTextYOffset` | `integer` | Vertical offset for main text |
+| `welcomeInSubTextContent` | `string` | Sub-text content on banner |
+| `welcomeInSubTextColor` | `string` | HEX color for username sub-text |
+| `welcomeInSubTextYOffset` | `integer` | Vertical offset for sub-text |
+| `welcomeInBorderColor` | `string` | Banner border HEX color |
+| `welcomeInBorderWidth` | `integer` | Banner border width |
+| `welcomeInShadowColor` | `string` | Enables text shadow when set |
+| **`welcomeInLayout`** | `JSON\|null` | `null` → CV2 banner card (default); `{ "style": "plain-text" }` → plain text only |
+| `welcomeOutOn` | `boolean` | Enable/disable farewell messages |
+| `welcomeOutChannelId` | `string` | Channel ID for farewell messages |
+| `welcomeOutEmbedText` | `string` | Farewell text. Supports placeholders |
+| `welcomeOutEmbedColor` | `string` | HEX accent color for the farewell card |
+| `welcomeOutBackgroundUrl` | `string` | URL of the farewell banner background |
+| `welcomeOutOverlayColor` | `string` | HEX color overlay on the farewell background |
+| `welcomeOutBannerWidth` | `integer` | Farewell canvas width |
+| `welcomeOutBannerHeight` | `integer` | Farewell canvas height |
+| `welcomeOutAvatarEnabled` | `boolean` | Enable/disable avatar on farewell banner (default `true`) |
+| `welcomeOutAvatarSize` | `integer` | Farewell avatar diameter |
+| `welcomeOutAvatarShape` | `string` | `"circle"` or `"square"` |
+| `welcomeOutAvatarYOffset` | `integer` | Farewell avatar vertical offset |
+| `welcomeOutAvatarBorderWidth` | `integer` | Farewell avatar border width |
+| `welcomeOutAvatarBorderColor` | `string` | Farewell avatar border HEX color |
+| `welcomeOutMainTextContent` | `string` | Farewell main banner text |
+| `welcomeOutMainTextColor` | `string` | HEX color for farewell main text |
+| `welcomeOutMainTextFontFamily` | `string` | Font family for farewell main text |
+| `welcomeOutMainTextFontWeight` | `string` | Font weight for farewell main text |
+| `welcomeOutMainTextYOffset` | `integer` | Vertical offset for farewell main text |
+| `welcomeOutSubTextContent` | `string` | Farewell sub-text content |
+| `welcomeOutSubTextColor` | `string` | HEX color for farewell username sub-text |
+| `welcomeOutSubTextYOffset` | `integer` | Farewell sub-text vertical offset |
+| `welcomeOutBorderColor` | `string` | Farewell banner border HEX color |
+| `welcomeOutBorderWidth` | `integer` | Farewell banner border width |
+| **`welcomeOutLayout`** | `JSON\|null` | `null` → CV2 banner card (default); `{ "style": "plain-text" }` → plain text only |
+| `welcomeRoleId` | `string` | Role ID auto-assigned to new members on join |
+| `welcomeDmOn` | `boolean` | Enable/disable DM to new members |
+| `welcomeDmText` | `string` | DM message text. Supports placeholders |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { /* updated fields, same shape as GET response */ }
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Invalid JSON body" }` | Malformed request body |
+| `404` | `{ "success": false, "error": "WelcomeSetting not found" }` | No settings record for guild |
+
+> **Placeholder variables** supported in `welcomeInEmbedText`, `welcomeOutEmbedText`, and `welcomeDmText`:
+> `{username}`, `{tag}`, `{userId}`, `{guildName}`, `{members}`, `{mention}`, `{memberCount}`, `{boosts}`, `{boostLevel}`, and more.
 
 ---
 
@@ -1346,20 +1531,20 @@ List all reaction-role records with optional filters.
 **Response:**
 ```json
 {
-  "success": true,
-  "count": 3,
-  "data": [
-    {
-      "id": 1,
-      "guildId": "123456789012345678",
-      "channelId": "111111111111111111",
-      "messageId": "222222222222222222",
-      "emoji": "✅",
-      "roleId": "333333333333333333",
-      "createdAt": "2026-01-02T00:00:00.000Z",
-      "updatedAt": "2026-01-02T00:00:00.000Z"
-    }
-  ]
+"success": true,
+"count": 3,
+"data": [
+  {
+    "id": 1,
+    "guildId": "123456789012345678",
+    "channelId": "111111111111111111",
+    "messageId": "222222222222222222",
+    "emoji": "✅",
+    "roleId": "333333333333333333",
+    "createdAt": "2026-01-02T00:00:00.000Z",
+    "updatedAt": "2026-01-02T00:00:00.000Z"
+  }
+]
 }
 ```
 
@@ -1402,11 +1587,11 @@ Create a new reaction-role entry (or update existing if same `guildId + messageI
 **Request Body:**
 ```json
 {
-  "guildId": "123456789012345678",
-  "channelId": "111111111111111111",
-  "messageId": "222222222222222222",
-  "emoji": "🎉",
-  "roleId": "444444444444444444"
+"guildId": "123456789012345678",
+"channelId": "111111111111111111",
+"messageId": "222222222222222222",
+"emoji": "🎉",
+"roleId": "444444444444444444"
 }
 ```
 
@@ -1421,9 +1606,9 @@ Create a new reaction-role entry (or update existing if same `guildId + messageI
 **Response:**
 ```json
 {
-  "success": true,
-  "created": true,
-  "data": { "id": 1, "guildId": "...", "channelId": "...", "messageId": "...", "emoji": "🎉", "roleId": "..." }
+"success": true,
+"created": true,
+"data": { "id": 1, "guildId": "...", "channelId": "...", "messageId": "...", "emoji": "🎉", "roleId": "..." }
 }
 ```
 
@@ -1460,9 +1645,9 @@ Partially update an existing reaction-role entry.
 **Request Body (all fields optional):**
 ```json
 {
-  "emoji": "🚀",
-  "roleId": "555555555555555555",
-  "channelId": "666666666666666666"
+"emoji": "🚀",
+"roleId": "555555555555555555",
+"channelId": "666666666666666666"
 }
 ```
 
@@ -1567,6 +1752,418 @@ Useful after manual DB edits, or as a recovery action if the message got out of 
 
 ---
 
+## Reaction Role Panels API (`/api/reaction-roles/panels`)
+
+Manages **Reaction Role Panels** — an advanced structured alternative to individual reaction-role bindings. Panels are ideal for the dashboard because they support:
+
+- **Two modes**: `post_embed` (bot posts a new Components V2 embed) or `use_message` (bot attaches to an existing user message).
+- **Custom layout** — full embed-builder-style control over the panel's Components V2 appearance.
+- **Whitelist / Blacklist roles** — restrict who can pick up roles from a panel.
+- **Channel / mode migration** — move a live panel to another channel without recreating it.
+- **Bulk binding replacement** — ideal for drag-and-drop UI.
+- **Emoji validation** — check an emoji without saving.
+- **Panel duplication** — clone a panel to another channel.
+
+Every mutating action automatically re-edits the live Discord message.
+
+**All endpoints require bearer token authentication.**
+
+---
+
+### Layout Object
+
+The `layout` field is an optional JSON object accepted by `POST /panels` and `PATCH /panels/:id`. When set, it controls the entire visual appearance of the panel's Components V2 message — similar to an embed builder, but rendered natively in Discord's new component system.
+
+```json
+{
+"accentColor":   "#5865F2",
+"authorName":    "Some Server",
+"authorIconUrl": "https://cdn.discordapp.com/icons/...",
+"authorUrl":     "https://discord.gg/invite",
+"title":         "🎭 Pick Your Roles",
+"titleUrl":      "https://example.com",
+"description":   "React below to assign yourself a role!",
+"fields": [
+  { "name": "Gaming", "value": "For gamers", "inline": true },
+  { "name": "Music",  "value": "For music fans", "inline": true },
+  { "name": "Announcements", "value": "Get pinged for important news", "inline": false }
+],
+"imageUrl":      "https://example.com/banner.png",
+"thumbnailUrl":  "https://example.com/icon.png",
+"footerText":    "Kythia Reaction Roles",
+"footerIconUrl": "https://example.com/footer-icon.png",
+"timestamp":     "2026-03-02T16:00:00.000Z"
+}
+```
+
+#### Layout Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `accentColor` | `string` | Hex color for the container's left-side accent bar (e.g. `"#5865F2"`) |
+| `authorName` | `string` | Small author line above the title, rendered as `-# text` (Discord subtext) |
+| `authorIconUrl` | `string` | Stored but not rendered natively in Components V2 — reserved for future use |
+| `authorUrl` | `string` | Makes `authorName` a hyperlink |
+| `title` | `string` | Main heading, rendered as `## Title` |
+| `titleUrl` | `string` | Makes `title` a hyperlink |
+| `description` | `string` | Body text below the title, supports full Discord markdown |
+| `fields` | `array` | List of field objects (see below) — max 25 recommended |
+| `fields[].name` | `string` | Field label (rendered in **bold**) |
+| `fields[].value` | `string` | Field body text |
+| `fields[].inline` | `boolean` | Pair adjacent inline fields side-by-side using `\|` separator |
+| `imageUrl` | `string` | Large image shown at the bottom via `MediaGalleryBuilder` |
+| `thumbnailUrl` | `string` | Small image shown above the author/title block |
+| `footerText` | `string` | Footer line rendered as `-# text` (small subtext) |
+| `footerIconUrl` | `string` | Stored but not rendered natively — reserved for future use |
+| `timestamp` | `string` | ISO 8601 date appended to footer as a Discord `<t:unix:f>` timestamp tag |
+
+> [!NOTE]
+> When `layout` is set, the panel's top-level `title` and `description` fields serve as **fallbacks** — the layout's own `title` and `description` take precedence if present.
+>
+> The emoji→role bindings list is always appended automatically between the fields section and the image.
+
+---
+
+### `GET /api/reaction-roles/panels`
+
+List all reaction role panels for a guild, with a computed emoji binding count.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID to filter by |
+
+**Response:**
+```json
+{
+"success": true,
+"count": 2,
+"data": [
+  {
+    "id": 1,
+    "guildId": "123456789012345678",
+    "channelId": "111111111111111111",
+    "messageId": "222222222222222222",
+    "mode": "post_embed",
+    "title": "🎭 Pick Your Roles",
+    "description": "React below to pick up a role.",
+    "whitelistRoles": [],
+    "blacklistRoles": [],
+    "messageType": "normal",
+    "emojiCount": 3,
+    "createdAt": "2026-03-02T00:00:00.000Z",
+    "updatedAt": "2026-03-02T00:00:00.000Z"
+  }
+]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `mode` | `string` | `"post_embed"` — bot-posted embed, or `"use_message"` — attached to existing message |
+| `whitelistRoles` | `string[]` | Role IDs — if set, only members with at least one of these roles can use the panel |
+| `blacklistRoles` | `string[]` | Role IDs — members with any of these roles are blocked from the panel |
+| `emojiCount` | `number` | Computed count of emoji bindings for this panel |
+
+---
+
+### `GET /api/reaction-roles/panels/:id`
+
+Get a single panel by ID, including all its emoji→role bindings.
+
+**Path Parameters:** `id` — panel primary key.
+
+**Response:**
+```json
+{
+"success": true,
+"data": {
+  "id": 1,
+  "guildId": "...",
+  "channelId": "...",
+  "messageId": "...",
+  "mode": "post_embed",
+  "title": "🎭 Pick Your Roles",
+  "description": null,
+  "whitelistRoles": [],
+  "blacklistRoles": [],
+  "bindings": [
+    { "id": 1, "emoji": "🎮", "roleId": "333333333333333333", "panelId": 1 },
+    { "id": 2, "emoji": "🎵", "roleId": "444444444444444444", "panelId": 1 }
+  ]
+}
+}
+```
+
+**Error (404):** `{ "success": false, "error": "Panel not found" }`
+
+---
+
+### `POST /api/reaction-roles/panels`
+
+Create a new panel.
+
+- **`post_embed`**: bot sends a new embed to `channelId`.
+- **`use_message`**: bot attaches to an existing Discord message (validates it first).
+
+**Request Body:**
+```json
+{
+"guildId": "123456789012345678",
+"channelId": "111111111111111111",
+"mode": "post_embed",
+"title": "🎭 Pick Your Roles",
+"description": "React below to pick up a role.",
+"whitelistRoles": [],
+"blacklistRoles": [],
+"messageType": "normal"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID |
+| `channelId` | `string` | ✅ | Channel to post/attach the panel to |
+| `mode` | `string` | No | `"post_embed"` (default) or `"use_message"` |
+| `messageId` | `string` | ✅ if `use_message` | Existing Discord message ID to attach to |
+| `title` | `string` | No | Panel title — used as fallback when no `layout.title` set |
+| `description` | `string` | No | Panel description — used as fallback when no `layout.description` set |
+| `whitelistRoles` | `string[]` | No | Roles allowed to use this panel |
+| `blacklistRoles` | `string[]` | No | Roles blocked from using this panel |
+| `messageType` | `string` | No | Message type hint (default `"normal"`) |
+| `layout` | `object` | No | Custom [layout config](#layout-object) — enables full embed-builder-style rendering |
+
+**Response (201):**
+```json
+{ "success": true, "data": { "id": 1, ... } }
+```
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `400` | Missing `guildId` or `channelId` |
+| `400` | `messageId` missing when mode is `use_message` |
+| `404` | Channel or message not found |
+
+---
+
+### `PATCH /api/reaction-roles/panels/:id`
+
+Full panel update. Handles both metadata and structural changes.
+
+**Path Parameters:** `id` — panel primary key.
+
+**Request Body (all optional):**
+```json
+{
+"title": "New Title",
+"description": "Updated description",
+"whitelistRoles": ["111111111111111111"],
+"blacklistRoles": [],
+"messageType": "normal",
+"channelId": "999999999999999999",
+"mode": "use_message",
+"messageId": "888888888888888888"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `title` | `string` | New panel title (fallback when no `layout.title`) |
+| `description` | `string\|null` | New description (fallback when no `layout.description`) |
+| `whitelistRoles` | `string[]` | Replace whitelist role list |
+| `blacklistRoles` | `string[]` | Replace blacklist role list |
+| `messageType` | `string` | Message type hint |
+| `layout` | `object\|null` | Replace [layout config](#layout-object). Pass `null` to revert to default rendering |
+| `channelId` | `string` | **Migrate** panel to new channel (posts new embed in `post_embed` mode, deletes old message) |
+| `mode` | `string` | Switch between `post_embed` and `use_message` |
+| `messageId` | `string` | Required when switching to `use_message` — target message to attach to |
+
+> [!IMPORTANT]
+> When `channelId` changes in `post_embed` mode, the bot **posts a new embed** in the target channel, **deletes the old one**, and migrates all reaction bindings automatically.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+---
+
+### `DELETE /api/reaction-roles/panels/:id`
+
+Delete a panel and all its emoji bindings. Removes bot reactions from the panel message.
+
+**Path Parameters:** `id` — panel primary key.
+
+**Response:** `{ "success": true, "message": "Panel 1 deleted" }`
+
+**Error (404):** `{ "success": false, "error": "Panel not found" }`
+
+---
+
+### `POST /api/reaction-roles/panels/:id/emoji`
+
+Add an emoji→role binding to a panel. Validates the emoji by reacting on the live panel message.
+
+**Path Parameters:** `id` — panel primary key.
+
+**Request Body:**
+```json
+{ "emoji": "🎮", "roleId": "333333333333333333" }
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `emoji` | `string` | ✅ | Unicode emoji or custom `<:name:id>` emoji string |
+| `roleId` | `string` | ✅ | Discord role ID to assign on reaction |
+
+**Response:**
+```json
+{ "success": true, "created": true, "data": { "id": 1, "emoji": "🎮", "roleId": "..." } }
+```
+
+`created` is `false` if the emoji already existed (role updated instead).
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `400` | Invalid emoji |
+| `404` | Panel, channel, or message not found |
+
+---
+
+### `PATCH /api/reaction-roles/panels/:id/emoji/:rrId`
+
+Edit an existing emoji→role binding. Handles emoji replacement (swaps bot reactions) or role change (DB-only).
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Panel primary key |
+| `rrId` | `integer` | ReactionRole binding primary key |
+
+**Request Body (all optional):**
+```json
+{ "emoji": "🚀", "roleId": "555555555555555555" }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `emoji` | `string` | New emoji (removes old bot reaction, adds new one) |
+| `roleId` | `string` | New role to assign |
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+**Errors:** `400` if new emoji is invalid; `404` if binding not found.
+
+---
+
+### `DELETE /api/reaction-roles/panels/:id/emoji/:rrId`
+
+Remove a single emoji→role binding from a panel.
+
+- Removes the bot reaction from the panel message (best-effort).
+- Destroys the DB record.
+- Refreshes the panel embed.
+
+**Path Parameters:** `id` — panel ID, `rrId` — binding ID.
+
+**Response:** `{ "success": true, "message": "Binding 1 removed" }`
+
+---
+
+### `PUT /api/reaction-roles/panels/:id/emoji`
+
+Bulk-replace **all** emoji bindings on a panel atomically. Removes all existing reactions and bindings, then creates the new set.
+
+Ideal for the dashboard's **drag-and-drop reorder** or full binding replacement flow.
+
+**Path Parameters:** `id` — panel primary key.
+
+**Request Body:**
+```json
+{
+"bindings": [
+  { "emoji": "🎮", "roleId": "111111111111111111" },
+  { "emoji": "🎵", "roleId": "222222222222222222" },
+  { "emoji": "🏆", "roleId": "333333333333333333" }
+]
+}
+```
+
+**Response:**
+```json
+{ "success": true, "count": 3, "data": [ ... ] }
+```
+
+> Emojis that fail validation are silently skipped. Invalid entries do NOT cause the request to fail.
+
+---
+
+### `POST /api/reaction-roles/panels/:id/emoji/validate`
+
+Validate whether an emoji can be used on this panel's message — without saving anything. Useful for real-time form validation in the dashboard.
+
+**Path Parameters:** `id` — panel primary key.
+
+**Request Body:**
+```json
+{ "emoji": "🎮" }
+```
+
+**Response (valid):**
+```json
+{ "success": true, "valid": true }
+```
+
+**Response (invalid):**
+```json
+{ "success": true, "valid": false, "error": "Cannot react with: :invalid_emoji:" }
+```
+
+> The bot reacts and immediately removes the test reaction; no permanent side effects.
+
+---
+
+### `POST /api/reaction-roles/panels/:id/duplicate`
+
+Duplicate a panel — copies all metadata and emoji bindings — to a target channel. Posts a new embed in the target channel.
+
+**Path Parameters:** `id` — source panel primary key.
+
+**Request Body:**
+```json
+{
+"channelId": "999999999999999999",
+"title": "Copy of Panel"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `channelId` | `string` | ✅ | Target channel for the duplicated panel |
+| `title` | `string` | No | Override the title (defaults to source panel title) |
+
+**Response (201):**
+```json
+{ "success": true, "data": { "id": 2, "bindings": [ ... ] } }
+```
+
+**Error (404):** Source panel or target channel not found.
+
+---
+
+### `POST /api/reaction-roles/panels/:id/refresh`
+
+Force-refresh the live Discord panel embed. Re-reads all current bindings from the database and re-edits the Discord message.
+
+**Path Parameters:** `id` — panel primary key.
+
+**Response:** `{ "success": true, "message": "Panel 1 refreshed" }`
+
+---
+
 ## Birthday API (`/api/birthday`)
 
 Provides full CRUD access to birthday data and per-guild birthday settings from the `birthday` addon.
@@ -1591,21 +2188,21 @@ List all user birthdays with optional filters.
 **Response:**
 ```json
 {
-  "success": true,
-  "count": 2,
-  "data": [
-    {
-      "id": 1,
-      "guildId": "123456789012345678",
-      "userId": "987654321098765432",
-      "day": 15,
-      "month": 3,
-      "year": 2000,
-      "lastCelebratedYear": 2025,
-      "createdAt": "2026-01-03T00:00:00.000Z",
-      "updatedAt": "2026-01-03T00:00:00.000Z"
-    }
-  ]
+"success": true,
+"count": 2,
+"data": [
+  {
+    "id": 1,
+    "guildId": "123456789012345678",
+    "userId": "987654321098765432",
+    "day": 15,
+    "month": 3,
+    "year": 2000,
+    "lastCelebratedYear": 2025,
+    "createdAt": "2026-01-03T00:00:00.000Z",
+    "updatedAt": "2026-01-03T00:00:00.000Z"
+  }
+]
 }
 ```
 
@@ -1640,11 +2237,11 @@ Create or update a user's birthday (upsert by `guildId + userId`).
 **Request Body:**
 ```json
 {
-  "guildId": "123456789012345678",
-  "userId": "987654321098765432",
-  "day": 15,
-  "month": 3,
-  "year": 2000
+"guildId": "123456789012345678",
+"userId": "987654321098765432",
+"day": 15,
+"month": 3,
+"year": 2000
 }
 ```
 
@@ -1659,9 +2256,9 @@ Create or update a user's birthday (upsert by `guildId + userId`).
 **Response:**
 ```json
 {
-  "success": true,
-  "created": true,
-  "data": { "id": 1, "guildId": "...", "userId": "...", "day": 15, "month": 3, "year": 2000, ... }
+"success": true,
+"created": true,
+"data": { "id": 1, "guildId": "...", "userId": "...", "day": 15, "month": 3, "year": 2000, ... }
 }
 ```
 
@@ -1741,19 +2338,19 @@ Fetch the birthday configuration for a guild.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "guildId": "123456789012345678",
-    "channelId": "111111111111111111",
-    "message": "Happy birthday {user}! 🎂",
-    "roleId": "222222222222222222",
-    "pingRoleId": "333333333333333333",
-    "showAge": true,
-    "embedColor": "#FF69B4",
-    "bgUrl": "https://example.com/birthday-banner.png",
-    "createdAt": "2026-01-03T00:00:00.000Z",
-    "updatedAt": "2026-01-03T00:00:00.000Z"
-  }
+"success": true,
+"data": {
+  "guildId": "123456789012345678",
+  "channelId": "111111111111111111",
+  "message": "Happy birthday {user}! 🎂",
+  "roleId": "222222222222222222",
+  "pingRoleId": "333333333333333333",
+  "showAge": true,
+  "embedColor": "#FF69B4",
+  "bgUrl": "https://example.com/birthday-banner.png",
+  "createdAt": "2026-01-03T00:00:00.000Z",
+  "updatedAt": "2026-01-03T00:00:00.000Z"
+}
 }
 ```
 
@@ -1784,13 +2381,13 @@ Create or update the birthday settings for a guild. If no row exists, one is cre
 **Request Body (all fields optional):**
 ```json
 {
-  "channelId": "111111111111111111",
-  "message": "Happy birthday {user}! 🎉",
-  "roleId": "222222222222222222",
-  "pingRoleId": "333333333333333333",
-  "showAge": false,
-  "embedColor": "#FF69B4",
-  "bgUrl": "https://example.com/banner.png"
+"channelId": "111111111111111111",
+"message": "Happy birthday {user}! 🎉",
+"roleId": "222222222222222222",
+"pingRoleId": "333333333333333333",
+"showAge": false,
+"embedColor": "#FF69B4",
+"bgUrl": "https://example.com/banner.png"
 }
 ```
 
@@ -1799,9 +2396,9 @@ Only keys present in the request body are applied. Unlisted keys are ignored.
 **Response:**
 ```json
 {
-  "success": true,
-  "created": false,
-  "data": { "guildId": "...", "channelId": "...", "showAge": false, ... }
+"success": true,
+"created": false,
+"data": { "guildId": "...", "channelId": "...", "showAge": false, ... }
 }
 ```
 
@@ -1848,14 +2445,14 @@ Automatically set up the "Join to Create" voice system for a guild. This mirrors
 
 ```json
 {
-  "success": true,
-  "data": {
-    "guildId": "123...",
-    "triggerChannelId": "456...",
-    "categoryId": "789...",
-    "controlPanelChannelId": "012...",
-    "interfaceMessageId": "345..."
-  }
+"success": true,
+"data": {
+  "guildId": "123...",
+  "triggerChannelId": "456...",
+  "categoryId": "789...",
+  "controlPanelChannelId": "012...",
+  "interfaceMessageId": "345..."
+}
 }
 ```
 
@@ -1877,16 +2474,16 @@ Fetch the tempvoice configuration for a guild.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "guildId": "123456789012345678",
-    "triggerChannelId": "111111111111111111",
-    "controlPanelChannelId": "222222222222222222",
-    "interfaceMessageId": "333333333333333333",
-    "categoryId": "444444444444444444",
-    "createdAt": "2025-01-01T00:00:00.000Z",
-    "updatedAt": "2025-01-01T00:00:00.000Z"
-  }
+"success": true,
+"data": {
+  "guildId": "123456789012345678",
+  "triggerChannelId": "111111111111111111",
+  "controlPanelChannelId": "222222222222222222",
+  "interfaceMessageId": "333333333333333333",
+  "categoryId": "444444444444444444",
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z"
+}
 }
 ```
 
@@ -1948,9 +2545,9 @@ Force-refresh the control panel interface message for a guild. If the message al
 **Response (200):**
 ```json
 {
-  "success": true,
-  "message": "Interface message refreshed",
-  "data": { "interfaceMessageId": "..." }
+"success": true,
+"message": "Interface message refreshed",
+"data": { "interfaceMessageId": "..." }
 }
 ```
 
@@ -1973,19 +2570,19 @@ List active temporary voice channels.
 **Response:**
 ```json
 {
-  "success": true,
-  "count": 2,
-  "data": [
-    {
-      "channelId": "555555555555555555",
-      "guildId": "123456789012345678",
-      "ownerId": "987654321098765432",
-      "waitingRoomChannelId": null,
-      "pendingJoinRequests": {},
-      "createdAt": "2025-06-01T12:00:00.000Z",
-      "updatedAt": "2025-06-01T12:00:00.000Z"
-    }
-  ]
+"success": true,
+"count": 2,
+"data": [
+  {
+    "channelId": "555555555555555555",
+    "guildId": "123456789012345678",
+    "ownerId": "987654321098765432",
+    "waitingRoomChannelId": null,
+    "pendingJoinRequests": {},
+    "createdAt": "2025-06-01T12:00:00.000Z",
+    "updatedAt": "2025-06-01T12:00:00.000Z"
+  }
+]
 }
 ```
 
@@ -2037,22 +2634,22 @@ List image records with optional filters.
 **Response:**
 ```json
 {
-  "success": true,
-  "count": 1,
-  "data": [
-    {
-      "id": 1,
-      "userId": "987654321098765432",
-      "filename": "abc123.png",
-      "originalName": "my-image.png",
-      "fileId": "file_abc123",
-      "storageUrl": "https://storage.example.com/abc123.png",
-      "mimetype": "image/png",
-      "fileSize": 204800,
-      "createdAt": "2025-06-01T10:00:00.000Z",
-      "updatedAt": "2025-06-01T10:00:00.000Z"
-    }
-  ]
+"success": true,
+"count": 1,
+"data": [
+  {
+    "id": 1,
+    "userId": "987654321098765432",
+    "filename": "abc123.png",
+    "originalName": "my-image.png",
+    "fileId": "file_abc123",
+    "storageUrl": "https://storage.example.com/abc123.png",
+    "mimetype": "image/png",
+    "fileSize": 204800,
+    "createdAt": "2025-06-01T10:00:00.000Z",
+    "updatedAt": "2025-06-01T10:00:00.000Z"
+  }
+]
 }
 ```
 
@@ -2079,17 +2676,17 @@ Upload an image file directly to the Kythia Storage server and save its metadata
 **Response (201):**
 ```json
 {
-  "success": true,
-  "data": {
-    "id": 1,
-    "userId": "987654321098765432",
-    "filename": "abc123.png",
-    "originalName": "my-photo.png",
-    "fileId": "file_abc123",
-    "storageUrl": "https://storage.example.com/abc123.png",
-    "mimetype": "image/png",
-    "fileSize": 204800
-  }
+"success": true,
+"data": {
+  "id": 1,
+  "userId": "987654321098765432",
+  "filename": "abc123.png",
+  "originalName": "my-photo.png",
+  "fileId": "file_abc123",
+  "storageUrl": "https://storage.example.com/abc123.png",
+  "mimetype": "image/png",
+  "fileSize": 204800
+}
 }
 ```
 

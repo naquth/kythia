@@ -7,18 +7,17 @@
  */
 
 const { Hono } = require('hono');
+const {
+	broadcastGetGuilds,
+	broadcastFindGuild,
+} = require('../../helpers/shard');
+
 const app = new Hono();
 
-app.get('/', (c) => {
+app.get('/', async (c) => {
 	const client = c.get('client');
 
-	const guilds = client.guilds.cache.map((g) => ({
-		id: g.id,
-		name: g.name,
-		icon: g.iconURL(),
-		memberCount: g.memberCount,
-		ownerId: g.ownerId,
-	}));
+	const guilds = await broadcastGetGuilds(client);
 
 	return c.json(guilds);
 });
@@ -31,52 +30,28 @@ app.get('/:id', async (c) => {
 	const guildId = c.req.param('id');
 	const dataParam = c.req.query('data');
 
-	const guild = client.guilds.cache.get(guildId);
+	const shardData = await broadcastFindGuild(client, guildId);
 
-	if (!guild) {
+	if (!shardData) {
 		return c.json({ error: 'Bot is not in this guild' }, 404);
 	}
 
 	let settings = await ServerSetting.findOne({ where: { guildId } });
-
 	if (!settings) settings = {};
 
-	const channels = {
-		text: guild.channels.cache
-			.filter((c) => c.type === 0)
-			.map((c) => ({ id: c.id, name: c.name })),
-		voice: guild.channels.cache
-			.filter((c) => c.type === 2)
-			.map((c) => ({ id: c.id, name: c.name })),
-		categories: guild.channels.cache
-			.filter((c) => c.type === 4)
-			.map((c) => ({ id: c.id, name: c.name })),
-	};
-
-	const roles = guild.roles.cache.map((r) => ({
-		id: r.id,
-		name: r.name,
-		color: r.hexColor,
-		managed: r.managed,
-	}));
+	const { guild, channels, roles, botUser } = shardData;
 
 	const responseGuild =
 		dataParam === 'all'
 			? guild
-			: { id: guild.id, name: guild.name, icon: guild.iconURL() };
+			: { id: guild.id, name: guild.name, icon: guild.icon };
 
 	return c.json({
 		guild: responseGuild,
 		settings,
 		channels,
 		roles,
-
-		botUser: {
-			username: client.user.username,
-			avatar: client.user.displayAvatarURL(),
-			id: client.user.id,
-			discriminator: client.user.discriminator,
-		},
+		botUser,
 	});
 });
 

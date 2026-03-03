@@ -138,11 +138,13 @@ async function resolvePlaceholders(container, str, data, locale) {
 	const placeholders = {
 		'{user}': data.userId ? `<@${data.userId}>` : 'Unknown',
 		'{user_id}': data.userId || '0',
+		'{mention}': data.userId ? `<@${data.userId}>` : 'Unknown', // alias for {user}
 		'{tag}': data.tag ? `#${data.tag}` : 'Unknown',
 		'{username}': data.username || 'Unknown',
 
 		'{memberstotal}': data.members ?? 0,
 		'{members}': data.members ?? 0,
+		'{membercount}': data.members ?? 0, // alias for {members}
 
 		'{boosts}': data.boosts ?? 0,
 		'{boost_level}': data.boostLevel ?? 0,
@@ -157,6 +159,7 @@ async function resolvePlaceholders(container, str, data, locale) {
 		'{stickers}': data.stickers ?? 0,
 
 		'{guild}': data.guildName || 'Server',
+		'{servername}': data.guildName || 'Server', // alias for {guild}
 		'{guild_id}': data.guildId || '0',
 		'{owner}': data.ownerName || 'Owner',
 		'{owner_id}': data.ownerId || '0',

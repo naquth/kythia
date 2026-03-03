@@ -3,10 +3,11 @@
  * @type: Event Handler
  * @copyright © 2025 kenndeclouv
  * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @version 0.12.0-beta
  */
 
 const { MessageFlags } = require('discord.js');
+const { applyTemplate } = require('../helpers');
 
 module.exports = async (bot, member) => {
 	if (!member || !member.guild) return;
@@ -14,14 +15,20 @@ module.exports = async (bot, member) => {
 
 	const container = bot.client.container;
 	const { t, models, helpers, logger } = container;
-	const { Invite, InviteHistory, ServerSetting } = models;
+	const { Invite, InviteHistory, ServerSetting, InviteSetting } = models;
 	const { simpleContainer } = helpers.discord;
 
 	let inviteChannelId = null;
+	let inviteSetting = null;
+
 	try {
-		const setting = await ServerSetting.getCache({ guildId: guild.id });
+		const [setting, iSetting] = await Promise.all([
+			ServerSetting.getCache({ guildId: guild.id }),
+			InviteSetting.findOne({ where: { guildId: guild.id } }).catch(() => null),
+		]);
 		if (!setting?.invitesOn) return;
 		inviteChannelId = setting.inviteChannelId;
+		inviteSetting = iSetting;
 	} catch (_e) {}
 
 	const history = await InviteHistory.getCache({
@@ -58,46 +65,78 @@ module.exports = async (bot, member) => {
 			await inviterStats.saveAndUpdateCache();
 
 			logger.info(
-				`${member.user.tag} left. Deducted ${wasFake ? 'fake' : 'real'} invite from ${history.inviterId}.`,
+				`${member?.user?.username} left. Deducted ${wasFake ? 'fake' : 'real'} invite from ${history.inviterId}.`,
 				{ label: 'Invite Tracker' },
 			);
 
+			// ── Template variables ──
+			const inviterTotalInvites =
+				(inviterStats.invites || 0) + (inviterStats.bonus || 0);
+
+			const templateVars = {
+				user: `<@${member?.id}>`,
+				username: member?.user?.username,
+				inviter: `<@${history?.inviterId}>`,
+				inviterTag: history.inviterId,
+				invites: inviterTotalInvites,
+				code: history.inviteCode || 'unknown',
+				type: wasFake ? 'fake' : 'real',
+			};
+
+			// ── Use custom leaveMessage if set, otherwise standard text ──
+			if (inviteSetting?.leaveMessage && inviteSetting.leaveMessage.trim()) {
+				logMessage = applyTemplate(inviteSetting.leaveMessage, templateVars);
+			} else {
+				const title = await t(
+					guild,
+					'invite.events.guildMemberRemove.tracker.title',
+				);
+				const leftMsg = await t(
+					guild,
+					'invite.events.guildMemberRemove.tracker.left',
+					{
+						user: templateVars?.user,
+						username: templateVars?.username,
+						inviter: templateVars?.inviter,
+					},
+				);
+				const typeMsg = wasFake ? '(Fake)' : '(Real)';
+				logMessage = `## 📤 ${title}\n${leftMsg} ${typeMsg}`;
+			}
+		}
+	} else {
+		logger.info(
+			`${member?.user?.username} left, but no active invite history found.`,
+			{ label: 'Invite Tracker' },
+		);
+
+		if (inviteSetting?.leaveMessage && inviteSetting.leaveMessage.trim()) {
+			// Use custom message even for unknown-inviter leaves
+			const templateVars = {
+				user: `<@${member?.id}>`,
+				username: member?.user?.username,
+				inviter: 'Unknown',
+				inviterTag: 'Unknown',
+				invites: '?',
+				code: 'unknown',
+				type: 'unknown',
+			};
+			logMessage = applyTemplate(inviteSetting.leaveMessage, templateVars);
+		} else {
 			const title = await t(
 				guild,
 				'invite.events.guildMemberRemove.tracker.title',
 			);
-			const leftMsg = await t(
+			const leftUnknown = await t(
 				guild,
-				'invite.events.guildMemberRemove.tracker.left',
+				'invite.events.guildMemberRemove.tracker.unknown',
 				{
-					user: `<@${member.id}>`,
-					username: member.user.username,
-					inviter: `<@${history.inviterId}>`,
+					user: `<@${member?.id}>`,
+					username: member?.user?.username,
 				},
 			);
-			const typeMsg = wasFake ? '(Fake)' : '(Real)';
-
-			logMessage = `## 📤 ${title}\n${leftMsg} ${typeMsg}`;
+			logMessage = `## 📤 ${title}\n${leftUnknown}`;
 		}
-	} else {
-		logger.info(
-			`${member.user.tag} left, but no active invite history found.`,
-			{ label: 'Invite Tracker' },
-		);
-
-		const title = await t(
-			guild,
-			'invite.events.guildMemberRemove.tracker.title',
-		);
-		const leftUnknown = await t(
-			guild,
-			'invite.events.guildMemberRemove.tracker.unknown',
-			{
-				user: `<@${member.id}>`,
-				username: member.user.username,
-			},
-		);
-		logMessage = `## 📤 ${title}\n${leftUnknown}`;
 	}
 
 	if (inviteChannelId && logMessage) {
@@ -112,14 +151,14 @@ module.exports = async (bot, member) => {
 				await channel.send({ components, flags: MessageFlags.IsComponentsV2 });
 			} catch (error) {
 				logger.error(
-					`Error sending invite log to channel ${inviteChannelId} in ${guild.name}:`,
+					`Error sending invite log to channel ${inviteChannelId} in ${guild?.name}:`,
 					error,
 					{ label: 'Invite Tracker' },
 				);
 			}
 		} else {
 			logger.warn(
-				`Invite channel ${inviteChannelId} not found in ${guild.name}`,
+				`Invite channel ${inviteChannelId} not found in ${guild?.name}`,
 				{ label: 'Invite Tracker' },
 			);
 		}

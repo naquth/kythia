@@ -1,1 +1,1 @@
-yalc remove kythia-core && npx lint-staged
+npx lint-staged

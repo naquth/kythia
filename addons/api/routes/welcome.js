@@ -86,13 +86,11 @@ app.get('/:guildId', async (c) => {
 
 	try {
 		const setting = await WelcomeSetting.findOne({ where: { guildId } });
-		if (!setting) {
-			return c.json({ success: false, error: 'WelcomeSetting not found' }, 404);
-		}
 
+		// Return null defaults for every field if no record exists yet — no 404
 		const data = {};
 		for (const field of WELCOME_FIELDS) {
-			data[field] = setting[field] ?? null;
+			data[field] = setting?.[field] ?? null;
 		}
 
 		return c.json({ success: true, data });
@@ -116,11 +114,6 @@ app.patch('/:guildId', async (c) => {
 	}
 
 	try {
-		const setting = await WelcomeSetting.findOne({ where: { guildId } });
-		if (!setting) {
-			return c.json({ success: false, error: 'WelcomeSetting not found' }, 404);
-		}
-
 		const updates = {};
 		for (const field of WELCOME_FIELDS) {
 			if (Object.hasOwn(body, field)) {
@@ -137,6 +130,12 @@ app.patch('/:guildId', async (c) => {
 				400,
 			);
 		}
+
+		// Auto-create WelcomeSetting if it doesn't exist yet
+		const [setting] = await WelcomeSetting.findOrCreate({
+			where: { guildId },
+			defaults: { guildId },
+		});
 
 		await setting.update(updates);
 		await setting.saveAndUpdateCache('guildId');

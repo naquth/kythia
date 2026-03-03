@@ -9,7 +9,11 @@
 const { KythiaModel } = require('kythia-core');
 
 class InviteHistory extends KythiaModel {
-	static cacheKeys = [['guildId']];
+	static cacheKeys = [
+		['guildId'],
+		['guildId', 'memberId'],
+		['guildId', 'memberId', 'status'],
+	];
 	static guarded = [];
 	static table = 'invite_histories';
 

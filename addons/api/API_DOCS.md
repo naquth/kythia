@@ -36,6 +36,10 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [AutoReact API (`/api/autoreact`)](#autoreact-api-apiautoreact)
 - [AutoReply API (`/api/autoreply`)](#autoreply-api-apiautoreply)
 - [Invite API (`/api/invite`)](#invite-api-apiinvite)
+  - [Invite Settings](#invite-settings-apiinvitesettingsguildid)
+  - [Invite Stats / Leaderboard](#invite-stats-apiinviteguildid)
+  - [Invite History](#invite-history-apiinviteguildidhistory)
+  - [Invite Milestones](#invite-milestones-apiinviteguildidmilestones)
 - [Reaction Roles API (`/api/reaction-roles`)](#reaction-roles-api-apireaction-roles)
 - [Reaction Role Panels API (`/api/reaction-roles/panels`)](#reaction-role-panels-api-apireaction-rolespanels)
 - [Birthday API (`/api/birthday`)](#birthday-api-apibirthday)
@@ -1239,62 +1243,417 @@ Delete a rule.
 
 ### Invite API (`/api/invite`)
 
-Track and manage server invites and historical member joining data.
+Track and manage server invites, invite history, per-guild invite settings, and milestone role rewards. All endpoints require bearer token authentication.
 
-#### `GET /api/invite`
-List aggregate invite statistics for users.
-- **Query Params:** `guildId`, `userId`.
-
-**Response:**
-```json
-{
-"success": true,
-"data": [
-  {
-    "guildId": "...",
-    "userId": "...",
-    "invites": 10,
-    "fake": 1,
-    "leaves": 2
-  }
-]
-}
-```
-
-#### `GET /api/invite/histories`
-List individual join/leave history records.
-- **Query Params:** `guildId`, `inviterId`, `memberId`, `status`.
-
-**Response:**
-```json
-{
-"success": true,
-"data": [
-  {
-    "id": 101,
-    "inviterId": "...",
-    "memberId": "...",
-    "status": "active",
-    "isFake": false,
-    "createdAt": "..."
-  }
-]
-}
-```
-
-#### `GET /api/invite/:id`
-Get a specific invite record.
-
-#### `POST /api/invite`
-Create or update an invite counter for a user.
-
-#### `DELETE /api/invite/:id`
-Delete an invite record.
-
-#### `DELETE /api/invite/histories/:id`
-Delete a specific history entry.
+> **Models:** `Invite`, `InviteHistory`, `InviteSetting`, `ServerSetting`
 
 ---
+
+#### Invite Settings (`/api/invite/settings/:guildId`)
+
+##### `GET /api/invite/settings/:guildId`
+Returns combined invite configuration — both from `InviteSetting` and relevant `ServerSetting` fields.
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "invitesOn": true,
+    "inviteChannelId": "111111111111111111",
+    "fakeThreshold": 7,
+    "joinMessage": null,
+    "leaveMessage": null,
+    "milestoneRoles": [],
+    "roleStack": false
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `invitesOn` | `boolean` | Whether invite tracking is enabled |
+| `inviteChannelId` | `string \| null` | Channel ID to post join/leave logs |
+| `fakeThreshold` | `integer` | Account age in days below which an invite is counted as fake (default: 7) |
+| `joinMessage` | `string \| null` | Custom join log message template. Supports `{user}`, `{username}`, `{inviter}`, `{inviterTag}`, `{invites}`, `{code}`, `{type}` |
+| `leaveMessage` | `string \| null` | Custom leave log message template |
+| `milestoneRoles` | `array` | List of `{ invites: number, roleId: string }` milestone objects |
+| `roleStack` | `boolean` | If `true`, all earned milestone roles are stacked. If `false`, only the highest is kept |
+
+---
+
+##### `PATCH /api/invite/settings/:guildId`
+Partially updates invite configuration. Can update both `InviteSetting` and `ServerSetting` in one call.
+
+**Request Body:**
+```json
+{
+  "invitesOn": true,
+  "inviteChannelId": "111111111111111111",
+  "fakeThreshold": 14,
+  "joinMessage": "{user} joined using `{code}` from {inviter}!",
+  "leaveMessage": "{user} left. Was invited by {inviter}.",
+  "roleStack": true
+}
+```
+
+**Allowed Fields:**
+
+| Field | Target Model |
+|---|---|
+| `fakeThreshold`, `joinMessage`, `leaveMessage`, `milestoneRoles`, `roleStack` | `InviteSetting` |
+| `inviteChannelId`, `invitesOn` | `ServerSetting` |
+
+**Response:** `{ "success": true, "message": "Invite settings updated." }`
+
+**Error (404):** `{ "success": false, "error": "ServerSetting not found" }` if `ServerSetting` fields are being updated but the guild record doesn't exist.
+
+---
+
+#### Template Placeholders
+
+Kythia supports placeholders in custom messages (Welcome text, Welcome DM, Invite join/leave logs). They are replaced dynamically when a message is sent.
+
+> Aliases are interchangeable — `{user}` and `{mention}` produce the same output, for example.
+
+---
+
+##### 👤 Member
+
+| Variable | Alias | Description | Example |
+|---|---|---|---|
+| `{user}` | `{mention}` | Mentions the member | `<@123456789012345678>` |
+| `{username}` | | The member's username | `kenndeclouv` |
+| `{user_id}` | | The member's Discord snowflake ID | `123456789012345678` |
+| `{tag}` | | Username + discriminator | `kenndeclouv#0001` |
+| `{member_join}` | | Date the member joined the server | `03/03/2026` |
+
+---
+
+##### 🏠 Server
+
+| Variable | Alias | Description | Example |
+|---|---|---|---|
+| `{guild}` | `{servername}` | Server name | `Kythia Universe` |
+| `{guild_id}` | | Server ID | `123456789012345678` |
+| `{members}` | `{membercount}`, `{memberstotal}` | Total members | `1337` |
+| `{owner}` | | Server owner's username | `kenndeclouv` |
+| `{owner_id}` | | Server owner's ID | `987654321098765432` |
+| `{region}` | | Server locale/region | `en-US` |
+| `{verified}` | | Whether the server is verified | `Yes` |
+| `{partnered}` | | Whether the server is partnered | `No` |
+| `{boosts}` | | Number of boosts | `14` |
+| `{boost_level}` | | Boost tier (0–3) | `2` |
+| `{guild_age}` | | How long ago the server was created | `1 year 4 months 2 days` |
+| `{created_date}` | | Server creation date | `01/01/2023` |
+| `{created_time}` | | Server creation time | `12:00` |
+
+---
+
+##### 📊 Server Counts
+
+| Variable | Description | Example |
+|---|---|---|
+| `{roles}` | Number of roles | `24` |
+| `{emojis}` | Number of custom emojis | `88` |
+| `{stickers}` | Number of custom stickers | `5` |
+| `{channels}` | Total channels | `32` |
+| `{text_channels}` | Number of text channels | `16` |
+| `{voice_channels}` | Number of voice channels | `8` |
+| `{categories}` | Number of category channels | `4` |
+| `{announcement_channels}` | Number of announcement channels | `2` |
+| `{stage_channels}` | Number of stage channels | `1` |
+
+---
+
+##### 🕐 Date & Time
+
+| Variable | Description | Example |
+|---|---|---|
+| `{date}` | Current date (localized) | `03/03/2026` |
+| `{time}` | Current time (localized) | `15:45` |
+| `{datetime}` | Date and time combined | `03/03/2026 15:45` |
+| `{day}` | Current day of the week | `Monday` |
+| `{month}` | Current month name | `March` |
+| `{year}` | Current year | `2026` |
+| `{hour}` | Current hour (24h, zero-padded) | `15` |
+| `{minute}` | Current minute (zero-padded) | `45` |
+| `{second}` | Current second (zero-padded) | `09` |
+| `{timestamp}` | Unix timestamp in milliseconds | `1740998400000` |
+
+---
+
+##### 🔗 Invite-specific
+*Only available in `joinMessage` / `leaveMessage` templates.*
+
+| Variable | Description | Example |
+|---|---|---|
+| `{inviter}` | Mentions the inviter | `<@987654321098765432>` |
+| `{inviterTag}` | The inviter's username | `inviter_user` |
+| `{invites}` | Inviter's current total (real + bonus) | `15` |
+| `{code}` | The invite code used | `kythia` |
+| `{type}` | Join type: `new`, `rejoin`, `fake`, `vanity`, `oauth`, or `unknown` | `new` |
+
+---
+
+
+
+#### Invite Stats (`/api/invite/:guildId`)
+
+##### `GET /api/invite/:guildId`
+Returns a paginated, sortable invite leaderboard for a guild.
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `sort` | `string` | `total` | Sort column: `real`, `fake`, `bonus`, `rejoin`, `total` |
+| `page` | `integer` | `1` | Page number |
+| `limit` | `integer` | `20` | Results per page (max 100) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 42,
+  "page": 1,
+  "totalPages": 3,
+  "data": [
+    {
+      "rank": 1,
+      "userId": "123456789012345678",
+      "invites": 30,
+      "bonus": 5,
+      "fake": 2,
+      "leaves": 4,
+      "rejoins": 1,
+      "total": 35
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `rank` | `integer` | Position on the leaderboard (1-based, continuing across pages) |
+| `invites` | `integer` | Real (non-fake) invites |
+| `bonus` | `integer` | Manually awarded bonus invites (not deducted on leave) |
+| `fake` | `integer` | Invites counted as fake (joined account < fakeThreshold days old) |
+| `leaves` | `integer` | Number of invited members who left |
+| `rejoins` | `integer` | Number of invited members who rejoined |
+| `total` | `integer` | `invites + bonus` |
+
+---
+
+##### `GET /api/invite/:guildId/user/:userId`
+Returns full invite stats and rank for a specific user. Also includes info about who invited this user.
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+| `userId` | `string` | The Discord user ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "123456789012345678",
+    "invites": 30,
+    "bonus": 5,
+    "fake": 2,
+    "leaves": 4,
+    "rejoins": 1,
+    "total": 35,
+    "rank": 1,
+    "totalInviters": 42,
+    "invitedBy": {
+      "inviterId": "987654321098765432",
+      "inviteCode": "abc123",
+      "joinType": "new",
+      "joinedAt": "2025-01-15T08:30:00.000Z"
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `rank` | `integer` | Position in the guild leaderboard |
+| `totalInviters` | `integer` | Total number of users with invite data in the guild |
+| `invitedBy` | `object \| null` | Who invited this user. `null` if unknown |
+| `invitedBy.joinType` | `string` | `new`, `rejoin`, `fake`, `vanity`, `oauth`, or `unknown` |
+
+---
+
+##### `PATCH /api/invite/:guildId/user/:userId`
+Manually set any invite stat field for a user.
+
+**Request Body:**
+```json
+{
+  "invites": 10,
+  "bonus": 5,
+  "fake": 0,
+  "leaves": 2,
+  "rejoins": 1
+}
+```
+
+All fields are optional. Only provided fields are updated. A record is created if it doesn't exist.
+
+**Response:** `{ "success": true, "data": { ...updatedStats } }`
+
+---
+
+##### `DELETE /api/invite/:guildId/user/:userId`
+Reset (delete) a specific user's invite stats row.
+
+**Response:** `{ "success": true, "message": "User invite stats reset." }`
+
+**Error (404):** `{ "success": false, "error": "User invite record not found" }`
+
+---
+
+##### `DELETE /api/invite/:guildId`
+Reset all invite stats for the entire guild (all user rows deleted).
+
+**Response:** `{ "success": true, "message": "All invite stats reset for guild." }`
+
+---
+
+#### Invite History (`/api/invite/:guildId/history`)
+
+##### `GET /api/invite/:guildId/history`
+Returns filtered, paginated invite history records for a guild.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `inviterId` | `string` | Filter by who invited |
+| `memberId` | `string` | Filter by who joined |
+| `status` | `string` | Filter by status: `active` or `left` |
+| `joinType` | `string` | Filter by: `new`, `rejoin`, `fake`, `vanity`, `oauth`, `unknown` |
+| `page` | `integer` | Page number (default 1) |
+| `limit` | `integer` | Results per page (default 20, max 100) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 85,
+  "page": 1,
+  "totalPages": 5,
+  "data": [
+    {
+      "id": 101,
+      "guildId": "123456789012345678",
+      "inviterId": "987654321098765432",
+      "memberId": "555555555555555555",
+      "inviteCode": "abc123",
+      "joinType": "new",
+      "status": "active",
+      "isFake": false,
+      "joinedAt": "2025-01-15T08:30:00.000Z",
+      "updatedAt": "2025-01-15T08:30:00.000Z"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `inviteCode` | `string \| null` | The Discord invite code used to join |
+| `joinType` | `string` | `new`, `rejoin`, `fake`, `vanity`, `oauth`, or `unknown` |
+| `status` | `string` | `active` (still in server) or `left` |
+| `isFake` | `boolean` | Whether this was counted as a fake invite |
+
+---
+
+##### `GET /api/invite/:guildId/history/:memberId`
+Returns the full join history for a specific member (all times they've joined/left).
+
+**Response:** `{ "success": true, "count": 3, "data": [ ... ] }`
+
+**Error (404):** `{ "success": false, "error": "No history found for this member" }`
+
+---
+
+##### `DELETE /api/invite/:guildId/history/:id`
+Delete a specific invite history record by its database ID.
+
+**Response:** `{ "success": true, "message": "History record deleted." }`
+
+---
+
+#### Invite Milestones (`/api/invite/:guildId/milestones`)
+
+Milestone roles are automatically awarded when an inviter reaches a specified number of invites.
+
+##### `GET /api/invite/:guildId/milestones`
+Returns the current milestone role configuration.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "milestoneRoles": [
+      { "invites": 5, "roleId": "111111111111111113" },
+      { "invites": 25, "roleId": "111111111111111114" }
+    ],
+    "roleStack": false
+  }
+}
+```
+
+---
+
+##### `POST /api/invite/:guildId/milestones`
+Add a new milestone role.
+
+**Request Body:**
+```json
+{
+  "invites": 25,
+  "roleId": "111111111111111114"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `invites` | `integer` | ✅ | Invite count threshold to earn the role |
+| `roleId` | `string` | ✅ | Discord role ID to assign |
+
+**Response:** `{ "success": true, "data": { "milestoneRoles": [ ... ] } }`
+
+**Error (409):** `{ "success": false, "error": "A milestone at that invite count already exists" }`
+
+---
+
+##### `DELETE /api/invite/:guildId/milestones/:invites`
+Remove a milestone by its invite count threshold.
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `invites` | `integer` | The invite threshold of the milestone to remove |
+
+**Response:** `{ "success": true, "data": { "milestoneRoles": [ ... ] } }`
+
+**Error (404):** `{ "success": false, "error": "No milestone found at that invite count" }`
+
+
 
 ---
 

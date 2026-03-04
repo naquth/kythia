@@ -96,6 +96,7 @@
 					"title": "## ❌ Checklist full",
 					"desc": "remove another item first"
 				},
+				"error": "## ❌ Checklist Error\nFailed to update checklist. Please try again.",
 				"add": {
 					"success": {
 						"title": "✅ Item Added to {scope} Checklist",

@@ -59,7 +59,7 @@ module.exports = {
 		if (!apiKey) {
 			const components = await simpleContainer(
 				interaction,
-				'❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment or configure `kythiaConfig.addons.image.apiKey`.',
+				await t(interaction, 'image.add.error.no_api_key'),
 				{ color: kythiaConfig.bot.color },
 			);
 			return interaction.editReply({
@@ -122,7 +122,9 @@ module.exports = {
 		} catch (err) {
 			const components = await simpleContainer(
 				interaction,
-				`❌ **Failed to upload image:** ${err instanceof Error ? err.message : 'Unknown error'}`,
+				await t(interaction, 'image.add.error.upload_failed', {
+					error: err instanceof Error ? err.message : 'Unknown error',
+				}),
 				{ color: kythiaConfig.bot.color },
 			);
 			return interaction.editReply({

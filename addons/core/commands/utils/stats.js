@@ -78,7 +78,6 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers, models } = container;
-		const { formatDuration } = helpers.time;
 		const { convertColor } = helpers.color;
 
 		const anyModelKey = models ? Object.keys(models)[0] : undefined;

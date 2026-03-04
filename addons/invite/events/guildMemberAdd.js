@@ -182,7 +182,7 @@ module.exports = async (bot, member) => {
 				let finalContent;
 
 				// ── Use custom joinMessage if set, otherwise fall back to standard text ──
-				if (inviteSetting?.joinMessage && inviteSetting.joinMessage.trim()) {
+				if (inviteSetting?.joinMessage?.trim()) {
 					finalContent = applyTemplate(inviteSetting.joinMessage, templateVars);
 				} else {
 					// Standard text (i18n)

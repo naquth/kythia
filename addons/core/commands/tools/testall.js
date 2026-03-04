@@ -436,20 +436,20 @@ function createForwardingMockInteraction(
 			createMessageComponentCollector: (_opts) => mockCollector,
 			createReactionCollector: (_opts) => mockCollector,
 		},
-		deferReply: async (options) => {
+		deferReply: (options) => {
 			void options;
 			_deferred = true;
 			return createMockMessage(realChannel);
 		},
-		reply: async (payload) => {
+		reply: (payload) => {
 			_replied = true;
 			return forward(payload);
 		},
-		editReply: async (payload) => {
+		editReply: (payload) => {
 			_replied = true;
 			return forward(payload);
 		},
-		followUp: async (payload) => {
+		followUp: (payload) => {
 			return forward(payload);
 		},
 		_hasReplied: () => _replied,
@@ -471,7 +471,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, logger, kythiaConfig } = container;
+		const { logger } = container;
 
 		// Acknowledge immediately so the interaction token stays alive
 		await interaction.deferReply({ ephemeral: true });

@@ -6,9 +6,15 @@
 		"invalid_message": "❌ Could not find the message. It might have been deleted.",
 		"invalid_emoji": "❌ Failed to react with that emoji. Make sure I have access to it.",
 		"not_found": "❌ Could not find a reaction role configuration for that message and emoji.",
+		"add": {
+			"success": "✅ **Reaction Role Configured!**\n\n**Message:** [Jump to Message]({messageUrl})\n**Emoji:** {emoji}\n**Role:** {role}"
+		},
 		"list": {
 			"empty": "ℹ️ No reaction roles configured on this server.",
 			"title": "Reaction Roles Configuration"
+		},
+		"edit": {
+			"nothing_to_edit": "❌ Nothing to edit. Please provide at least one field to update."
 		}
 	}
 }

@@ -1,0 +1,90 @@
+/**
+ * @namespace: addons/core/commands/utils/global-announcement/complex.js
+ * @type: Command
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const {
+	ModalBuilder,
+	TextInputStyle,
+	TextInputBuilder,
+	ActionRowBuilder,
+} = require('discord.js');
+const { sendToAllGuilds } = require('./_command');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('complex')
+			.setDescription('Send a complex announcement by pasting a JSON payload.'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, logger } = container;
+
+		const modal = new ModalBuilder()
+			.setCustomId(`announcement-modal-container_${interaction.user.id}`)
+			.setTitle(
+				await t(
+					interaction,
+					'core.utils.global-announcement.complex.modal.title',
+				),
+			);
+
+		modal.addComponents(
+			new ActionRowBuilder().addComponents(
+				new TextInputBuilder()
+					.setCustomId('announcement-json')
+					.setLabel(
+						await t(
+							interaction,
+							'core.utils.global-announcement.complex.modal.label',
+						),
+					)
+					.setStyle(TextInputStyle.Paragraph)
+					.setPlaceholder(
+						await t(
+							interaction,
+							'core.utils.global-announcement.complex.modal.placeholder',
+						),
+					)
+					.setRequired(true),
+			),
+		);
+		await interaction.showModal(modal);
+
+		const modalSubmit = await interaction
+			.awaitModalSubmit({
+				filter: (i) => i.customId.startsWith('announcement-modal-container_'),
+				time: 300_000,
+			})
+			.catch(() => null);
+
+		if (!modalSubmit)
+			return logger.warn('Container announcement modal timed out.');
+
+		await modalSubmit.deferReply({ ephemeral: true });
+
+		const jsonString =
+			modalSubmit.fields.getTextInputValue('announcement-json');
+		let payload;
+		try {
+			payload = JSON.parse(jsonString);
+		} catch (err) {
+			return modalSubmit.editReply({
+				content: await t(
+					interaction,
+					'core.utils.global-announcement.complex.invalid.json',
+					{ error: err.message },
+				),
+			});
+		}
+		await sendToAllGuilds(modalSubmit, payload);
+	},
+};

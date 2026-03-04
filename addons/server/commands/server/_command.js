@@ -1,0 +1,60 @@
+/**
+ * @namespace: addons/server/commands/server/_command.js
+ * @type: Command Group Definition
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const {
+	InteractionContextType,
+	PermissionFlagsBits,
+	SlashCommandBuilder,
+} = require('discord.js');
+
+const { EMBEDDED } = require('./_helpers');
+
+module.exports = {
+	slashCommand: new SlashCommandBuilder()
+		.setName('server')
+		.setDescription('⚙️ Discord server management tools')
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+	aliases: ['srv'],
+	guildOnly: true,
+	voteLcoked: true,
+	permissions: PermissionFlagsBits.ManageGuild,
+	botPermissions: [
+		PermissionFlagsBits.ManageGuild,
+		PermissionFlagsBits.ManageChannels,
+		PermissionFlagsBits.ManageRoles,
+	],
+
+	/**
+	 * @param {import('discord.js').AutocompleteInteraction} interaction
+	 */
+	autocomplete(interaction) {
+		const sub = interaction.options.getSubcommand();
+		const focused = interaction.options.getFocused();
+
+		if (
+			sub === 'autobuild' &&
+			interaction.options.getFocused(true)?.name === 'template'
+		) {
+			const embeddedTemplates = Object.entries(EMBEDDED)
+				.map(([key, tpl]) => ({
+					name: tpl?.meta?.display ? `${tpl.meta.display} (${key})` : key,
+					value: key,
+				}))
+				.filter(
+					(tpl) =>
+						tpl.name.toLowerCase().includes(focused.toLowerCase()) ||
+						tpl.value.toLowerCase().includes(focused.toLowerCase()),
+				)
+				.slice(0, 25);
+			return interaction.respond(embeddedTemplates);
+		}
+
+		return interaction.respond([]);
+	},
+};

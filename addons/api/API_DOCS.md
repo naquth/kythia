@@ -48,6 +48,34 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [Welcomer API (`/api/welcome`)](#welcomer-api-apiwelcome)
 - [POST /api/webhooks/topgg](#post-apiwebhookstopgg)
 - [POST /api/webhooks/license-created](#post-apiwebhookslicense-created)
+- [Addon Status API (`/api/addons`)](#addon-status-api-apiaddons)
+- [Pro API (`/api/pro`)](#pro-api-apipro)
+  - [Subdomains (`/api/pro/subdomains`)](#subdomains-apiprosubdomains)
+  - [DNS Records (`/api/pro/dns`)](#dns-records-apiprodns)
+  - [Monitors (`/api/pro/monitors`)](#monitors-apipromonitors)
+- [Quest API (`/api/quest`)](#quest-api-apiquest)
+  - [Quest Configs (`/api/quest/configs`)](#quest-configs-apiquestconfigs)
+  - [Quest Guild Logs (`/api/quest/logs`)](#quest-guild-logs-apiquestlogs)
+- [Giveaway API (`/api/giveaway`)](#giveaway-api-apigiveaway)
+  - [Giveaway Actions](#giveaway-actions)
+  - [Giveaway List / Get](#giveaway-list--get)
+  - [Participants Sub-resource](#participants-sub-resource)
+  - [Customization & CRUD](#customization--crud)
+- [Music WebSocket API](#music-websocket-api)
+  - [Overview](#music-ws-overview)
+  - [Connecting & Joining a Guild Room](#connecting--joining-a-guild-room)
+  - [Server → Client: `player_update`](#server--client-player_update)
+    - [Event Types](#event-types)
+    - [Full Payload Schema](#full-payload-schema)
+    - [Track Object Schema](#track-object-schema)
+    - [Queue Item Schema](#queue-item-schema)
+    - [Status Values](#status-values)
+    - [Per-Event Payload Examples](#per-event-payload-examples)
+  - [Ticker Mechanism](#ticker-mechanism)
+  - [Player Lifecycle & Event Flow](#player-lifecycle--event-flow)
+  - [Button Custom IDs Reference](#button-custom-ids-reference)
+  - [Guild State (In-Memory)](#guild-state-in-memory)
+  - [Integration Example (Dashboard)](#integration-example-dashboard)
 - [Error Reference](#error-reference)
 
 ---
@@ -133,7 +161,11 @@ const socket = io("http://localhost:3000");
 
 ### Server → Client Events
 
-These events are emitted by the bot's event handlers using `container.io.to(guildId).emit(...)`. The specific events depend on what the bot emits during its lifecycle (e.g. member joins, setting changes, etc.).
+| Event | Emitted by | Description |
+|---|---|---|
+| `player_update` | `MusicManager` | Real-time music player state update. See [Music WebSocket API](#music-websocket-api) for full documentation. |
+
+All events are scoped to a guild room. Emit `join_guild` first to subscribe.
 
 ---
 
@@ -3094,6 +3126,1028 @@ Update an existing image record. Only metadata fields can be updated — `filena
 Delete an image record from the database. Does **not** delete the file from storage.
 
 **Response:** `{ "success": true, "message": "Image deleted successfully" }`
+
+---
+
+## Music WebSocket API
+
+> **Transport:** Socket.IO (same port as HTTP, e.g. `3000`)  
+> **Event name (server → client):** `player_update`  
+> **Scope:** Guild-scoped rooms — you must join a room first  
+> **Source:** `addons/music/helpers/MusicManager.js` → `broadcastUpdate()` + inline `playerDestroy` handler
+
+---
+
+### Music WS Overview
+
+The Music addon integrates with the Kythia API's Socket.IO server to stream real-time player state to the dashboard (or any connected client). There is **no HTTP polling** needed for player state — everything is push-based.
+
+The flow is:
+1. Client connects to Socket.IO.
+2. Client emits `join_guild` with a `guildId` to subscribe to that guild's room.
+3. Whenever the player state changes (track start, pause, skip, etc.), the bot calls `broadcastUpdate(player, eventType)`, which emits `player_update` to all clients in that guild room.
+4. The client renders the received state in the dashboard UI.
+
+The `player_update` event is the **single unified event** for all music state changes. The `event` field inside the payload tells you what triggered the update.
+
+---
+
+### Connecting & Joining a Guild Room
+
+```js
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:3000'); // Use your configured API port
+
+// Join the guild room to start receiving player_update events
+socket.emit('join_guild', '123456789012345678'); // Replace with the target guildId
+
+// Listen for music player updates
+socket.on('player_update', (payload) => {
+  console.log('Player update:', payload);
+  // Render the player UI based on payload
+});
+
+// Cleanup on disconnect
+socket.on('disconnect', () => {
+  console.log('Disconnected from Kythia API Socket.IO');
+});
+```
+
+> **Note:** You only need to call `join_guild` once per session per guild. If you need to switch guilds, simply call `join_guild` again with the new `guildId`.
+
+---
+
+### Server → Client: `player_update`
+
+This is the sole music event emitted by the server. It is emitted to the guild room (`io.to(guildId).emit('player_update', payload)`) in response to all significant player state changes.
+
+---
+
+#### Event Types
+
+The `event` field inside the payload identifies the cause of the update:
+
+| `event` value | Trigger | Notes |
+|---|---|---|
+| `playerCreate` | A new Poru player was created for the guild | Emitted before any track starts. Player is idle. |
+| `trackStart` | A new track began playing | `status` will be `"playing"`, `track` is populated. |
+| `ticker` | The global UI ticker fired (every 5 seconds) | Used to update the progress bar in real time. `position` advances. |
+| `playerDestroy` | The player was destroyed (bot left VC, `/stop`, idle timeout) | `status` will always be `"idle"`, `track` is `null`. |
+
+> **Important:** The `playerDestroy` event has a slightly different payload — only `event`, `guildId`, `status: "idle"`, and `track: null` are sent. All other fields (`volume`, `position`, `isLoop`, `queue`) will **not** be present. Handle this defensively.
+
+---
+
+#### Full Payload Schema
+
+For all events **except** `playerDestroy`:
+
+```json
+{
+  "event": "trackStart",
+  "guildId": "123456789012345678",
+  "status": "playing",
+  "volume": 100,
+  "position": 12500,
+  "isLoop": {
+    "track": false,
+    "queue": false
+  },
+  "track": {
+    "title": "Never Gonna Give You Up",
+    "author": "Rick Astley",
+    "uri": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "artworkUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+    "duration": 213000,
+    "requester": "kenndeclouv"
+  },
+  "queue": [
+    {
+      "title": "Take On Me",
+      "uri": "https://www.youtube.com/watch?v=djV11Xbc914",
+      "duration": 225000
+    }
+  ]
+}
+```
+
+For `playerDestroy`:
+
+```json
+{
+  "event": "playerDestroy",
+  "guildId": "123456789012345678",
+  "status": "idle",
+  "track": null
+}
+```
+
+---
+
+#### Track Object Schema
+
+Present in the `track` field when a track is actively loaded. `null` when the player is idle or destroyed.
+
+| Field | Type | Description |
+|---|---|---|
+| `title` | `string` | Track title as returned by Lavalink/Spotify |
+| `author` | `string` | Artist/channel name |
+| `uri` | `string` | Full URL to the track (YouTube, Spotify, etc.) |
+| `artworkUrl` | `string \| null` | Artwork/thumbnail image URL. Uses `artworkUrl` first, falls back to `image`. `null` if neither exists. |
+| `duration` | `number` | Total track duration in **milliseconds** |
+| `requester` | `string \| null` | Discord username of the person who requested the track. `"Autoplay (username)"` format if the track was added by the autoplay system. `null` if unknown. |
+
+---
+
+#### Queue Item Schema
+
+The `queue` array contains up to **10** upcoming tracks (trimmed from the full queue for performance). Each item:
+
+| Field | Type | Description |
+|---|---|---|
+| `title` | `string` | Track title |
+| `uri` | `string` | Full URL to the track |
+| `duration` | `number` | Track duration in **milliseconds** |
+
+> **Note:** The full queue may contain more than 10 tracks. The WebSocket only sends the first 10 to minimize payload size. Use the queue display command in Discord to see the full list.
+
+---
+
+#### Status Values
+
+The `status` field describes the current player state:
+
+| Value | Description |
+|---|---|
+| `"playing"` | A track is actively playing and not paused |
+| `"paused"` | A track is loaded but temporarily paused |
+| `"idle"` | No track is playing; player is idle or destroyed |
+
+---
+
+#### Per-Event Payload Examples
+
+**`playerCreate` — New player created (idle, no track yet)**
+```json
+{
+  "event": "playerCreate",
+  "guildId": "123456789012345678",
+  "status": "idle",
+  "volume": 100,
+  "position": 0,
+  "isLoop": { "track": false, "queue": false },
+  "track": null,
+  "queue": []
+}
+```
+
+**`trackStart` — Track started playing**
+```json
+{
+  "event": "trackStart",
+  "guildId": "123456789012345678",
+  "status": "playing",
+  "volume": 100,
+  "position": 0,
+  "isLoop": { "track": false, "queue": false },
+  "track": {
+    "title": "Bohemian Rhapsody",
+    "author": "Queen",
+    "uri": "https://www.youtube.com/watch?v=fJ9rUzIMcZQ",
+    "artworkUrl": "https://i.ytimg.com/vi/fJ9rUzIMcZQ/maxresdefault.jpg",
+    "duration": 367000,
+    "requester": "kenndeclouv"
+  },
+  "queue": []
+}
+```
+
+**`ticker` — Progress tick (every 5 seconds while playing)**
+```json
+{
+  "event": "ticker",
+  "guildId": "123456789012345678",
+  "status": "playing",
+  "volume": 100,
+  "position": 45000,
+  "isLoop": { "track": false, "queue": false },
+  "track": {
+    "title": "Bohemian Rhapsody",
+    "author": "Queen",
+    "uri": "https://www.youtube.com/watch?v=fJ9rUzIMcZQ",
+    "artworkUrl": "https://i.ytimg.com/vi/fJ9rUzIMcZQ/maxresdefault.jpg",
+    "duration": 367000,
+    "requester": "kenndeclouv"
+  },
+  "queue": []
+}
+```
+
+**`ticker` — While paused (position does NOT advance)**
+```json
+{
+  "event": "ticker",
+  "guildId": "123456789012345678",
+  "status": "paused",
+  "volume": 100,
+  "position": 45000,
+  "isLoop": { "track": false, "queue": false },
+  "track": { "...same as above..." },
+  "queue": []
+}
+```
+
+> **Note:** The `ticker` event is **only** emitted when the player is playing and **not** paused. When paused, no ticker events are sent. Clients should freeze the playback timer when `status === "paused"`.
+
+**`playerDestroy` — Player destroyed**
+```json
+{
+  "event": "playerDestroy",
+  "guildId": "123456789012345678",
+  "status": "idle",
+  "track": null
+}
+```
+
+---
+
+### Ticker Mechanism
+
+The `MusicManager` runs a **global UI ticker** that fires every **5,000 ms** (5 seconds). On each tick:
+
+1. It iterates over **all active Poru players** across all guilds.
+2. For each player that is **playing** and **not paused**, it calls `broadcastUpdate(player, 'ticker')`.
+3. If the player is within 5 seconds of the track end (`position >= duration - 5000`), the tick for that player is **skipped** to avoid jitter at track transitions.
+4. The ticker also updates the Discord "Now Playing" message (progress bar edit) for channels still being actively watched.
+
+| Property | Value |
+|---|---|
+| Interval | 5,000 ms (5 seconds) |
+| Event emitted | `player_update` with `event: "ticker"` |
+| Pause-aware | Yes — skipped when `isPaused === true` |
+| Near-end skip | Yes — skipped when `position >= duration - 5000` |
+| Implementation | `setTimeout`-based recursive loop (not `setInterval`) |
+
+> The ticker is started once when the Discord client fires `clientReady`. It loops forever using `setTimeout(() => this.startUiTicker(), TICKER_INTERVAL)` at the end of each pass, ensuring it never overlaps itself even if an iteration takes longer than the interval.
+
+---
+
+### Player Lifecycle & Event Flow
+
+Below is the full event flow from the WebSocket perspective:
+
+```
+User runs /music play
+        │
+        ▼
+  poru.createConnection()
+        │
+        ▼
+  [Poru: playerCreate]
+        │
+        └──► broadcastUpdate(player, 'playerCreate')
+                │
+                └──► emit player_update { event: 'playerCreate', status: 'idle', track: null }
+
+Track resolves & play() is called
+        │
+        ▼
+  [Poru: trackStart]
+        │
+        ├──► updateNowPlayingUI() ← sends/edits Discord message
+        └──► broadcastUpdate(player, 'trackStart')
+                │
+                └──► emit player_update { event: 'trackStart', status: 'playing', track: {...} }
+
+Every 5 seconds (while playing)
+        │
+        ▼
+  startUiTicker()
+        │
+        └──► broadcastUpdate(player, 'ticker')
+                │
+                └──► emit player_update { event: 'ticker', position: <advancing>, ... }
+
+Track ends naturally
+        │
+        ▼
+  [Poru: trackEnd]
+        │
+        └──► (no direct broadcast — next event handles UI)
+
+Queue ends (no autoplay / autoplay exhausted)
+        │
+        ▼
+  [Poru: queueEnd]
+        │
+        ├──► shutdownPlayerUI() ← edits Discord message to "ended" state
+        └──► (idle timeout: 3 min then player.destroy())
+
+player.destroy() called (stop, leave, idle timeout, VC empty)
+        │
+        ▼
+  [Poru: playerDestroy]
+        │
+        └──► inline emit (NOT broadcastUpdate):
+                io.to(guildId).emit('player_update', {
+                  event: 'playerDestroy',
+                  guildId,
+                  status: 'idle',
+                  track: null
+                })
+```
+
+> **Why is `playerDestroy` different?** The `playerDestroy` event is emitted inline (not via `broadcastUpdate`) because at destroy time the player object may be in a partially cleaned-up state. The payload is therefore minimal and always safe to read.
+
+---
+
+### Button Custom IDs Reference
+
+The Discord "Now Playing" message contains interactive buttons. These IDs are relevant if you're building a dashboard that mirrors the same controls (e.g., via slash commands). They are **not** sent over WebSocket — they exist in Discord only.
+
+**Row 1 (Primary Controls)**
+
+| Custom ID | Action |
+|---|---|
+| `music_autoplay` | Toggle autoplay on/off |
+| `music_back` | Go back to the previous track from history |
+| `music_pause_resume` | Toggle pause/resume |
+| `music_skip` | Skip the current track |
+| `music_loop` | Cycle loop mode (off → track → queue → off) |
+
+**Row 2 (Secondary Controls)**
+
+| Custom ID | Action |
+|---|---|
+| `music_lyrics` | Fetch and display AI-generated lyrics for the current track |
+| `music_queue` | Display the current queue with pagination |
+| `music_stop` | Stop playback, clear queue, and disconnect after idle timeout |
+| `music_shuffle` | Shuffle all tracks in the queue randomly |
+| `music_favorite_add` | Save the current track to the user's favorites |
+
+**Suggestion Dropdown**
+
+| Custom ID | Action |
+|---|---|
+| `music_suggest` | A `StringSelectMenu` populated with YouTube recommended tracks. Selecting a track adds it to the queue. |
+
+> **Permission Rules for Buttons:** A user can only use buttons if they are:
+> 1. The bot owner, OR
+> 2. A server admin (has `ManageGuild` or `Administrator`), OR
+> 3. The person who requested the currently playing track.
+>
+> Additionally, the user **must be in the same voice channel** as the bot.
+
+---
+
+### Guild State (In-Memory)
+
+The `MusicManager` maintains a `guildStates` `Map` in memory. This is **not** persisted to the database — it lives only while the process is running. The WebSocket `queue` field draws from Poru's in-memory queue, not this map.
+
+| Property | Type | Description |
+|---|---|---|
+| `previousTracks` | `Array` | Ring buffer of the last **10** played tracks (most recent first). Used by the Back button and History command. |
+| `lastPlayedTrack` | `object \| null` | Reference to the most recently started track. Used as the autoplay seed track. |
+
+This state is cleared when the player is destroyed (unless `player._247 === true`, in which case it persists for seamless 24/7 session recovery).
+
+---
+
+### Integration Example (Dashboard)
+
+Here is a complete example of how a dashboard client would subscribe to and render music state:
+
+```js
+import { io } from 'socket.io-client';
+
+const API_URL = 'http://localhost:3000';
+const guildId = '123456789012345678';
+
+const socket = io(API_URL);
+
+let playerState = {
+  status: 'idle',
+  track: null,
+  queue: [],
+  volume: 100,
+  position: 0,
+  isLoop: { track: false, queue: false },
+};
+
+// Subscribe to the guild's events
+socket.on('connect', () => {
+  socket.emit('join_guild', guildId);
+});
+
+socket.on('player_update', (payload) => {
+  const { event, status, track, queue, volume, position, isLoop } = payload;
+
+  // Always update status
+  playerState.status = status;
+  playerState.track = track;
+
+  // Gracefully handle playerDestroy (minimal payload)
+  if (event === 'playerDestroy') {
+    playerState.queue = [];
+    playerState.position = 0;
+    renderIdle();
+    return;
+  }
+
+  // Update full state for all other events
+  playerState.queue = queue ?? playerState.queue;
+  playerState.volume = volume ?? playerState.volume;
+  playerState.position = position ?? playerState.position;
+  playerState.isLoop = isLoop ?? playerState.isLoop;
+
+  if (status === 'idle' || !track) {
+    renderIdle();
+  } else {
+    renderPlayer(playerState);
+  }
+});
+
+function renderPlayer(state) {
+  const progressPercent = (state.position / state.track.duration) * 100;
+  const elapsed = formatMs(state.position);
+  const total = formatMs(state.track.duration);
+  console.log(`[${state.status.toUpperCase()}] ${state.track.title} — ${elapsed} / ${total} (${progressPercent.toFixed(1)}%)`);
+  console.log(`  Loop: track=${state.isLoop.track}, queue=${state.isLoop.queue}`);
+  console.log(`  Queue: ${state.queue.length} upcoming track(s)`);
+}
+
+function renderIdle() {
+  console.log('[IDLE] No track playing.');
+}
+
+function formatMs(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+  const s = (totalSec % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+```
+
+---
+
+---
+
+## Addon Status API (`/api/addons`)
+
+Returns the active/inactive status of every addon, derived from `kythia.config.js`. The dashboard uses this to conditionally show or hide sidebar links and feature sections.
+
+> **Note:** Addon-specific API routes (`/api/quest`, `/api/giveaway`, `/api/pro`) also check their own addon's status. They return **503** immediately if the addon is disabled, so the dashboard can handle it gracefully without needing to pre-check.
+
+#### `GET /api/addons`
+
+Returns all addons ordered by: active first, then alphabetically.
+
+**Response:**
+```json
+{
+  "success": true,
+  "summary": { "total": 24, "active": 20, "inactive": 4 },
+  "addons": [
+    {
+      "key": "giveaway",
+      "name": "Giveaway",
+      "featureName": "Giveaway",
+      "featureFlag": "giveawayOn",
+      "active": true,
+      "version": "0.9.0-beta",
+      "description": "Host exciting giveaways..."
+    },
+    {
+      "key": "store",
+      "name": "Store",
+      "active": false,
+      ...
+    }
+  ]
+}
+```
+
+#### `GET /api/addons/:key`
+
+Get status for a single addon by its config key (folder name).
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | `string` | Addon folder key, e.g. `quest`, `giveaway`, `pro` |
+
+**Response:** `{ "success": true, "data": { "key": "quest", "active": true, ... } }`
+
+**Error (404):** `{ "success": false, "error": "Addon 'xyz' not found" }`
+
+#### Addon-disabled Response (503)
+
+When an addon-specific route is called while its addon is disabled:
+
+```json
+{
+  "success": false,
+  "addon": "quest",
+  "active": false,
+  "error": "The 'quest' addon is currently disabled. Enable it in kythia.config.js to use this API."
+}
+```
+
+---
+
+## Pro API (`/api/pro`)
+
+Manages **Pro** addon resources: user subdomains, DNS records, and uptime monitors.
+
+All endpoints require a bearer token. DNS and subdomain writes operate on the **local database only** — actual Cloudflare propagation is handled by the bot's Discord commands (`/dns set`, `/dns delete`).
+
+---
+
+### Subdomains (`/api/pro/subdomains`)
+
+#### `GET /api/pro/subdomains`
+
+List all subdomains, optionally filtered by owner.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | Filter by Discord user ID |
+
+**Response:**
+```json
+{ "success": true, "count": 2, "data": [ { "id": 1, "userId": "123456789", "name": "myproject", "createdAt": "...", "updatedAt": "..." } ] }
+```
+
+#### `GET /api/pro/subdomains/:id`
+
+Get a single subdomain by its integer ID. Response includes the associated `dnsRecords` array.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "userId": "123456789012345678",
+    "name": "myproject",
+    "createdAt": "2025-01-15T08:00:00.000Z",
+    "updatedAt": "2025-01-15T08:00:00.000Z",
+    "dnsRecords": [
+      { "id": 1, "subdomainId": 1, "type": "A", "name": "@", "value": "1.2.3.4", "cloudflareId": "abc123" }
+    ]
+  }
+}
+```
+
+**Error (404):** `{ "success": false, "error": "Subdomain not found" }`
+
+#### `POST /api/pro/subdomains`
+
+Create a new subdomain record. Uses `findOrCreate` — if `name` already exists the existing record is returned with `created: false`.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | ✅ | Discord user ID of the owner |
+| `name` | `string` | ✅ | Unique subdomain name (e.g. `myproject`) |
+
+**Response (201 created / 200 existing):**
+```json
+{ "success": true, "created": true, "data": { "id": 1, "userId": "...", "name": "myproject", "..." } }
+```
+
+**Error (400):** Missing `userId` or `name`.
+
+#### `DELETE /api/pro/subdomains/:id`
+
+Delete a subdomain and all its DNS records (cascading via FK constraint).
+
+> ⚠️ This does **not** delete the records from Cloudflare. Use the Discord command `/dns delete` or call `DELETE /api/pro/dns/:id` per record first if needed.
+
+**Response:** `{ "success": true, "message": "Subdomain (id=1) deleted successfully" }`
+
+**Error (404):** `{ "success": false, "error": "Subdomain not found" }`
+
+#### Subdomain Object
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Auto-increment primary key |
+| `userId` | `string` | Discord user ID of the owner |
+| `name` | `string` | Unique subdomain label (e.g. `myproject`) — full FQDN is `<name>.<domain>` |
+| `createdAt` | `string` | ISO 8601 creation timestamp |
+| `updatedAt` | `string` | ISO 8601 last-update timestamp |
+| `dnsRecords` | `array` | *(Only on GET /:id)* Associated DNS record objects |
+
+---
+
+### DNS Records (`/api/pro/dns`)
+
+#### `GET /api/pro/dns`
+
+List DNS records. Filter by subdomain.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `subdomainId` | `integer` | Filter by parent subdomain ID |
+
+**Response:**
+```json
+{ "success": true, "count": 1, "data": [ { "id": 1, "subdomainId": 1, "type": "A", "name": "@", "value": "1.2.3.4", "cloudflareId": "abc123" } ] }
+```
+
+#### `GET /api/pro/dns/:id`
+
+Get a single DNS record by integer ID.
+
+**Error (404):** `{ "success": false, "error": "DNS record not found" }`
+
+#### `POST /api/pro/dns`
+
+Create a DNS record in the **local database only**. Does not call Cloudflare.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `subdomainId` | `integer` | ✅ | Parent subdomain ID |
+| `type` | `string` | ✅ | Record type: `A`, `CNAME`, `TXT`, or `MX` |
+| `name` | `string` | ✅ | Host name. Use `@` for root. |
+| `value` | `string` | ✅ | Record content (IP, domain, or text string) |
+| `cloudflareId` | `string` | ❌ | Cloudflare record ID (if already synced externally) |
+
+**Response (201):** `{ "success": true, "data": { ... } }`
+
+**Errors:**
+- `400` — Missing required fields or invalid `type`.
+- `404` — `subdomainId` does not exist.
+
+#### `PATCH /api/pro/dns/:id`
+
+Update a DNS record's value and/or Cloudflare ID in the **local database only**.
+
+**Request Body (all optional):**
+| Field | Type | Description |
+|---|---|---|
+| `value` | `string` | New record content |
+| `cloudflareId` | `string \| null` | Updated Cloudflare record ID |
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+#### `DELETE /api/pro/dns/:id`
+
+Delete a DNS record from the **local database only**. Does not call Cloudflare.
+
+**Response:** `{ "success": true, "message": "DNS record (id=1) deleted successfully" }`
+
+#### DNS Record Object
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Auto-increment primary key |
+| `subdomainId` | `integer` | Foreign key to `subdomains.id` |
+| `type` | `string` | `A`, `CNAME`, `TXT`, or `MX` |
+| `name` | `string` | Host name (`@`, `www`, `mail`, etc.) |
+| `value` | `string` | Record content |
+| `cloudflareId` | `string \| null` | Cloudflare internal record ID (used for updates/deletes via Discord commands) |
+
+---
+
+### Monitors (`/api/pro/monitors`)
+
+Uptime monitors — one per Discord user (`userId` is the primary key).
+
+#### `GET /api/pro/monitors`
+
+List monitors with optional filters.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | Filter by Discord user ID |
+| `lastStatus` | `string` | Filter by status: `UP`, `DOWN`, or `PENDING` (case-insensitive) |
+
+**Response:**
+```json
+{ "success": true, "count": 1, "data": [ { "userId": "123456789012345678", "urlToPing": "https://mysite.com", "lastStatus": "UP" } ] }
+```
+
+#### `GET /api/pro/monitors/:userId`
+
+Get a single monitor by Discord user ID.
+
+**Error (404):** `{ "success": false, "error": "Monitor not found" }`
+
+#### `POST /api/pro/monitors`
+
+Create or update a monitor. Uses upsert — if the `userId` already has a monitor it is updated in-place.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | ✅ | Discord user ID (primary key) |
+| `urlToPing` | `string` | ✅ | URL to monitor (e.g. `https://mysite.com`) |
+| `lastStatus` | `string` | ❌ | Initial status: `UP`, `DOWN`, or `PENDING`. Defaults to `PENDING`. |
+
+**Response (201 created / 200 updated):**
+```json
+{ "success": true, "created": true, "data": { "userId": "...", "urlToPing": "https://mysite.com", "lastStatus": "PENDING" } }
+```
+
+**Errors:**
+- `400` — Missing `userId` or `urlToPing`, or invalid `lastStatus`.
+
+#### `PATCH /api/pro/monitors/:userId`
+
+Update an existing monitor.
+
+**Request Body (all optional):**
+| Field | Type | Description |
+|---|---|---|
+| `urlToPing` | `string` | New URL to monitor |
+| `lastStatus` | `string` | New status: `UP`, `DOWN`, or `PENDING` (case-insensitive) |
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+#### `DELETE /api/pro/monitors/:userId`
+
+Delete a monitor.
+
+**Response:** `{ "success": true, "message": "Monitor for user (userId=...) deleted successfully" }`
+
+#### Monitor Object
+
+| Field | Type | Description |
+|---|---|---|
+| `userId` | `string` | Discord user ID — primary key |
+| `urlToPing` | `string` | URL being monitored |
+| `lastStatus` | `string` | Last known status: `UP`, `DOWN`, or `PENDING` |
+
+---
+
+## Quest API (`/api/quest`)
+
+Manages the **Quest Notifier** addon — servers register a channel to receive Discord Quest notifications, and the system logs which quests have already been announced to prevent duplicate posts.
+
+All endpoints require a bearer token.
+
+---
+
+### Quest Configs (`/api/quest/configs`)
+
+#### `GET /api/quest/configs`
+
+List all quest notification configs.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild ID |
+
+**Response:**
+```json
+{ "success": true, "count": 1, "data": [ { "guildId": "123456789012345678", "channelId": "999888777666555444", "roleId": "111222333444555666", "createdAt": "...", "updatedAt": "..." } ] }
+```
+
+#### `GET /api/quest/configs/:guildId`
+
+Get the quest config for a specific guild.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+**Error (404):** `{ "success": false, "error": "Quest config not found" }`
+
+#### `POST /api/quest/configs`
+
+Set up quest notifications for a guild. The same behavior as `/quest setup` — creates a new config, or updates `channelId` and `roleId` on an existing one.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID (primary key) |
+| `channelId` | `string` | ✅ | Text channel to post quest notifications in |
+| `roleId` | `string \| null` | ❌ | Role to ping when a new quest is posted. `null` to disable pinging. |
+
+**Response (201 created / 200 updated):**
+```json
+{ "success": true, "created": true, "data": { "guildId": "...", "channelId": "...", "roleId": null, "createdAt": "...", "updatedAt": "..." } }
+```
+
+**Error (400):** Missing `guildId` or `channelId`.
+
+#### `PATCH /api/quest/configs/:guildId`
+
+Partially update an existing quest config.
+
+**Request Body (all optional):**
+| Field | Type | Description |
+|---|---|---|
+| `channelId` | `string` | New notification channel ID |
+| `roleId` | `string \| null` | New role to ping. Pass `null` to clear. |
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+**Error (404):** `{ "success": false, "error": "Quest config not found" }`
+
+#### `DELETE /api/quest/configs/:guildId`
+
+Remove a guild's quest notification config. The guild will stop receiving quest notifications.
+
+**Response:** `{ "success": true, "message": "Quest config for guild (guildId=...) deleted successfully" }`
+
+#### QuestConfig Object
+
+| Field | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID — primary key |
+| `channelId` | `string` | Channel ID where quest notifications are posted |
+| `roleId` | `string \| null` | Role ID to mention when posting, or `null` if disabled |
+| `createdAt` | `string` | ISO 8601 creation timestamp |
+| `updatedAt` | `string` | ISO 8601 last-update timestamp |
+
+---
+
+### Quest Guild Logs (`/api/quest/logs`)
+
+Tracks which quests have been announced in which guilds to prevent duplicate notifications. A unique constraint on `(guildId, questId)` ensures each quest is logged at most once per guild.
+
+#### `GET /api/quest/logs`
+
+List quest guild logs with optional filters. Results are ordered newest first.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild ID |
+| `questId` | `string` | Filter by quest ID |
+
+**Response:**
+```json
+{ "success": true, "count": 2, "data": [ { "id": 1, "guildId": "123456789012345678", "questId": "quest_abc", "sentAt": "2025-06-01T10:00:00.000Z" } ] }
+```
+
+#### `POST /api/quest/logs`
+
+Record that a quest has been announced in a guild. Uses `findOrCreate` to enforce the `(guildId, questId)` uniqueness — re-posting the same quest to the same guild returns the existing log with `created: false`.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID |
+| `questId` | `string` | ✅ | Quest identifier string |
+
+**Response (201 created / 200 already exists):**
+```json
+{ "success": true, "created": true, "data": { "id": 1, "guildId": "...", "questId": "quest_abc", "sentAt": "..." } }
+```
+
+**Error (400):** Missing `guildId` or `questId`.
+
+#### `DELETE /api/quest/logs/:id`
+
+Delete a specific quest guild log entry by its integer ID. Used to reset a quest so it can be re-announced in a guild.
+
+**Response:** `{ "success": true, "message": "Quest log (id=1) deleted successfully" }`
+
+**Error (404):** `{ "success": false, "error": "Quest log not found" }`
+
+#### QuestGuildLog Object
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Auto-increment primary key |
+| `guildId` | `string` | Discord guild ID |
+| `questId` | `string` | Quest identifier (e.g. Discord's internal quest slug) |
+| `sentAt` | `string` | ISO 8601 timestamp of when the quest was announced |
+
+---
+
+## Giveaway API (`/api/giveaway`)
+
+Manages active and ended giveaways, including the ability to trigger real-time Discord interactions and scheduling.
+
+All endpoints require a bearer token.
+
+---
+
+### Giveaway Actions
+
+These endpoints interact directly with the Discord API, the `GiveawayManager`, and the Redis scheduler to perform full lifecycle actions.
+
+#### `POST /api/giveaway/start`
+
+Starts a new giveaway. This will post a message to the target channel with the giveaway UI, register it in the database, and add it to the Redis scheduler.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID |
+| `channelId` | `string` | ✅ | Channel where the giveaway will be posted |
+| `hostId` | `string` | ✅ | Discord user ID of the host |
+| `prize` | `string` | ✅ | Prize description |
+| `winners` | `integer` | ✅ | Number of winners |
+| `durationMs` | `integer` | ❌ | Duration in milliseconds (required if `durationString` is missing) |
+| `durationString` | `string` | ❌ | Duration string e.g., `"1d 2h"` (required if `durationMs` is missing) |
+| `color` | `string` | ❌ | Hex color for the embed |
+| `roleId` | `string` | ❌ | Required role ID to join |
+| `description` | `string` | ❌ | Extra description for the giveaway |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "messageId": "...",
+  "messageUrl": "...",
+  "data": { ... }
+}
+```
+
+#### `POST /api/giveaway/:messageId/end`
+
+Manually ends a giveaway by its Discord message ID. This will draw winners, announce them in the channel, DM the winners, and update the giveaway message.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+#### `POST /api/giveaway/:messageId/cancel`
+
+Cancels a giveaway. This removes it from the scheduler, updates the message to a cancelled state, and posts a cancellation announcement.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+#### `POST /api/giveaway/:messageId/reroll`
+
+Rerolls an ended giveaway to pick new winners from the existing participants.
+
+**Response:** `{ "success": true, "data": { "messageId": "...", "participants": 5 } }`
+
+---
+
+### Giveaway List / Get
+
+#### `GET /api/giveaway`
+
+List giveaways with optional filters. Results are ordered by `endTime` descending.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild |
+| `hostId` | `string` | Filter by host |
+| `channelId` | `string` | Filter by channel |
+| `ended` | `boolean` | `"true"` or `"false"` |
+
+#### `GET /api/giveaway/:id`
+
+Get a single giveaway by its database ID.
+
+#### `GET /api/giveaway/message/:messageId`
+
+Look up a giveaway by its Discord message ID.
+
+---
+
+### Participants Sub-resource
+
+#### `GET /api/giveaway/:id/participants` | `POST /api/giveaway/:id/participants` | `DELETE /api/giveaway/:id/participants/:userId`
+
+Manage participants for a giveaway.
+
+---
+
+### Customization & CRUD
+
+#### `PATCH /api/giveaway/:id`
+
+Update database fields for a giveaway. 
+
+> ⚠️ Patching fields like `prize` or `description` here only updates the database. To update the Discord UI, the bot usually handles this through internal manager updates.
+
+#### `DELETE /api/giveaway/:id`
+
+Remove a giveaway record from the database.
+
+---
+
+### Giveaway Object
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key |
+| `guildId` | `string` | Discord guild ID |
+| `channelId` | `string` | Channel ID |
+| `messageId` | `string` | Discord message ID |
+| `hostId` | `string` | Host user ID |
+| `duration` | `integer` | Duration in ms |
+| `winners` | `integer` | Number of winners |
+| `prize` | `string` | Prize |
+| `participants` | `array` | User IDs |
+| `ended` | `boolean`| Status |
+| `roleId` | `string` | Req role |
+| `color` | `string` | Hex color |
+| `endTime` | `string` | End timestamp |
+| `description` | `string`| Description |
 
 ---
 

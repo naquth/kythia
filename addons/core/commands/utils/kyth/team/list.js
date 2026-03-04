@@ -1,0 +1,106 @@
+/**
+ * @namespace: addons/core/commands/utils/kyth/team/list.js
+ * @type: Command
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const { MessageFlags } = require('discord.js');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand.setName('list').setDescription('Show all Kythia Team members'),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, models, logger, helpers } = container;
+		const { KythiaTeam } = models;
+		const { createContainer } = helpers.discord;
+
+		await interaction.deferReply();
+
+		try {
+			const teamMembers = await KythiaTeam.getAllCache();
+
+			if (teamMembers.length === 0) {
+				const components = await createContainer(interaction, {
+					description: await t(interaction, 'core.utils.kyth.team.list.empty'),
+					color: 'Blurple',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+
+			const noRole = await t(interaction, 'core.utils.kyth.team.list.no.role');
+			const unknownUser = await t(
+				interaction,
+				'core.utils.kyth.team.list.unknown',
+			);
+			const memberList = [];
+			for (const member of teamMembers) {
+				try {
+					const user = await interaction.client.users
+						.fetch(member.userId)
+						.catch(() => null);
+					const userName = user
+						? user.tag
+						: `${unknownUser} (${member.userId})`;
+					const nameRole = member.name || noRole;
+					memberList.push(
+						await t(interaction, 'core.utils.kyth.team.list.row', {
+							name: userName,
+							id: member.userId,
+							role: nameRole,
+						}),
+					);
+				} catch (err) {
+					logger.warn(`Failed to fetch user ${member.userId}:`, err);
+					memberList.push(
+						await t(interaction, 'core.utils.kyth.team.list.row', {
+							name: `${unknownUser}`,
+							id: member.userId,
+							role: member.name || noRole,
+						}),
+					);
+				}
+			}
+
+			const description =
+				(await t(interaction, 'core.utils.kyth.team.list.total', {
+					count: teamMembers.length,
+				})) +
+				'\n\n' +
+				memberList.join('\n\n');
+
+			const components = await createContainer(interaction, {
+				title: await t(interaction, 'core.utils.kyth.team.list.title'),
+				description,
+				color: 'Blurple',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+			logger.info(`Kythia Team list viewed by ${interaction.user.tag}`);
+		} catch (error) {
+			logger.error('Failed to list team members:', error);
+			const components = await createContainer(interaction, {
+				description: await t(interaction, 'core.utils.kyth.team.list.error', {
+					error: error.message,
+				}),
+				color: 'Red',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	},
+};

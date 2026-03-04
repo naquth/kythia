@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://kythia.me">
+  <a href="https://kythia.xyz">
     <img src="https://files.catbox.moe/alnl1h.png" alt="Kythia Logo" height="150" style="border-radius: 10px;">
   </a>
 </p>
@@ -160,16 +160,20 @@ Ensure you have the following software installed:
 
 #### 4. Start the Bot
 
+Kythia uses `sharding.js` as its main entry point. This spawns and manages multiple Discord.js shards via `ShardingManager`, with `index.js` acting as the underlying shard worker — **do not run `index.js` directly**.
+
 1. Ensure all configurations are correct.
 2. Choose how you want to run the bot:
 
    - **For a quick test (in foreground):**
 
      ```bash
+     # Using Node.js
      npm run shard
-     ```
 
-     > **Note:** You can also run `npm start` to launch the bot directly via `index.js`. However, using `npm run shard` (which starts `sharding.js`) is highly recommended for better stability and performance.
+     # Using Bun (faster startup)
+     bun run shard
+     ```
 
      _(Press `ctrl + c` to stop the bot)_
 
@@ -181,12 +185,12 @@ Ensure you have the following software installed:
      ```
      _(To manage the bot later, use commands like `npm run pm2:stop` or `npm run pm2:restart`)_
 
-3. If the bot starts successfully, you will see a message such as:
+3. If the bot starts successfully, you will see shard status messages followed by:
    ```bash
    ✅ Logged in as Kythia#9135
    ```
 4. Check the terminal for any errors.
-5. If there are no errors, the bot is running and ready for use.
+5. If there are no errors, all shards are running and ready for use.
 6. If errors occur, review the relevant files for troubleshooting.
 
 #### 5. Invite the Bot to Your Server
@@ -229,7 +233,7 @@ Here are a few commands to get you started:
 *   `/serverinfo`: Displays information about the server.
 *   `/userinfo`: Displays information about a user.
 
-For a full list of commands and their detailed usage, please see the [Command Documentation](https://kythia.me/commands).
+For a full list of commands and their detailed usage, please see the [Command Documentation](https://portal.kythia.xyz/docs/).
 
 ---
 
@@ -342,6 +346,7 @@ Copyright © 2025 Kythia Labs - All rights reserved.
 
 Need help or want to connect with other Kythia users? Join our community!
 
-*   **🌐 Website:** [kythia.me](https://kythia.me)
+*   **🌐 Website:** [kythia.xyz](https://kythia.xyz)
+*   **🔑 Portal:** [portal.kythia.xyz](https://portal.kythia.xyz)
 *   **💬 Discord Server:** [dsc.gg/kythia](https://dsc.gg/kythia)
 *   **📧 Email:** [kenndeclouv@gmail.com](mailto:kenndeclouv@gmail.com)

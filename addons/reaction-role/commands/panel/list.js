@@ -82,7 +82,7 @@ module.exports = {
 			}
 
 			if (description.length > 3800) {
-				description = description.substring(0, 3797) + '...';
+				description = `${description.substring(0, 3797)}...`;
 			}
 
 			const listContainer = new ContainerBuilder()

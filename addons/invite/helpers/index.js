@@ -41,7 +41,7 @@ async function refreshGuildInvites(guild) {
  * @param {{ cacheBefore: Map, invitesNow: import('discord.js').Collection, vanityUsesBefore: number, vanityUsesNow: number, guild: import('discord.js').Guild, member: import('discord.js').GuildMember }} opts
  * @returns {{ inviterId: string|null, inviteCode: string|null, inviteType: string }}
  */
-async function resolveInviter({
+function resolveInviter({
 	cacheBefore,
 	invitesNow,
 	vanityUsesBefore,

@@ -84,7 +84,7 @@ module.exports = async (bot, member) => {
 			};
 
 			// ── Use custom leaveMessage if set, otherwise standard text ──
-			if (inviteSetting?.leaveMessage && inviteSetting.leaveMessage.trim()) {
+			if (inviteSetting?.leaveMessage?.trim()) {
 				logMessage = applyTemplate(inviteSetting.leaveMessage, templateVars);
 			} else {
 				const title = await t(
@@ -110,7 +110,7 @@ module.exports = async (bot, member) => {
 			{ label: 'Invite Tracker' },
 		);
 
-		if (inviteSetting?.leaveMessage && inviteSetting.leaveMessage.trim()) {
+		if (inviteSetting?.leaveMessage?.trim()) {
 			// Use custom message even for unknown-inviter leaves
 			const templateVars = {
 				user: `<@${member?.id}>`,

@@ -6,8 +6,17 @@
  * @version 0.11.0-beta
  */
 
+const {
+	MessageFlags,
+	AttachmentBuilder,
+	SeparatorBuilder,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	MediaGalleryBuilder,
+	MediaGalleryItemBuilder,
+	SeparatorSpacingSize,
+} = require('discord.js');
 const { welcomeBanner } = require('kythia-arts');
-const { MessageFlags, AttachmentBuilder } = require('discord.js');
 const { DateTime } = require('luxon');
 
 module.exports = {
@@ -142,14 +151,6 @@ module.exports = {
 						imageUrl = 'attachment://birthday.png';
 					}
 
-					const {
-						ContainerBuilder,
-						TextDisplayBuilder,
-						MediaGalleryBuilder,
-						MediaGalleryItemBuilder,
-						SeparatorBuilder,
-						SeparatorSpacingSize,
-					} = require('discord.js');
 					const { convertColor } = helpers.color;
 
 					const colorInput = setting?.embedColor || '#FFD700';

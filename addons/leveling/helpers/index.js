@@ -30,12 +30,11 @@ const levelUpXp = (level, curve = 'linear', multiplier = 1.0) => {
 	let base;
 	switch (curve) {
 		case 'exponential':
-			base = Math.floor(100 * Math.pow(1.5, level - 1));
+			base = Math.floor(100 * 1.5 ** (level - 1));
 			break;
 		case 'constant':
 			base = 100;
 			break;
-		case 'linear':
 		default:
 			base = level * level * 50;
 			break;

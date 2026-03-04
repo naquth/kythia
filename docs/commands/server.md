@@ -12,8 +12,8 @@
 
 `/server autobuild <template> <reset> [dry_run] [include_voice] [private_staff] [locale]`
 `/server backup`
-`/server restore <file> [clear]`
 `/server reset [clear]`
+`/server restore <file> [clear]`
 
 ### 🔧 Subcommands
 
@@ -43,6 +43,13 @@
 > Backup server structure to a JSON file
 
 
+**`/server reset [<clear>]`**
+> Reset server structure to default
+
+**Options for this subcommand:**
+- **`clear`**
+  - **Description:** Delete all channels & roles first?
+  - **Type:** Boolean
 **`/server restore <file> [<clear>]`**
 > Restore server structure from a JSON backup file
 
@@ -50,13 +57,6 @@
 - **`file*`**
   - **Description:** Server backup file (.json)
   - **Type:** Attachment
-- **`clear`**
-  - **Description:** Delete all channels & roles first?
-  - **Type:** Boolean
-**`/server reset [<clear>]`**
-> Reset server structure to default
-
-**Options for this subcommand:**
 - **`clear`**
   - **Description:** Delete all channels & roles first?
   - **Type:** Boolean

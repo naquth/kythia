@@ -1,0 +1,66 @@
+/**
+ * @namespace: addons/core/commands/utils/presence/status.js
+ * @type: Command
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const { MessageFlags } = require('discord.js');
+const { STATUS_OPTIONS } = require('./_command');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('status')
+			.setDescription('📊 Set bot status only')
+			.addStringOption((opt) =>
+				opt
+					.setName('status')
+					.setDescription('Bot status')
+					.setRequired(true)
+					.addChoices(...STATUS_OPTIONS),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, helpers, logger } = container;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply();
+
+		try {
+			const status = interaction.options.getString('status');
+			await interaction.client.user.setStatus(status);
+
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.utils.presence.status.success', { status }),
+				{ color: 'Green' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (error) {
+			logger.error('Error setting status:', error, {
+				label: 'core:utils:presence',
+			});
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.utils.presence.error', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	},
+};

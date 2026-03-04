@@ -8,12 +8,12 @@
 
 const {
 	MessageFlags,
+	SectionBuilder,
 	ContainerBuilder,
+	ThumbnailBuilder,
 	SeparatorBuilder,
 	TextDisplayBuilder,
-	MediaGalleryBuilder,
 	SeparatorSpacingSize,
-	MediaGalleryItemBuilder,
 } = require('discord.js');
 
 const characters = require('../helpers/characters');
@@ -147,18 +147,18 @@ module.exports = {
 
 		const startContainer = new ContainerBuilder().setAccentColor(accentColor);
 
-		startContainer.addMediaGalleryComponents(
-			new MediaGalleryBuilder().addItems([
-				new MediaGalleryItemBuilder().setURL(
-					interaction.user.displayAvatarURL({ dynamic: true, size: 512 }),
+		startContainer.addSectionComponents(
+			new SectionBuilder()
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(
+						`## ${await t(interaction, 'adventure.start.success.title')}\n${await t(interaction, 'adventure.start.success.desc')}`,
+					),
+				)
+				.setThumbnailAccessory(
+					new ThumbnailBuilder()
+						.setURL(interaction.user.displayAvatarURL())
+						.setDescription('User Avatar'),
 				),
-			]),
-		);
-
-		startContainer.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
-				`## ${await t(interaction, 'adventure.start.success.title')}\n${await t(interaction, 'adventure.start.success.desc')}`,
-			),
 		);
 
 		startContainer.addSeparatorComponents(

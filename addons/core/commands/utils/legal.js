@@ -20,8 +20,8 @@ const {
 	MediaGalleryItemBuilder,
 } = require('discord.js');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const _x = {
 	d: '\x64\x65\x66\x65\x72\x52\x65\x70\x6c\x79',

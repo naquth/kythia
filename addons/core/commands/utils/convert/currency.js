@@ -1,0 +1,102 @@
+/**
+ * @namespace: addons/core/commands/utils/convert/currency.js
+ * @type: Command
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const { MessageFlags } = require('discord.js');
+const { convertCurrency } = require('./_helpers');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('currency')
+			.setDescription('💰 Convert currency (e.g. USD to IDR)')
+			.addStringOption((opt) =>
+				opt
+					.setName('from')
+					.setDescription('Currency code (e.g. USD)')
+					.setRequired(true)
+					.setMinLength(3)
+					.setMaxLength(3),
+			)
+			.addStringOption((opt) =>
+				opt
+					.setName('to')
+					.setDescription('Currency code to convert to (e.g. IDR)')
+					.setRequired(true)
+					.setMinLength(3)
+					.setMaxLength(3),
+			)
+			.addNumberOption((opt) =>
+				opt
+					.setName('amount')
+					.setDescription('Amount to convert')
+					.setRequired(true),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, helpers, logger } = container;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply();
+
+		const amount = interaction.options.getNumber('amount');
+		const from = interaction.options.getString('from').toUpperCase();
+		const to = interaction.options.getString('to').toUpperCase();
+
+		try {
+			const result = await convertCurrency(container, amount, from, to);
+			if (result == null) {
+				const components = await simpleContainer(
+					interaction,
+					`## ${await t(interaction, 'core.utils.convert.currency.failed')}`,
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+
+			const desc =
+				'## ' +
+				(await t(interaction, 'core.utils.convert.currency.title')) +
+				'\n' +
+				(await t(interaction, 'core.utils.convert.currency.result', {
+					amount,
+					from,
+					result: result.toLocaleString(undefined, {
+						maximumFractionDigits: 4,
+					}),
+					to,
+				}));
+
+			const components = await simpleContainer(interaction, desc);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (e) {
+			logger.error('Currency convert error:', e, {
+				label: 'core:utils:convert',
+			});
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.utils.convert.currency.error'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	},
+};

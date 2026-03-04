@@ -13,6 +13,7 @@ const { logger: honoLogger } = require('hono/logger');
 const fs = require('node:fs');
 const path = require('node:path');
 const { Server } = require('socket.io');
+const addonGuard = require('./helpers/addon-guard');
 // const { rateLimit } = require('./helpers/rateLimit');
 
 module.exports = (bot) => {
@@ -118,6 +119,18 @@ module.exports = (bot) => {
 
 				const routePath =
 					routeName === 'index' ? urlPrefix : `${urlPrefix}/${routeName}`;
+
+				// Auto-guard: if an addon folder with the same name as this route
+				// file exists, protect the entire route prefix with addonGuard.
+				// e.g. routes/invite.js → addons/invite/ exists → guarded.
+				const addonDir = path.join(process.cwd(), 'addons', routeName);
+				if (fs.existsSync(addonDir) && fs.statSync(addonDir).isDirectory()) {
+					app.use(routePath, addonGuard(routeName));
+					app.use(`${routePath}/*`, addonGuard(routeName));
+					logger.info(
+						`   └─ 🛡️  Auto-guard: ${routePath} → addon '${routeName}'`,
+					);
+				}
 
 				try {
 					const routeModule = require(fullPath);

@@ -8,12 +8,12 @@
 
 const {
 	MessageFlags,
+	SectionBuilder,
 	ContainerBuilder,
 	SeparatorBuilder,
+	ThumbnailBuilder,
 	TextDisplayBuilder,
-	MediaGalleryBuilder,
 	SeparatorSpacingSize,
-	MediaGalleryItemBuilder,
 } = require('discord.js');
 const characters = require('../helpers/characters');
 
@@ -84,19 +84,20 @@ module.exports = {
 
 		const profileContainer = new ContainerBuilder().setAccentColor(accentColor);
 
-		profileContainer.addMediaGalleryComponents(
-			new MediaGalleryBuilder().addItems([
-				new MediaGalleryItemBuilder().setURL(
-					interaction.user.displayAvatarURL({ dynamic: true, size: 512 }),
-				),
-			]),
-		);
-
 		const introText = await t(interaction, 'adventure.stats.embed.desc', {
 			username: interaction.user.username,
 		});
-		profileContainer.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(introText),
+
+		profileContainer.addSectionComponents(
+			new SectionBuilder()
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(introText),
+				)
+				.setThumbnailAccessory(
+					new ThumbnailBuilder()
+						.setURL(interaction.user.displayAvatarURL())
+						.setDescription('User Avatar'),
+				),
 		);
 
 		profileContainer.addSeparatorComponents(

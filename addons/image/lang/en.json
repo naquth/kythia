@@ -6,6 +6,10 @@
 					"desc": "## ❌ Image Upload Failed!\nPlease upload a valid image file (image/* only)."
 				}
 			},
+			"error": {
+				"no_api_key": "❌ **Storage API key not configured.** Please set `KYTHIA_IMAGE_STORAGE_API_KEY` in your environment.",
+				"upload_failed": "❌ **Failed to upload image:** {error}"
+			},
 			"success": {
 				"desc": "## ✅ Image Saved!\nYour image has been saved successfully!\nURL: {url}"
 			}

@@ -16,8 +16,8 @@ const {
 	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
-const characters = require('../helpers/characters');
 const { getRandomMonster } = require('../helpers/monster');
+const characters = require('../helpers/characters');
 const { getItemById } = require('../helpers/items');
 
 module.exports = {

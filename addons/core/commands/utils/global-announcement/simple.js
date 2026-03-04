@@ -1,0 +1,124 @@
+/**
+ * @namespace: addons/core/commands/utils/global-announcement/simple.js
+ * @type: Command
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const {
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	ModalBuilder,
+	MessageFlags,
+	TextInputStyle,
+	TextInputBuilder,
+	ActionRowBuilder,
+} = require('discord.js');
+const { sendToAllGuilds } = require('./_command');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('simple')
+			.setDescription(
+				'Send a simple announcement using a simple components v2.',
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, logger, kythiaConfig, helpers } = container;
+
+		const modal = new ModalBuilder()
+			.setCustomId(`announcement-modal-embed_${interaction.user.id}`)
+			.setTitle(
+				await t(
+					interaction,
+					'core.utils.global-announcement.simple.modal.title',
+				),
+			);
+
+		modal.addComponents(
+			new ActionRowBuilder().addComponents(
+				new TextInputBuilder()
+					.setCustomId('announcement-title')
+					.setLabel(
+						await t(
+							interaction,
+							'core.utils.global-announcement.simple.modal.label.title',
+						),
+					)
+					.setStyle(TextInputStyle.Short)
+					.setRequired(true),
+			),
+			new ActionRowBuilder().addComponents(
+				new TextInputBuilder()
+					.setCustomId('announcement-content')
+					.setLabel(
+						await t(
+							interaction,
+							'core.utils.global-announcement.simple.modal.label.content',
+						),
+					)
+					.setStyle(TextInputStyle.Paragraph)
+					.setRequired(true),
+			),
+		);
+		await interaction.showModal(modal);
+
+		const modalSubmit = await interaction
+			.awaitModalSubmit({
+				filter: (i) => i.customId.startsWith('announcement-modal-embed_'),
+				time: 300_000,
+			})
+			.catch(() => null);
+
+		if (!modalSubmit) return logger.warn('Embed announcement modal timed out.');
+
+		await modalSubmit.deferReply({ ephemeral: true });
+
+		const title = modalSubmit.fields.getTextInputValue('announcement-title');
+		const content = modalSubmit.fields.getTextInputValue(
+			'announcement-content',
+		);
+		const { convertColor } = helpers.color;
+
+		const containerMsg = new ContainerBuilder()
+			.setAccentColor(
+				convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'core.utils.global-announcement.simple.prefix', {
+						title,
+						content,
+					}),
+				),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'core.utils.global-announcement.simple.footer', {
+						username: interaction.client.user.username,
+						timestamp: Math.floor(Date.now() / 1000),
+					}),
+				),
+			);
+
+		const payload = {
+			components: [containerMsg],
+			flags: MessageFlags.IsComponentsV2,
+		};
+		await sendToAllGuilds(modalSubmit, payload);
+	},
+};

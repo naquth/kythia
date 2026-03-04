@@ -6,10 +6,11 @@
  * @version 0.11.0-beta
  */
 
+const { Op } = require('sequelize');
+
 module.exports = async (bot, message) => {
 	const { models } = bot.client.container;
 	const { AutoReact } = models;
-	const { Op } = require('sequelize');
 
 	if (message.author.bot || !message.guild) return;
 

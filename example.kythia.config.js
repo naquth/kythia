@@ -245,6 +245,8 @@ function loadKythiaConfig() {
 			},
 			core: {
 				active: true,
+				// exchangerate api key for currency conversion
+				// get yours at: https://manage.exchangeratesapi.io/signup/free
 				exchangerateApi: process.env.EXCHANGERATE_API,
 			},
 			economy: {
@@ -265,6 +267,7 @@ function loadKythiaConfig() {
 			 *   - Configure OAuth2 Redirect URI in Discord Developer Portal
 			 *   - See example.env for detailed setup instructions
 			 *
+			 * ! DISCONTINUED
 			 * Dashboard repo: https://github.com/kenndeclouv/kythia-dashboard
 			 * ------------------------------------------------------------------- */
 			api: {
@@ -275,6 +278,8 @@ function loadKythiaConfig() {
 				port: process.env.API_PORT || 3000,
 				// Session secret for dashboard authentication (keep this secret!)
 				secret: process.env.API_SECRET,
+				// Allowed origins for CORS (comma-separated list)
+				allowedOrigin: process.env.API_ALLOWED_ORIGIN,
 			},
 			fun: {
 				active: true,
@@ -302,7 +307,7 @@ function loadKythiaConfig() {
 				// ! WARN
 				// this feature is kythia's internal only
 				// collaborate with TronixDev https://dsc.gg/trnx
-				enabled: false,
+				active: false,
 				apiUrl: process.env.GLOBAL_CHAT_API_URL,
 				healthCheckSchedule: '*/30 * * * *',
 				healthCheckDelay: 1000,
@@ -316,6 +321,9 @@ function loadKythiaConfig() {
 				apiKey: process.env.GLOBAL_VOICE_API_KEY,
 			},
 			invite: {
+				active: true,
+			},
+			minecraft: {
 				active: true,
 			},
 			image: {
@@ -385,6 +393,12 @@ function loadKythiaConfig() {
 				},
 				artworkUrlStyle: 'banner', // thumbnail, banner
 			},
+			nsfw: {
+				active: true,
+			},
+			nuke: {
+				active: true,
+			},
 			pet: {
 				active: true,
 				useCooldown: 28800, // 8 hours
@@ -417,11 +431,20 @@ function loadKythiaConfig() {
 			server: {
 				active: true,
 			},
+			pterodactyl: {
+				active: true,
+			},
+			store: {
+				active: false,
+			},
 			streak: {
 				active: true,
 			},
 			suggestion: {
 				active: true,
+			},
+			testimony: {
+				active: false,
 			},
 			ticket: {
 				active: true,
@@ -435,7 +458,7 @@ function loadKythiaConfig() {
 				// so it's dangerously to use it
 				active: false, // activate if u have setup the quest api
 				scheduler: '*/30 * * * *', // cron scheduler https://crontab.guru/
-				apiUrls: 'http://.../quests,http://...', // seperate with comma
+				apiUrls: process.env.QUEST_API_URLS, // seperate with comma
 			},
 		},
 
@@ -462,6 +485,8 @@ function loadKythiaConfig() {
 		settings: {
 			// all / warn,error,info,debug
 			logConsoleFilter: 'all',
+			// error,warn
+			webhookLogFilter: 'error,warn',
 			// Log format
 			// none, HH:mm:ss, HH:mm:ss.SSS
 			// more see at https://date-fns.org/v4.1.0/docs/format
@@ -485,6 +510,7 @@ function loadKythiaConfig() {
 			aboutBannerImage: 'https://placehold.co/800x300.png?text=About+Banner',
 			tempvoiceBannerImage:
 				'https://placehold.co/800x300.png?text=Temp+Voice+Banner',
+			ticketBannerImage: 'https://placehold.co/800x300.png?text=Ticket+Banner',
 			// link to error status page
 			statusPage: 'https://status.kythia.my.id',
 			// webhook notification when error on or off
@@ -518,6 +544,14 @@ function loadKythiaConfig() {
 		 * X. EMOJIS
 		 * ------------------------------------------------------------------- */
 		emojis: {
+			// stats emojis
+			stats: {
+				statistic: '📊',
+				technology: '🤖',
+				connection: '🌐',
+				cache: '💾',
+				owner: '👑',
+			},
 			// music emojis
 			// can use regular emoji like ▶️ ⏯️
 			// or custom emoji like <:name:id>

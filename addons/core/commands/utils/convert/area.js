@@ -1,0 +1,83 @@
+/**
+ * @namespace: addons/core/commands/utils/convert/area.js
+ * @type: Command
+ * @copyright © 2025 kenndeclouv
+ * @assistant chaa & graa
+ * @version 0.11.0-beta
+ */
+
+const { MessageFlags } = require('discord.js');
+const { convertArea, areaChoices } = require('./_helpers');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('area')
+			.setDescription('🟦 Convert area units (e.g. m² to acre)')
+			.addStringOption((opt) =>
+				opt
+					.setName('from')
+					.setDescription('From unit')
+					.setRequired(true)
+					.addChoices(...areaChoices),
+			)
+			.addStringOption((opt) =>
+				opt
+					.setName('to')
+					.setDescription('To unit')
+					.setRequired(true)
+					.addChoices(...areaChoices),
+			)
+			.addNumberOption((opt) =>
+				opt
+					.setName('value')
+					.setDescription('Value to convert')
+					.setRequired(true),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply();
+
+		const value = interaction.options.getNumber('value');
+		const from = interaction.options.getString('from');
+		const to = interaction.options.getString('to');
+		const result = convertArea(value, from, to);
+
+		if (result == null) {
+			const components = await simpleContainer(
+				interaction,
+				`## ${await t(interaction, 'core.utils.convert.area.failed')}`,
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		const desc =
+			'## ' +
+			(await t(interaction, 'core.utils.convert.area.title')) +
+			'\n' +
+			(await t(interaction, 'core.utils.convert.area.result', {
+				value,
+				from,
+				result,
+				to,
+			}));
+
+		const components = await simpleContainer(interaction, desc);
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

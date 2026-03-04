@@ -23,5 +23,6 @@ const manager = new ShardingManager({
 });
 
 manager.spawn().catch((err) => {
+	// biome-ignore lint/suspicious/noConsole: using console as the logger not yet loaded
 	console.error('❌ Failed to spawn shards:', err);
 });

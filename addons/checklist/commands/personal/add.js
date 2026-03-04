@@ -79,8 +79,7 @@ module.exports = {
 			await checklist.update({ items: JSON.stringify(items) });
 		} catch (_e) {
 			await interaction.deferReply({ ephemeral: true });
-			const msg =
-				'Checklist Error\nFailed to update checklist. Please try again.';
+			const msg = await t(interaction, 'checklist.server.add.error');
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',
 			});

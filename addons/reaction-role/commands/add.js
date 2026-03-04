@@ -6,10 +6,10 @@
  * @version 1.0.0
  */
 const {
-	TextDisplayBuilder,
-	ContainerBuilder,
 	MessageFlags,
 	ChannelType,
+	ContainerBuilder,
+	TextDisplayBuilder,
 } = require('discord.js');
 
 module.exports = {
@@ -116,10 +116,11 @@ module.exports = {
 				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`✅ **Reaction Role Configured!**\n\n` +
-							`**Message:** [Jump to Message](${message.url})\n` +
-							`**Emoji:** ${emojiInput}\n` +
-							`**Role:** ${role}`,
+						await t(interaction, 'reaction-role.add.success', {
+							messageUrl: message.url,
+							emoji: emojiInput,
+							role: role.toString(),
+						}),
 					),
 				);
 

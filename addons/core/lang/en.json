@@ -112,9 +112,35 @@
 			},
 			"presence": {
 				"success": "✅ Presence changed to: `{type} {activity}` (status: {status}) 😋",
-				"error": "❌ An error occurred while changing the presence. Please try again later.",
+				"error": "❌ An error occurred: {error}",
 				"invalid": {
 					"url": "❌ Invalid URL. Please provide a valid URL. https://www.twitch.tv or https://www.youtube.com"
+				},
+				"set": {
+					"success": "✅ Presence updated!\n**Status:** {status}\n**Activity:** {activity} ({type})"
+				},
+				"status": {
+					"success": "✅ Status set to **{status}**"
+				},
+				"activity": {
+					"success": "✅ Activity set to **{activity}** ({type})"
+				},
+				"afk": {
+					"success": "✅ AFK status set to **{state}**"
+				},
+				"username": {
+					"success": "✅ Username changed!\n**Old:** {old}\n**New:** {new}"
+				},
+				"avatar": {
+					"success": "✅ Avatar updated successfully!",
+					"invalid": "❌ Please provide a valid image file!"
+				},
+				"banner": {
+					"success": "✅ Banner updated successfully!",
+					"invalid": "❌ Please provide a valid image file!"
+				},
+				"bio": {
+					"success": "✅ Bio updated!\n**New bio:** {bio}"
 				}
 			},
 			"report": {
@@ -410,6 +436,16 @@
 					"result": "{value} {from} = **{result} {to}**",
 					"failed": "❌ Invalid data unit."
 				},
+				"area": {
+					"title": "🟦 Area Conversion",
+					"result": "{value} {from} = **{result} {to}**",
+					"failed": "❌ Invalid area unit. Please check your units."
+				},
+				"volume": {
+					"title": "🧪 Volume Conversion",
+					"result": "{value} {from} = **{result} {to}**",
+					"failed": "❌ Invalid volume unit. Please check your units."
+				},
 				"unknown": {
 					"subcommand": "❌ Unknown subcommand."
 				}
@@ -421,6 +457,83 @@
 				},
 				"button": {
 					"topgg": "🩷 Vote {username}"
+				}
+			},
+			"leave-guild": {
+				"target": {
+					"protected": "🛡️ **Protected Guild**\nID: `{guildId}` is exempted and cannot be left.",
+					"not": {
+						"found": "❌ **Guild Not Found**\nID: `{guildId}`"
+					},
+					"success": "✅ **Successfully Left Guild**\n\n**Name:** {guildName}\n**ID:** `{guildId}`\n**Members:** {memberCount}\n\n📉 Server Count is now: **{serverCount}**"
+				},
+				"cleanup": {
+					"goodbye": "👋 **Good Bye!**\n\nI am leaving this server because it has fewer than {threshold} members (Cleanup Policy).\nIf you want to use me, please invite me to a more active server!",
+					"empty": "✅ **No Cleanup Needed**\nNo guilds found with less than {threshold} members.",
+					"success": "🧹 **Cleanup Complete**\n\n**Threshold:** < {threshold} members\n**Success:** {leftCount} guilds\n**Failed:** {errorCount} guilds",
+					"more": "...and {count} more",
+					"list": "\n\n**Left Guilds:**\n```\n{names}```"
+				}
+			},
+			"kyth": {
+				"team": {
+					"list": {
+						"empty": "📋 The Kythia Team is currently empty.",
+						"no": {
+							"role": "No role specified"
+						},
+						"unknown": "Unknown User",
+						"row": "**{name}**\n**ID:** {id}\n**Role:** {role}",
+						"total": "Total members: **{count}**",
+						"title": "👥 Kythia Team Members",
+						"error": "❌ Failed to list team members: {error}"
+					},
+					"delete": {
+						"not": {
+							"found": "❌ **{tag}** is not in the Kythia Team!"
+						},
+						"title": "✅ Team Member Removed",
+						"success": "Successfully removed **{tag}** from Kythia Team!\n\n**User ID:** {id}",
+						"error": "❌ Failed to remove team member: {error}"
+					},
+					"add": {
+						"already": "❌ **{tag}** is already in the Kythia Team!",
+						"title": "✅ Team Member Added",
+						"success": "Successfully added **{tag}** to Kythia Team!\n\n**User ID:** {id}\n**Name/Role:** {name}",
+						"error": "❌ Failed to add team member: {error}"
+					}
+				}
+			},
+			"global-announcement": {
+				"simple": {
+					"modal": {
+						"title": "📝 Create Embed Announcement",
+						"label": {
+							"title": "Title",
+							"content": "Content (Markdown)"
+						}
+					},
+					"prefix": "## 📢 {title}\n\n{content}",
+					"footer": "Announcement from Developer {username} \u2022 <t:{timestamp}:R>"
+				},
+				"complex": {
+					"modal": {
+						"title": "📝 Create Container Announcement",
+						"label": "Paste JSON Payload Here",
+						"placeholder": "Copy the JSON from Discohook and paste it here..."
+					},
+					"invalid": {
+						"json": "❌ Invalid JSON! Please make sure you copied everything correctly.\n\nError: `{error}`"
+					}
+				},
+				"delivery": {
+					"start": "⏳ Starting to send the announcement to all servers...",
+					"report": {
+						"list": "\n\n**Failed Server List:**\n```{names}```",
+						"success": "**Successfully Sent:** {count} server(s)",
+						"failed": "**Failed to Send:** {count} server(s)",
+						"title": "## ✅ Announcement Delivery Report"
+					}
 				}
 			}
 		},
@@ -607,6 +720,83 @@
 					"unknown": {
 						"title": "Error Processing Instagram Link",
 						"desc": "❌ An error occurred while processing the Instagram link."
+					}
+				}
+			},
+			"leave-guild": {
+				"target": {
+					"protected": "🛡️ **Protected Guild**\nID: `{guildId}` is exempted and cannot be left.",
+					"not": {
+						"found": "❌ **Guild Not Found**\nID: `{guildId}`"
+					},
+					"success": "✅ **Successfully Left Guild**\n\n**Name:** {guildName}\n**ID:** `{guildId}`\n**Members:** {memberCount}\n\n📉 Server Count is now: **{serverCount}**"
+				},
+				"cleanup": {
+					"goodbye": "👋 **Good Bye!**\n\nI am leaving this server because it has fewer than {threshold} members (Cleanup Policy).\nIf you want to use me, please invite me to a more active server!",
+					"empty": "✅ **No Cleanup Needed**\nNo guilds found with less than {threshold} members.",
+					"success": "🧹 **Cleanup Complete**\n\n**Threshold:** < {threshold} members\n**Success:** {leftCount} guilds\n**Failed:** {errorCount} guilds",
+					"list": "\n\n**Left Guilds:**\n```\n{names}```",
+					"more": "...and {count} more"
+				}
+			},
+			"kyth": {
+				"team": {
+					"add": {
+						"already": "❌ **{tag}** is already in the Kythia Team!",
+						"title": "✅ Team Member Added",
+						"success": "Successfully added **{tag}** to Kythia Team!\n\n**User ID:** {id}\n**Name/Role:** {name}",
+						"error": "❌ Failed to add team member: {error}"
+					},
+					"delete": {
+						"not": {
+							"found": "❌ **{tag}** is not in the Kythia Team!"
+						},
+						"title": "✅ Team Member Removed",
+						"success": "Successfully removed **{tag}** from Kythia Team!\n\n**User ID:** {id}",
+						"error": "❌ Failed to remove team member: {error}"
+					},
+					"list": {
+						"empty": "📋 The Kythia Team is currently empty.",
+						"title": "👥 Kythia Team Members",
+						"total": "Total members: **{count}**",
+						"unknown": "Unknown User",
+						"no": {
+							"role": "No role specified"
+						},
+						"row": "**{name}**\n**ID:** {id}\n**Role:** {role}",
+						"error": "❌ Failed to list team members: {error}"
+					}
+				}
+			},
+			"global-announcement": {
+				"simple": {
+					"modal": {
+						"title": "📝 Create Embed Announcement",
+						"label": {
+							"title": "Title",
+							"content": "Content (Markdown)"
+						}
+					},
+					"prefix": "## 📢 {title}\n\n{content}",
+					"footer": "Announcement from Developer {username} • <t:{timestamp}:R>"
+				},
+				"complex": {
+					"modal": {
+						"title": "📝 Create Container Announcement",
+						"label": "Paste JSON Payload Here",
+						"placeholder": "Copy the JSON from Discohook and paste it here..."
+					},
+					"invalid": {
+						"json": "❌ Invalid JSON! Please make sure you copied everything correctly.\n\nError: `{error}`"
+					}
+				},
+				"delivery": {
+					"start": "⏳ Starting to send the announcement to all servers...",
+					"report": {
+						"title": "## ✅ Announcement Delivery Report",
+						"success": "**Successfully Sent:** {count} server(s)",
+						"failed": "**Failed to Send:** {count} server(s)",
+						"list": "\n\n**Failed Server List:**\n```{names}```"
 					}
 				}
 			}
@@ -1427,7 +1617,6 @@
 				}
 			}
 		},
-
 		"system": {
 			"automod": {
 				"spam": {

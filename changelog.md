@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-rc](https://github.com/kythia/kythia/compare/v0.11.0-beta...v1.0.0-rc) (2026-03-04)
+
+### ⚠️ BREAKING CHANGES
+
+* Database migration changes, please run `npx kythia migration -f` after updating OR just completely remove your database, Warning: This will reset your database.
+
+### 🔨 Fixed
+
+* automod correctly bypasses owners and administrators. ([75cf3e9](https://github.com/kythia/kythia/commit/75cf3e92a9f7a88d16f84c29a1dc960212ab2b0c))
+
+
+### 🔧 Changed
+
+* **ai:** code standardization step 1 ([dadccc5](https://github.com/kythia/kythia/commit/dadccc5cbd7bf8b1101cda6275efbdda92a4d881))
+* **api:** code standardization step 1 ([547e4ff](https://github.com/kythia/kythia/commit/547e4ffae31341322453994fd1a87deb747c9506))
+* **checklist:** code standardization step 1 ([12ed14c](https://github.com/kythia/kythia/commit/12ed14c8f4abd2aa2437d28c76bf2b548addf1d3))
+* code standartization phase 1 across all addon ([a7f84fc](https://github.com/kythia/kythia/commit/a7f84fc9b3cd83681276824f07d1bd7e6149f3ef))
+* **core moderation:** code standardization step 1 ([df04f19](https://github.com/kythia/kythia/commit/df04f19b1f10e50397fab1ba42d1e0ae657deb00))
+* Introduce new handler modules for music, AI, prefix commands, AFK, errors, and sticky messages, and update related components. ([7ace210](https://github.com/kythia/kythia/commit/7ace210e3b27c44fe4d1ffa447a7cebe8e2e9078))
+* Remove Uno and Guess Number games, rename global announcement subcommands, and update bot color configuration access. ([1fc588b](https://github.com/kythia/kythia/commit/1fc588b596751051e4a4a53a54f2ce6f9e84dfd1))
+* Rename AI addon helper and task files to kebab-case and add JSDoc type hints to command execute methods. ([1360357](https://github.com/kythia/kythia/commit/1360357f789837e133f28b85241594638327564c))
+
+
+### ✨ Added
+
+* Add API_URL configuration and use environment variable for API_SECRET fallback. ([b348804](https://github.com/kythia/kythia/commit/b3488043705cd375e23dcf0aeea03138c171ae0c))
+* Add comprehensive command documentation and a new legal utility command, with minor updates to the music addon and dependencies. ([5c6c036](https://github.com/kythia/kythia/commit/5c6c036d55513c126b8d743eb8d89a6a05980a29))
+* Add globalvoice command documentation, update Instagram command error handling and UI, refine documentation generation for split commands, and remove several outdated command documentation files. ([76b11a8](https://github.com/kythia/kythia/commit/76b11a88dd76054c10ae38c83f6b28de591dea9c))
+* Add metrics API endpoint, implement pet seeder, and restrict pet admin commands to main guild and team. ([6759650](https://github.com/kythia/kythia/commit/6759650e4af3d04db94299ab1057a4dbedaee2f9))
+* add new feature reaction role ([1bb4b0e](https://github.com/kythia/kythia/commit/1bb4b0ed1cb422df75307f157202a269d10e60b2))
+* Add new quest scheduler, refactor commands and helpers with hyphenated names, introduce new API routes, and update core configurations ([00a41c5](https://github.com/kythia/kythia/commit/00a41c56d873c3b1afa04b1edbffbadde50d63d5))
+* autoreact addon ([f2505c6](https://github.com/kythia/kythia/commit/f2505c6187946f79c23fe2937b263adfa17b4bf8))
+* autoreply ([7eb4222](https://github.com/kythia/kythia/commit/7eb42228d85c1eac68614d04da26d5f4e9d0596f))
+* **birthday:** complete full rewrite with pagination, modular settings, and dynamic arts ([64d1e75](https://github.com/kythia/kythia/commit/64d1e75bb67330c6f67c55634ca0da9cfa4351ca))
+* Enhance invite leaderboard with medals, usernames, and pagination, update invite tracking logs, and refine AI message handling. ([8b90c8e](https://github.com/kythia/kythia/commit/8b90c8e42146ce704c2f9ff5bf9344fca12f18c1))
+* expand API with new routes and rate limiting, add reaction role commands, update core utilities, and improve documentation ([a4c86ea](https://github.com/kythia/kythia/commit/a4c86eac0bef9c84c05f77fcc5c9054a455e976a))
+* Ignore bot messages in sticky handler and migrate music command responses from embeds to simple containers. ([5a6fed8](https://github.com/kythia/kythia/commit/5a6fed8a7ccacb5e3eadfe1940b53c3d73e2a2c5))
+* Implement `/ai list` command with paginated UI and migrate `/translate` to new component-based replies. ([ac81974](https://github.com/kythia/kythia/commit/ac8197440de2b5dc23bd1f2353d407a5f41fbf42))
+* implement a dedicated welcomer addon, enhance leveling with voice activity, and introduce reaction role panel management ([6101f72](https://github.com/kythia/kythia/commit/6101f72bf65fbfaa29c8eadad67683c2f2686287))
+* Implement comprehensive AI system with message handling, conversation management, user facts, personality, and multi-media support. ([7be6cf0](https://github.com/kythia/kythia/commit/7be6cf0778a70739a374f0a899d586c770cc9abe))
+* Implement external Kythia Storage Server integration for the image addon, updating database schema, commands, and configuration. ([ce816e2](https://github.com/kythia/kythia/commit/ce816e282523174f2703f2b1ae2402a1edd4534b))
+* Implement global voice addon, refactor autosetup command, and update various core utilities and configurations. ([73365db](https://github.com/kythia/kythia/commit/73365db865feba4a910a5bfe0a9c98e93d31933d))
+* Implement invite settings, enhance invite tracking with new history fields, and improve welcome settings API robustness. ([88d1417](https://github.com/kythia/kythia/commit/88d1417fb07cc559c83a7c3cf444f922e6c28108))
+* Implement Parser V2 for interaction mocker, adding subcommand group and option resolution support. ([15f52e5](https://github.com/kythia/kythia/commit/15f52e53b6fba45b2c27f596da4c99bb0b719761))
+* Implement streak reset, leaderboard, user, and claim commands, refactoring existing streak functionality. ([8209cf5](https://github.com/kythia/kythia/commit/8209cf528a4643051580360dbbc956907c6e9da1))
+* Introduce new command groups for convert, nick-prefix, sticky, leave-guild, presence, global-announcement, kyth, and giveaway, alongside API routes, server commands, and documentation updates. ([372f85d](https://github.com/kythia/kythia/commit/372f85d1c710225336588088bbf9e195b83e9909))
+* migrate audit log event handlers to Discord Components V2 and add new event handlers ([6cd5244](https://github.com/kythia/kythia/commit/6cd52442ab506a5e0c324096ebd7af5358132fbd))
+* Migrate commands to use new component-based message containers and add ASCII art generation. ([5468597](https://github.com/kythia/kythia/commit/5468597e08ea2a05953e01de3d7678ab6400e3e5))
+* migrate economy command responses to component-based messages with new helpers and `MessageFlags.IsComponentsV2` support. ([ca4c710](https://github.com/kythia/kythia/commit/ca4c71008e5def529c0866f3c3c7365254655497))
+* migrate many commands from Discord embeds to custom `simpleContainer` components and remove globalchat registration file ([c5a7ffa](https://github.com/kythia/kythia/commit/c5a7ffaf1adb291b676ba00113f5bdba8a8a146d))
+* Overhaul moderation command language strings for consistency and add a new testall command. ([21c472f](https://github.com/kythia/kythia/commit/21c472fffb6b51e158539df067652d34a7e19d30))
+
 ### [0.11.0-beta](https://github.com/kythia/kythia/compare/v0.10.1-beta...v0.11.0-beta) (2025-12-17)
 
 ### ⚠️ BREAKING CHANGES

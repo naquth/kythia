@@ -28,7 +28,12 @@ const {
 } = require('discord.js');
 
 const { customFilter } = require('poru');
-const ytDlp = require('yt-dlp-exec');
+let ytDlp = null;
+try {
+	ytDlp = require('yt-dlp-exec');
+} catch {
+	/* yt-dlp-exec not installed — download feature disabled */
+}
 const path = require('node:path');
 const axios = require('axios');
 const fs = require('node:fs');
@@ -3912,6 +3917,20 @@ class MusicHandlers {
 
 	async handleDownload(interaction, player) {
 		await interaction.deferReply();
+
+		if (!ytDlp) {
+			return interaction.editReply({
+				components: await this.simpleContainer(
+					interaction,
+					await this.t(
+						interaction,
+						'music.helpers.handlers.music.download.unavailable',
+					),
+					{ color: 'Red' },
+				),
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
 
 		const query = interaction.options.getString('query');
 		const track = query ? null : player?.currentTrack;

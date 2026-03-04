@@ -179,7 +179,8 @@
 						"title": "**Title:** {title}",
 						"author": "**Author:** {author}",
 						"query": "**Query:** {query}",
-						"failed": "❌ Failed to download the song. The link might be protected. 😭"
+						"failed": "❌ Failed to download the song. The link might be protected. 😭",
+						"unavailable": "Download feature is not available, please contact owner."
 					},
 					"replayed": "🔄 Replaying the current track.",
 					"history": {

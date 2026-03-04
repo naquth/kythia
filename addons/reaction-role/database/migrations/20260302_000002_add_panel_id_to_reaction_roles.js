@@ -2,8 +2,8 @@
  * @namespace: addons/reaction-role/database/migrations/20260302_000002_add_panel_id_to_reaction_roles.js
  * @type: Database Migration
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 module.exports = {

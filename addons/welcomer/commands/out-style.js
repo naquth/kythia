@@ -2,8 +2,8 @@
  * @namespace: addons/welcomer/commands/out-style.js
  * @type: Command
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 1.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { MessageFlags } = require('discord.js');

@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/globalchat/database/migrations/20251124_000031_create_global_chats_table.js
  * @type: Database Migration
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 module.exports = {

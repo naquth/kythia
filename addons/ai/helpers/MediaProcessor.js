@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/ai/helpers/MediaProcessor.js
- * @type: Helper Class
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @type: Helper Script
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { GoogleGenAI, createPartFromUri } = require('@google/genai');

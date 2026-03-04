@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/birthday/database/migrations/20260103_000004_create_birthday_settings_table.js
- * @type: Migration
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @type: Database Migration
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { DataTypes } = require('sequelize');

@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/server/commands/server/_helpers.js
- * @type: Shared helpers for server subcommands
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const {

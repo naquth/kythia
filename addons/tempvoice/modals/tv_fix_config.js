@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/tempvoice/modals/tv_fix_config.js
  * @type: Module
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 const { ComponentType } = require('discord.js');
 

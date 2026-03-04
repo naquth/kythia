@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/api/routes/welcome.js
  * @type: Module
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { Hono } = require('hono');

@@ -2,8 +2,8 @@
  * @namespace: addons/reaction-role/commands/panel/_group.js
  * @type: Subcommand Group Definition
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 module.exports = {

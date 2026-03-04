@@ -1,3 +1,11 @@
+/**
+ * @namespace: addons/pet/database/seeders/PetSeeder.js
+ * @type: Module
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
 const { Seeder } = require('kythia-core');
 
 class PetSeeder extends Seeder {

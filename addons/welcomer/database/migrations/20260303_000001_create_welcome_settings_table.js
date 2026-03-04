@@ -2,13 +2,8 @@
  * @namespace: addons/welcomer/database/migrations/20260303_000001_create_welcome_settings_table.js
  * @type: Database Migration
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 1.0.0
- *
- * Creates the `welcome_settings` table, moving all welcome-related columns
- * out of `server_settings`. Uses guildId as the primary key (1:1 with server_settings).
- * welcomeInLayout / welcomeOutLayout store Components V2 config as JSON payloads,
- * following the same pattern as reaction_role_panels.layout.
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 module.exports = {

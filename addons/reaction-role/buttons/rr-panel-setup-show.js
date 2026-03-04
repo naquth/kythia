@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/reaction-role/buttons/rr-panel-setup-show.js
- * @type: Module (Button Handler)
+ * @type: Module
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 const {
 	ModalBuilder,

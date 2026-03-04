@@ -2,8 +2,8 @@
  * @namespace: addons/api/routes/addons.js
  * @type: Module
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { Hono } = require('hono');

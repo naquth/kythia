@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/invite/database/models/InviteSetting.js
  * @type: Database Model
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.12.0-beta
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { KythiaModel } = require('kythia-core');

@@ -1,9 +1,9 @@
 /**
- * @namespace: addons/music/helpers/MusicHandlers.js
- * @type: Helper Script
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @namespace: addons/music/helpers/handlers/MusicHandlers.js
+ * @type: Module
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { generateLyricsWithTranscript, formatTrackDuration } = require('..');

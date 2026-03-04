@@ -2,8 +2,8 @@
  * @namespace: addons/reaction-role/commands/panel/create.js
  * @type: Command
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 const {
 	ActionRowBuilder,

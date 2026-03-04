@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/reaction-role/modals/rr-panel-add-emoji.js
- * @type: Module (Modal Submit Handler)
+ * @type: Module
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 const {
 	ContainerBuilder,

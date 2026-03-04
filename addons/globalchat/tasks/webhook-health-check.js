@@ -1,9 +1,9 @@
 /**
- * @namespace: addons/globalchat/tasks/webhookHealthCheck.js
+ * @namespace: addons/globalchat/tasks/webhook-health-check.js
  * @type: Scheduled Task
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const fetch = require('node-fetch');

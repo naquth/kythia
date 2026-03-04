@@ -2,8 +2,8 @@
  * @namespace: addons/welcomer/commands/_command.js
  * @type: Command Group Definition
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 1.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const {

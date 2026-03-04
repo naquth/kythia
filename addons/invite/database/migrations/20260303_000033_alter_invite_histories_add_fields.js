@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/invite/database/migrations/20260303_000033_alter_invite_histories_add_fields.js
  * @type: Database Migration
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.12.0-beta
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 module.exports = {

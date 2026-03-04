@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/reaction-role/helpers/index.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const {

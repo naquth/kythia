@@ -2,8 +2,8 @@
  * @namespace: addons/reaction-role/events/messageReactionRemove.js
  * @type: Event Handler
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 1.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 module.exports = async (bot, reaction, user) => {

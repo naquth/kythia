@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/core/helpers/handlers/PrefixCommandHandler.js
- * @type: Handler
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @type: Module
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { utils } = require('kythia-core');

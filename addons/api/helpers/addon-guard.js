@@ -1,17 +1,9 @@
 /**
- * @namespace: addons/api/routes/_addonGuard.js
- * @type: Helper / Middleware Factory
+ * @namespace: addons/api/helpers/addon-guard.js
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
- *
- * Factory that returns a Hono middleware which checks whether a given addon
- * is active in kythiaConfig before forwarding the request. If the addon is
- * inactive, it immediately responds with 503 instead of executing the route.
- *
- * Usage in a route file:
- *   const addonGuard = require('./_addonGuard');
- *   app.use('*', addonGuard('quest'));
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 /**

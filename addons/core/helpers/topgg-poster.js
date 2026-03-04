@@ -1,9 +1,9 @@
 /**
- * @namespace: addons/core/tasks/topgg-poster.js
- * @type: Scheduled Task
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @namespace: addons/core/helpers/topgg-poster.js
+ * @type: Helper Script
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { AutoPoster } = require('topgg-autoposter');

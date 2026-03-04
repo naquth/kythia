@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/invite/helpers/index.js
  * @type: Helper Script
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.12.0-beta
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const invitesCache = new Map();

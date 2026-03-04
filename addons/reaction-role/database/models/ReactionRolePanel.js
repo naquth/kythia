@@ -2,8 +2,8 @@
  * @namespace: addons/reaction-role/database/models/ReactionRolePanel.js
  * @type: Database Model
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
- * @version 2.0.0
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 const { KythiaModel } = require('kythia-core');
 

@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/autoreply/events/messageCreate.js
- * @type: Event
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @type: Event Handler
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 const { MessageFlags } = require('discord.js');

@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/invite/database/migrations/20251124_000030_create_invite_histories_table.js
  * @type: Database Migration
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 module.exports = {

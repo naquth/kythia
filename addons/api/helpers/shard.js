@@ -1,17 +1,9 @@
 /**
  * @namespace: addons/api/helpers/shard.js
  * @type: Helper Script
- * @copyright © 2025 kenndeclouv
- * @assistant chaa & graa
- * @version 0.11.0-beta
- *
- * @description
- * Cross-shard helpers for the API addon.
- * The API server only runs on Shard 0, but guild data is spread across all shards.
- * These helpers use client.shard.broadcastEval() to collect data from every shard
- * and merge the results before responding to HTTP requests.
- *
- * When NOT sharding (client.shard is null), falls back to the local cache.
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
  */
 
 /**

@@ -6,8 +6,8 @@
  * @version 0.11.0-beta
  */
 
-const { MessageFlags } = require('discord.js');
 const { Op } = require('sequelize');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,

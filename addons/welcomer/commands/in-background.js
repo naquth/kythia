@@ -1,0 +1,69 @@
+/**
+ * @namespace: addons/welcomer/commands/in-background.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant chaa & graa
+ * @version 1.0.0
+ */
+
+const { MessageFlags } = require('discord.js');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('in-background')
+			.setDescription('👋 Set welcome banner background URL')
+			.addStringOption((opt) =>
+				opt
+					.setName('url')
+					.setDescription(
+						'Direct URL to the background image (must start with http)',
+					)
+					.setRequired(true),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, models, helpers } = container;
+		const { WelcomeSetting } = models;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply({ ephemeral: true });
+
+		const url = interaction.options.getString('url');
+
+		if (!url.startsWith('http')) {
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'welcomer.welcomer.in.background.invalid.url'),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		const serverSetting = await WelcomeSetting.getOrCreateCache({
+			guildId: interaction.guild.id,
+		});
+
+		serverSetting.welcomeInBackgroundUrl = url;
+		await serverSetting.saveAndUpdateCache('guildId');
+
+		const components = await simpleContainer(
+			interaction,
+			await t(interaction, 'welcomer.welcomer.in.background.set', { url }),
+			{ color: 'Green' },
+		);
+
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

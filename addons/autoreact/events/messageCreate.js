@@ -13,11 +13,6 @@ module.exports = async (bot, message) => {
 
 	if (message.author.bot || !message.guild) return;
 
-	// Optimization: We could cache per guild, but for now we query.
-	// We need to check for two things:
-	// 1. Channel match (type = 'channel', trigger = message.channel.id)
-	// 2. Text match (type = 'text', trigger = message.content)
-
 	const reactions = await AutoReact.getAllCache({
 		where: {
 			guildId: message.guild.id,
@@ -28,7 +23,7 @@ module.exports = async (bot, message) => {
 				},
 				{
 					type: 'text',
-					trigger: message.content, // Case-sensitive or DB collation dependent
+					trigger: message.content,
 				},
 			],
 		},
@@ -36,7 +31,6 @@ module.exports = async (bot, message) => {
 
 	if (reactions.length === 0) return;
 
-	// In case there are multiple reactions for the same message (e.g. channel + text match), react with all keys.
 	for (const reaction of reactions) {
 		try {
 			await message.react(reaction.emoji);

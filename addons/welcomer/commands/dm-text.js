@@ -1,0 +1,56 @@
+/**
+ * @namespace: addons/welcomer/commands/dm-text.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant chaa & graa
+ * @version 1.0.0
+ */
+
+const { MessageFlags } = require('discord.js');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('dm-text')
+			.setDescription('✉️ Set DM message sent to new members on join')
+			.addStringOption((opt) =>
+				opt
+					.setName('text')
+					.setDescription(
+						'DM text. Supports placeholders like {username}, {guildName}.',
+					)
+					.setRequired(true),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, models, helpers } = container;
+		const { WelcomeSetting } = models;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply({ ephemeral: true });
+
+		const serverSetting = await WelcomeSetting.getOrCreateCache({
+			guildId: interaction.guild.id,
+		});
+
+		const text = interaction.options.getString('text');
+		serverSetting.welcomeDmText = text;
+		await serverSetting.saveAndUpdateCache('guildId');
+
+		const components = await simpleContainer(
+			interaction,
+			await t(interaction, 'welcomer.welcomer.dm.text.set', { text }),
+			{ color: 'Green' },
+		);
+
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

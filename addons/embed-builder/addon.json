@@ -1,0 +1,8 @@
+{
+	"name": "Embed Builder",
+	"featureName": "Embed Builder",
+	"featureFlag": "embedBuilderOn",
+	"version": "1.0.0",
+	"description": "Design, save, and send beautiful Discord embeds or Components V2 containers directly from your dashboard or via slash commands. All designs are persisted in the database so you can edit them anytime.",
+	"author": "kenndeclouv"
+}

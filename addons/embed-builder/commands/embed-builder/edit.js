@@ -1,0 +1,229 @@
+/**
+ * @namespace: addons/embed-builder/commands/embed-builder/edit.js
+ * @type: Subcommand
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0
+ */
+
+const {
+	SlashCommandSubcommandBuilder,
+	EmbedBuilder,
+	ModalBuilder,
+	TextInputBuilder,
+	TextInputStyle,
+	ActionRowBuilder,
+} = require('discord.js');
+
+module.exports = {
+	slashCommand: new SlashCommandSubcommandBuilder()
+		.setName('edit')
+		.setDescription('✏️ Edit a saved embed')
+		.addStringOption((o) =>
+			o
+				.setName('id')
+				.setDescription('The embed to edit')
+				.setRequired(true)
+				.setAutocomplete(true),
+		),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { models } = container;
+		const { EmbedBuilder: EmbedModel } = models;
+
+		const embedId = parseInt(interaction.options.getString('id'), 10);
+
+		const record = await EmbedModel.findOne({
+			where: { id: embedId, guildId: interaction.guild.id },
+		});
+
+		if (!record) {
+			return interaction.reply({
+				embeds: [
+					new EmbedBuilder()
+						.setColor(0xef4444)
+						.setDescription('❌ Embed not found in this server.'),
+				],
+				ephemeral: true,
+			});
+		}
+
+		const data = record.data || {};
+
+		if (record.mode === 'embed') {
+			// Open a Discord modal for classic embed fields
+			const modal = new ModalBuilder()
+				.setCustomId(`eb-edit|${record.id}`)
+				.setTitle(`Edit: ${record.name}`);
+
+			modal.addComponents(
+				new ActionRowBuilder().addComponents(
+					new TextInputBuilder()
+						.setCustomId('title')
+						.setLabel('Title')
+						.setStyle(TextInputStyle.Short)
+						.setValue(data.title ?? '')
+						.setRequired(false)
+						.setMaxLength(256),
+				),
+				new ActionRowBuilder().addComponents(
+					new TextInputBuilder()
+						.setCustomId('description')
+						.setLabel('Description')
+						.setStyle(TextInputStyle.Paragraph)
+						.setValue(data.description ?? '')
+						.setRequired(false)
+						.setMaxLength(4000),
+				),
+				new ActionRowBuilder().addComponents(
+					new TextInputBuilder()
+						.setCustomId('color')
+						.setLabel('Color (hex, e.g. #5865F2)')
+						.setStyle(TextInputStyle.Short)
+						.setValue(
+							data.color
+								? `#${Number(data.color).toString(16).padStart(6, '0')}`
+								: '',
+						)
+						.setRequired(false)
+						.setMaxLength(7),
+				),
+				new ActionRowBuilder().addComponents(
+					new TextInputBuilder()
+						.setCustomId('image_url')
+						.setLabel('Image URL (optional)')
+						.setStyle(TextInputStyle.Short)
+						.setValue(data.image?.url ?? '')
+						.setRequired(false)
+						.setMaxLength(1000),
+				),
+				new ActionRowBuilder().addComponents(
+					new TextInputBuilder()
+						.setCustomId('footer')
+						.setLabel('Footer text (optional)')
+						.setStyle(TextInputStyle.Short)
+						.setValue(data.footer?.text ?? '')
+						.setRequired(false)
+						.setMaxLength(2048),
+				),
+			);
+
+			return interaction.showModal(modal);
+		}
+
+		// components_v2: modal can't hold full JSON, guide to dashboard instead
+		return interaction.reply({
+			embeds: [
+				new EmbedBuilder()
+					.setColor(0x5865f2)
+					.setTitle('🧩 Components V2 — Dashboard Required')
+					.setDescription(
+						`**"${record.name}"** uses Components V2 mode. The full visual editor is available on the dashboard.\n\nYou can also update this embed via the API:\n\`PATCH /api/embed-builder/${record.id}\``,
+					),
+			],
+			ephemeral: true,
+		});
+	},
+
+	/**
+	 * Handle the modal submit for classic embed edits
+	 * @param {import('discord.js').ModalSubmitInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async modal(interaction, container) {
+		const { models } = container;
+		const { EmbedBuilder: EmbedModel } = models;
+
+		// customId format: eb-edit|{id}
+		const embedId = parseInt(interaction.customId.split('|')[1], 10);
+
+		const record = await EmbedModel.findOne({
+			where: { id: embedId, guildId: interaction.guild.id },
+		});
+
+		if (!record) {
+			return interaction.reply({
+				embeds: [
+					new EmbedBuilder()
+						.setColor(0xef4444)
+						.setDescription('❌ Embed not found. It may have been deleted.'),
+				],
+				ephemeral: true,
+			});
+		}
+
+		const title = interaction.fields.getTextInputValue('title');
+		const description = interaction.fields.getTextInputValue('description');
+		const colorRaw = interaction.fields.getTextInputValue('color');
+		const imageUrl = interaction.fields.getTextInputValue('image_url');
+		const footerText = interaction.fields.getTextInputValue('footer');
+
+		// Parse hex color
+		let color = record.data?.color ?? 0x5865f2;
+		if (colorRaw) {
+			const parsed = parseInt(colorRaw.replace('#', ''), 16);
+			if (!Number.isNaN(parsed)) color = parsed;
+		}
+
+		const newData = {
+			...record.data,
+			title: title || undefined,
+			description: description || undefined,
+			color,
+			image: imageUrl ? { url: imageUrl } : undefined,
+			footer: footerText ? { text: footerText } : undefined,
+		};
+
+		await record.update({ data: newData });
+
+		// If the embed was already sent to Discord, edit the message in-place
+		let messageUrl = null;
+		if (record.messageId && record.channelId) {
+			try {
+				const channel = await interaction.client.channels
+					.fetch(record.channelId)
+					.catch(() => null);
+
+				if (channel) {
+					const msg = await channel.messages
+						.fetch(record.messageId)
+						.catch(() => null);
+
+					if (msg) {
+						const updatedEmbed = new EmbedBuilder();
+						if (newData.title) updatedEmbed.setTitle(newData.title);
+						if (newData.description)
+							updatedEmbed.setDescription(newData.description);
+						if (newData.color) updatedEmbed.setColor(newData.color);
+						if (newData.image?.url) updatedEmbed.setImage(newData.image.url);
+						if (newData.footer?.text)
+							updatedEmbed.setFooter({ text: newData.footer.text });
+
+						await msg.edit({ embeds: [updatedEmbed] });
+						messageUrl = `https://discord.com/channels/${interaction.guild.id}/${record.channelId}/${record.messageId}`;
+					}
+				}
+			} catch {
+				// Best-effort — don't fail the whole response if Discord edit fails
+			}
+		}
+
+		return interaction.reply({
+			embeds: [
+				new EmbedBuilder()
+					.setColor(0x22c55e)
+					.setTitle('✅ Embed Updated!')
+					.setDescription(
+						messageUrl
+							? `**"${record.name}"** has been saved and the Discord message was updated!\n[Jump to message](${messageUrl})`
+							: `**"${record.name}"** has been saved.\nUse \`/embed-builder send\` to post it to a channel.`,
+					),
+			],
+			ephemeral: true,
+		});
+	},
+};

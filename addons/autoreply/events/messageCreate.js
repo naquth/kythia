@@ -15,11 +15,16 @@ module.exports = async (bot, message) => {
 
 	if (message.author.bot || !message.guild) return;
 
-	const reply = await AutoReply.findOne({
-		where: {
-			guildId: message.guild.id,
-			trigger: message.content,
-		},
+	const autoReplies = await AutoReply.getAllCache({
+		where: { guildId: message.guild.id },
+	});
+
+	if (!autoReplies.length) return;
+
+	const content = message.content.toLowerCase();
+	const reply = autoReplies.find(({ trigger }) => {
+		const escaped = trigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		return new RegExp(`\\b${escaped}\\b`, 'i').test(content);
 	});
 
 	if (!reply) return;

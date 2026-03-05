@@ -61,6 +61,10 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [Giveaway List / Get](#giveaway-list--get)
   - [Participants Sub-resource](#participants-sub-resource)
   - [Customization & CRUD](#customization--crud)
+- [Embed Builder API (`/api/embed-builder`)](#embed-builder-api-apiembed-builder)
+  - [List / Get](#embed-builder-list--get)
+  - [Create / Update / Delete](#embed-builder-create--update--delete)
+  - [Send to Discord](#embed-builder-send--resend)
 - [Music WebSocket API](#music-websocket-api)
   - [Overview](#music-ws-overview)
   - [Connecting & Joining a Guild Room](#connecting--joining-a-guild-room)
@@ -4148,6 +4152,266 @@ Remove a giveaway record from the database.
 | `color` | `string` | Hex color |
 | `endTime` | `string` | End timestamp |
 | `description` | `string`| Description |
+
+---
+
+## Embed Builder API (`/api/embed-builder`)
+
+Manages **saved embed designs** — both classic Discord Embeds and Components V2 containers. All designs are persisted in the `embed_builders` database table. The API is the primary interface for the dashboard's visual embed editor; Discord slash commands (`/embed-builder`) provide a complementary Discord-native UX.
+
+> **Live sync:** When an embed has already been sent to Discord (i.e. `messageId` is set), both the `/embed-builder edit` slash command and the `POST /resend` API endpoint will **edit the existing Discord message in-place** — no re-posting needed.
+
+All endpoints require a bearer token.
+
+> **Feature flag:** `embedBuilderOn` — If this addon is disabled, all routes return `503`.
+
+---
+
+### Embed Object
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Auto-increment primary key |
+| `guildId` | `string` | Discord guild ID |
+| `createdBy` | `string` | Discord user ID of the creator |
+| `name` | `string` | Human-readable label (unique per guild) |
+| `mode` | `string` | `"embed"` or `"components_v2"` |
+| `data` | `object` | Full embed payload (see below) |
+| `messageId` | `string \| null` | Discord message ID — set after `/send` |
+| `channelId` | `string \| null` | Discord channel ID — set after `/send` |
+| `createdAt` | `string` | ISO 8601 creation timestamp |
+| `updatedAt` | `string` | ISO 8601 last-update timestamp |
+
+#### `data` field by mode
+
+**`mode: "embed"`** — Standard Discord embed JSON:
+```json
+{
+  "title": "Welcome!",
+  "description": "Glad to have you here.",
+  "color": 5765006,
+  "url": "https://example.com",
+  "timestamp": true,
+  "image": { "url": "https://..." },
+  "thumbnail": { "url": "https://..." },
+  "author": { "name": "Kythia", "icon_url": "https://...", "url": "https://..." },
+  "footer": { "text": "Kythia Bot", "icon_url": "https://..." },
+  "fields": [
+    { "name": "Field", "value": "Value", "inline": true }
+  ]
+}
+```
+
+**`mode: "components_v2"`** — Raw Components V2 JSON:
+```json
+{
+  "components": [
+    {
+      "type": 17,
+      "accent_color": 5765006,
+      "components": [
+        { "type": 10, "content": "## Hello!" },
+        { "type": 14, "divider": true, "spacing": 1 },
+        { "type": 10, "content": "Edit me from the dashboard." }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### Embed Builder List / Get
+
+#### `GET /api/embed-builder`
+
+List saved embeds with optional filters. Results are ordered by `createdAt` descending.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild |
+| `mode` | `string` | Filter by mode: `embed` or `components_v2` |
+| `createdBy` | `string` | Filter by creator user ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    { "id": 1, "guildId": "123", "name": "welcome-banner", "mode": "embed", "data": { ... }, "messageId": "999", "channelId": "888", "createdAt": "...", "updatedAt": "..." }
+  ]
+}
+```
+
+#### `GET /api/embed-builder/:id`
+
+Get a single saved embed by its integer database ID.
+
+**Response:** `{ "success": true, "data": { ... } }`
+
+**Error (404):** `{ "success": false, "error": "Embed not found" }`
+
+---
+
+### Embed Builder Create / Update / Delete
+
+#### `POST /api/embed-builder`
+
+Create a new saved embed. If `data` is omitted, a sensible default template is used.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Discord guild ID |
+| `createdBy` | `string` | ✅ | Discord user ID of the creator |
+| `name` | `string` | ✅ | Unique human label within this guild |
+| `mode` | `string` | ❌ | `"embed"` (default) or `"components_v2"` |
+| `data` | `object` | ❌ | Initial embed/components JSON (uses template if omitted) |
+
+**Response (201):** `{ "success": true, "data": { ... } }`
+
+**Errors:**
+- `400` — Missing `guildId`, `createdBy`, or `name`; or invalid `mode`.
+- `409` — An embed with this `name` already exists in the guild.
+
+#### `PATCH /api/embed-builder/:id`
+
+Update a saved embed's `name`, `mode`, and/or `data`. After saving, if the embed has already been sent to Discord (`messageId` is set), the live Discord message is **automatically edited in-place** — no separate `/resend` call needed.
+
+**Request Body (all optional):**
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | New human label |
+| `mode` | `string` | New mode: `"embed"` or `"components_v2"` |
+| `data` | `object` | Full replacement embed/components JSON |
+
+**Response:**
+```json
+{
+  "success": true,
+  "messageSynced": true,
+  "messageUrl": "https://discord.com/channels/{guildId}/{channelId}/{messageId}",
+  "data": { ... }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `messageSynced` | `boolean` | `true` if the live Discord message was edited in-place; `false` if the embed hasn't been sent yet or Discord edit failed |
+| `messageUrl` | `string \| null` | Jump URL to the Discord message, or `null` if not synced |
+
+**Error (404):** `{ "success": false, "error": "Embed not found" }`
+
+#### `DELETE /api/embed-builder/:id`
+
+Delete a saved embed record.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|---|---|---|
+| `deleteMessage` | `boolean` | If `"true"`, also deletes the Discord message (best-effort — no error if already gone) |
+
+**Response:** `{ "success": true, "message": "Embed \"welcome-banner\" (id=1) deleted." }`
+
+**Error (404):** `{ "success": false, "error": "Embed not found" }`
+
+---
+
+### Embed Builder Send / Resend
+
+#### `POST /api/embed-builder/:id/send`
+
+Posts the saved embed to a Discord channel. On success, saves `messageId` and `channelId` back to the database record.
+
+- For `mode: "embed"` — sends a standard `EmbedBuilder` message.
+- For `mode: "components_v2"` — sends using `MessageFlags.IsComponentsV2`.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `channelId` | `string` | ✅ | Target Discord channel ID |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "messageId": "999888777666555444",
+  "messageUrl": "https://discord.com/channels/{guildId}/{channelId}/{messageId}",
+  "data": { ... }
+}
+```
+
+**Errors:**
+- `400` — Missing `channelId`.
+- `404` — Embed or channel not found.
+- `422` — Components V2 embed has an empty `components` array.
+- `500` — Discord API error.
+
+#### `POST /api/embed-builder/:id/resend`
+
+Edits the **existing** Discord message in-place with the latest `data` from the database. Use this after a `PATCH` to sync changes to Discord without re-posting.
+
+This mirrors what the `/embed-builder edit` slash command does automatically on the Discord side — when `messageId` is set, it edits the live message rather than sending a new one.
+
+> The embed must have been sent at least once (i.e., `messageId` and `channelId` must be set). If the original message was deleted, this returns a `404` — use `/send` to post a fresh one.
+
+**Request Body:** *(none required)*
+
+**Response:**
+```json
+{
+  "success": true,
+  "messageId": "999888777666555444",
+  "messageUrl": "https://discord.com/channels/{guildId}/{channelId}/{messageId}",
+  "data": { ... }
+}
+```
+
+**Errors:**
+- `404` — Embed or channel not found, or original Discord message was deleted.
+- `422` — Embed has not been sent yet.
+
+---
+
+### Dashboard Integration Example
+
+Typical dashboard flow for a visual embed editor:
+
+```bash
+# 1. Create a blank entry
+curl -X POST http://localhost:3000/api/embed-builder \
+  -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
+  -d '{"guildId":"123","createdBy":"456","name":"welcome-banner","mode":"embed"}'
+# → { "success": true, "data": { "id": 1, ... } }
+
+# 2. Design the embed
+curl -X PATCH http://localhost:3000/api/embed-builder/1 \
+  -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
+  -d '{"data":{"title":"Welcome!","description":"Glad to be here.","color":5765006}}'
+
+# 3. Send to Discord for the first time — stores messageId + channelId
+curl -X POST http://localhost:3000/api/embed-builder/1/send \
+  -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
+  -d '{"channelId":"789"}'
+# → { "success": true, "messageId": "...", "messageUrl": "https://discord.com/channels/..." }
+
+# 4. User updates the design → PATCH then resend (edits the existing message in-place)
+curl -X PATCH http://localhost:3000/api/embed-builder/1 \
+  -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
+  -d '{"data":{"title":"Welcome!","description":"Updated copy!","color":5765006}}'
+
+curl -X POST http://localhost:3000/api/embed-builder/1/resend \
+  -H "Authorization: Bearer $SECRET"
+# → edits the original Discord message in-place, no duplicate posted
+
+# 5. Delete the record (and the Discord message)
+curl -X DELETE "http://localhost:3000/api/embed-builder/1?deleteMessage=true" \
+  -H "Authorization: Bearer $SECRET"
+```
+
+> **Note:** The Discord slash command `/embed-builder edit` follows the same pattern automatically — after the user submits the modal, the DB is updated and, if `messageId` is set, the live Discord message is edited in-place. The reply includes a jump link to the updated message.
 
 ---
 

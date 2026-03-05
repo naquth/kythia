@@ -12,6 +12,8 @@
  * @version 1.0.0-rc
  */
 
+require('@dotenvx/dotenvx').config({ quiet: true }); // Loads ENV vars to process.env
+
 const { ShardingManager } = require('kythia-core');
 const kythiaConfig = require('./kythia.config');
 const path = require('node:path');

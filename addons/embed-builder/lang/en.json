@@ -1,0 +1,25 @@
+{
+	"create": {
+		"success": "🎨 Embed **\"{name}\"** created! Use `/embed-builder edit` to customise it.",
+		"duplicate": "❌ An embed named **\"{name}\"** already exists. Use `/embed-builder edit` to modify it."
+	},
+	"edit": {
+		"not_found": "❌ Embed not found in this server.",
+		"saved": "✅ **\"{name}\"** has been saved!",
+		"components_v2_hint": "🧩 Components V2 embeds must be edited via the dashboard or API."
+	},
+	"send": {
+		"not_found": "❌ Embed not found in this server.",
+		"no_components": "⚠️ This Components V2 embed has no components yet. Edit it via the dashboard first.",
+		"success": "✅ **\"{name}\"** was sent to {channel}!",
+		"error": "❌ Failed to send: `{error}`"
+	},
+	"delete": {
+		"not_found": "❌ Embed not found in this server.",
+		"success": "🗑️ **\"{name}\"** has been deleted."
+	},
+	"list": {
+		"empty": "📭 No saved embeds yet. Use `/embed-builder create` to get started!",
+		"title": "🎨 Saved Embeds"
+	}
+}

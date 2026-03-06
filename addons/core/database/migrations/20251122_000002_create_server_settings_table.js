@@ -11,7 +11,7 @@ module.exports = {
 		await queryInterface.createTable('server_settings', {
 			guildId: { type: DataTypes.STRING, allowNull: false, primaryKey: true },
 			guildName: { type: DataTypes.STRING, allowNull: true },
-			lang: { type: DataTypes.STRING, defaultValue: 'en' },
+			lang: { type: DataTypes.STRING, defaultValue: 'en-US' },
 			prefix: { type: DataTypes.STRING, allowNull: true },
 
 			whitelist: { type: DataTypes.JSON, defaultValue: [] },

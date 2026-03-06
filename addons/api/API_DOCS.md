@@ -66,6 +66,35 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [List / Get](#embed-builder-list--get)
   - [Create / Update / Delete](#embed-builder-create--update--delete)
   - [Send to Discord](#embed-builder-send--resend)
+- [AI Settings API (`/api/ai`)](#ai-settings-api-apiai)
+  - [Facts (`/api/ai/facts/:userId`)](#facts-apiaifactsuserid)
+  - [Personality (`/api/ai/personality/:userId`)](#personality-apiaipersonalityuserid)
+- [Leveling API (`/api/leveling`)](#leveling-api-apileveling)
+  - [Leaderboard](#get-apilevelingguildid)
+  - [Single User Profile](#get-apilevelingguildididuserid)
+  - [Create User Entry](#post-apilevelingguildididuserid)
+  - [Update (set/add level or xp)](#patch-apilevelingguildididuserid)
+  - [Delete User Entry](#delete-apilevelingguildididuserid)
+  - [Reset Guild Leaderboard](#delete-apilevelingguildid)
+- [Streak API (`/api/streak`)](#streak-api-apistreak)
+  - [Leaderboard](#get-apistreakguildid)
+  - [Single User Profile](#get-apistreakguildididuserid)
+  - [Create Streak Entry](#post-apistreakguildididuserid)
+  - [Update (claim/reset/set/freeze)](#patch-apistreakguildididuserid)
+  - [Delete Streak Entry](#delete-apistreakguildididuserid)
+  - [Wipe Guild Streaks](#delete-apistreakguildid)
+- [Music API (`/api/music`)](#music-api-apimusic)
+  - [Search Tracks](#get-apimusicsearch)
+  - [Playlists](#playlists)
+  - [Playlist Tracks](#playlist-tracks)
+  - [Favorites](#favorites)
+  - [24/7 Mode](#247-mode)
+- [Global Chat API (`/api/globalchat`)](#global-chat-api-apiglobalchat)
+  - [List Guilds](#get-apiglobalchatlist)
+  - [Get Single Guild](#get-apiglobalchatguildid)
+  - [Register/Update Guild](#post-apiglobalchatadd)
+  - [Remove Guild](#delete-apiglobalchatremoveguildid)
+  - [Update Webhook](#patch-apiglobalchatguildidwebhook)
 - [Music WebSocket API](#music-websocket-api)
   - [Overview](#music-ws-overview)
   - [Connecting & Joining a Guild Room](#connecting--joining-a-guild-room)
@@ -4596,4 +4625,1248 @@ Deletes a sticky message record from the database. This fires the model's `indiv
 
 ---
 
+## Leveling API (`/api/leveling`)
+
+Full CRUD for the per-guild, per-user leveling system. All XP/level calculations are performed server-side using the guild's configured leveling curve, multiplier, and max level (from **Server Settings**).
+
+> **Addon Guard:** Automatically protected by `addonGuard('leveling')` — the `leveling` addon must be enabled.
+
+**Leveling curves:** `linear` (default), `exponential`, `constant`
+
+---
+
+### `GET /api/leveling/:guildId`
+
+Get the leveling leaderboard for a guild, sorted by level then XP descending.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `page` | `number` | `1` | Page number |
+| `limit` | `number` | `50` | Results per page (max `200`) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 312,
+  "page": 1,
+  "totalPages": 7,
+  "data": [
+    {
+      "rank": 1,
+      "userId": "123456789012345678",
+      "level": 42,
+      "xp": 1840,
+      "xpRequired": 88200,
+      "createdAt": "2025-11-22T00:00:00.000Z",
+      "updatedAt": "2026-03-01T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `rank` | `number` | Position in the leaderboard (1-indexed, continues across pages) |
+| `userId` | `string` | Discord user snowflake ID |
+| `level` | `number` | Current level |
+| `xp` | `number` | XP within the current level |
+| `xpRequired` | `number` | XP needed to reach the next level |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `GET /api/leveling/:guildId/:userId`
+
+Get a single user's leveling data in a guild, including their current rank.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "123456789012345678",
+    "guildId": "987654321098765432",
+    "level": 42,
+    "xp": 1840,
+    "xpRequired": 88200,
+    "rank": 3,
+    "totalMembers": 312,
+    "createdAt": "2025-11-22T00:00:00.000Z",
+    "updatedAt": "2026-03-01T12:00:00.000Z"
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `rank` | `number` | User's current rank in the guild |
+| `totalMembers` | `number` | Total users with leveling data in the guild |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "User not found in this guild" }` | No record exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `POST /api/leveling/:guildId/:userId`
+
+Create a new leveling entry for a user in a guild. Useful to seed data or pre-set a starting level.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+**Request Body** *(all optional — defaults to level 1, xp 0):*
+```json
+{ "level": 5, "xp": 0 }
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `level` | `number` | No | Starting level (min 1, capped at `maxLevel` if set). Default: `1` |
+| `xp` | `number` | No | Starting XP within the level. Default: `0` |
+
+**Response (201 Created):**
+```json
+{ "success": true, "data": { "userId": "...", "guildId": "...", "level": 5, "xp": 0, "xpRequired": 1250, "createdAt": "...", "updatedAt": "..." } }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `409` | `{ "success": false, "error": "User already exists in this guild" }` | Record already exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `PATCH /api/leveling/:guildId/:userId`
+
+Update a user's leveling data. The `action` field controls the update mode.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+#### Actions
+
+| `action` | Additional fields | Behavior |
+|---|---|---|
+| `set-level` | `level: number` | Set level directly, reset XP to 0 (mirrors `/leveling set`) |
+| `add-level` | `level: number` | Add N levels to current level, reset XP to 0 (mirrors `/leveling add`) |
+| `set-xp` | `xp: number` | Set total XP, recalculate level automatically (mirrors `/leveling xp-set`) |
+| `add-xp` | `xp: number` | Add XP to current total, recalculate level automatically (mirrors `/leveling xp-add`) |
+
+**Request Body Examples:**
+```json
+{ "action": "set-level", "level": 10 }
+{ "action": "add-level", "level": 3 }
+{ "action": "set-xp", "xp": 50000 }
+{ "action": "add-xp", "xp": 1500 }
+```
+
+> For `set-xp` and `add-xp`, the level is **automatically recalculated** using the guild's configured curve, multiplier, and max level.
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "123456789012345678",
+    "guildId": "987654321098765432",
+    "level": 12,
+    "xp": 320,
+    "xpRequired": 7200,
+    "updatedAt": "2026-03-06T12:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Missing or invalid action..." }` | Bad or missing `action` |
+| `400` | `{ "success": false, "error": "level must be a positive integer" }` | Invalid value for set-level / add-level |
+| `400` | `{ "success": false, "error": "xp must be a non-negative integer" }` | Invalid value for set-xp |
+| `404` | `{ "success": false, "error": "User not found in this guild" }` | No record exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `DELETE /api/leveling/:guildId/:userId`
+
+Delete a single user's leveling record from a guild.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Leveling data deleted for user 123... in guild 987..." }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "User not found in this guild" }` | No record exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `DELETE /api/leveling/:guildId`
+
+Wipe **all** leveling records for an entire guild — full leaderboard reset.
+
+> ⚠️ This is irreversible. All XP and level data for every member in the guild will be deleted.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Reset leveling data for 312 member(s) in guild 987...", "deleted": 312 }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `deleted` | `number` | Number of records removed |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+## AI Settings API (`/api/ai`)
+
+Manage per-user personal context (facts the bot has learned) and bot personality settings for the AI addon.
+
+> **Addon Guard:** This route is automatically protected by `addonGuard('ai')` — the `ai` addon must be enabled on the instance.
+
+---
+
+### Facts (`/api/ai/facts/:userId`)
+
+#### `GET /api/ai/facts/:userId`
+
+List all facts the bot has remembered about a specific user, with optional filtering and pagination.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | The Discord user snowflake ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `type` | `string` | *(none)* | Filter by fact type (e.g. `name`, `hobby`, `location`) |
+| `page` | `number` | `1` | Page number |
+| `limit` | `number` | `50` | Results per page (max `100`) |
+
+**Available Fact Types:** `birthday`, `name`, `hobby`, `age`, `location`, `job`, `education`, `gender`, `religion`, `relationship`, `email`, `phone`, `social`, `language`, `physical`, `color`, `food`, `animal`, `movie`, `music`, `book`, `game`, `other`
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 3,
+  "page": 1,
+  "totalPages": 1,
+  "data": [
+    { "id": 42, "userId": "123456789", "fact": "Loves spicy food.", "type": "food", "createdAt": "2026-03-01T10:00:00.000Z", "updatedAt": "2026-03-01T10:00:00.000Z" }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | `true` on success |
+| `count` | `number` | Total matching facts (across all pages) |
+| `page` | `number` | Current page |
+| `totalPages` | `number` | Total number of pages |
+| `data` | `array` | Array of `UserFact` objects |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+#### `POST /api/ai/facts/:userId`
+
+Manually add a new fact for a user. The fact type is auto-classified based on its content if not explicitly provided.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | The Discord user snowflake ID |
+
+**Request Body:**
+```json
+{
+  "fact": "Loves spicy food, especially rendang.",
+  "type": "food"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `fact` | `string` | **Yes** | The fact text to store |
+| `type` | `string` | No | Fact type. Auto-classified from `fact` content if omitted |
+
+**Response (201 Created):**
+```json
+{ "success": true, "data": { "id": 43, "userId": "123456789", "fact": "Loves spicy food, especially rendang.", "type": "food", "createdAt": "...", "updatedAt": "..." } }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Missing or empty required field: fact" }` | `fact` not provided |
+| `409` | `{ "success": false, "error": "Duplicate fact already exists", "data": {...} }` | Identical fact already stored for this user |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+#### `DELETE /api/ai/facts/:userId/:factId`
+
+Delete a single fact by its primary key ID.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | The Discord user snowflake ID |
+| `factId` | `number` | The fact's primary key (`id`) |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Fact deleted successfully" }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "Fact not found" }` | No fact with given `factId` belonging to `userId` |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+#### `DELETE /api/ai/facts/:userId`
+
+Clear **all** facts for a user. Useful for a full memory wipe.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | The Discord user snowflake ID |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Deleted 5 fact(s) for user 123456789", "deleted": 5 }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | `true` on success |
+| `message` | `string` | Human-readable summary |
+| `deleted` | `number` | Number of records deleted |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### Personality (`/api/ai/personality/:userId`)
+
+Personality controls the conversational style the bot uses when responding to this user. The setting is stored on the user's `KythiaUser` record as `aiPersonality`.
+
+**Available Personalities:**
+
+| Value | Description |
+|---|---|
+| `default` | Follows the global config (`personaPrompt`). Stored as `null` in the database. |
+| `friendly` | Warm, casual, approachable. Shows empathy and uses informal language. |
+| `professional` | Formal and concise. Uses proper grammar and a business-like tone. |
+| `humorous` | Witty, playful, and fun. Uses humor appropriately. |
+| `technical` | Detailed and precise. Provides in-depth information and explanations. |
+| `casual` | Relaxed and laid-back. Uses very informal language. |
+
+---
+
+#### `GET /api/ai/personality/:userId`
+
+Get the current personality setting for a user.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | The Discord user snowflake ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "123456789",
+    "personality": "friendly",
+    "availablePersonalities": ["default", "friendly", "professional", "humorous", "technical", "casual"]
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `userId` | `string` | The user's Discord ID |
+| `personality` | `string` | Current personality (`"default"` if unset) |
+| `availablePersonalities` | `array` | All valid personality values |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+#### `PATCH /api/ai/personality/:userId`
+
+Set or change the personality for a user. Setting to `"default"` is equivalent to resetting (stores `null`).
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | The Discord user snowflake ID |
+
+**Request Body:**
+```json
+{ "personality": "friendly" }
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `personality` | `string` | **Yes** | One of the valid personality values |
+
+**Response (success):**
+```json
+{ "success": true, "data": { "userId": "123456789", "personality": "friendly" } }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Invalid personality. Must be one of: ..." }` | Unknown personality value |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+#### `DELETE /api/ai/personality/:userId`
+
+Reset the personality to `default` (clears the `aiPersonality` field to `null`).
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | The Discord user snowflake ID |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Personality reset to default", "data": { "userId": "123456789", "personality": "default" } }
+```
+
+> If the user doesn't have a `KythiaUser` record yet, the endpoint returns success immediately since their personality is already effectively `default`.
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
 *© 2025 kenndeclouv — Kythia API v0.11.0-beta*
+
+---
+
+## Streak API (`/api/streak`)
+
+Full CRUD for the per-guild, per-user daily streak system. Streak logic (claim rules, freeze behavior) mirrors the bot's `/streak` commands exactly — all without Discord side-effects (no role assignments or nickname changes via the API).
+
+> **Addon Guard:** Automatically protected by `addonGuard('streak')` — the `streak` addon must be enabled.
+
+**Streak Model Fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `number` | Primary key |
+| `userId` | `string` | Discord user snowflake ID |
+| `guildId` | `string` | Discord guild snowflake ID |
+| `currentStreak` | `number` | Current active streak (days) |
+| `highestStreak` | `number` | All-time highest streak |
+| `streakFreezes` | `number` | Available freeze tokens |
+| `lastClaimTimestamp` | `ISO date` | Last date the streak was claimed |
+| `claimedToday` | `boolean` | Computed: whether already claimed today |
+
+---
+
+### `GET /api/streak/:guildId`
+
+Get the streak leaderboard for a guild.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `page` | `number` | `1` | Page number |
+| `limit` | `number` | `50` | Results per page (max `200`) |
+| `sort` | `string` | `current` | Sort mode: `current` (by `currentStreak` desc) or `highest` (by `highestStreak` desc) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 84,
+  "page": 1,
+  "totalPages": 2,
+  "sort": "current",
+  "data": [
+    {
+      "rank": 1,
+      "userId": "123456789012345678",
+      "currentStreak": 42,
+      "highestStreak": 60,
+      "streakFreezes": 2,
+      "claimedToday": true,
+      "lastClaimTimestamp": "2026-03-06T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `GET /api/streak/:guildId/:userId`
+
+Get a single user's streak profile in a guild, including their current rank.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 7,
+    "userId": "123456789012345678",
+    "guildId": "987654321098765432",
+    "currentStreak": 42,
+    "highestStreak": 60,
+    "streakFreezes": 2,
+    "claimedToday": false,
+    "lastClaimTimestamp": "2026-03-05T00:00:00.000Z",
+    "rank": 1,
+    "createdAt": "2025-11-24T00:00:00.000Z",
+    "updatedAt": "2026-03-05T00:00:00.000Z"
+  },
+  "totalMembers": 84
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "Streak not found..." }` | No record exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `POST /api/streak/:guildId/:userId`
+
+Create/initialize a streak record for a user.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+**Request Body** *(all optional — defaults to 0):*
+```json
+{
+  "currentStreak": 5,
+  "highestStreak": 10,
+  "streakFreezes": 2,
+  "lastClaimTimestamp": "2026-03-05T00:00:00.000Z"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `currentStreak` | `number` | No | Starting current streak. Default: `0` |
+| `highestStreak` | `number` | No | Starting highest streak. Default: `0` |
+| `streakFreezes` | `number` | No | Starting freeze count. Default: `0` |
+| `lastClaimTimestamp` | `ISO date` | No | Last claim date. Default: `null` |
+
+**Response (201 Created):**
+```json
+{ "success": true, "data": { ...streakObject } }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `409` | `{ "success": false, "error": "Streak already exists..." }` | Record already exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `PATCH /api/streak/:guildId/:userId`
+
+Update a user's streak using an `action`-based approach. If the user has no record yet, it is **auto-created** (matching bot behavior).
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+#### Actions
+
+| `action` | Additional Fields | Behavior |
+|---|---|---|
+| `claim` | *(none)* | Simulate `/streak claim` — mirrors full claim logic (CONTINUE / FREEZE_USED / RESET / NEW). No Discord side effects. |
+| `reset-streak` | *(none)* | Reset `currentStreak` to 0 and clear `lastClaimTimestamp` (mirrors `/streak reset`) |
+| `set` | See below | Directly set any combination of fields |
+| `add-freeze` | `amount?: number` | Add N freeze token(s) (default: 1) |
+| `remove-freeze` | `amount?: number` | Remove N freeze token(s), floored at 0 (default: 1) |
+
+**`set` Action Fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `currentStreak` | `number` | Set current streak directly (≥ 0) |
+| `highestStreak` | `number` | Set highest streak directly (≥ 0). Auto-updated if `currentStreak` exceeds it. |
+| `streakFreezes` | `number` | Set freeze count directly (≥ 0) |
+| `lastClaimTimestamp` | `ISO date \| null` | Manually set or clear the last claim timestamp |
+
+**Request Body Examples:**
+```json
+{ "action": "claim" }
+{ "action": "reset-streak" }
+{ "action": "set", "currentStreak": 30, "streakFreezes": 5 }
+{ "action": "add-freeze", "amount": 3 }
+{ "action": "remove-freeze", "amount": 1 }
+```
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "claimStatus": "CONTINUE",
+  "data": { ...streakObject }
+}
+```
+
+> `claimStatus` is only present when `action` is `claim`. Values: `CONTINUE`, `FREEZE_USED`, `RESET`, `NEW`.
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Missing or invalid action..." }` | Bad or missing `action` |
+| `400` | `{ "success": false, "error": "currentStreak must be a non-negative integer" }` | Invalid `set` value |
+| `409` | `{ "success": false, "error": "Streak already claimed today", "claimStatus": "ALREADY_CLAIMED" }` | `claim` action when already claimed |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `DELETE /api/streak/:guildId/:userId`
+
+Delete a single user's streak record.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+| `userId` | `string` | Discord user snowflake ID |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Streak deleted for user 123... in guild 987..." }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "Streak not found..." }` | No record exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `DELETE /api/streak/:guildId`
+
+Wipe **all** streak records for an entire guild.
+
+> ⚠️ This is irreversible. All streak data for every member in the guild will be deleted.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Deleted 84 streak record(s) in guild 987...", "deleted": 84 }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+## Music API (`/api/music`)
+
+Manage user playlists, favorites, and 24/7 mode configuration. Includes a **Lavalink-powered search endpoint** — use returned `uri` values to add tracks to playlists or favorites.
+
+> **Addon Guard:** Automatically protected by `addonGuard('music')` — the `music` addon must be enabled.
+
+> **Note:** Playback actions (play, pause, skip, queue etc.) are not exposed — they require an active Discord voice connection.
+
+---
+
+### `GET /api/music/search`
+
+Search for tracks using Lavalink. Returns candidates to use as `uri` when adding to playlists/favorites.
+
+**Authentication:** Bearer token required.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | `string` | Yes | Search query or URL |
+| `limit` | `number` | No | Max results (1–25, default `10`) |
+| `source` | `string` | No | Search source: `ytsearch`, `spsearch`, `dzsearch` etc. Default from bot config. |
+
+**Response:**
+```json
+{
+  "success": true,
+  "loadType": "SEARCH_RESULT",
+  "playlistInfo": null,
+  "data": [
+    {
+      "title": "Never Gonna Give You Up",
+      "author": "Rick Astley",
+      "length": 213000,
+      "uri": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "identifier": "dQw4w9WgXcQ",
+      "thumbnail": "https://...",
+      "isStream": false,
+      "sourceName": "youtube"
+    }
+  ]
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "error": "Missing query parameter: q" }` | `q` not provided |
+| `503` | `{ "error": "Lavalink is not available" }` | Lavalink offline |
+| `500` | `{ "error": "..." }` | Search error |
+
+---
+
+## Playlists
+
+### `GET /api/music/playlists/:userId`
+
+List all playlists for a user (without tracks — use the specific endpoint for track listing).
+
+**Response:**
+```json
+{
+  "success": true, "count": 3,
+  "data": [
+    { "id": 1, "userId": "123...", "name": "Lofi Chill", "shareCode": null, "trackCount": 12, "createdAt": "...", "updatedAt": "..." }
+  ]
+}
+```
+
+---
+
+### `GET /api/music/playlists/:userId/:playlistId`
+
+Get a specific playlist with its full track list.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1, "userId": "123...", "name": "Lofi Chill", "shareCode": "abc123", "trackCount": 2,
+    "tracks": [
+      { "id": 5, "playlistId": 1, "title": "Rainy Day", "author": "ChilledCow", "length": 180000, "uri": "https://...", "identifier": "xxx" }
+    ]
+  }
+}
+```
+
+**Errors:** `404` if playlist not found or doesn't belong to user.
+
+---
+
+### `POST /api/music/playlists/:userId`
+
+Create a new empty playlist.
+
+**Request Body:**
+```json
+{ "name": "Lofi Chill" }
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | Yes | Playlist name (max 100 chars) |
+
+**Response (201):** Returns the new playlist object.
+
+---
+
+### `PATCH /api/music/playlists/:userId/:playlistId`
+
+Rename a playlist.
+
+**Request Body:** `{ "name": "New Name" }`
+
+**Errors:** `404` if not found, `400` if name invalid.
+
+---
+
+### `DELETE /api/music/playlists/:userId/:playlistId`
+
+Delete a playlist. **Also deletes all tracks inside it** (CASCADE).
+
+**Response:** `{ "success": true, "message": "Playlist \"Lofi Chill\" deleted" }`
+
+---
+
+## Playlist Tracks
+
+### `POST /api/music/playlists/:userId/:playlistId/tracks`
+
+Add a track to a playlist. Supports two modes:
+
+**Mode 1 — Direct URI** (missing metadata auto-resolved via Lavalink):
+```json
+{ "uri": "https://youtu.be/dQw4w9WgXcQ", "title": "Never...", "author": "Rick Astley", "length": 213000, "identifier": "dQw4w9WgXcQ" }
+```
+
+**Mode 2 — Search query** (resolved via Lavalink, adds first result):
+```json
+{ "query": "never gonna give you up", "source": "ytsearch" }
+```
+
+| Field | Mode | Required | Description |
+|---|---|---|---|
+| `uri` | Mode 1 | Yes | Direct track URL |
+| `title` | Mode 1 | No | Auto-resolved if missing |
+| `author` | Mode 1 | No | Auto-resolved if missing |
+| `length` | Mode 1 | No | Duration in ms, auto-resolved if missing |
+| `identifier` | Mode 1 | No | Auto-resolved if missing |
+| `query` | Mode 2 | Yes | Search query string |
+| `source` | Mode 2 | No | Search source (default from bot config) |
+
+**Response (201):**
+```json
+{ "success": true, "data": { "id": 7, "playlistId": 1, "title": "...", "author": "...", "length": 213000, "uri": "...", "identifier": "..." } }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "error": "Either uri or query is required" }` | Neither provided |
+| `404` | `{ "error": "No tracks found for the given query" }` | Search empty |
+| `404` | `{ "error": "Playlist not found" }` | Wrong user/ID |
+| `503` | `{ "error": "Lavalink is not available" }` | Mode 2, Lavalink offline |
+
+---
+
+### `DELETE /api/music/playlists/:userId/:playlistId/tracks/:trackId`
+
+Remove a specific track from a playlist by its ID.
+
+**Response:** `{ "success": true, "message": "Track \"Song Name\" removed from playlist" }`
+
+**Errors:** `404` if playlist or track not found.
+
+---
+
+### `DELETE /api/music/playlists/:userId/:playlistId/tracks`
+
+Clear **all** tracks from a playlist without deleting the playlist itself.
+
+**Response:** `{ "success": true, "message": "Cleared 12 track(s) from playlist", "deleted": 12 }`
+
+---
+
+## Favorites
+
+### `GET /api/music/favorites/:userId`
+
+List all favorites for a user. Supports pagination.
+
+**Query Parameters:** `page`, `limit` (max 200)
+
+**Response:**
+```json
+{
+  "success": true, "count": 45, "page": 1, "totalPages": 1,
+  "data": [
+    { "id": 3, "userId": "123...", "title": "Rainy Day", "author": "ChilledCow", "length": 180000, "uri": "https://...", "identifier": "xxx", "createdAt": "...", "updatedAt": "..." }
+  ]
+}
+```
+
+---
+
+### `POST /api/music/favorites/:userId`
+
+Add a track to favorites. Same dual-mode as playlist track add (`uri` or `query`).
+
+> Duplicates are prevented — returns `409` if the track `identifier` already exists in user's favorites.
+
+**Request Body:** Same as [`POST /api/music/playlists/:userId/:playlistId/tracks`](#post-apimusicplaylistsuseridplaylistidtracks)
+
+**Response (201):** Returns the new favorite object.
+
+**Errors:** `409` if already favorited, `404` if not found, `503` if Lavalink offline.
+
+---
+
+### `DELETE /api/music/favorites/:userId/:favoriteId`
+
+Remove a specific favorite by its database ID.
+
+**Response:** `{ "success": true, "message": "\"Song Name\" removed from favorites" }`
+
+**Errors:** `404` if not found or doesn't belong to user.
+
+---
+
+### `DELETE /api/music/favorites/:userId`
+
+Clear **all** favorites for a user.
+
+**Response:** `{ "success": true, "message": "Cleared 45 favorite(s)", "deleted": 45 }`
+
+---
+
+## 24/7 Mode
+
+### `GET /api/music/247/:guildId`
+
+Get the 24/7 mode configuration for a guild.
+
+**Response (enabled):**
+```json
+{
+  "success": true, "enabled": true,
+  "data": { "guildId": "987...", "textChannelId": "111...", "voiceChannelId": "222...", "createdAt": "...", "updatedAt": "..." }
+}
+```
+
+**Response (disabled):** `{ "success": true, "data": null, "enabled": false }`
+
+---
+
+### `PUT /api/music/247/:guildId`
+
+Enable or configure 24/7 mode for a guild. Creates a new config or updates existing one.
+
+**Request Body:**
+```json
+{ "textChannelId": "111222333", "voiceChannelId": "444555666" }
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `textChannelId` | `string` | Yes | Channel ID where music updates are posted |
+| `voiceChannelId` | `string` | Yes | Voice channel ID to stay in 24/7 |
+
+**Response:** `200` if updated, `201` if newly created. Returns the config object.
+
+**Errors:** `400` if fields are missing.
+
+---
+
+### `DELETE /api/music/247/:guildId`
+
+Disable 24/7 mode for a guild (deletes the config record).
+
+**Response:** `{ "success": true, "message": "24/7 mode disabled for guild 987..." }`
+
+**Errors:** `404` if 24/7 mode is not currently enabled for this guild.
+
+---
+
+## Global Chat API (`/api/globalchat`)
+
+Manage guild registrations in Kythia's local Global Chat database. These endpoints mirror the external Global Chat API's `POST /add`, `DELETE /remove/:id`, and `GET /list` endpoints but operate against Kythia's own DB. The actual message broadcasting is handled by the external service.
+
+> **Addon Guard:** Automatically protected by `addonGuard('globalchat')` — the `globalchat` addon must be enabled.
+
+> **Note:** `webhookToken` is never returned in API responses to avoid credential exposure.
+
+---
+
+### `GET /api/globalchat/list`
+
+List all guilds registered in Kythia's local global chat database.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "message": "Guilds retrieved successfully",
+  "data": {
+    "guilds": [
+      {
+        "id": "123456789012345678",
+        "globalChannelId": "111222333444555666",
+        "webhookId": "987654321098765432",
+        "createdAt": "2025-11-24T00:00:00.000Z",
+        "updatedAt": "2025-11-24T00:00:00.000Z"
+      }
+    ],
+    "count": 1,
+    "timestamp": "2026-03-06T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+### `GET /api/globalchat/:guildId`
+
+Get registration info for a single guild.
+
+**Errors:** `404` with `code: "GUILD_NOT_FOUND"` if not registered.
+
+---
+
+### `POST /api/globalchat/add`
+
+Register a new guild or update an existing one. Mirrors the external `/add` endpoint.
+
+**Authentication:** Bearer token required.
+
+**Request Body:**
+```json
+{
+  "guildId": "123456789012345678",
+  "globalChannelId": "111222333444555666",
+  "webhookId": "987654321098765432",
+  "webhookToken": "webhook_token_here"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | Yes | Discord guild snowflake ID |
+| `globalChannelId` | `string` | Yes | Channel ID where global chat messages appear |
+| `webhookId` | `string` | No | Webhook ID for broadcasting |
+| `webhookToken` | `string` | No | Webhook token for broadcasting |
+
+**Response:** `201` if created, `200` if updated.
+```json
+{
+  "status": "ok",
+  "message": "Guild added/updated successfully",
+  "data": {
+    "guild": { "guildId": "123...", "globalChannelId": "111...", "webhookId": "987..." },
+    "operation": "created",
+    "hasWebhook": true
+  }
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|---|---|---|
+| `400` | `MISSING_REQUIRED_FIELDS` | `guildId` or `globalChannelId` missing |
+
+---
+
+### `DELETE /api/globalchat/remove/:guildId`
+
+Remove a guild from the global chat network. Mirrors the external `DELETE /remove/:id` endpoint.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "message": "Guild removed from global chat successfully",
+  "data": {
+    "removedGuild": { "id": "123...", "globalChannelId": "111...", ... },
+    "operation": "deleted",
+    "removedAt": "2026-03-06T00:00:00.000Z"
+  }
+}
+```
+
+**Errors:** `404` with `code: "GUILD_NOT_FOUND"` if not registered.
+
+---
+
+### `PATCH /api/globalchat/:guildId/webhook`
+
+Update only the webhook credentials for a guild. Used internally by the auto-webhook-repair system (`handleFailedGlobalChat`).
+
+**Request Body:**
+```json
+{
+  "webhookId": "new_webhook_id",
+  "webhookToken": "new_webhook_token",
+  "globalChannelId": "optional_channel_override"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `webhookId` | `string` | Yes | New webhook ID |
+| `webhookToken` | `string` | Yes | New webhook token |
+| `globalChannelId` | `string` | No | Optionally update the channel ID too |
+
+**Response:** Returns the updated guild object.
+
+**Errors:** `404` if guild not registered, `400` if `webhookId`/`webhookToken` missing.

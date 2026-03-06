@@ -16,20 +16,26 @@ async function handleGlobalChat(message, container) {
 	if (!message.guild) return;
 
 	try {
-		const referencedMessageData = message.referencedMessage
-			? {
-					id: message.referencedMessage.id,
-					content: message.referencedMessage.content,
+		// Fetch referenced message if this is a reply
+		let referencedMessageData = null;
+		if (message.reference?.messageId) {
+			try {
+				const refMsg = await message.fetchReference();
+				referencedMessageData = {
+					id: refMsg.id,
+					content: refMsg.content,
 					author: {
-						id: message.referencedMessage.author.id,
-						username: message.referencedMessage.author.username,
-						globalName:
-							message.referencedMessage.author.globalName ||
-							message.referencedMessage.author.username,
-						avatarURL: message.referencedMessage.author.displayAvatarURL(),
+						id: refMsg.author.id,
+						username: refMsg.author.username,
+						globalName: refMsg.author.globalName || refMsg.author.username,
+						avatarURL: refMsg.author.displayAvatarURL(),
 					},
-				}
-			: null;
+				};
+			} catch {
+				// referenced message may be deleted or inaccessible — skip gracefully
+				referencedMessageData = null;
+			}
+		}
 
 		const safeMessage = {
 			id: message.id,

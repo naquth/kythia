@@ -61,6 +61,7 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [Giveaway List / Get](#giveaway-list--get)
   - [Participants Sub-resource](#participants-sub-resource)
   - [Customization & CRUD](#customization--crud)
+- [Sticky API (`/api/sticky`)](#sticky-api-apisticky)
 - [Embed Builder API (`/api/embed-builder`)](#embed-builder-api-apiembed-builder)
   - [List / Get](#embed-builder-list--get)
   - [Create / Update / Delete](#embed-builder-create--update--delete)
@@ -4412,6 +4413,186 @@ curl -X DELETE "http://localhost:3000/api/embed-builder/1?deleteMessage=true" \
 ```
 
 > **Note:** The Discord slash command `/embed-builder edit` follows the same pattern automatically — after the user submits the modal, the DB is updated and, if `messageId` is set, the live Discord message is edited in-place. The reply includes a jump link to the updated message.
+
+---
+
+## Sticky API (`/api/sticky`)
+
+Manages **sticky messages** — channel-pinned bot messages that are re-sent whenever new messages arrive, keeping them at the bottom of the channel.
+
+---
+
+### `GET /api/sticky`
+
+Returns all sticky messages. Optionally filter by channel.
+
+**Authentication:** Bearer token required.
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `channelId` | `string` | *(Optional)* Filter results to a specific channel ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "id": 1,
+      "channelId": "111111111111111111",
+      "message": "Welcome to the channel! Read the rules.",
+      "messageId": "999999999999999999"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | Always `true` |
+| `count` | `number` | Number of sticky records returned |
+| `data` | `array` | Array of `StickyMessage` objects |
+
+#### StickyMessage Object
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `number` | Auto-incremented primary key |
+| `channelId` | `string` | Discord channel snowflake ID |
+| `message` | `string` | Content of the sticky message |
+| `messageId` | `string \| null` | Snowflake ID of the last sent Discord message (used for deletion on removal) |
+
+---
+
+### `GET /api/sticky/:id`
+
+Returns a single sticky message by its primary key.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `number` | The sticky message's primary key |
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "channelId": "111111111111111111",
+    "message": "Welcome to the channel!",
+    "messageId": "999999999999999999"
+  }
+}
+```
+
+**Error (404):**
+```json
+{ "success": false, "error": "Sticky message not found" }
+```
+
+---
+
+### `POST /api/sticky`
+
+Creates a new sticky message record. The bot does **not** automatically post the Discord message — that is handled by the `/sticky set` Discord command. This endpoint is intended for programmatic management.
+
+**Authentication:** Bearer token required.
+
+**Request Body:**
+```json
+{
+  "channelId": "111111111111111111",
+  "message": "Welcome to the channel! Read the rules.",
+  "messageId": "999999999999999999"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `channelId` | `string` | Yes | Discord channel snowflake ID |
+| `message` | `string` | Yes | Content of the sticky message |
+
+**Response (success):**
+```json
+{ "success": true, "data": { "id": 1, "channelId": "...", "message": "...", "messageId": "999999999999999999" } }
+```
+
+> The bot immediately sends the sticky message to Discord and stores the returned `messageId` on the record.
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Missing required fields (channelId, message)" }` | Missing required body fields |
+| `404` | `{ "success": false, "error": "Channel not found or bot cannot access it." }` | Channel not in bot's cache |
+| `409` | `{ "success": false, "error": "A sticky message already exists in this channel." }` | Duplicate sticky for this channel |
+| `500` | `{ "success": false, "error": "Error message detail" }` | Discord or database error |
+
+---
+
+### `PATCH /api/sticky/:id`
+
+Partially updates a sticky message record. Only the fields provided in the request body are updated.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `number` | The sticky message's primary key |
+
+**Request Body:** *(any subset of StickyMessage fields)*
+```json
+{
+  "message": "Updated sticky message content!"
+}
+```
+
+**Response (success):**
+```json
+{ "success": true, "data": { "id": 1, "channelId": "...", "message": "Updated sticky message content!", "messageId": "..." } }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "Sticky message not found" }` | No record with the given `id` |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `DELETE /api/sticky/:id`
+
+Deletes a sticky message record from the database. This fires the model's `individualHooks`, which triggers the `StickyMessageHandler` to delete the associated Discord message from the channel automatically.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `number` | The sticky message's primary key |
+
+**Response (success):**
+```json
+{ "success": true, "message": "Sticky message deleted successfully" }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "Sticky message not found" }` | No record with the given `id` |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
 
 ---
 

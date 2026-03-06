@@ -20,7 +20,7 @@ module.exports = {
 				allowNull: false,
 			},
 			message: {
-				type: DataTypes.STRING,
+				type: DataTypes.LONGTEXT,
 				allowNull: false,
 			},
 			messageId: {

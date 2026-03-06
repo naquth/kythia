@@ -26,7 +26,9 @@ class StickyMessageHandler {
 		const { convertColor } = helpers.color;
 
 		try {
-			if (message.author.bot) return;
+			// Only skip messages from this bot itself (prevents self-loop).
+			// Webhooks and other bots should still trigger the sticky.
+			if (message.author.id === message.client.user.id) return;
 
 			const sticky = await StickyMessage.getCache({
 				channelId: message.channel.id,

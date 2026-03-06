@@ -568,6 +568,12 @@
 						}
 					},
 					"success": "✅ Sticky message has been removed! 😋"
+				},
+				"list": {
+					"title": "## 📌 Sticky Messages",
+					"empty": "There are no sticky messages set in this server.",
+					"entry": "- <#{channelId}>\n",
+					"footer": "Page {page} of {totalPages}"
 				}
 			},
 			"obfuscate": {

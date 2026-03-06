@@ -40,7 +40,7 @@
 		"hono": "^4.10.7",
 		"javascript-obfuscator": "^4.1.1",
 		"kythia-arts": "^0.1.0-beta",
-		"kythia-core": "^0.13.3-beta",
+		"kythia-core": "^0.13.4-beta",
 		"luxon": "^3.7.2",
 		"marked": "^4.3.0",
 		"mathjs": "^15.1.0",

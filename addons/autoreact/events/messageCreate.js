@@ -6,28 +6,26 @@
  * @version 1.0.0-rc
  */
 
-const { Op } = require('sequelize');
-
 module.exports = async (bot, message) => {
 	const { models } = bot.client.container;
 	const { AutoReact } = models;
 
 	if (message.author.bot || !message.guild) return;
 
-	const reactions = await AutoReact.getAllCache({
-		where: {
-			guildId: message.guild.id,
-			[Op.or]: [
-				{
-					type: 'channel',
-					trigger: message.channel.id,
-				},
-				{
-					type: 'text',
-					trigger: message.content,
-				},
-			],
-		},
+	const allReactions = await AutoReact.getAllCache({
+		where: { guildId: message.guild.id },
+	});
+
+	if (!allReactions.length) return;
+
+	const content = message.content.toLowerCase();
+	const reactions = allReactions.filter(({ type, trigger }) => {
+		if (type === 'channel') return trigger === message.channel.id;
+		if (type === 'text') {
+			const escaped = trigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			return new RegExp(`\\b${escaped}\\b`, 'i').test(content);
+		}
+		return false;
 	});
 
 	if (reactions.length === 0) return;

@@ -130,7 +130,6 @@ module.exports = async (bot, member) => {
 		try {
 			goodbyeImage = await welcomeBanner(member.user.id, {
 				botToken: kythiaConfig.bot.token,
-				customUsername: member.user.username,
 				customWidth: setting.welcomeOutBannerWidth || 1024,
 				customHeight: setting.welcomeOutBannerHeight || 450,
 				customBackground: setting.welcomeOutBackgroundUrl || null,
@@ -143,11 +142,20 @@ module.exports = async (bot, member) => {
 				},
 				welcomeText:
 					(await safeResolvePlaceholder(
+						container,
 						member,
 						setting.welcomeOutMainTextContent || 'GOODBYE',
 						statsData,
 						'GOODBYE',
 					)) || 'GOODBYE',
+				customUsername:
+					(await safeResolvePlaceholder(
+						container,
+						member,
+						setting.welcomeOutSubTextContent || '{username}',
+						statsData,
+						member.user.username,
+					)) || member.user.username,
 				customFont: setting.welcomeOutMainTextFontFamily || null,
 				fontWeight: setting.welcomeOutMainTextFontWeight || null,
 				welcomeColor: setting.welcomeOutMainTextColor || null,

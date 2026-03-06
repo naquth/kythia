@@ -329,10 +329,17 @@ async function updateStats(client, activeSettings) {
 	logger.info('Finished processing all channel updates.');
 }
 
-async function safeResolvePlaceholder(member, text, statsData, fallback = '') {
+async function safeResolvePlaceholder(
+	container,
+	member,
+	text,
+	statsData,
+	fallback = '',
+) {
 	if (typeof text !== 'string' || !text.trim()) return fallback;
 	try {
 		let result = await resolvePlaceholders(
+			container,
 			text,
 			statsData,
 			member.guild.preferredLocale,

@@ -47,7 +47,7 @@ app.post('/preview', async (c) => {
 		const prefix = `welcome${type}`;
 
 		const mockUserId = '000000000000000000';
-		const mockUsername = 'Kythia Preview';
+		const mockUsername = 'Kythia Chan';
 
 		const options = {
 			customUsername: mockUsername,

@@ -108,15 +108,15 @@ module.exports = {
 		const reels = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
 		const [r1, r2, r3] = reels;
 
-		let resultKey = 'economy.slots.lose.title';
 		let resultColor = 'Red';
 		let winnings = 0;
 		let payoutMultiplier = 0;
+		let resultTitle;
 
 		if (r1.emoji === r2.emoji && r2.emoji === r3.emoji) {
 			payoutMultiplier = r1.payout.three;
 			winnings = Math.floor(bet * payoutMultiplier);
-			resultKey = 'economy.slots.jackpot.title';
+			resultTitle = await t(interaction, 'economy.slots.jackpot.title');
 			resultColor = 'Gold';
 		} else if (
 			r1.emoji === r2.emoji ||
@@ -129,13 +129,15 @@ module.exports = {
 			else pairSymbol = r2;
 			payoutMultiplier = pairSymbol.payout.two;
 			winnings = Math.floor(bet * payoutMultiplier);
-			resultKey = 'economy.slots.bigwin.title';
+			resultTitle = await t(interaction, 'economy.slots.bigwin.title');
 			resultColor = 'Green';
 		} else if (reels.some((r) => r.emoji === '💰')) {
 			winnings = bet;
 			payoutMultiplier = 1;
-			resultKey = 'economy.slots.lucky.title';
+			resultTitle = await t(interaction, 'economy.slots.lucky.title');
 			resultColor = 'Blue';
+		} else {
+			resultTitle = await t(interaction, 'economy.slots.lose.title');
 		}
 
 		if (winnings > 0) {
@@ -159,7 +161,7 @@ module.exports = {
 		].join('\n');
 
 		const resultMsg = [
-			`## ${await t(interaction, resultKey)}`,
+			`## ${resultTitle}`,
 			slotDisplay,
 			'',
 			`**${await t(interaction, 'economy.slots.slots.bet.field')}:** 🪙 ${bet.toLocaleString()}`,

@@ -152,7 +152,6 @@ module.exports = async (bot, member) => {
 		let welcomeInImage = null;
 		try {
 			welcomeInImage = await welcomeBanner(member.user.id, {
-				customUsername: member.user.username,
 				botToken: process.env.DISCORD_BOT_TOKEN,
 				customWidth: setting.welcomeInBannerWidth || 1024,
 				customHeight: setting.welcomeInBannerHeight || 450,
@@ -166,11 +165,20 @@ module.exports = async (bot, member) => {
 				},
 				welcomeText:
 					(await safeResolvePlaceholder(
+						container,
 						member,
 						setting.welcomeInMainTextContent || 'WELCOME',
 						statsData,
 						'WELCOME',
 					)) || 'WELCOME',
+				customUsername:
+					(await safeResolvePlaceholder(
+						container,
+						member,
+						setting.welcomeInSubTextContent || '{username}',
+						statsData,
+						member.user.username,
+					)) || member.user.username,
 				customFont: setting.welcomeInMainTextFontFamily || null,
 				fontWeight: setting.welcomeInMainTextFontWeight || null,
 				welcomeColor: setting.welcomeInMainTextColor || null,

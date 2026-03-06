@@ -229,12 +229,12 @@ app.post('/', async (c) => {
 });
 
 // =============================================================================
-// PATCH /api/embed-builder/:id — update data/name/mode + auto-sync Discord message
+// PATCH /api/embed-builder/:id — update data/name/mode (DB only, no Discord sync)
 // Body: { name?, mode?, data? }
+// To push changes to Discord, call POST /:id/resend afterwards.
 // =============================================================================
 
 app.patch('/:id', async (c) => {
-	const client = getBot(c);
 	const { EmbedBuilder: EmbedModel } = getModels(c);
 	const id = parseInt(c.req.param('id'), 10);
 	const body = await c.req.json();
@@ -254,33 +254,7 @@ app.patch('/:id', async (c) => {
 		await record.update(updates);
 		await record.reload(); // Ensure JSON fields (data) are fresh on the instance
 
-		// Auto-sync: if the embed has already been sent to Discord, edit the message in-place
-		let messageSynced = false;
-		let messageUrl = null;
-
-		if (record.messageId && record.channelId) {
-			try {
-				const channel = await client.channels
-					.fetch(record.channelId)
-					.catch(() => null);
-
-				if (channel) {
-					const updatedMessage = await editDiscordMessage(
-						channel,
-						record.messageId,
-						record,
-					);
-					if (updatedMessage) {
-						messageSynced = true;
-						messageUrl = `https://discord.com/channels/${channel.guild?.id}/${record.channelId}/${record.messageId}`;
-					}
-				}
-			} catch (_) {
-				// Best-effort — DB is already saved, Discord edit failure is non-fatal
-			}
-		}
-
-		return c.json({ success: true, messageSynced, messageUrl, data: record });
+		return c.json({ success: true, data: record });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
 	}

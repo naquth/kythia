@@ -3609,7 +3609,7 @@ class MusicHandlers {
 		const newState = !playerInstance._247;
 		playerInstance._247 = newState;
 
-		let msgKey;
+		let msg;
 
 		if (newState === true) {
 			try {
@@ -3621,26 +3621,24 @@ class MusicHandlers {
 						voiceChannelId: playerInstance.voiceChannel,
 					},
 				});
-				msgKey = 'music.helpers.handlers.247.enabled';
+				msg = await this.t(interaction, 'music.helpers.handlers.247.enabled');
 			} catch (dbErr) {
 				this.logger.error('Failed to save 24/7 to DB:', dbErr);
-				msgKey = 'music.helpers.handlers.247.db_error';
+				msg = await this.t(interaction, 'music.helpers.handlers.247.db_error');
 			}
 		} else {
 			try {
 				await this.Music247.destroy({ where: { guildId: guild.id } });
-				msgKey = 'music.helpers.handlers.247.disabled';
+				msg = await this.t(interaction, 'music.helpers.handlers.247.disabled');
 			} catch (dbErr) {
 				this.logger.error('Failed to remove 24/7 from DB:', dbErr);
-				msgKey = 'music.helpers.handlers.247.db_error';
+				msg = await this.t(interaction, 'music.helpers.handlers.247.db_error');
 			}
 		}
 
-		const components = await this.simpleContainer(
-			interaction,
-			await this.t(interaction, msgKey),
-			{ color: this.config.bot.color },
-		);
+		const components = await this.simpleContainer(interaction, msg, {
+			color: this.config.bot.color,
+		});
 		await interaction.editReply({
 			components,
 			flags: MessageFlags.IsComponentsV2,

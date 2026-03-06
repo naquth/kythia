@@ -72,7 +72,7 @@ module.exports = {
 		}
 
 		const everyoneRole = interaction.guild.roles.everyone;
-		let resultKey = '';
+		let resultMsg;
 
 		const currentPerms = channel.permissionsFor(everyoneRole);
 		const newPerms = {
@@ -82,18 +82,24 @@ module.exports = {
 
 		if (selectedOp === 'lock_channel') {
 			newPerms.Connect = false;
-			resultKey = 'tempvoice.privacy.menu.lock_success';
+			resultMsg = await t(interaction, 'tempvoice.privacy.menu.lock_success');
 		} else if (selectedOp === 'unlock_channel') {
 			newPerms.Connect = true;
-			resultKey = 'tempvoice.privacy.menu.unlock_success';
+			resultMsg = await t(interaction, 'tempvoice.privacy.menu.unlock_success');
 		} else if (selectedOp === 'invisible_channel') {
 			newPerms.ViewChannel = false;
 			newPerms.Connect = false;
-			resultKey = 'tempvoice.privacy.menu.invisible_success';
+			resultMsg = await t(
+				interaction,
+				'tempvoice.privacy.menu.invisible_success',
+			);
 		} else if (selectedOp === 'visible_channel') {
 			newPerms.ViewChannel = true;
 			newPerms.Connect = true;
-			resultKey = 'tempvoice.privacy.menu.visible_success';
+			resultMsg = await t(
+				interaction,
+				'tempvoice.privacy.menu.visible_success',
+			);
 		}
 
 		try {
@@ -103,11 +109,9 @@ module.exports = {
 			});
 
 			await interaction.update({
-				components: await simpleContainer(
-					interaction,
-					await t(interaction, resultKey),
-					{ color: 'Green' },
-				),
+				components: await simpleContainer(interaction, resultMsg, {
+					color: 'Green',
+				}),
 			});
 		} catch (err) {
 			logger.error(`[TempVoice] Gagal ubah privasi: ${err.message}`);

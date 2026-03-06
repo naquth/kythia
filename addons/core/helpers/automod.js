@@ -180,14 +180,14 @@ async function checkSpam(message, setting) {
 	}
 
 	if (spamType) {
-		let reasonKey = '';
+		let reason;
 		if (spamType === 'duplicate')
-			reasonKey = 'core.system.automod.spam.duplicate';
-		else if (spamType === 'fast') reasonKey = 'core.system.automod.spam.fast';
-		else if (spamType === 'short') reasonKey = 'core.system.automod.spam.short';
-		else reasonKey = 'core.system.automod.spam.generic';
-
-		const reason = await t(message, reasonKey);
+			reason = await t(message, 'core.system.automod.spam.duplicate');
+		else if (spamType === 'fast')
+			reason = await t(message, 'core.system.automod.spam.fast');
+		else if (spamType === 'short')
+			reason = await t(message, 'core.system.automod.spam.short');
+		else reason = await t(message, 'core.system.automod.spam.generic');
 
 		for (const msg of messagesToDelete) {
 			if (canDeleteMessage(msg)) {

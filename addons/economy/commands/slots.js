@@ -116,7 +116,7 @@ module.exports = {
 		if (r1.emoji === r2.emoji && r2.emoji === r3.emoji) {
 			payoutMultiplier = r1.payout.three;
 			winnings = Math.floor(bet * payoutMultiplier);
-			resultTitle = await t(interaction, 'economy.slots.jackpot.title');
+			resultTitle = await t(interaction, 'economy.slots.slots.jackpot.title');
 			resultColor = 'Gold';
 		} else if (
 			r1.emoji === r2.emoji ||
@@ -129,15 +129,15 @@ module.exports = {
 			else pairSymbol = r2;
 			payoutMultiplier = pairSymbol.payout.two;
 			winnings = Math.floor(bet * payoutMultiplier);
-			resultTitle = await t(interaction, 'economy.slots.bigwin.title');
+			resultTitle = await t(interaction, 'economy.slots.slots.bigwin.title');
 			resultColor = 'Green';
 		} else if (reels.some((r) => r.emoji === '💰')) {
 			winnings = bet;
 			payoutMultiplier = 1;
-			resultTitle = await t(interaction, 'economy.slots.lucky.title');
+			resultTitle = await t(interaction, 'economy.slots.slots.lucky.title');
 			resultColor = 'Blue';
 		} else {
-			resultTitle = await t(interaction, 'economy.slots.lose.title');
+			resultTitle = await t(interaction, 'economy.slots.slots.lose.title');
 		}
 
 		if (winnings > 0) {

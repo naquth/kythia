@@ -34,6 +34,22 @@ module.exports = async (bot, oldState, newState) => {
 	if (!config) return;
 
 	if (newChannelId === config.triggerChannelId && !member.user.bot) {
+		// Prevent spam: if the user already owns an active temp voice channel,
+		// move them back to it instead of creating a new one.
+		const existingChannel = await TempVoiceChannel.getCache({
+			ownerId: member.id,
+			guildId: guild.id,
+		});
+		if (existingChannel) {
+			const alreadyOwnedChannel = guild.channels.cache.get(
+				existingChannel.channelId,
+			);
+			if (alreadyOwnedChannel) {
+				await member.voice.setChannel(alreadyOwnedChannel).catch(() => {});
+			}
+			return;
+		}
+
 		try {
 			const newChannel = await guild.channels.create({
 				name: `🎧┃${member.displayName}'s Room`,

@@ -14,28 +14,17 @@ const {
 	SeparatorSpacingSize,
 } = require('discord.js');
 const Sentry = require('@sentry/node');
-const { automodSystem } = require('../helpers/automod');
 
 module.exports = async (bot, oldMessage, newMessage) => {
 	const container = bot.client.container;
 	const { helpers, models, logger, t } = container;
-	const { isOwner } = helpers.discord;
 	const { convertColor } = helpers.color;
 	const { ServerSetting } = models;
 	const guildId = newMessage.guild?.id;
 
 	try {
-		const client = bot.client;
 		if (!newMessage || !newMessage.author || !newMessage.guild) return;
 		if (newMessage.author.bot) return;
-
-		if (
-			!isOwner(newMessage.author.id) &&
-			!newMessage.member?.permissions.has(['Administrator', 'ManageGuild'])
-		) {
-			const isFlagged = await automodSystem(newMessage, client);
-			if (isFlagged) return true;
-		}
 
 		// Don't log if content hasn't changed
 		if (oldMessage.content === newMessage.content) return;

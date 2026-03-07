@@ -7,6 +7,7 @@
 ## Table of Contents
 
 - [What is an Addon?](#what-is-an-addon)
+- [Auto-Loading System](#auto-loading-system)
 - [Directory Structure](#directory-structure)
 - [addon.json Schema](#addonjson-schema)
 - [Commands](#commands)
@@ -44,6 +45,96 @@ An addon is a self-contained feature module that Kythia Core discovers and loads
 - A `register.js` hook for custom initialization
 
 Addons are isolated from each other. They communicate through the shared `KythiaContainer` (DI container), not through direct imports.
+
+---
+
+## Auto-Loading System
+
+**You never register anything manually.** When `kythia.start()` runs, `AddonManager` scans every folder inside `addons/` (folders prefixed with `_` are skipped) and wires up everything it finds automatically. Here is exactly what gets discovered and how:
+
+### What is auto-loaded?
+
+| Folder / File | Auto-loaded as | How it's matched |
+|---|---|---|
+| `commands/*.js` | Slash commands, context menu commands | Filename (or `data.name`) → Discord command name |
+| `commands/<name>/_command.js` | Parent command (subcommand container) | Folder name → parent command name |
+| `commands/<name>/<sub>.js` | Subcommand (`/parent sub`) | Folder + filename → `parent sub` key |
+| `commands/<name>/<group>/_group.js` | Subcommand group | Three-level folder nesting |
+| `commands/<name>/<group>/<sub>.js` | Subcommand in group (`/parent group sub`) | Three-level folder + filename |
+| `events/<eventName>.js` | Discord event listener | Filename (without `.js`) = Discord.js event name |
+| `buttons/<customId>.js` | Button interaction handler | Filename (without `.js`) = `customId` |
+| `modals/<prefix>.js` | Modal submit handler | Filename (without `.js`) = `customId` prefix |
+| `select_menus/<prefix>.js` | Select menu handler | Filename (without `.js`) = `customId` prefix |
+| `tasks/<name>.js` | Scheduled task (cron or interval) | Filename = task name, `schedule` field drives timing |
+| `database/models/*.js` | Sequelize models → `container.models` | Class name → model key |
+| `database/migrations/*.js` | Database migrations (via `npx kythia migrate`) | Timestamp prefix for ordering |
+| `database/seeders/*.js` | Database seeders (via `npx kythia db:seed`) | Class name |
+| `lang/<locale>.json` | Translation strings → `TranslatorManager` | Filename = BCP-47 locale code (e.g. `en-US`, `id`) |
+| `register.js` | Addon init hook | Runs once before commands/events registration |
+| `addon.json` | Metadata, priority, dependencies | Parsed to determine load order |
+
+### How the load sequence works
+
+When `kythia.start()` is called, `AddonManager.loadAddons()` runs the following steps in order:
+
+```
+1. Scan addons/ directory
+   └── Read addon.json from each folder (priority, dependencies)
+
+2. Resolve load order
+   └── Topological sort (Kahn's algorithm) with priority as tiebreaker
+   └── Disabled or invalid-dependency addons are skipped with an error log
+
+For each addon (in resolved order):
+   3. Run register.js  ← your custom init hook
+   4. Scan commands/  ← auto-register slash + context menu commands
+   5. Scan events/    ← auto-register Discord event listeners
+   6. Scan buttons/   ← auto-register button handlers
+   7. Scan modals/    ← auto-register modal handlers
+   8. Scan select_menus/ ← auto-register select menu handlers
+   9. Scan tasks/     ← auto-register cron/interval tasks
+  10. Scan lang/      ← merge locale JSON into TranslatorManager
+  11. Scan database/models/ ← load & sync Sequelize models
+
+12. Deploy slash commands to Discord (global or guild-scoped)
+13. Initialize EventManager (attach all collected event listeners)
+14. Initialize InteractionManager (attach interactionCreate listener)
+```
+
+### Component routing — how `customId` matching works
+
+For buttons, modals, and select menus, the framework extracts the **prefix** from the incoming `customId` before looking up the handler:
+
+```
+customId: "confirm-delete|123"    → prefix: "confirm-delete"
+customId: "confirm-delete:123"   → prefix: "confirm-delete"
+customId: "confirm-delete"       → prefix: "confirm-delete"
+```
+
+The split is on `|` first, then `:`. So a button file named `confirm-delete.js` will match **all three** patterns above. This lets you embed dynamic data (like a record ID) in the `customId` after the delimiter while keeping handler files simple.
+
+### Event handler stacking
+
+Multiple addons **can and do** register handlers for the same Discord event. All handlers for the same event run in sequence (in addon load order). A handler can return `true` to stop further handlers from running (acts like `event.stopPropagation()`):
+
+```javascript
+// addons/antispam/events/messageCreate.js
+module.exports = async (eventManager, message) => {
+  const isSpam = checkSpam(message);
+  if (isSpam) {
+    await message.delete();
+    return true; // stops any subsequent messageCreate handlers in other addons
+  }
+};
+```
+
+### Intent validation
+
+`AddonManager` checks at load time that the Discord client has the required `GatewayIntent` for each event handler. If the intent is missing, a warning is logged — the handler is still registered but will never fire in practice.
+
+### i18n / locale merging
+
+Lang files from all addons are **merged together** into a single `TranslatorManager` collection per locale code. If two addons both define the same key, the **later-loaded addon wins**. The translator normalises short locale codes automatically — e.g. if your DB stores `"en"`, it resolves to `"en-US"` (or whichever `en-*` file is loaded).
 
 ---
 

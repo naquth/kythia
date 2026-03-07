@@ -1,180 +1,287 @@
 /**
  * @namespace: addons/api/routes/pro.js
- * @type: Module
+ * @type: Route
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
+ *
+ * "Pro Hosting" API — subdomains, DNS records (Cloudflare-backed), and uptime monitors.
+ * Auto-mounted at: /api/pro
+ *
+ * Subdomains
+ *   GET    /subdomains                     — list (filter ?userId=)
+ *   GET    /subdomains/:id                 — single, includes dns records
+ *   POST   /subdomains                     — claim a new subdomain (validates name, quota)
+ *   DELETE /subdomains/:id                 — release subdomain (cascades DNS records)
+ *
+ * DNS Records  (Cloudflare-integrated: create/update/delete call Cloudflare AND local DB)
+ *   GET    /subdomains/:id/dns             — list DNS records for a subdomain
+ *   POST   /subdomains/:id/dns             — add a record (A/CNAME/TXT/MX) → Cloudflare + DB
+ *   PATCH  /dns/:recordId                  — update record value → Cloudflare + DB
+ *   DELETE /dns/:recordId                  — delete record → Cloudflare + DB
+ *
+ * Monitors   (one per user, tracks uptime of a URL)
+ *   GET    /monitors                       — list (filter ?userId= ?lastStatus=)
+ *   GET    /monitors/:userId               — single monitor
+ *   POST   /monitors                       — create / upsert monitor
+ *   PATCH  /monitors/:userId               — update urlToPing or lastStatus
+ *   DELETE /monitors/:userId               — delete monitor
  */
 
 const { Hono } = require('hono');
+const CloudflareApi = require('../../pro/helpers/CloudflareApi');
+
 const app = new Hono();
 
+// ---------------------------------------------------------------------------
 // Helpers
-const getBot = (c) => c.get('client');
-const getContainer = (c) => getBot(c).container;
+// ---------------------------------------------------------------------------
+const getContainer = (c) => c.get('client').container;
 const getModels = (c) => getContainer(c).models;
+const getLogger = (c) => getContainer(c).logger;
 
-// =============================================================================
-// Subdomain — LIST / GET
-// =============================================================================
+/** Lazy CloudflareApi — initialised once per request (cheap, stateless after init). */
+function getCfApi(c) {
+	const container = getContainer(c);
+	return new CloudflareApi({
+		kythiaConfig: container.kythiaConfig,
+		logger: container.logger,
+		models: container.models,
+	});
+}
 
-// GET /api/pro/subdomains
-// Query: ?userId
+const FORBIDDEN_NAMES = [
+	'www',
+	'mail',
+	'api',
+	'bot',
+	'admin',
+	'dashboard',
+	'kythia',
+	'kyth',
+	'avalon',
+	'hyperion',
+	'ftp',
+	'smtp',
+	'imap',
+	'pop',
+	'pop3',
+	'ns',
+	'ns1',
+	'ns2',
+	'cpanel',
+];
+
+const VALID_RECORD_TYPES = ['A', 'AAAA', 'CNAME', 'TXT', 'MX'];
+const VALID_STATUSES = ['UP', 'DOWN', 'PENDING'];
+
+function validateSubdomainName(name) {
+	if (!name || typeof name !== 'string') return 'name is required';
+	const n = name.toLowerCase();
+	if (!/^[a-z0-9-]+$/.test(n))
+		return 'name may only contain a-z, 0-9, and hyphens';
+	if (n.length < 3 || n.length > 32) return 'name must be 3–32 characters';
+	if (n.startsWith('-') || n.endsWith('-'))
+		return 'name must not start or end with a hyphen';
+	if (FORBIDDEN_NAMES.includes(n)) return `name "${n}" is reserved`;
+	return null;
+}
+
+// ===========================================================================
+// SUBDOMAINS
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// GET /api/pro/subdomains — list all (optional ?userId=)
+// ---------------------------------------------------------------------------
 app.get('/subdomains', async (c) => {
 	const { Subdomain } = getModels(c);
 	const where = {};
-
 	const userId = c.req.query('userId');
 	if (userId) where.userId = userId;
-
 	try {
-		const data = await Subdomain.findAll({ where });
-		return c.json({ success: true, count: data.length, data });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		const rows = await Subdomain.findAll({
+			where,
+			order: [['createdAt', 'ASC']],
+		});
+		return c.json({ status: 'ok', count: rows.length, data: rows });
+	} catch (err) {
+		getLogger(c).error('GET /api/pro/subdomains error:', err);
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// GET /api/pro/subdomains/:id
-// Includes associated DNS records
+// ---------------------------------------------------------------------------
+// GET /api/pro/subdomains/:id — single subdomain with its DNS records
+// ---------------------------------------------------------------------------
 app.get('/subdomains/:id', async (c) => {
 	const { Subdomain, DnsRecord } = getModels(c);
 	const id = parseInt(c.req.param('id'), 10);
-
+	if (!id) return c.json({ status: 'error', error: 'Invalid id' }, 400);
 	try {
-		const subdomain = await Subdomain.findByPk(id, {
+		const row = await Subdomain.findByPk(id, {
 			include: [{ model: DnsRecord, as: 'dnsRecords' }],
 		});
-		if (!subdomain)
-			return c.json({ success: false, error: 'Subdomain not found' }, 404);
-		return c.json({ success: true, data: subdomain });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		if (!row)
+			return c.json(
+				{ status: 'error', error: 'Subdomain not found', code: 'NOT_FOUND' },
+				404,
+			);
+		return c.json({ status: 'ok', data: row });
+	} catch (err) {
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// Subdomain — CREATE
-// =============================================================================
-
-// POST /api/pro/subdomains
+// ---------------------------------------------------------------------------
+// POST /api/pro/subdomains — claim a new subdomain
 // Body: { userId, name }
+// ---------------------------------------------------------------------------
 app.post('/subdomains', async (c) => {
 	const { Subdomain } = getModels(c);
-	const body = await c.req.json();
-	const { userId, name } = body;
+	let body;
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+	}
 
-	if (!userId || !name) {
+	const { userId, name } = body;
+	if (!userId)
+		return c.json({ status: 'error', error: '"userId" is required' }, 400);
+
+	const nameError = validateSubdomainName(name);
+	if (nameError) return c.json({ status: 'error', error: nameError }, 400);
+
+	const normalizedName = name.toLowerCase();
+
+	// Check quota (max from config, default 5)
+	const container = getContainer(c);
+	const maxSubdomains = container.kythiaConfig?.addons?.pro?.maxSubdomains ?? 5;
+	const userCount = await Subdomain.count({ where: { userId } });
+	if (userCount >= maxSubdomains) {
 		return c.json(
-			{ success: false, error: 'Missing required fields: userId, name' },
-			400,
+			{
+				status: 'error',
+				error: `Subdomain quota reached (${maxSubdomains} max)`,
+				code: 'QUOTA_EXCEEDED',
+			},
+			422,
 		);
 	}
 
 	try {
 		const [record, created] = await Subdomain.findOrCreate({
-			where: { name },
-			defaults: { userId, name },
+			where: { name: normalizedName },
+			defaults: { userId, name: normalizedName },
 		});
-		return c.json(
-			{ success: true, created, data: record },
-			created ? 201 : 200,
-		);
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		if (!created) {
+			return c.json(
+				{
+					status: 'error',
+					error: `Subdomain "${normalizedName}" is already taken`,
+					code: 'CONFLICT',
+				},
+				409,
+			);
+		}
+		return c.json({ status: 'ok', data: record }, 201);
+	} catch (err) {
+		if (err.name === 'SequelizeUniqueConstraintError') {
+			return c.json(
+				{ status: 'error', error: 'Subdomain already taken', code: 'CONFLICT' },
+				409,
+			);
+		}
+		getLogger(c).error('POST /api/pro/subdomains error:', err);
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// Subdomain — DELETE
-// =============================================================================
-
-// DELETE /api/pro/subdomains/:id
-// Cascades to DNS records in DB (honoring FK constraint)
+// ---------------------------------------------------------------------------
+// DELETE /api/pro/subdomains/:id — release subdomain (cascades DNS records in DB)
+// Note: does NOT auto-delete Cloudflare records. Use DELETE /api/pro/dns/:id first.
+// ---------------------------------------------------------------------------
 app.delete('/subdomains/:id', async (c) => {
 	const { Subdomain } = getModels(c);
 	const id = parseInt(c.req.param('id'), 10);
+	if (!id) return c.json({ status: 'error', error: 'Invalid id' }, 400);
+	try {
+		const row = await Subdomain.findByPk(id);
+		if (!row)
+			return c.json(
+				{ status: 'error', error: 'Subdomain not found', code: 'NOT_FOUND' },
+				404,
+			);
+		await row.destroy();
+		return c.json({
+			status: 'ok',
+			message: `Subdomain "${row.name}" released`,
+		});
+	} catch (err) {
+		return c.json({ status: 'error', error: err.message }, 500);
+	}
+});
 
+// ===========================================================================
+// DNS RECORDS  (Cloudflare-backed)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// GET /api/pro/subdomains/:id/dns — list DNS records for a subdomain
+// ---------------------------------------------------------------------------
+app.get('/subdomains/:id/dns', async (c) => {
+	const { Subdomain, DnsRecord } = getModels(c);
+	const id = parseInt(c.req.param('id'), 10);
+	if (!id) return c.json({ status: 'error', error: 'Invalid id' }, 400);
 	try {
 		const subdomain = await Subdomain.findByPk(id);
 		if (!subdomain)
-			return c.json({ success: false, error: 'Subdomain not found' }, 404);
-
-		await subdomain.destroy();
+			return c.json(
+				{ status: 'error', error: 'Subdomain not found', code: 'NOT_FOUND' },
+				404,
+			);
+		const records = await DnsRecord.findAll({ where: { subdomainId: id } });
 		return c.json({
-			success: true,
-			message: `Subdomain (id=${id}) deleted successfully`,
+			status: 'ok',
+			subdomain: subdomain.name,
+			count: records.length,
+			data: records,
 		});
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+	} catch (err) {
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// DNS Records — LIST / GET
-// =============================================================================
+// ---------------------------------------------------------------------------
+// POST /api/pro/subdomains/:id/dns — add a DNS record (Cloudflare + DB)
+// Body: { type, name, value, priority? }
+// ---------------------------------------------------------------------------
+app.post('/subdomains/:id/dns', async (c) => {
+	const { Subdomain } = getModels(c);
+	const subdomainId = parseInt(c.req.param('id'), 10);
+	if (!subdomainId)
+		return c.json({ status: 'error', error: 'Invalid subdomain id' }, 400);
 
-// GET /api/pro/dns
-// Query: ?subdomainId
-app.get('/dns', async (c) => {
-	const { DnsRecord } = getModels(c);
-	const where = {};
-
-	const subdomainId = c.req.query('subdomainId');
-	if (subdomainId) where.subdomainId = parseInt(subdomainId, 10);
-
+	let body;
 	try {
-		const data = await DnsRecord.findAll({ where });
-		return c.json({ success: true, count: data.length, data });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		body = await c.req.json();
+	} catch {
+		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
 	}
-});
 
-// GET /api/pro/dns/:id
-app.get('/dns/:id', async (c) => {
-	const { DnsRecord } = getModels(c);
-	const id = parseInt(c.req.param('id'), 10);
+	const { type, name, value, priority } = body;
 
-	try {
-		const record = await DnsRecord.findByPk(id);
-		if (!record)
-			return c.json({ success: false, error: 'DNS record not found' }, 404);
-		return c.json({ success: true, data: record });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
-	}
-});
-
-// =============================================================================
-// DNS Records — CREATE
-// =============================================================================
-
-// POST /api/pro/dns
-// Body: { subdomainId, type, name, value, cloudflareId? }
-// DB-only write — does not call Cloudflare
-app.post('/dns', async (c) => {
-	const { DnsRecord, Subdomain } = getModels(c);
-	const body = await c.req.json();
-	const { subdomainId, type, name, value, cloudflareId } = body;
-
-	const VALID_TYPES = ['A', 'CNAME', 'TXT', 'MX'];
-
-	if (!subdomainId || !type || !name || !value) {
+	if (!type || !name || !value)
 		return c.json(
-			{
-				success: false,
-				error: 'Missing required fields: subdomainId, type, name, value',
-			},
+			{ status: 'error', error: '"type", "name", and "value" are required' },
 			400,
 		);
-	}
-
-	if (!VALID_TYPES.includes(type)) {
+	if (!VALID_RECORD_TYPES.includes(type.toUpperCase())) {
 		return c.json(
 			{
-				success: false,
-				error: `Invalid type. Must be one of: ${VALID_TYPES.join(', ')}`,
+				status: 'error',
+				error: `type must be one of: ${VALID_RECORD_TYPES.join(', ')}`,
 			},
 			400,
 		);
@@ -183,145 +290,203 @@ app.post('/dns', async (c) => {
 	try {
 		const subdomain = await Subdomain.findByPk(subdomainId);
 		if (!subdomain)
-			return c.json({ success: false, error: 'Subdomain not found' }, 404);
+			return c.json(
+				{ status: 'error', error: 'Subdomain not found', code: 'NOT_FOUND' },
+				404,
+			);
 
-		const record = await DnsRecord.create({
-			subdomainId,
-			type,
+		const cf = getCfApi(c);
+		const result = await cf.createRecord(subdomainId, subdomain.name, {
+			type: type.toUpperCase(),
 			name,
 			value,
-			cloudflareId: cloudflareId ?? null,
+			priority,
 		});
-		return c.json({ success: true, data: record }, 201);
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+
+		if (!result.success) {
+			return c.json(
+				{ status: 'error', error: result.error ?? 'Cloudflare API error' },
+				502,
+			);
+		}
+		return c.json({ status: 'ok', data: result.record }, 201);
+	} catch (err) {
+		getLogger(c).error('POST /api/pro/subdomains/:id/dns error:', err);
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// DNS Records — UPDATE
-// =============================================================================
-
-// PATCH /api/pro/dns/:id
-// Body: { value?, cloudflareId? }
-app.patch('/dns/:id', async (c) => {
+// ---------------------------------------------------------------------------
+// PATCH /api/pro/dns/:recordId — update record value (Cloudflare + DB)
+// Body: { value, priority? }
+// ---------------------------------------------------------------------------
+app.patch('/dns/:recordId', async (c) => {
 	const { DnsRecord } = getModels(c);
-	const id = parseInt(c.req.param('id'), 10);
-	const body = await c.req.json();
+	const recordId = parseInt(c.req.param('recordId'), 10);
+	if (!recordId)
+		return c.json({ status: 'error', error: 'Invalid recordId' }, 400);
+
+	let body;
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+	}
+	if (!body.value)
+		return c.json({ status: 'error', error: '"value" is required' }, 400);
 
 	try {
-		const record = await DnsRecord.findByPk(id);
+		const record = await DnsRecord.findByPk(recordId);
 		if (!record)
-			return c.json({ success: false, error: 'DNS record not found' }, 404);
+			return c.json(
+				{ status: 'error', error: 'DNS record not found', code: 'NOT_FOUND' },
+				404,
+			);
 
-		await record.update({
-			value: body.value ?? record.value,
-			cloudflareId:
-				'cloudflareId' in body
-					? (body.cloudflareId ?? null)
-					: record.cloudflareId,
+		// If no cloudflareId, this is a DB-only record — update just DB
+		if (!record.cloudflareId) {
+			await record.update({ value: body.value });
+			return c.json({
+				status: 'ok',
+				data: record,
+				note: 'DB-only update (no Cloudflare ID)',
+			});
+		}
+
+		const cf = getCfApi(c);
+		const result = await cf.updateRecord(record, {
+			value: body.value,
+			priority: body.priority,
 		});
-		return c.json({ success: true, data: record });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		if (!result.success) {
+			return c.json(
+				{ status: 'error', error: result.error ?? 'Cloudflare API error' },
+				502,
+			);
+		}
+		return c.json({ status: 'ok', data: result.record });
+	} catch (err) {
+		getLogger(c).error('PATCH /api/pro/dns/:recordId error:', err);
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// DNS Records — DELETE
-// =============================================================================
-
-// DELETE /api/pro/dns/:id
-// DB-only delete — does not call Cloudflare
-app.delete('/dns/:id', async (c) => {
+// ---------------------------------------------------------------------------
+// DELETE /api/pro/dns/:recordId — delete record (Cloudflare + DB)
+// ---------------------------------------------------------------------------
+app.delete('/dns/:recordId', async (c) => {
 	const { DnsRecord } = getModels(c);
-	const id = parseInt(c.req.param('id'), 10);
+	const recordId = parseInt(c.req.param('recordId'), 10);
+	if (!recordId)
+		return c.json({ status: 'error', error: 'Invalid recordId' }, 400);
 
 	try {
-		const record = await DnsRecord.findByPk(id);
+		const record = await DnsRecord.findByPk(recordId);
 		if (!record)
-			return c.json({ success: false, error: 'DNS record not found' }, 404);
+			return c.json(
+				{ status: 'error', error: 'DNS record not found', code: 'NOT_FOUND' },
+				404,
+			);
 
-		await record.destroy();
+		// If no cloudflareId, just remove from DB
+		if (!record.cloudflareId) {
+			await record.destroy();
+			return c.json({
+				status: 'ok',
+				message: 'Record deleted (DB-only, no Cloudflare ID)',
+			});
+		}
+
+		const cf = getCfApi(c);
+		const result = await cf.deleteRecord(recordId);
+		if (!result.success) {
+			return c.json(
+				{ status: 'error', error: result.error ?? 'Cloudflare API error' },
+				502,
+			);
+		}
 		return c.json({
-			success: true,
-			message: `DNS record (id=${id}) deleted successfully`,
+			status: 'ok',
+			message: `DNS record (id=${recordId}) deleted from Cloudflare and database`,
 		});
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+	} catch (err) {
+		getLogger(c).error('DELETE /api/pro/dns/:recordId error:', err);
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// Monitors — LIST / GET
-// =============================================================================
+// ===========================================================================
+// MONITORS (uptime ping — one per user)
+// ===========================================================================
 
-// GET /api/pro/monitors
-// Query: ?userId, ?lastStatus
+// ---------------------------------------------------------------------------
+// GET /api/pro/monitors — list all (optional ?userId= ?lastStatus=)
+// ---------------------------------------------------------------------------
 app.get('/monitors', async (c) => {
 	const { Monitor } = getModels(c);
 	const where = {};
-
 	const userId = c.req.query('userId');
 	const lastStatus = c.req.query('lastStatus');
 	if (userId) where.userId = userId;
 	if (lastStatus) where.lastStatus = lastStatus.toUpperCase();
-
 	try {
-		const data = await Monitor.findAll({ where });
-		return c.json({ success: true, count: data.length, data });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		const rows = await Monitor.findAll({ where });
+		return c.json({ status: 'ok', count: rows.length, data: rows });
+	} catch (err) {
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// GET /api/pro/monitors/:userId
+// ---------------------------------------------------------------------------
+// GET /api/pro/monitors/:userId — single monitor for a user
+// ---------------------------------------------------------------------------
 app.get('/monitors/:userId', async (c) => {
 	const { Monitor } = getModels(c);
-	const userId = c.req.param('userId');
-
+	const { userId } = c.req.param();
 	try {
-		const monitor = await Monitor.findByPk(userId);
-		if (!monitor)
-			return c.json({ success: false, error: 'Monitor not found' }, 404);
-		return c.json({ success: true, data: monitor });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		const row = await Monitor.findByPk(userId);
+		if (!row)
+			return c.json(
+				{ status: 'error', error: 'Monitor not found', code: 'NOT_FOUND' },
+				404,
+			);
+		return c.json({ status: 'ok', data: row });
+	} catch (err) {
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// Monitors — CREATE / UPSERT
-// =============================================================================
-
-// POST /api/pro/monitors
+// ---------------------------------------------------------------------------
+// POST /api/pro/monitors — create or upsert monitor
 // Body: { userId, urlToPing, lastStatus? }
+// ---------------------------------------------------------------------------
 app.post('/monitors', async (c) => {
 	const { Monitor } = getModels(c);
-	const body = await c.req.json();
-	const { userId, urlToPing, lastStatus } = body;
-
-	const VALID_STATUSES = ['UP', 'DOWN', 'PENDING'];
-
-	if (!userId || !urlToPing) {
-		return c.json(
-			{ success: false, error: 'Missing required fields: userId, urlToPing' },
-			400,
-		);
+	let body;
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
 	}
 
+	const { userId, urlToPing, lastStatus } = body;
+	if (!userId || !urlToPing)
+		return c.json(
+			{ status: 'error', error: '"userId" and "urlToPing" are required' },
+			400,
+		);
 	if (lastStatus && !VALID_STATUSES.includes(lastStatus.toUpperCase())) {
 		return c.json(
 			{
-				success: false,
-				error: `Invalid lastStatus. Must be one of: ${VALID_STATUSES.join(', ')}`,
+				status: 'error',
+				error: `lastStatus must be: ${VALID_STATUSES.join(', ')}`,
 			},
 			400,
 		);
 	}
 
 	try {
-		const [monitor, created] = await Monitor.findOrCreate({
+		const [row, created] = await Monitor.findOrCreate({
 			where: { userId },
 			defaults: {
 				userId,
@@ -329,35 +494,32 @@ app.post('/monitors', async (c) => {
 				lastStatus: lastStatus?.toUpperCase() ?? 'PENDING',
 			},
 		});
-
 		if (!created) {
-			await monitor.update({
+			await row.update({
 				urlToPing,
-				lastStatus: lastStatus?.toUpperCase() ?? monitor.lastStatus,
+				lastStatus: lastStatus?.toUpperCase() ?? row.lastStatus,
 			});
 		}
-
-		return c.json(
-			{ success: true, created, data: monitor },
-			created ? 201 : 200,
-		);
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		return c.json({ status: 'ok', created, data: row }, created ? 201 : 200);
+	} catch (err) {
+		getLogger(c).error('POST /api/pro/monitors error:', err);
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// Monitors — UPDATE
-// =============================================================================
-
-// PATCH /api/pro/monitors/:userId
+// ---------------------------------------------------------------------------
+// PATCH /api/pro/monitors/:userId — update urlToPing or lastStatus
 // Body: { urlToPing?, lastStatus? }
+// ---------------------------------------------------------------------------
 app.patch('/monitors/:userId', async (c) => {
 	const { Monitor } = getModels(c);
-	const userId = c.req.param('userId');
-	const body = await c.req.json();
-
-	const VALID_STATUSES = ['UP', 'DOWN', 'PENDING'];
+	const { userId } = c.req.param();
+	let body;
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+	}
 
 	if (
 		body.lastStatus &&
@@ -365,49 +527,49 @@ app.patch('/monitors/:userId', async (c) => {
 	) {
 		return c.json(
 			{
-				success: false,
-				error: `Invalid lastStatus. Must be one of: ${VALID_STATUSES.join(', ')}`,
+				status: 'error',
+				error: `lastStatus must be: ${VALID_STATUSES.join(', ')}`,
 			},
 			400,
 		);
 	}
-
 	try {
-		const monitor = await Monitor.findByPk(userId);
-		if (!monitor)
-			return c.json({ success: false, error: 'Monitor not found' }, 404);
-
-		await monitor.update({
-			urlToPing: body.urlToPing ?? monitor.urlToPing,
-			lastStatus: body.lastStatus?.toUpperCase() ?? monitor.lastStatus,
+		const row = await Monitor.findByPk(userId);
+		if (!row)
+			return c.json(
+				{ status: 'error', error: 'Monitor not found', code: 'NOT_FOUND' },
+				404,
+			);
+		await row.update({
+			urlToPing: body.urlToPing ?? row.urlToPing,
+			lastStatus: body.lastStatus?.toUpperCase() ?? row.lastStatus,
 		});
-		return c.json({ success: true, data: monitor });
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+		return c.json({ status: 'ok', data: row });
+	} catch (err) {
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 
-// =============================================================================
-// Monitors — DELETE
-// =============================================================================
-
-// DELETE /api/pro/monitors/:userId
+// ---------------------------------------------------------------------------
+// DELETE /api/pro/monitors/:userId — delete monitor
+// ---------------------------------------------------------------------------
 app.delete('/monitors/:userId', async (c) => {
 	const { Monitor } = getModels(c);
-	const userId = c.req.param('userId');
-
+	const { userId } = c.req.param();
 	try {
-		const monitor = await Monitor.findByPk(userId);
-		if (!monitor)
-			return c.json({ success: false, error: 'Monitor not found' }, 404);
-
-		await monitor.destroy();
+		const row = await Monitor.findByPk(userId);
+		if (!row)
+			return c.json(
+				{ status: 'error', error: 'Monitor not found', code: 'NOT_FOUND' },
+				404,
+			);
+		await row.destroy();
 		return c.json({
-			success: true,
-			message: `Monitor for user (userId=${userId}) deleted successfully`,
+			status: 'ok',
+			message: `Monitor for user ${userId} deleted`,
 		});
-	} catch (error) {
-		return c.json({ success: false, error: error.message }, 500);
+	} catch (err) {
+		return c.json({ status: 'error', error: err.message }, 500);
 	}
 });
 

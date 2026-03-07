@@ -1,0 +1,36 @@
+/**
+ * @namespace: addons/automod/events/channelDelete.js
+ * @type: Event Handler
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { AuditLogEvent } = require('discord.js');
+const { checkThreshold } = require('../helpers/antinuke');
+
+module.exports = async (bot, channel) => {
+	if (!channel.guild) return;
+
+	try {
+		const audit = await channel.guild.fetchAuditLogs({
+			type: AuditLogEvent.ChannelDelete,
+			limit: 1,
+		});
+		const entry = audit.entries.find(
+			(e) =>
+				e.target?.id === channel.id && e.createdTimestamp > Date.now() - 5000,
+		);
+		if (!entry?.executor) return;
+
+		await checkThreshold({
+			bot,
+			guild: channel.guild,
+			executor: entry.executor,
+			moduleName: 'channelDelete',
+			detail: `Deleted channel: ${channel.name}`,
+		});
+	} catch (err) {
+		bot.client.container.logger.error('[AntiNuke] channelDelete error:', err);
+	}
+};

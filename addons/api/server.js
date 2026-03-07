@@ -136,7 +136,7 @@ module.exports = (bot) => {
 					const routeModule = require(fullPath);
 
 					app.route(routePath, routeModule);
-					logger.info(`   └─ 🛤️  Route loaded: ${routePath} -> ${file}`);
+					logger.info(`   └─ ♊️  Route loaded: ${routePath} -> ${file}`);
 				} catch (err) {
 					logger.error(`  └─ ❌ Error loading route ${file}:`, err);
 				}

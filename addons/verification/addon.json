@@ -1,0 +1,8 @@
+{
+	"name": "Verification",
+	"featureName": "Verification",
+	"featureFlag": "verificationOn",
+	"version": "1.0.0",
+	"description": "Advanced member verification with captcha challenges (math, emoji, image). Protects your server from bots and raids by requiring new members to solve a captcha before accessing channels.",
+	"author": "kenndeclouv"
+}

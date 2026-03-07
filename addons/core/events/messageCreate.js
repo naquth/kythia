@@ -1,22 +1,11 @@
-/**
- * @namespace: addons/core/events/messageCreate.js
- * @type: Event Handler
- * @copyright © 2026 kenndeclouv
- * @assistant graa & chaa
- * @version 1.0.0-rc
- */
-
 const PrefixCommandHandler = require('../helpers/handlers/PrefixCommandHandler');
 const AFKHandler = require('../helpers/handlers/AFKHandler');
 const StickyMessageHandler = require('../helpers/handlers/StickyMessageHandler');
 const ErrorHandler = require('../helpers/handlers/ErrorHandler');
-const { automodSystem } = require('../helpers/automod');
 
 module.exports = async (bot, message) => {
 	const client = bot.client;
 	const container = client.container;
-	const { helpers } = container;
-	const { isOwner } = helpers.discord;
 
 	try {
 		// 1. Try prefix command handling
@@ -26,14 +15,7 @@ module.exports = async (bot, message) => {
 
 		// 2. Guild-only features
 		if (message.guild) {
-			// Automod system (skip for owners/admins)
-			if (
-				!isOwner(message.author.id) &&
-				!message.member?.permissions.has(['Administrator', 'ManageGuild'])
-			) {
-				const isFlagged = await automodSystem(message, client);
-				if (isFlagged) return true;
-			}
+			// Automod is now handled by the automod addon's own messageCreate listener
 
 			// AFK system
 			const afkHandler = new AFKHandler();

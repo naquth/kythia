@@ -4,10 +4,13 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
+ *
+ * Note: giveaway-join button is auto-loaded from buttons/giveaway-join.js.
+ * This register.js only handles the GiveawayManager initialization which
+ * requires shard-specific logic that cannot be expressed as a plain file.
  */
 
 const GiveawayManager = require('./helpers/GiveawayManager');
-const giveawayJoinButton = require('./buttons/giveaway-join');
 
 module.exports = {
 	initialize(bot) {
@@ -15,12 +18,8 @@ module.exports = {
 		const client = bot.client;
 		const summary = [];
 
+		// Inject GiveawayManager into the container for use by commands/events
 		container.giveawayManager = new GiveawayManager(container);
-
-		// Button handler must run on all shards (users can click on any shard)
-		bot.registerButtonHandler('giveaway-join', (interaction) => {
-			return giveawayJoinButton.execute(interaction, container);
-		});
 
 		// Scheduler only on Shard 0 — prevents multiple shards ending the same giveaway
 		const isShardZeroOrNoShard = !client.shard || client.shard.ids.includes(0);

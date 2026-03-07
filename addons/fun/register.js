@@ -4,18 +4,13 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
+ *
+ * All buttons are auto-loaded from the buttons/ folder.
+ * No manual registration needed.
  */
-const marryButtonHandler = require('./buttons/marry.js');
-
-const initialize = (bot) => {
-	const summary = [];
-	bot.registerButtonHandler('marry', marryButtonHandler.execute);
-
-	summary.push("  └─ Button: 'marry'");
-
-	return summary;
-};
 
 module.exports = {
-	initialize,
+	initialize(_bot) {
+		return [];
+	},
 };

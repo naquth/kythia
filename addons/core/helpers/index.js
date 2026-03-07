@@ -17,8 +17,6 @@ const {
 
 const { checkCooldown, formatDuration, parseDuration } = require('./time');
 
-const sendLogsWarning = require('./send-logs');
-
 module.exports = {
 	rolePrefix,
 	roleUnprefix,
@@ -29,5 +27,4 @@ module.exports = {
 	formatDuration,
 	parseDuration,
 	figletFonts,
-	sendLogsWarning,
 };

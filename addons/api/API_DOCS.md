@@ -89,6 +89,26 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [Playlist Tracks](#playlist-tracks)
   - [Favorites](#favorites)
   - [24/7 Mode](#247-mode)
+- [Automod API (`/api/automod`)](#automod-api-apiautomod)
+  - [Get Settings](#get-apiautomodguildid)
+  - [Update Settings](#patch-apiautomodguildid)
+  - [Badwords](#badwords)
+  - [Whitelist](#whitelist)
+  - [Ignored Channels](#ignored-channels)
+  - [Mod Logs](#mod-logs)
+  - [AntiNuke](#antinuke)
+    - [Get AntiNuke Config](#get-apiautomodguildidantinuke)
+    - [Replace AntiNuke Config](#put-apiautomodguildidantinuke)
+    - [Toggle AntiNuke](#patch-apiautomodguildidantinuketoggle)
+    - [Set Log Channel](#patch-apiautomodguildidantinukelog-channel)
+    - [Modules](#antinuke-modules)
+    - [Whitelist](#antinuke-whitelist)
+- [Verification API (`/api/verification`)](#verification-api-apiverification)
+  - [Get Config](#get-apiverificationguildid)
+  - [Replace Config](#put-apiverificationguildid)
+  - [Toggle System](#patch-apiverificationguildidtoggle)
+  - [Configuration Endpoints](#verification-configuration-endpoints)
+  - [Member Action Endpoints](#member-action-endpoints)
 - [Global Chat API (`/api/globalchat`)](#global-chat-api-apiglobalchat)
   - [List Guilds](#get-apiglobalchatlist)
   - [Get Single Guild](#get-apiglobalchatguildid)
@@ -3692,9 +3712,11 @@ When an addon-specific route is called while its addon is disabled:
 
 ## Pro API (`/api/pro`)
 
-Manages **Pro** addon resources: user subdomains, DNS records, and uptime monitors.
+Manages **Pro** addon resources: user subdomains, DNS records (Cloudflare-backed), and uptime monitors.
 
-All endpoints require a bearer token. DNS and subdomain writes operate on the **local database only** — actual Cloudflare propagation is handled by the bot's Discord commands (`/dns set`, `/dns delete`).
+> **Addon Guard:** Protected by `addonGuard('pro')`.
+
+All DNS write operations (`POST`, `PATCH`, `DELETE` on DNS records) call the **Cloudflare API** in real time and return `502` if Cloudflare rejects the request. The local database is the source of truth — Cloudflare and DB are always kept in sync.
 
 ---
 
@@ -3702,224 +3724,257 @@ All endpoints require a bearer token. DNS and subdomain writes operate on the **
 
 #### `GET /api/pro/subdomains`
 
-List all subdomains, optionally filtered by owner.
+List all subdomains. Optional filter by owner.
 
 **Query Parameters:**
-| Parameter | Type | Description |
+| Param | Type | Description |
 |---|---|---|
 | `userId` | `string` | Filter by Discord user ID |
 
 **Response:**
 ```json
-{ "success": true, "count": 2, "data": [ { "id": 1, "userId": "123456789", "name": "myproject", "createdAt": "...", "updatedAt": "..." } ] }
+{ "status": "ok", "count": 2, "data": [ { "id": 1, "userId": "123...", "name": "myproject", "createdAt": "..." } ] }
 ```
+
+---
 
 #### `GET /api/pro/subdomains/:id`
 
-Get a single subdomain by its integer ID. Response includes the associated `dnsRecords` array.
+Get a single subdomain by numeric ID. Includes associated `dnsRecords`.
 
 **Response:**
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": {
     "id": 1,
     "userId": "123456789012345678",
     "name": "myproject",
-    "createdAt": "2025-01-15T08:00:00.000Z",
-    "updatedAt": "2025-01-15T08:00:00.000Z",
+    "createdAt": "2026-03-07T00:00:00.000Z",
+    "updatedAt": "2026-03-07T00:00:00.000Z",
     "dnsRecords": [
-      { "id": 1, "subdomainId": 1, "type": "A", "name": "@", "value": "1.2.3.4", "cloudflareId": "abc123" }
+      { "id": 1, "subdomainId": 1, "type": "A", "name": "@", "value": "1.2.3.4", "cloudflareId": "cf_abc" }
     ]
   }
 }
 ```
 
-**Error (404):** `{ "success": false, "error": "Subdomain not found" }`
+---
 
 #### `POST /api/pro/subdomains`
 
-Create a new subdomain record. Uses `findOrCreate` — if `name` already exists the existing record is returned with `created: false`.
+Claim a new subdomain. Validates name format, forbidden names, and per-user quota.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `userId` | `string` | ✅ | Discord user ID of the owner |
-| `name` | `string` | ✅ | Unique subdomain name (e.g. `myproject`) |
+| `userId` | `string` | ✅ | Discord user ID |
+| `name` | `string` | ✅ | Subdomain label (see validation rules) |
 
-**Response (201 created / 200 existing):**
+**Name validation rules:**
+- Only `a–z`, `0–9`, hyphens — 3–32 characters, no leading/trailing hyphen
+- Reserved: `www`, `mail`, `api`, `bot`, `admin`, `dashboard`, `kythia`, `kyth`, `avalon`, `hyperion`, `ftp`, `smtp`, `imap`, `pop`, `ns`, `ns1`, `ns2`, `cpanel`
+
+**Quota:** `kythiaConfig.addons.pro.maxSubdomains` (default **5** per user).
+
+**Response (201):**
 ```json
-{ "success": true, "created": true, "data": { "id": 1, "userId": "...", "name": "myproject", "..." } }
+{ "status": "ok", "data": { "id": 2, "userId": "...", "name": "myproject" } }
 ```
 
-**Error (400):** Missing `userId` or `name`.
+| Code | Meaning |
+|---|---|
+| `201` | Subdomain created |
+| `400` | Invalid name / missing fields |
+| `409` | `CONFLICT` — name already taken |
+| `422` | `QUOTA_EXCEEDED` — user at limit |
+
+---
 
 #### `DELETE /api/pro/subdomains/:id`
 
-Delete a subdomain and all its DNS records (cascading via FK constraint).
+Release a subdomain. DNS records are cascade-deleted from the **local database** only.
 
-> ⚠️ This does **not** delete the records from Cloudflare. Use the Discord command `/dns delete` or call `DELETE /api/pro/dns/:id` per record first if needed.
+> ⚠️ Call `DELETE /api/pro/dns/:recordId` per-record first if you also want to remove from Cloudflare.
 
-**Response:** `{ "success": true, "message": "Subdomain (id=1) deleted successfully" }`
+**Response:** `{ "status": "ok", "message": "Subdomain \"myproject\" released" }`
 
-**Error (404):** `{ "success": false, "error": "Subdomain not found" }`
+---
 
 #### Subdomain Object
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `integer` | Auto-increment primary key |
-| `userId` | `string` | Discord user ID of the owner |
-| `name` | `string` | Unique subdomain label (e.g. `myproject`) — full FQDN is `<name>.<domain>` |
-| `createdAt` | `string` | ISO 8601 creation timestamp |
-| `updatedAt` | `string` | ISO 8601 last-update timestamp |
-| `dnsRecords` | `array` | *(Only on GET /:id)* Associated DNS record objects |
+| `id` | `integer` | Auto-increment PK |
+| `userId` | `string` | Discord user ID |
+| `name` | `string` | Unique label — FQDN is `<name>.<domain>` |
+| `createdAt` | `string` | ISO 8601 |
+| `updatedAt` | `string` | ISO 8601 |
+| `dnsRecords` | `array` | *(GET /:id only)* |
 
 ---
 
-### DNS Records (`/api/pro/dns`)
+### DNS Records — Cloudflare-integrated
 
-#### `GET /api/pro/dns`
+DNS mutations call `CloudflareApi` which syncs Cloudflare and the local DB atomically (with rollback). Records without a `cloudflareId` fall back to DB-only updates.
 
-List DNS records. Filter by subdomain.
+#### `GET /api/pro/subdomains/:id/dns`
 
-**Query Parameters:**
-| Parameter | Type | Description |
-|---|---|---|
-| `subdomainId` | `integer` | Filter by parent subdomain ID |
+List all DNS records for a subdomain.
 
 **Response:**
 ```json
-{ "success": true, "count": 1, "data": [ { "id": 1, "subdomainId": 1, "type": "A", "name": "@", "value": "1.2.3.4", "cloudflareId": "abc123" } ] }
+{
+  "status": "ok", "subdomain": "myproject", "count": 2,
+  "data": [
+    { "id": 1, "subdomainId": 1, "type": "A",     "name": "@",   "value": "1.2.3.4",          "cloudflareId": "cf_abc" },
+    { "id": 2, "subdomainId": 1, "type": "CNAME", "name": "www", "value": "myproject.kyth.me", "cloudflareId": "cf_def" }
+  ]
+}
 ```
 
-#### `GET /api/pro/dns/:id`
+---
 
-Get a single DNS record by integer ID.
+#### `POST /api/pro/subdomains/:id/dns`
 
-**Error (404):** `{ "success": false, "error": "DNS record not found" }`
-
-#### `POST /api/pro/dns`
-
-Create a DNS record in the **local database only**. Does not call Cloudflare.
+Add a DNS record. **Calls Cloudflare first**, then saves to DB. On DB failure, Cloudflare record is auto-rolled back.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `subdomainId` | `integer` | ✅ | Parent subdomain ID |
-| `type` | `string` | ✅ | Record type: `A`, `CNAME`, `TXT`, or `MX` |
-| `name` | `string` | ✅ | Host name. Use `@` for root. |
-| `value` | `string` | ✅ | Record content (IP, domain, or text string) |
-| `cloudflareId` | `string` | ❌ | Cloudflare record ID (if already synced externally) |
+| `type` | `string` | ✅ | `A` \| `AAAA` \| `CNAME` \| `TXT` \| `MX` |
+| `name` | `string` | ✅ | Host (`@` for root, `www`, `mail`, etc.) |
+| `value` | `string` | ✅ | IP, domain, or text content |
+| `priority` | `integer` | ❌ | MX priority (default 10) |
 
-**Response (201):** `{ "success": true, "data": { ... } }`
+**Response (201):**
+```json
+{ "status": "ok", "data": { "id": 3, "subdomainId": 1, "type": "A", "name": "@", "value": "5.6.7.8", "cloudflareId": "cf_xyz" } }
+```
 
-**Errors:**
-- `400` — Missing required fields or invalid `type`.
-- `404` — `subdomainId` does not exist.
+| Code | Meaning |
+|---|---|
+| `201` | Created in Cloudflare + DB |
+| `400` | Missing/invalid fields |
+| `404` | Subdomain not found |
+| `502` | Cloudflare rejected the request |
 
-#### `PATCH /api/pro/dns/:id`
+---
 
-Update a DNS record's value and/or Cloudflare ID in the **local database only**.
+#### `PATCH /api/pro/dns/:recordId`
 
-**Request Body (all optional):**
-| Field | Type | Description |
-|---|---|---|
-| `value` | `string` | New record content |
-| `cloudflareId` | `string \| null` | Updated Cloudflare record ID |
+Update a record's value. Calls Cloudflare, then updates DB.
 
-**Response:** `{ "success": true, "data": { ... } }`
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `value` | `string` | ✅ | New content |
+| `priority` | `integer` | ❌ | New MX priority |
 
-#### `DELETE /api/pro/dns/:id`
+**Response:** `{ "status": "ok", "data": { "id": 1, "value": "9.10.11.12", "..." } }`
 
-Delete a DNS record from the **local database only**. Does not call Cloudflare.
+Returns `502` if Cloudflare fails.
 
-**Response:** `{ "success": true, "message": "DNS record (id=1) deleted successfully" }`
+---
+
+#### `DELETE /api/pro/dns/:recordId`
+
+Delete a record from Cloudflare and DB. Handles "already deleted on CF" gracefully.
+
+**Response:** `{ "status": "ok", "message": "DNS record (id=1) deleted from Cloudflare and database" }`
+
+Returns `502` on non-404 Cloudflare errors.
+
+---
 
 #### DNS Record Object
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `integer` | Auto-increment primary key |
-| `subdomainId` | `integer` | Foreign key to `subdomains.id` |
-| `type` | `string` | `A`, `CNAME`, `TXT`, or `MX` |
-| `name` | `string` | Host name (`@`, `www`, `mail`, etc.) |
+| `id` | `integer` | Auto-increment PK |
+| `subdomainId` | `integer` | FK → `subdomains.id` |
+| `type` | `string` | `A`, `AAAA`, `CNAME`, `TXT`, `MX` |
+| `name` | `string` | Host (`@`, `www`, `mail`, etc.) |
 | `value` | `string` | Record content |
-| `cloudflareId` | `string \| null` | Cloudflare internal record ID (used for updates/deletes via Discord commands) |
+| `cloudflareId` | `string \| null` | Cloudflare internal record ID |
 
 ---
 
 ### Monitors (`/api/pro/monitors`)
 
-Uptime monitors — one per Discord user (`userId` is the primary key).
+One uptime monitor per Discord user. `userId` is the primary key.
 
 #### `GET /api/pro/monitors`
 
 List monitors with optional filters.
 
-**Query Parameters:**
-| Parameter | Type | Description |
-|---|---|---|
-| `userId` | `string` | Filter by Discord user ID |
-| `lastStatus` | `string` | Filter by status: `UP`, `DOWN`, or `PENDING` (case-insensitive) |
+**Query Params:** `?userId=` `?lastStatus=UP|DOWN|PENDING`
 
 **Response:**
 ```json
-{ "success": true, "count": 1, "data": [ { "userId": "123456789012345678", "urlToPing": "https://mysite.com", "lastStatus": "UP" } ] }
+{ "status": "ok", "count": 1, "data": [ { "userId": "123...", "urlToPing": "https://mysite.com", "lastStatus": "UP" } ] }
 ```
+
+---
 
 #### `GET /api/pro/monitors/:userId`
 
-Get a single monitor by Discord user ID.
+Get one monitor.
 
-**Error (404):** `{ "success": false, "error": "Monitor not found" }`
+**Error (404):** `{ "status": "error", "error": "Monitor not found", "code": "NOT_FOUND" }`
+
+---
 
 #### `POST /api/pro/monitors`
 
-Create or update a monitor. Uses upsert — if the `userId` already has a monitor it is updated in-place.
+Create or upsert a monitor. If the user already has one, it is updated in-place and `created` is `false`.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `userId` | `string` | ✅ | Discord user ID (primary key) |
-| `urlToPing` | `string` | ✅ | URL to monitor (e.g. `https://mysite.com`) |
-| `lastStatus` | `string` | ❌ | Initial status: `UP`, `DOWN`, or `PENDING`. Defaults to `PENDING`. |
+| `userId` | `string` | ✅ | Discord user ID (PK) |
+| `urlToPing` | `string` | ✅ | URL to monitor |
+| `lastStatus` | `string` | ❌ | `UP` \| `DOWN` \| `PENDING` (default: `PENDING`) |
 
 **Response (201 created / 200 updated):**
 ```json
-{ "success": true, "created": true, "data": { "userId": "...", "urlToPing": "https://mysite.com", "lastStatus": "PENDING" } }
+{ "status": "ok", "created": true, "data": { "userId": "...", "urlToPing": "https://mysite.com", "lastStatus": "PENDING" } }
 ```
 
-**Errors:**
-- `400` — Missing `userId` or `urlToPing`, or invalid `lastStatus`.
+---
 
 #### `PATCH /api/pro/monitors/:userId`
 
-Update an existing monitor.
+Update URL or status.
 
 **Request Body (all optional):**
 | Field | Type | Description |
 |---|---|---|
 | `urlToPing` | `string` | New URL to monitor |
-| `lastStatus` | `string` | New status: `UP`, `DOWN`, or `PENDING` (case-insensitive) |
+| `lastStatus` | `string` | `UP` \| `DOWN` \| `PENDING` |
 
-**Response:** `{ "success": true, "data": { ... } }`
+**Response:** `{ "status": "ok", "data": { ... } }`
+
+---
 
 #### `DELETE /api/pro/monitors/:userId`
 
 Delete a monitor.
 
-**Response:** `{ "success": true, "message": "Monitor for user (userId=...) deleted successfully" }`
+**Response:** `{ "status": "ok", "message": "Monitor for user 123... deleted" }`
+
+---
 
 #### Monitor Object
 
 | Field | Type | Description |
 |---|---|---|
-| `userId` | `string` | Discord user ID — primary key |
+| `userId` | `string` | Discord user ID — PK |
 | `urlToPing` | `string` | URL being monitored |
-| `lastStatus` | `string` | Last known status: `UP`, `DOWN`, or `PENDING` |
+| `lastStatus` | `string` | `UP` \| `DOWN` \| `PENDING` |
 
 ---
+
 
 ## Quest API (`/api/quest`)
 
@@ -5870,3 +5925,396 @@ Update only the webhook credentials for a guild. Used internally by the auto-web
 **Response:** Returns the updated guild object.
 
 **Errors:** `404` if guild not registered, `400` if `webhookId`/`webhookToken` missing.
+
+---
+
+## Automod API (`/api/automod`)
+
+Manage per-guild automod configuration and mod logs. Operates on `ServerSetting` and `ModLog` models.
+
+> **Addon Guard:** Protected by `addonGuard('automod')`.
+
+---
+
+### `GET /api/automod/:guildId`
+
+Get the full automod configuration snapshot for a guild.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "data": {
+    "guildId": "123456789",
+    "toggles": {
+      "antiInviteOn": false,
+      "antiLinkOn": false,
+      "antiSpamOn": true,
+      "antiBadwordOn": true,
+      "antiMentionOn": false,
+      "antiAllCapsOn": false,
+      "antiEmojiSpamOn": false,
+      "antiZalgoOn": false
+    },
+    "channels": {
+      "modLogChannelId": "111222333",
+      "auditLogChannelId": null
+    },
+    "lists": {
+      "badwords": ["word1", "word2"],
+      "badwordWhitelist": [],
+      "whitelist": [],
+      "ignoredChannels": []
+    },
+    "updatedAt": "2026-03-07T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+### `PATCH /api/automod/:guildId`
+
+Update one or more automod settings. Accepts any combination of toggle booleans and channel IDs.
+
+**Allowed fields:** `antiInviteOn`, `antiLinkOn`, `antiSpamOn`, `antiBadwordOn`, `antiMentionOn`, `antiAllCapsOn`, `antiEmojiSpamOn`, `antiZalgoOn`, `modLogChannelId`, `auditLogChannelId`
+
+**Request Body:**
+```json
+{
+  "antiSpamOn": true,
+  "antiInviteOn": true,
+  "modLogChannelId": "111222333"
+}
+```
+
+---
+
+### Badwords
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/automod/:guildId/badwords` | List all blocked words |
+| `POST` | `/api/automod/:guildId/badwords` | Add words — body: `{ "words": ["word1"] }` |
+| `DELETE` | `/api/automod/:guildId/badwords` | Remove words: `{ "words": ["word1"] }` or clear all: `{ "clear": true }` |
+
+---
+
+### Whitelist
+
+Users/roles immune to automod checks.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/automod/:guildId/whitelist` | List whitelisted IDs |
+| `POST` | `/api/automod/:guildId/whitelist` | Add IDs — body: `{ "ids": ["userId", "roleId"] }` |
+| `DELETE` | `/api/automod/:guildId/whitelist/:id` | Remove a single ID |
+
+---
+
+### Ignored Channels
+
+Channels where automod is fully disabled.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/automod/:guildId/ignored-channels` | List ignored channels |
+| `POST` | `/api/automod/:guildId/ignored-channels` | Add channels — body: `{ "channelIds": ["..."] }` |
+| `DELETE` | `/api/automod/:guildId/ignored-channels/:channelId` | Remove a channel |
+
+---
+
+### Mod Logs
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/automod/:guildId/logs` | Paginated logs |
+| `GET` | `/api/automod/:guildId/logs/:logId` | Single log entry |
+| `DELETE` | `/api/automod/:guildId/logs/:logId` | Delete one log entry |
+| `DELETE` | `/api/automod/:guildId/logs` | Clear logs (optionally filter by `?action=`) |
+
+**GET logs query params:**
+
+| Param | Type | Description |
+|---|---|---|
+| `page` | integer | Page number (default: 1) |
+| `limit` | integer | Per page, max 100 (default: 25) |
+| `action` | string | Filter by action (e.g. `Automod Warning`) |
+| `targetId` | string | Filter by target user ID |
+| `moderatorId` | string | Filter by moderator ID |
+
+**Log entry shape:**
+```json
+{
+  "id": 1,
+  "guildId": "123...",
+  "moderatorId": "bot_user_id",
+  "moderatorTag": "Kythia#0000",
+  "targetId": "456...",
+  "targetTag": "user#1234",
+  "action": "Automod Warning",
+  "reason": "Anti-Spam: rapid message flooding",
+  "channelId": "789...",
+  "createdAt": "2026-03-07T00:00:00.000Z"
+}
+```
+
+---
+
+### AntiNuke
+
+AntiNuke protects against mass destructive actions: mass channel deletes/creates, role deletes, bans, unauthorized admin grants, and webhook spam. Config is stored as JSON in `ServerSetting.antiNukeConfig`.
+
+#### `GET /api/automod/:guildId/antinuke`
+
+Get the full AntiNuke configuration.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "data": {
+    "enabled": true,
+    "logChannelId": "111222333",
+    "whitelistedUsers": ["owner_id"],
+    "whitelistedRoles": ["admin_role_id"],
+    "modules": {
+      "channelDelete": { "enabled": true, "action": "kick", "threshold": 3, "window": 10000 },
+      "channelCreate": { "enabled": true, "action": "kick", "threshold": 5, "window": 10000 },
+      "roleDelete":    { "enabled": true, "action": "kick", "threshold": 3, "window": 10000 },
+      "guildBanAdd":   { "enabled": true, "action": "kick", "threshold": 5, "window": 10000 },
+      "adminGrant":    { "enabled": true, "action": "kick" },
+      "webhookCreate": { "enabled": true, "action": "kick", "threshold": 3, "window": 10000 }
+    }
+  }
+}
+```
+
+---
+
+#### `PUT /api/automod/:guildId/antinuke`
+
+Replace the full AntiNuke config in one request. Only supplied fields are updated.
+
+**Request Body:**
+```json
+{
+  "enabled": true,
+  "logChannelId": "111222333",
+  "whitelistedUsers": ["owner_id"],
+  "whitelistedRoles": ["admin_role_id"],
+  "modules": {
+    "channelDelete": { "enabled": true, "action": "ban", "threshold": 2, "window": 5000 }
+  }
+}
+```
+
+**Actions:** `kick` | `ban` | `deafen` | `removeRoles`
+
+---
+
+#### `PATCH /api/automod/:guildId/antinuke/toggle`
+
+Enable or disable the AntiNuke system.
+
+**Request Body:**
+```json
+{ "enabled": true }
+```
+
+---
+
+#### `PATCH /api/automod/:guildId/antinuke/log-channel`
+
+Set or clear the AntiNuke alert log channel.
+
+**Request Body:**
+```json
+{ "channelId": "111222333" }
+```
+
+Send `null` to disable logging.
+
+---
+
+#### AntiNuke Modules
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/automod/:guildId/antinuke/modules` | List all module configs |
+| `PATCH` | `/api/automod/:guildId/antinuke/modules/:module` | Update one module |
+
+**Available modules:** `channelDelete`, `channelCreate`, `roleDelete`, `guildBanAdd`, `adminGrant`, `webhookCreate`
+
+**PATCH body** (all fields optional):
+```json
+{
+  "enabled": true,
+  "action": "kick",
+  "threshold": 3,
+  "window": 10000
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `enabled` | boolean | Enable/disable this module |
+| `action` | string | Punishment: `kick` \| `ban` \| `deafen` \| `removeRoles` |
+| `threshold` | integer | Actions before triggering (rate-limit window) |
+| `window` | integer | Time window in milliseconds for threshold |
+
+**Response:**
+```json
+{ "status": "ok", "data": { "module": "channelDelete", "enabled": true, "action": "kick", "threshold": 3, "window": 10000 } }
+```
+
+---
+
+#### AntiNuke Whitelist
+
+Whitelisted users and roles bypass all AntiNuke checks entirely.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/automod/:guildId/antinuke/whitelist` | Get whitelisted users and roles |
+| `POST` | `/api/automod/:guildId/antinuke/whitelist` | Add a user or role |
+| `DELETE` | `/api/automod/:guildId/antinuke/whitelist/:type/:id` | Remove by type + ID |
+
+**POST body:**
+```json
+{ "type": "user", "id": "123456789" }
+```
+`type` must be `user` or `role`. `:type` in DELETE is also `user` or `role`.
+
+**GET response:**
+```json
+{ "status": "ok", "data": { "users": ["owner_id"], "roles": ["mod_role_id"] } }
+```
+
+---
+
+## Verification API (`/api/verification`)
+
+Manage per-guild captcha-based member verification. Config is stored in the `VerificationConfig` model; the on/off system toggle is in `ServerSetting.verificationOn`.
+
+> **Addon Guard:** Protected by `addonGuard('verification')`.
+
+**Captcha types:** `math` | `emoji` | `image`
+
+---
+
+### `GET /api/verification/:guildId`
+
+Get the full verification config plus whether the system is currently enabled.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "data": {
+    "systemEnabled": true,
+    "verifiedRoleId": "111222333",
+    "unverifiedRoleId": "444555666",
+    "channelId": "777888999",
+    "captchaType": "math",
+    "maxAttempts": 3,
+    "timeoutSeconds": 180,
+    "kickOnFail": false,
+    "kickOnTimeout": false,
+    "dmFallback": true,
+    "welcomeMessage": "Welcome to the server! 🎉",
+    "logChannelId": "111222444"
+  }
+}
+```
+
+---
+
+### `PUT /api/verification/:guildId`
+
+Bulk-update any subset of verification config fields in one request.
+
+**Allowed fields:** `verifiedRoleId`, `unverifiedRoleId`, `channelId`, `captchaType`, `maxAttempts`, `timeoutSeconds`, `kickOnFail`, `kickOnTimeout`, `dmFallback`, `welcomeMessage`, `logChannelId`
+
+**Request Body:**
+```json
+{
+  "captchaType": "emoji",
+  "maxAttempts": 5,
+  "kickOnFail": true,
+  "welcomeMessage": "You're verified! Welcome 🎉"
+}
+```
+
+---
+
+### `PATCH /api/verification/:guildId/toggle`
+
+Enable or disable the entire verification system.
+
+**Request Body:**
+```json
+{ "enabled": true }
+```
+
+---
+
+### Verification Configuration Endpoints
+
+Use these granular endpoints to update individual settings.
+
+| Method | Path | Body | Description |
+|---|---|---|---|
+| `PATCH` | `/api/verification/:guildId/captcha-type` | `{ "type": "math" }` | Set captcha type (`math`\|`emoji`\|`image`) |
+| `PATCH` | `/api/verification/:guildId/roles` | `{ "verifiedRoleId": "...", "unverifiedRoleId": "..." }` | Set verified / unverified roles |
+| `PATCH` | `/api/verification/:guildId/channel` | `{ "channelId": "..." }` | Set verify channel (send `null` for DM-only) |
+| `PATCH` | `/api/verification/:guildId/timeout` | `{ "seconds": 180 }` | Set timeout in seconds (30–600) |
+| `PATCH` | `/api/verification/:guildId/attempts` | `{ "count": 3 }` | Set max attempts (1–10) |
+| `PATCH` | `/api/verification/:guildId/kick` | `{ "kickOnFail": true, "kickOnTimeout": false }` | Set kick behavior |
+| `PATCH` | `/api/verification/:guildId/log-channel` | `{ "channelId": "..." }` | Set log channel (send `null` to disable) |
+| `PATCH` | `/api/verification/:guildId/welcome-message` | `{ "message": "Welcome! 🎉" }` | Set welcome DM (send `null` to clear) |
+
+All endpoints return the updated field(s):
+```json
+{ "status": "ok", "data": { "captchaType": "emoji" } }
+```
+
+---
+
+### Member Action Endpoints
+
+These endpoints trigger real Discord side-effects (role assignment, DMs, kicks). They require the bot to share the guild.
+
+#### `POST /api/verification/:guildId/members/:userId/reset`
+
+Clear the member's existing session and resend a fresh captcha challenge.
+
+- Returns `422` if no `verifiedRoleId` is configured.
+- Returns `404` if the guild or member is not found.
+
+**Response:**
+```json
+{ "status": "ok", "message": "Captcha resent to Username#0000" }
+```
+
+---
+
+#### `POST /api/verification/:guildId/members/:userId/force`
+
+Manually verify a member without requiring a captcha. Clears any active session, grants the verified role, removes the unverified role, and sends the configured welcome DM.
+
+**Response:**
+```json
+{ "status": "ok", "message": "Username#0000 manually verified" }
+```
+
+---
+
+#### `DELETE /api/verification/:guildId/members/:userId/revoke`
+
+Revoke a member's verified status. Removes the verified role and re-adds the unverified role.
+
+**Response:**
+```json
+{ "status": "ok", "message": "Verification revoked for Username#0000" }
+```

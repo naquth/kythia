@@ -17,87 +17,12 @@ const {
 } = require('discord.js');
 const Sentry = require('@sentry/node');
 
-/**
- * Handle anti-nuke system for channel creation spam.
- */
-async function handleAntiNuke(bot, channel, entry) {
-	if (!entry || !entry.executor || entry.executor.bot) return;
-
-	const container = bot.client.container;
-	const { t, models, logger } = container;
-	const { ServerSetting } = models;
-
-	if (!bot.client.channelCreateTracker) {
-		bot.client.channelCreateTracker = new Map();
-	}
-	const userActionMap = bot.client.channelCreateTracker;
-
-	const MAX_ACTIONS = 3;
-	const TIME_WINDOW = 10000;
-	const userId = entry.executor.id;
-	const guildId = channel.guild.id;
-	const now = Date.now();
-
-	if (!userActionMap.has(guildId)) userActionMap.set(guildId, new Map());
-	const guildData = userActionMap.get(guildId);
-
-	const userData = guildData.get(userId) || { count: 0, last: 0 };
-
-	const diff = now - userData.last;
-	userData.count = diff < TIME_WINDOW ? userData.count + 1 : 1;
-	userData.last = now;
-
-	guildData.set(userId, userData);
-
-	if (userData.count >= MAX_ACTIONS) {
-		const member = await channel.guild.members.fetch(userId).catch(() => null);
-		if (!member || !member.kickable) return;
-
-		try {
-			await member.kick(
-				await t(
-					channel.guild,
-					'core.events.channelCreate.events.channel.create.antinuke.reason',
-				),
-			);
-
-			const settings = await ServerSetting.getCache({
-				guildId: channel.guild.id,
-			});
-			if (!settings || !settings.auditLogChannelId) return;
-
-			const logChannel = await channel.guild.channels
-				.fetch(settings.auditLogChannelId)
-				.catch(() => null);
-			if (logChannel?.isTextBased()) {
-				const message = await t(
-					channel.guild,
-					'core.events.channelCreate.events.channel.create.antinuke.kick.log',
-					{
-						user: member.user.tag,
-					},
-				);
-				await logChannel.send(message);
-			}
-		} catch (err) {
-			logger.error(err, { label: 'channelCreate' });
-			if (bot.config?.sentry?.dsn) {
-				Sentry.captureException(err);
-			}
-		}
-
-		userData.count = 0;
-		guildData.set(userId, userData);
-	}
-}
-
 module.exports = async (bot, channel) => {
 	if (!channel.guild) return;
 	const container = bot.client.container;
 	const { models, helpers, t, logger } = container;
 	const { ServerSetting } = models;
 	const { convertColor } = helpers.color;
-
 	const guildId = channel.guild.id;
 
 	try {
@@ -110,7 +35,6 @@ module.exports = async (bot, channel) => {
 			(e) =>
 				e.target?.id === channel.id && e.createdTimestamp > Date.now() - 5000,
 		);
-
 		if (!entry) {
 			entry = audit.entries.find(
 				(e) =>
@@ -119,11 +43,7 @@ module.exports = async (bot, channel) => {
 			);
 		}
 
-		await handleAntiNuke(bot, channel, entry);
-
-		const settings = await ServerSetting.getCache({
-			guildId,
-		});
+		const settings = await ServerSetting.getCache({ guildId });
 		if (!settings || !settings.auditLogChannelId) return;
 
 		const logChannel = await channel.guild.channels
@@ -143,10 +63,6 @@ module.exports = async (bot, channel) => {
 			[ChannelType.GuildStageVoice]: 'Stage Channel',
 			[ChannelType.GuildForum]: 'Forum Channel',
 			[ChannelType.GuildMedia]: 'Media Channel',
-			[ChannelType.GuildDirectory]: 'Directory Channel',
-			[ChannelType.GuildStore]: 'Store Channel',
-			[ChannelType.DM]: 'Direct Message',
-			[ChannelType.GroupDM]: 'Group DM',
 		};
 		const channelTypeName =
 			channelTypeNames[channel.type] || `Unknown (${channel.type})`;
@@ -192,9 +108,7 @@ module.exports = async (bot, channel) => {
 		await logChannel.send({
 			components,
 			flags: MessageFlags.IsComponentsV2,
-			allowedMentions: {
-				parse: [],
-			},
+			allowedMentions: { parse: [] },
 		});
 	} catch (err) {
 		logger.error(err, { label: 'channelCreate' });

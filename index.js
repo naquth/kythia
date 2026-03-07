@@ -62,7 +62,6 @@ const { Kythia, KythiaModel, createSequelizeInstance } = require('kythia-core');
 const client = require('./src/client');
 
 // ===== 2. Load Core Helpers & Utilities with Meaningful Descriptions =====
-// const translator = require('@coreHelpers/translator'); // I18n (Internationalization) manager
 
 const {
 	embedFooter,
@@ -102,7 +101,6 @@ KythiaModel.setDependencies({
  * dependencies:
  *  - [!] config:       Entire config object tree needed by bot internals
  *  - [o] logger:       For logging during run and error situations
- *  - [!] translator:   For i18n mechanisms
  *  - [!] redis:        Redis client for fast key-value or queue storage
  *  - [!] sequelize:    ORM instance, used for all SQL model work
  *  - [!] models:       Business-related models, grouped for convenience
@@ -114,7 +112,6 @@ KythiaModel.setDependencies({
 const dependencies = {
 	client,
 	config: kythiaConfig,
-	// translator: translator,
 	redis: KythiaModel.redis,
 	sequelize: sequelize,
 	models: {},

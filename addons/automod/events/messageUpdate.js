@@ -1,0 +1,35 @@
+/**
+ * @namespace: addons/automod/events/messageUpdate.js
+ * @type: Event Handler
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { automodSystem } = require('../helpers/automod');
+
+module.exports = async (bot, _oldMessage, newMessage) => {
+	const client = bot.client;
+	const container = client.container;
+	const { helpers } = container;
+	const { isOwner } = helpers.discord;
+
+	if (!newMessage || !newMessage.author || !newMessage.guild) return;
+	if (newMessage.author.bot) return;
+
+	if (
+		isOwner(newMessage.author.id) ||
+		newMessage.member?.permissions.has(['Administrator', 'ManageGuild'])
+	) {
+		return;
+	}
+
+	try {
+		await automodSystem(newMessage, client);
+	} catch (error) {
+		container.logger.error(
+			'❌ [Automod] Error in messageUpdate handler:',
+			error,
+		);
+	}
+};

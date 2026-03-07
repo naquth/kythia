@@ -1,0 +1,8 @@
+{
+	"name": "Automod",
+	"featureName": "Automod",
+	"featureFlag": "automodOn",
+	"version": "1.0.0-rc",
+	"description": "Advanced auto-moderation system: spam detection, badword filtering, invite & link blocking, caps lock, emoji spam, zalgo text, username checks, and a complete moderation log with per-guild configuration.",
+	"author": "kenndeclouv"
+}

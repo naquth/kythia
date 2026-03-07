@@ -1,0 +1,82 @@
+/**
+ * @namespace: addons/automod/commands/moderation/unmute.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { PermissionFlagsBits, MessageFlags } = require('discord.js');
+
+module.exports = {
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('unmute')
+			.setDescription('🔊 Unmutes a user in voice channels.')
+			.addUserOption((option) =>
+				option
+					.setName('user')
+					.setDescription('The user to unmute')
+					.setRequired(true),
+			),
+	permissions: PermissionFlagsBits.MuteMembers,
+	botPermissions: PermissionFlagsBits.MuteMembers,
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, helpers, kythiaConfig } = container;
+		const { createContainer, simpleContainer } = helpers.discord;
+
+		await interaction.deferReply();
+
+		const user = interaction.options.getUser('user');
+
+		try {
+			const member = await interaction.guild.members.fetch(user.id);
+			if (member.voice.channel) {
+				await member.voice.setMute(false);
+				const reply = await createContainer(interaction, {
+					color: kythiaConfig.bot.color,
+					title: await t(interaction, 'core.moderation.unmute.success.title'),
+					description: await t(
+						interaction,
+						'core.moderation.unmute.success.desc',
+						{
+							user: user.tag,
+						},
+					),
+					thumbnail: user.displayAvatarURL(),
+				});
+				return interaction.editReply({
+					components: reply,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} else {
+				const reply = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.moderation.unmute.not.in.voice'),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components: reply,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+		} catch (error) {
+			const reply = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.moderation.unmute.failed', {
+					error: error.message,
+				}),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components: reply,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	},
+};

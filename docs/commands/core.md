@@ -1,200 +1,11 @@
 ## 📁 Command Category: Core
 
-### 💾 `/mod`
-
-**Description:** Moderation action
-
-### 💻 Usage
-
-`/mod announce <message> [title]`
-`/mod autosetup`
-`/mod ban <user> [reason]`
-`/mod clear <amount>`
-`/mod kick <user> [reason]`
-`/mod lock [reason]`
-`/mod mute <user> [reason]`
-`/mod pin <message_id>`
-`/mod role <user> <role>`
-`/mod say <message>`
-`/mod slowmode <seconds> [reason]`
-`/mod timeout <user> <duration> [reason]`
-`/mod unban <user_id>`
-`/mod unlock [reason]`
-`/mod unmute <user>`
-`/mod unpin <message_id>`
-`/mod warn <user> [reason]`
-`/mod warnings <user>`
-
-### 🔧 Subcommands
-
-**`/mod announce <message> [<title>]`**
-> 📢 Sends an announcement to the current channel.
-
-**Options for this subcommand:**
-- **`message*`**
-  - **Description:** The message to announce
-  - **Type:** Text
-- **`title`**
-  - **Description:** Title for the announcement
-  - **Type:** Text
-**`/mod autosetup`**
-> 🤖 Automatically setup moderation channels and roles.
-
-
-**`/mod ban <user> [<reason>]`**
-> 🔨 Bans a user from the server.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to ban
-  - **Type:** User
-- **`reason`**
-  - **Description:** Reason for the ban
-  - **Type:** Text
-**`/mod clear <amount>`**
-> 🗑️ Delete messages from a channel.
-
-**Options for this subcommand:**
-- **`amount*`**
-  - **Description:** Amount of messages to delete (0 = all)
-  - **Type:** Integer
-**`/mod kick <user> [<reason>]`**
-> 👢 Kicks a user from the server.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to kick
-  - **Type:** User
-- **`reason`**
-  - **Description:** Reason for the kick
-  - **Type:** Text
-**`/mod lock [<reason>]`**
-> 🔒 Locks the current channel.
-
-**Options for this subcommand:**
-- **`reason`**
-  - **Description:** Reason for locking the channel
-  - **Type:** Text
-**`/mod mute <user> [<reason>]`**
-> 🔇 Mutes a user in voice channels.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to mute
-  - **Type:** User
-- **`reason`**
-  - **Description:** Reason for the mute
-  - **Type:** Text
-**`/mod pin <message_id>`**
-> 📌 Pins a message in the channel.
-
-**Options for this subcommand:**
-- **`message_id*`**
-  - **Description:** The ID of the message to pin
-  - **Type:** Text
-**`/mod role <user> <role>`**
-> 🎭 Manage roles for a user.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to modify roles for
-  - **Type:** User
-- **`role*`**
-  - **Description:** The role to add or remove
-  - **Type:** Role
-**`/mod say <message>`**
-> 🗣️ Makes the bot say something.
-
-**Options for this subcommand:**
-- **`message*`**
-  - **Description:** The message to say
-  - **Type:** Text
-**`/mod slowmode <seconds> [<reason>]`**
-> 🐢 Sets the slowmode for the current channel.
-
-**Options for this subcommand:**
-- **`seconds*`**
-  - **Description:** Slowmode duration in seconds (0 to disable)
-  - **Type:** Integer
-- **`reason`**
-  - **Description:** Reason for changing slowmode
-  - **Type:** Text
-**`/mod timeout <user> <duration> [<reason>]`**
-> ⏳ Timeouts a user.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to timeout
-  - **Type:** User
-- **`duration*`**
-  - **Description:** Duration in minutes
-  - **Type:** Integer
-- **`reason`**
-  - **Description:** Reason for the timeout
-  - **Type:** Text
-**`/mod unban <user_id>`**
-> 🔓 Unbans a user from the server.
-
-**Options for this subcommand:**
-- **`user_id*`**
-  - **Description:** The ID of the user to unban
-  - **Type:** Text
-**`/mod unlock [<reason>]`**
-> 🔓 Unlocks the current channel.
-
-**Options for this subcommand:**
-- **`reason`**
-  - **Description:** Reason for unlocking the channel
-  - **Type:** Text
-**`/mod unmute <user>`**
-> 🔊 Unmutes a user in voice channels.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to unmute
-  - **Type:** User
-**`/mod unpin <message_id>`**
-> 📌 Unpins a message from the channel.
-
-**Options for this subcommand:**
-- **`message_id*`**
-  - **Description:** The ID of the message to unpin
-  - **Type:** Text
-**`/mod warn <user> [<reason>]`**
-> ⚠️ Warns a user.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to warn
-  - **Type:** User
-- **`reason`**
-  - **Description:** Reason for the warning
-  - **Type:** Text
-**`/mod warnings <user>`**
-> ⚠️ View warnings for a user.
-
-**Options for this subcommand:**
-- **`user*`**
-  - **Description:** The user to view warnings for
-  - **Type:** User
-
-
 ### 💾 `/set`
 
 **Description:** ⚙️ Settings bot configuration
 
 ### 💻 Usage
 
-`/set automod whitelist <action> <target>`
-`/set automod badwords <action> <word>`
-`/set automod badword-whitelist <action> <word>`
-`/set automod exception-channel <action> <channel>`
-`/set automod mod-log-channel <channel>`
-`/set automod audit-log-channel <channel>`
-`/set automod badwords-list`
-`/set automod badwords-whitelist-list`
-`/set automod exception-channel-list`
-`/set automod whitelist-list`
 `/set stats category <category>`
 `/set stats add <format> [channel]`
 `/set stats edit <stats> [channel] [format]`
@@ -232,14 +43,6 @@
 `/set raw set <field> <value>`
 `/set streak rolereward <action> <streak> <role>`
 `/set view`
-`/set features anti-invites <status>`
-`/set features anti-links <status>`
-`/set features anti-spam <status>`
-`/set features anti-badwords <status>`
-`/set features anti-mention <status>`
-`/set features anti-all-caps <status>`
-`/set features anti-emoji-spam <status>`
-`/set features anti-zalgo <status>`
 `/set features server-stats <status>`
 `/set features leveling <status>`
 `/set features adventure <status>`
@@ -249,80 +52,6 @@
 `/set features boost-log <status>`
 
 ### 🔧 Subcommands
-
-**`/set automod whitelist <action> <target>`**
-> 🔄 Add or remove from whitelist
-
-**Options for this subcommand:**
-- **`action*`**
-  - **Description:** Add or remove
-  - **Type:** Text
-  - **Choices:** `Add` (`add`), `Remove` (`remove`)
-- **`target*`**
-  - **Description:** User or role
-  - **Type:** Mentionable
-**`/set automod badwords <action> <word>`**
-> 🔄 Add or remove bad words
-
-**Options for this subcommand:**
-- **`action*`**
-  - **Description:** Add or remove
-  - **Type:** Text
-  - **Choices:** `Add` (`add`), `Remove` (`remove`)
-- **`word*`**
-  - **Description:** Word
-  - **Type:** Text
-**`/set automod badword-whitelist <action> <word>`**
-> 🔄 Add or remove bad word whitelist
-
-**Options for this subcommand:**
-- **`action*`**
-  - **Description:** Add or remove
-  - **Type:** Text
-  - **Choices:** `Add` (`add`), `Remove` (`remove`)
-- **`word*`**
-  - **Description:** Word
-  - **Type:** Text
-**`/set automod exception-channel <action> <channel>`**
-> 🔄 Add or remove exception channel
-
-**Options for this subcommand:**
-- **`action*`**
-  - **Description:** Add or remove
-  - **Type:** Text
-  - **Choices:** `Add` (`add`), `Remove` (`remove`)
-- **`channel*`**
-  - **Description:** Channel for exception
-  - **Type:** Channel
-**`/set automod mod-log-channel <channel>`**
-> 🔄 Channel to be used for automod logs
-
-**Options for this subcommand:**
-- **`channel*`**
-  - **Description:** Select channel for automod logs
-  - **Type:** Channel
-**`/set automod audit-log-channel <channel>`**
-> 🔄 Channel to be used for audit logs
-
-**Options for this subcommand:**
-- **`channel*`**
-  - **Description:** Select channel for audit logs
-  - **Type:** Channel
-**`/set automod badwords-list`**
-> View bad words list
-
-
-**`/set automod badwords-whitelist-list`**
-> View bad words whitelist list
-
-
-**`/set automod exception-channel-list`**
-> View exception channels
-
-
-**`/set automod whitelist-list`**
-> View whitelist
-
 
 **`/set stats category <category>`**
 > 📈 Set category for server stats channels
@@ -467,7 +196,7 @@
 - **`lang*`**
   - **Description:** Choose language
   - **Type:** Text
-  - **Choices:** `en` (`en`)
+  - **Choices:** `en-US` (`en-US`)
 **`/set testimony testimony-channel <channel>`**
 > 💬 Set channel to send testimonies
 
@@ -603,70 +332,6 @@
 > 🔍 View all bot settings
 
 
-**`/set features anti-invites <status>`**
-> Enable or disable the Anti-Invites feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
-**`/set features anti-links <status>`**
-> Enable or disable the Anti-Links feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
-**`/set features anti-spam <status>`**
-> Enable or disable the Anti-Spam feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
-**`/set features anti-badwords <status>`**
-> Enable or disable the Anti-Badwords feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
-**`/set features anti-mention <status>`**
-> Enable or disable the Anti-Mention feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
-**`/set features anti-all-caps <status>`**
-> Enable or disable the Anti-All Caps feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
-**`/set features anti-emoji-spam <status>`**
-> Enable or disable the Anti-Emoji Spam feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
-**`/set features anti-zalgo <status>`**
-> Enable or disable the Anti-Zalgo feature
-
-**Options for this subcommand:**
-- **`status*`**
-  - **Description:** Select status
-  - **Type:** Text
-  - **Choices:** `Enable` (`enable`), `Disable` (`disable`)
 **`/set features server-stats <status>`**
 > Enable or disable the Server Stats feature
 
@@ -914,10 +579,15 @@
 
 ### 💻 Usage
 
+`/sticky list`
 `/sticky remove`
 `/sticky set <message>`
 
 ### 🔧 Subcommands
+
+**`/sticky list`**
+> 📋 List all sticky messages in this server.
+
 
 **`/sticky remove`**
 > Removes the sticky message from this channel.

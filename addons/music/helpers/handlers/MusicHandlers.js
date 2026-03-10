@@ -2498,7 +2498,7 @@ class MusicHandlers {
 		}
 
 		playlist.name = newName;
-		await playlist.saveAndUpdateCache();
+		await playlist.save();
 
 		const components = await this.simpleContainer(
 			interaction,
@@ -2798,7 +2798,7 @@ class MusicHandlers {
 		if (!shareCode) {
 			shareCode = `KYPL-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 			playlist.shareCode = shareCode;
-			await playlist.saveAndUpdateCache();
+			await playlist.save();
 		}
 
 		const components = await this.simpleContainer(

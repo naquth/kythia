@@ -14,8 +14,6 @@ const {
 	ChannelType,
 	ContainerBuilder,
 	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 } = require('discord.js');
 
 const BLACKLIST_COMMANDS = [
@@ -33,6 +31,9 @@ const BLACKLIST_COMMANDS = [
 	'giveaway-start',
 	'giveaway-end',
 	'giveaway-reroll',
+	'ascii',
+	'convert',
+	'presence',
 ];
 
 // ─── Mock Message ─────────────────────────────────────────────────────────────
@@ -579,11 +580,11 @@ module.exports = {
 				if (mock._hasReplied() || mock._isDeferred()) {
 					results.success.push(name);
 				} else {
-					results.failed.push(`${name} (no reply)`);
+					results.failed.push({ name, reason: 'no reply' });
 				}
 			} catch (err) {
 				logger.error(`❌ Test failed for ${name}:`, err);
-				results.failed.push(`${name} (${err.message})`);
+				results.failed.push({ name, reason: err.message });
 			}
 
 			// Small delay to prevent rate limits
@@ -598,7 +599,7 @@ module.exports = {
 			to: 'decimal',
 		});
 
-		// Chunk long lists so they stay within Discord's 2000-char text display limit
+		// Chunk long lists into segments that each fit in one TextDisplay (~1800 chars)
 		const chunk = (arr) => {
 			if (arr.length === 0) return [`*None*`];
 			const lines = [];
@@ -614,6 +615,18 @@ module.exports = {
 			return lines;
 		};
 
+		// Helper: send a ContainerBuilder and swallow errors
+		const sendContainer = async (container) => {
+			try {
+				await interaction.channel.send({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (err) {
+				logger.error('❌ testall: failed to send report chunk:', err);
+			}
+		};
+
 		const successRate =
 			totalCommands > 0
 				? Math.round(
@@ -627,86 +640,91 @@ module.exports = {
 				? '✅ **All commands passed!**'
 				: `⚠️ **${results.failed.length} command(s) need attention**`;
 
-		const report = new ContainerBuilder().setAccentColor(accentColor);
-
-		// ── Header ────────────────────────────────────────────────────────────
-		report.addTextDisplayComponents(
+		// ── Message 1: Header ─────────────────────────────────────────────────
+		const headerContainer = new ContainerBuilder().setAccentColor(accentColor);
+		headerContainer.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				`## 🧪 Command Test Results\n${statusLine}\n-# Tested **${processed}/${totalCommands}** commands · Pass rate **${successRate}%** · <t:${Math.floor(Date.now() / 1000)}:R>`,
 			),
 		);
-		report.addSeparatorComponents(
-			new SeparatorBuilder()
-				.setSpacing(SeparatorSpacingSize.Small)
-				.setDivider(true),
-		);
+		await sendContainer(headerContainer);
 
-		// ── Success section ───────────────────────────────────────────────────
-		report.addTextDisplayComponents(
+		// ── Message 2: Success section ────────────────────────────────────────
+		const successContainer = new ContainerBuilder().setAccentColor(accentColor);
+		successContainer.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				`### ✅ Passed (${results.success.length})`,
 			),
 		);
 		for (const line of chunk(results.success)) {
-			report.addTextDisplayComponents(
+			successContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(`\`\`\`${line}\`\`\``),
 			);
 		}
+		await sendContainer(successContainer);
 
-		// ── Failures section ──────────────────────────────────────────────────
+		// ── Message 3: Failures section ───────────────────────────────────────
 		if (results.failed.length > 0) {
-			report.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
+			// Render each failure as its own line: `name` — truncated reason
+			// Cap reason at 120 chars so nothing wraps out of control
+			const MAX_REASON = 120;
+			const failedLines = results.failed.map(({ name: n, reason }) => {
+				const short =
+					reason.length > MAX_REASON
+						? `${reason.slice(0, MAX_REASON)}…`
+						: reason;
+				return `\`${n}\` — ${short}`;
+			});
+
+			// Split into containers of ≤1800 chars each
+			const failedChunks = [];
+			let buf = '';
+			for (const line of failedLines) {
+				const next = buf ? `${buf}\n${line}` : line;
+				if (next.length > 1800) {
+					failedChunks.push(buf);
+					buf = line;
+				} else buf = next;
+			}
+			if (buf) failedChunks.push(buf);
+
+			const failedContainer = new ContainerBuilder().setAccentColor(
+				accentColor,
 			);
-			report.addTextDisplayComponents(
+			failedContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
 					`### ❌ Failed (${results.failed.length})`,
 				),
 			);
-			for (const line of chunk(results.failed)) {
-				report.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(`\`\`\`${line}\`\`\``),
+			for (const chunk of failedChunks) {
+				failedContainer.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(chunk),
 				);
 			}
+			await sendContainer(failedContainer);
 		}
 
-		// ── Skipped section ───────────────────────────────────────────────────
+		// ── Message 4: Skipped section ────────────────────────────────────────
 		if (results.skipped.length > 0) {
-			report.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
+			const skippedContainer = new ContainerBuilder().setAccentColor(
+				accentColor,
 			);
-			report.addTextDisplayComponents(
+			skippedContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
 					`### ⏭️ Skipped (${results.skipped.length})\n-# ${results.skipped.join(', ')}`,
 				),
 			);
+			await sendContainer(skippedContainer);
 		}
 
-		// ── Footer ────────────────────────────────────────────────────────────
-		report.addSeparatorComponents(
-			new SeparatorBuilder()
-				.setSpacing(SeparatorSpacingSize.Small)
-				.setDivider(true),
-		);
-		report.addTextDisplayComponents(
+		// ── Message 5: Footer ─────────────────────────────────────────────────
+		const footerContainer = new ContainerBuilder().setAccentColor(accentColor);
+		footerContainer.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				`-# 🛠️ ${interaction.client.user.username} · Developer Dry-Run`,
 			),
 		);
-
-		// Send via channel.send to avoid the deferred token expiring during long runs
-		try {
-			await interaction.channel.send({
-				components: [report],
-				flags: MessageFlags.IsComponentsV2,
-			});
-		} catch (err) {
-			logger.error('❌ testall: failed to send final report:', err);
-		}
+		await sendContainer(footerContainer);
 
 		await interaction
 			.editReply({ content: '✅ Done! Results posted above.' })

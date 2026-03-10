@@ -62,7 +62,7 @@ module.exports = {
 		user.xp = 0;
 		user.changed('level', true);
 		user.changed('xp', true);
-		await user.saveAndUpdateCache('userId');
+		await user.save();
 
 		const components = await simpleContainer(
 			interaction,

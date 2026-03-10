@@ -373,11 +373,7 @@ app.patch('/:guildId/:userId', async (c) => {
 			streak.streakFreezes = Math.max(0, (streak.streakFreezes ?? 0) - amount);
 		}
 
-		try {
-			await streak.saveAndUpdateCache(['userId', 'guildId']);
-		} catch {
-			await streak.save();
-		}
+		await streak.save();
 
 		const response = {
 			success: true,

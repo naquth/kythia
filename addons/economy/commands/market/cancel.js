@@ -56,7 +56,7 @@ module.exports = {
 
 				user.changed('kythiaCoin', true);
 
-				await user.saveAndUpdateCache();
+				await user.save();
 			} else {
 				const portfolio = await MarketPortfolio.getCache({
 					userId: interaction.user.id,

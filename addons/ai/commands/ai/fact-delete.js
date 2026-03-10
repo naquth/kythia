@@ -69,7 +69,7 @@ module.exports = {
 
 		await factToDelete.destroy();
 
-		await UserFact.invalidateCache([`UserFact:byUser:${interaction.user.id}`]);
+		// await UserFact.invalidateCache([`UserFact:byUser:${interaction.user.id}`]);
 
 		const msg = await t(interaction, 'ai.ai.fact_delete.success', {
 			fact: factToDelete.fact,

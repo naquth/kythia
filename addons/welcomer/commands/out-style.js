@@ -38,15 +38,15 @@ module.exports = {
 
 		await interaction.deferReply({ ephemeral: true });
 
-		const serverSetting = await WelcomeSetting.getOrCreateCache({
+		const [welcomeSetting] = await WelcomeSetting.getOrCreateCache({
 			guildId: interaction.guild.id,
 		});
 
 		const style = interaction.options.getString('style');
 		// null = CV2 card (default); { style: 'plain-text' } = plain text only
-		serverSetting.welcomeOutLayout =
+		welcomeSetting.welcomeOutLayout =
 			style === 'plain-text' ? { style: 'plain-text' } : null;
-		await serverSetting.saveAndUpdateCache('guildId');
+		await welcomeSetting.save();
 
 		const styleLabel =
 			style === 'components-v2'

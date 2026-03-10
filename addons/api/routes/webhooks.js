@@ -68,14 +68,14 @@ app.post('/topgg', async (c) => {
 				voteExpiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
 				votePoints: 1,
 			});
-			await user.saveAndUpdateCache();
+			await user.save();
 			isNew = true;
 		} else {
 			user.kythiaCoin = (user.kythiaCoin || 0) + 1000;
 			user.isVoted = true;
 			user.voteExpiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
 			user.votePoints = (user.votePoints || 0) + 1;
-			await user.saveAndUpdateCache();
+			await user.save();
 		}
 
 		try {

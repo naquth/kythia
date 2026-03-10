@@ -62,7 +62,7 @@ module.exports = {
 		streak.currentStreak = 0;
 		streak.lastClaimTimestamp = null;
 
-		await streak.saveAndUpdateCache(['userId', 'guildId']);
+		await streak.save();
 		if (serverSetting.streakNickname === true) {
 			await updateNickname(interaction.member, 0, streakEmoji, streakMinimum);
 		}

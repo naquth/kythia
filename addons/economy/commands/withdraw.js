@@ -74,7 +74,7 @@ module.exports = {
 			user.changed('kythiaBank', true);
 			user.changed('kythiaCoin', true);
 
-			await user.saveAndUpdateCache('userId');
+			await user.save();
 
 			const msg = await t(interaction, 'economy.withdraw.withdraw.success', {
 				user: interaction.user.username,

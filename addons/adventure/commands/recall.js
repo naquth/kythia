@@ -50,7 +50,7 @@ module.exports = {
 		user.monsterStrength = 0;
 		user.monsterGoldDrop = 0;
 		user.monsterXpDrop = 0;
-		await user.saveAndUpdateCache();
+		await user.save();
 		const msg = await t(interaction, 'adventure.recall.recalled');
 		const components = await simpleContainer(interaction, msg, {
 			color: kythiaConfig.bot.color,

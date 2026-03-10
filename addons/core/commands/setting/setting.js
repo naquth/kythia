@@ -952,7 +952,7 @@ module.exports = {
 			const [settingKey, featureName] = featureMap[sub];
 
 			serverSetting[settingKey] = status === 'enable';
-			await serverSetting.saveAndUpdateCache();
+			await serverSetting.save();
 
 			const isEnabled = status === 'enable';
 			const translationKey = isEnabled
@@ -977,7 +977,7 @@ module.exports = {
 					const [settingKey, featureName] = featureMap[sub];
 
 					serverSetting[settingKey] = status === 'enable';
-					await serverSetting.saveAndUpdateCache();
+					await serverSetting.save();
 
 					const components = await simpleContainer(
 						interaction,
@@ -1053,7 +1053,7 @@ module.exports = {
 							});
 						}
 						serverSetting.serverStatsCategoryId = cat.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(interaction, 'core.setting.setting.stats.category.set', {
@@ -1124,7 +1124,7 @@ module.exports = {
 							enabled: true,
 						});
 						serverSetting.changed('serverStats', true);
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						await updateStats(interaction, interaction.client, [serverSetting]);
 						const components = await simpleContainer(
 							interaction,
@@ -1178,7 +1178,7 @@ module.exports = {
 							});
 						}
 						serverSetting.changed('serverStats', true);
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						await updateStats(interaction, interaction.client, [serverSetting]);
 						const components = await simpleContainer(
 							interaction,
@@ -1211,7 +1211,7 @@ module.exports = {
 						}
 						stat.enabled = true;
 						serverSetting.changed('serverStats', true);
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						await updateStats(interaction, interaction.client, [serverSetting]);
 						const components = await simpleContainer(
 							interaction,
@@ -1243,7 +1243,7 @@ module.exports = {
 						}
 						stat.enabled = false;
 						serverSetting.changed('serverStats', true);
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						await updateStats(interaction, interaction.client, [serverSetting]);
 						const components = await simpleContainer(
 							interaction,
@@ -1271,7 +1271,7 @@ module.exports = {
 							}
 						} catch (_) {}
 						serverSetting.changed('serverStats', true);
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						await updateStats(interaction, interaction.client, [serverSetting]);
 						const isSuccess = before !== after;
 						const components = await simpleContainer(
@@ -1300,7 +1300,7 @@ module.exports = {
 					case 'channel': {
 						const targetChannel = interaction.options.getChannel('channel');
 						serverSetting.levelingChannelId = targetChannel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1318,7 +1318,7 @@ module.exports = {
 					case 'cooldown': {
 						const cooldown = interaction.options.getInteger('cooldown');
 						serverSetting.levelingCooldown = cooldown * 1000;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1336,7 +1336,7 @@ module.exports = {
 					case 'xp': {
 						const xp = interaction.options.getInteger('xp');
 						serverSetting.levelingXp = xp;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(interaction, 'core.setting.setting.leveling.xp.set', {
@@ -1397,7 +1397,7 @@ module.exports = {
 							}
 						}
 						serverSetting.changed('roleRewards', true);
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						return interaction.editReply({
 							components,
 							flags: MessageFlags.IsComponentsV2,
@@ -1411,7 +1411,7 @@ module.exports = {
 					case 'ip': {
 						const ip = interaction.options.getString('ip');
 						serverSetting.minecraftIp = ip;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(interaction, 'core.setting.setting.minecraft.ip.set', {
@@ -1427,7 +1427,7 @@ module.exports = {
 					case 'port': {
 						const port = interaction.options.getInteger('port');
 						serverSetting.minecraftPort = port;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(interaction, 'core.setting.setting.minecraft.port.set', {
@@ -1442,7 +1442,7 @@ module.exports = {
 					}
 					case 'ip-channel': {
 						serverSetting.minecraftIpChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1459,7 +1459,7 @@ module.exports = {
 					}
 					case 'port-channel': {
 						serverSetting.minecraftPortChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1476,7 +1476,7 @@ module.exports = {
 					}
 					case 'status-channel': {
 						serverSetting.minecraftStatusChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1493,7 +1493,7 @@ module.exports = {
 					}
 					case 'players-channel': {
 						serverSetting.minecraftPlayersChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1515,7 +1515,7 @@ module.exports = {
 				if (sub === 'set') {
 					const lang = interaction.options.getString('lang');
 					serverSetting.lang = lang;
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.language.set', { lang }),
@@ -1546,7 +1546,7 @@ module.exports = {
 							});
 						}
 						serverSetting.testimonyChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1577,7 +1577,7 @@ module.exports = {
 							});
 						}
 						serverSetting.feedbackChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1608,7 +1608,7 @@ module.exports = {
 							});
 						}
 						serverSetting.testimonyCountChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components2 = await simpleContainer(
 							interaction,
 							await t(
@@ -1640,7 +1640,7 @@ module.exports = {
 							});
 						}
 						serverSetting.testimonyCountFormat = format;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1658,7 +1658,7 @@ module.exports = {
 					case 'reset-count': {
 						serverSetting.testimonyCount = 0;
 						serverSetting.changed('testimonyCount');
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(
@@ -1708,7 +1708,7 @@ module.exports = {
 						}
 						serverSetting.testimonyCount = count;
 						serverSetting.changed('testimonyCount');
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							await t(interaction, 'core.setting.setting.testimony.count.set', {
@@ -1795,7 +1795,7 @@ module.exports = {
 							}
 						}
 						serverSetting.changed('streakRoleRewards', true);
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						return interaction.editReply({
 							components,
 							flags: MessageFlags.IsComponentsV2,
@@ -1808,7 +1808,7 @@ module.exports = {
 				if (sub === 'minimum') {
 					const minimum = interaction.options.getInteger('minimum');
 					serverSetting.streakMinimum = minimum;
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.streak.minimum.set', {
@@ -1824,7 +1824,7 @@ module.exports = {
 				if (sub === 'emoji') {
 					const emoji = interaction.options.getString('emoji');
 					serverSetting.streakEmoji = emoji;
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.streak.emoji.set', {
@@ -1840,7 +1840,7 @@ module.exports = {
 				if (sub === 'nickname') {
 					const status = interaction.options.getString('status');
 					serverSetting.streakNickname = status === 'enable';
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.streak.nickname.set', {
@@ -1858,7 +1858,7 @@ module.exports = {
 			case 'channels': {
 				if (sub === 'announcement') {
 					serverSetting.announcementChannelId = channel.id;
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(
@@ -1875,7 +1875,7 @@ module.exports = {
 				}
 				if (sub === 'invite') {
 					serverSetting.inviteChannelId = channel.id;
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.invite.channel.set', {
@@ -1894,7 +1894,7 @@ module.exports = {
 				switch (sub) {
 					case 'channel': {
 						serverSetting.boostLogChannelId = channel.id;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							`✅ Boost log channel has been set to <#${channel.id}>`,
@@ -1908,7 +1908,7 @@ module.exports = {
 					case 'message': {
 						const message = interaction.options.getString('message');
 						serverSetting.boostLogMessage = message;
-						await serverSetting.saveAndUpdateCache('guildId');
+						await serverSetting.save();
 						const components = await simpleContainer(
 							interaction,
 							`✅ Boost log message has been updated!\n\n**Preview:**\n${message}`,
@@ -1928,7 +1928,7 @@ module.exports = {
 					if (!aiChannelIds.includes(channel.id)) aiChannelIds.push(channel.id);
 					serverSetting.aiChannelIds = aiChannelIds;
 					serverSetting.changed('aiChannelIds', true);
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.ai.channel.add', {
@@ -1946,7 +1946,7 @@ module.exports = {
 					aiChannelIds = aiChannelIds.filter((id) => id !== channel.id);
 					serverSetting.aiChannelIds = aiChannelIds;
 					serverSetting.changed('aiChannelIds', true);
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.ai.channel.remove', {
@@ -2026,7 +2026,7 @@ module.exports = {
 					}
 					serverSetting[field] = parsed;
 					if (Array.isArray(parsed)) serverSetting.changed(field, true);
-					await serverSetting.saveAndUpdateCache('guildId');
+					await serverSetting.save();
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.setting.setting.raw.set', {

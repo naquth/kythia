@@ -74,7 +74,7 @@ module.exports = {
 
 			user.changed('kythiaCoin', true);
 
-			await user.saveAndUpdateCache('userId');
+			await user.save();
 			const msg = await t(interaction, 'economy.coinflip.coinflip.win', {
 				flip: flip.charAt(0).toUpperCase() + flip.slice(1),
 				amount: bet,
@@ -91,7 +91,7 @@ module.exports = {
 
 			user.changed('kythiaCoin', true);
 
-			await user.saveAndUpdateCache('userId');
+			await user.save();
 			const msg = await t(interaction, 'economy.coinflip.coinflip.lose', {
 				flip: flip.charAt(0).toUpperCase() + flip.slice(1),
 				amount: bet,

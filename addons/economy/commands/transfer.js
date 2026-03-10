@@ -162,8 +162,8 @@ module.exports = {
 					giver.changed('kythiaBank', true);
 					receiver.changed('kythiaBank', true);
 
-					await giver.saveAndUpdateCache('userId');
-					await receiver.saveAndUpdateCache('userId');
+					await giver.save();
+					await receiver.save();
 
 					const msg = await t(i, 'economy.transfer.transfer.success', {
 						amount,

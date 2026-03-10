@@ -99,7 +99,7 @@ module.exports = {
 
 			user.hp = Math.max(0, user.hp - monsterDamage);
 			user.monsterHp = Math.max(0, user.monsterHp - playerDamage);
-			await user.saveAndUpdateCache();
+			await user.save();
 
 			const battleButtons = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
@@ -128,7 +128,7 @@ module.exports = {
 			if (user.hp <= 0) {
 				if (revival) {
 					user.hp = user.maxHp;
-					await user.saveAndUpdateCache();
+					await user.save();
 					await revival.destroy();
 					await InventoryAdventure.clearCache({
 						userId: user.userId,
@@ -166,7 +166,7 @@ module.exports = {
 				user.monsterStrength = 0;
 				user.monsterGoldDrop = 0;
 				user.monsterXpDrop = 0;
-				await user.saveAndUpdateCache();
+				await user.save();
 
 				const msg = await t(interaction, 'adventure.battle.lose', {
 					hp: user.hp,
@@ -220,7 +220,7 @@ module.exports = {
 					levelUp = true;
 				}
 
-				await user.saveAndUpdateCache();
+				await user.save();
 
 				if (levelUp) {
 					const msg = await t(interaction, 'adventure.battle.levelup', {
@@ -324,7 +324,7 @@ module.exports = {
 			user.monsterStrength = monster.strength;
 			user.monsterGoldDrop = monster.goldDrop;
 			user.monsterXpDrop = monster.xpDrop;
-			await user.saveAndUpdateCache();
+			await user.save();
 		}
 
 		const items = await InventoryAdventure.findAll({

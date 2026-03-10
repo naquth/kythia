@@ -130,6 +130,7 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [Button Custom IDs Reference](#button-custom-ids-reference)
   - [Guild State (In-Memory)](#guild-state-in-memory)
   - [Integration Example (Dashboard)](#integration-example-dashboard)
+- [Backup API (`/api/backup`)](#backup-api-apibackup)
 - [Error Reference](#error-reference)
 
 ---
@@ -6318,3 +6319,98 @@ Revoke a member's verified status. Removes the verified role and re-adds the unv
 ```json
 { "status": "ok", "message": "Verification revoked for Username#0000" }
 ```
+
+---
+
+## Backup API (`/api/backup`)
+
+Creates a full backup of the bot's database and config files and returns it as a downloadable ZIP archive.
+
+> **This endpoint is sensitive.** It exposes your full database, `.env` secrets, and bot configuration. Protect your `API_SECRET` accordingly and avoid exposing the API port publicly.
+
+---
+
+### `GET /api/backup`
+
+Runs `mysqldump` against the configured database, bundles the SQL dump with `.env` and `kythia.config.js`, and returns the result as a compressed ZIP file download.
+
+**Authentication:** Bearer token required.
+
+**Response:** Binary ZIP file (`application/zip`) streamed as an attachment.
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/zip` |
+| `Content-Disposition` | `attachment; filename="kythia-backup-<timestamp>.zip"` |
+| `Content-Length` | Size of the ZIP in bytes |
+
+#### ZIP Contents
+
+| Filename | Description |
+|---|---|
+| `db-dump.sql` | Full `mysqldump` of the configured database (`--single-transaction`, `--routines`, `--triggers`) |
+| `.env` | Environment variables file from the bot root directory |
+| `kythia.config.js` | Bot configuration file from the bot root directory |
+
+> `.env` and `kythia.config.js` are only included if they exist on disk. If either file is missing it is silently skipped.
+
+#### Timestamp Format
+
+The ZIP filename uses the format `kythia-backup-YYYY-MM-DDTHH-MM-SS.zip` derived from the UTC time at the moment the request is processed.
+
+**Example filename:** `kythia-backup-2026-03-08T00-14-25.zip`
+
+---
+
+#### Errors
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Backup for DB driver 'sqlite' is not supported..." }` | `DB_DRIVER` is not `mysql` or `mariadb` |
+| `500` | `{ "success": false, "error": "DB_NAME or DB_USER is not configured." }` | Missing required DB credentials in config/env |
+| `500` | `{ "success": false, "error": "mysqldump failed: ..." }` | `mysqldump` process exited with a non-zero code |
+| `500` | `{ "success": false, "error": "Backup failed: ..." }` | Archive creation or other unexpected failure |
+
+---
+
+#### Requirements
+
+- **`mysqldump`** must be installed and available in the system `PATH` (usually ships with MySQL/MariaDB client tools).
+- The configured DB user must have `SELECT`, `LOCK TABLES`, `SHOW VIEW`, `TRIGGER`, and `EVENT` privileges (standard read-only dump privileges).
+- Supports `mysql` and `mariadb` drivers only. SQLite and other drivers return `400`.
+
+---
+
+#### Usage Example
+
+```bash
+# Download the backup archive
+curl -H "Authorization: Bearer YOUR_API_SECRET" \
+     http://localhost:3000/api/backup \
+     --output kythia-backup.zip
+
+# Inspect the contents
+unzip -l kythia-backup.zip
+```
+
+**Expected output:**
+```
+Archive:  kythia-backup.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+  2048576  03-08-2026 00:14   db-dump.sql
+     7056  03-08-2026 00:14   .env
+    15679  03-08-2026 00:14   kythia.config.js
+---------                     -------
+  2071311                     3 files
+```
+
+---
+
+#### Internal Behavior
+
+1. Reads DB credentials from `kythia.config.js` (falling back to environment variables).
+2. Constructs `mysqldump` arguments — uses `--socket` if `DB_SOCKET_PATH` is set, otherwise `-h HOST -P PORT`.
+3. Writes the SQL output to a temporary file in `os.tmpdir()`.
+4. Creates a ZIP archive (zlib level 9) in `os.tmpdir()` containing the SQL dump, `.env`, and `kythia.config.js`.
+5. Reads the ZIP into a buffer, responds with it, then deletes both temp files.

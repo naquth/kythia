@@ -1,0 +1,208 @@
+# KythiaModel — Usage Cheatsheet
+
+> Quick reference for every model method. Pay attention to **how the return value is assigned** — some methods return a tuple `[instance, created]` and must be destructured.
+
+---
+
+## Return Type Legend
+
+| Symbol | Meaning |
+|---|---|
+| `const x =` | Returns the value directly |
+| `const [x] =` | Returns a **tuple** — destructure to get the instance |
+| `const [x, created] =` | Returns **[instance, wasCreated]** |
+| `await` only | Returns `void` or result you don't need to capture |
+
+---
+
+## 🔍 Read — Single Record
+
+```js
+// Returns: Model | null
+const user = await User.getCache({ userId: '123', guildId: '456' });
+const user = await User.getCache({ where: { userId: '123' }, include: [Profile] });
+
+// Returns: Model | null (force DB, skip cache)
+const user = await User.getCache({ userId: '123' }, { noCache: true });
+
+// Force re-fetch from DB and overwrite cache
+// Returns: Model | null
+const user = await User.refreshCache({ userId: '123', guildId: '456' });
+```
+
+---
+
+## 🔍 Read — Multiple Records
+
+```js
+// Returns: Model[]
+const members = await Member.getAllCache({ where: { guildId: '123' } });
+
+// Returns: Model[] — by PK array, per-item cached
+const users = await User.bulkGetCache(['111', '222', '333']);
+const users = await User.bulkGetCache(['111', '222'], { include: [Profile] });
+```
+
+---
+
+## 📄 Read — Paginated
+
+```js
+// Returns: { rows: Model[], count: number, totalPages: number, currentPage: number }
+const { rows, count, totalPages, currentPage } = await Member.paginateCache({
+    where: { guildId: '123' },
+    page: 2,
+    pageSize: 10,
+    order: [['coins', 'DESC']],
+});
+```
+
+---
+
+## 🔢 Read — Count / Exists / Aggregate
+
+```js
+// Returns: number
+const total = await Member.countWithCache({ where: { guildId: '123' } });
+
+// Returns: boolean
+const isMember = await Member.existsCache({ userId: '123', guildId: '456' });
+
+// Returns: any (raw findAll result)
+const leaderboard = await Member.aggregateWithCache({
+    where: { guildId: '123' },
+    attributes: ['userId', [fn('SUM', col('xp')), 'totalXp']],
+    group: ['userId'],
+});
+```
+
+---
+
+## 🔎 Find-or-Create — Returns `[instance, created]`
+
+> ⚠️ These return a **tuple**. Always destructure with `const [x] =` or `const [x, created] =`.
+
+```js
+// Find + merge defaults onto existing if values differ, or create
+const [user, created] = await User.findOrCreateWithCache({
+    where: { userId: '123', guildId: '456' },
+    defaults: { coins: 0, level: 1 },
+});
+
+// Same as above, cleaner API
+const [user, created] = await User.getOrCreateCache(
+    { userId: '123', guildId: '456' },
+    { coins: 0, level: 1 },   // defaults (optional)
+);
+
+// Find as-is OR create — does NOT merge defaults onto existing
+const [user, created] = await User.firstOrCreateCache(
+    { userId: '123', guildId: '456' },
+    { coins: 0 },
+);
+
+// Find as-is, OR return a new UNSAVED instance (no DB write)
+const [user, isNew] = await User.firstOrNewCache(
+    { userId: '123', guildId: '456' },
+    { coins: 0 },
+);
+if (isNew) await user.save(); // you must save it yourself
+
+// Find + UPDATE with values, or create
+const [user, created] = await User.firstOrUpdateCache(
+    { userId: '123', guildId: '456' },
+    { lastSeen: new Date() },
+);
+
+// Always apply values — update existing or create (upsert)
+const [user, created] = await User.updateOrCreateCache(
+    { userId: '123', guildId: '456' },
+    { coins: 100, level: 5 },
+);
+```
+
+---
+
+## ✏️ Mutate — Increment / Destroy
+
+```js
+// Atomic increment (positive = add, negative = subtract). Returns: void
+await Member.incrementCache({ userId: '123', guildId: '456' }, 'coins', 50);
+await Member.incrementCache({ userId: '123', guildId: '456' }, 'coins', -10);
+
+// Destroy rows + bust cache. Returns: number (rows deleted)
+const deleted = await Member.destroyAndClearCache({ where: { guildId: '123' } });
+```
+
+---
+
+## 💾 Instance — Save & Cache
+
+```js
+// After getCache / getOrCreateCache / etc — mutate then save
+const user = await User.getCache({ userId: '123' });
+user.coins += 100;
+await user.save(); // saves to DB + updates cache
+```
+
+---
+
+## 🗑️ Cache Management
+
+```js
+// Clear a specific cache entry
+await User.clearCache({ userId: '123', guildId: '456' });
+await User.clearCache('custom-raw-key');
+
+// Sniper invalidation by tags
+await User.invalidateByTags([`User`, `User:userId:123`]);
+
+// Low-level read/write
+const { hit, data } = await User.getCachedEntry({ where: { userId: '123' } });
+await User.setCacheEntry({ where: { userId: '123' } }, instanceData, ttlMs, tags);
+```
+
+---
+
+## ⏰ Scheduler
+
+```js
+// Add to sorted set (score = timestamp)
+await Reminder.scheduleAdd('active', Date.now() + 3_600_000, reminderId);
+
+// Get all due items (score <= now)
+const dueIds = await Reminder.scheduleGetExpired('active');
+
+// Remove one item
+await Reminder.scheduleRemove('active', reminderId);
+
+// Clear entire set
+await Reminder.scheduleClear('active');
+```
+
+---
+
+## ⚙️ Model Class Config
+
+```js
+class Member extends KythiaModel {
+    static table = 'members';
+    static CACHE_TTL = 30 * 60 * 1000;       // 30 min
+    static fillable = ['coins', 'level', 'xp'];
+    static cacheKeys = [['guildId', 'userId'], ['guildId']];
+    static customInvalidationTags = ['leaderboard'];
+}
+```
+
+---
+
+## Common Options
+
+All query methods accept these extra options:
+
+| Option | Type | Description |
+|---|---|---|
+| `noCache` | `boolean` | Skip cache read/write entirely |
+| `ttl` | `number` | Override cache TTL in ms for this call |
+| `include` | `Model[]` | Sequelize associations to eager-load |
+| `where` | `object` | Explicit where clause |

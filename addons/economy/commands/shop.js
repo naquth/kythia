@@ -401,7 +401,7 @@ module.exports = {
 
 				user.changed('kythiaCoin', true);
 
-				await user.saveAndUpdateCache();
+				await user.save();
 
 				await Inventory.create({
 					userId: user.userId,

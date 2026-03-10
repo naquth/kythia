@@ -138,7 +138,7 @@ app.patch('/:guildId', async (c) => {
 		});
 
 		await setting.update(updates);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 
 		const data = {};
 		for (const field of WELCOME_FIELDS) {

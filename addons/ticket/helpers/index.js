@@ -625,7 +625,7 @@ async function closeTicket(interaction, container, reason = null) {
 		ticket.closedReason = reason;
 		ticket.closedByUserId = interaction.user.id;
 
-		await ticket.saveAndUpdateCache();
+		await ticket.save();
 
 		await interaction.channel.delete();
 	} catch (error) {

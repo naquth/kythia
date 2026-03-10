@@ -314,6 +314,51 @@
 					}
 				}
 			}
+		},
+		"rps": {
+			"title": "## ✂️ Rock Paper Scissors",
+			"choose": "Pick your weapon!",
+			"waiting": "Waiting for {opponent} to pick their weapon...",
+			"not_your_game": "❌ This isn't your game to play!",
+			"choices": {
+				"rock": "🪨 Rock",
+				"paper": "📄 Paper",
+				"scissors": "✂️ Scissors"
+			},
+			"result": {
+				"win": "🎉 **{winner}** wins!\n{winnerChoice} beats {loserChoice}!",
+				"draw": "🤝 It's a draw!\nYou both picked {choice}!",
+				"timeout": "⏰ Time's up! **{opponent}** didn't respond. Game cancelled."
+			},
+			"rematch": "Rematch",
+			"footer": {
+				"play": "Click a button to make your move!",
+				"end": "Play again with /rps"
+			}
+		},
+		"math": {
+			"title": "## 🔢 Math Quiz",
+			"question": "Solve: **{question}**\nStreak: **{score}**",
+			"correct": "✅ Correct! **+1**",
+			"wrong": "❌ Wrong! The answer was `{answer}`.\nFinal streak: **{score}**",
+			"timeout": "⏰ Time's up! The answer was `{answer}`.\nFinal streak: **{score}**",
+			"new_best": "🏆 New personal best: **{score}**!",
+			"button": {
+				"answer": "Answer"
+			},
+			"modal": {
+				"title": "Your Answer",
+				"label": "Enter the answer (numbers only)"
+			},
+			"footer": {
+				"play": "You have 30 seconds per question!",
+				"end": "Play again with /math"
+			},
+			"leaderboard": {
+				"title": "## 🏆 Math Quiz — Global Leaderboard",
+				"empty": "No scores yet! Be the first to play with `/math`.",
+				"entry": "{rank}. **{user}** — `{score}` pts"
+			}
 		}
 	}
 }

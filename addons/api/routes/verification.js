@@ -169,11 +169,7 @@ app.patch('/:guildId/toggle', async (c) => {
 				defaults: { guildId },
 			}));
 		setting.verificationOn = body.enabled;
-		if (typeof setting.saveAndUpdateCache === 'function') {
-			await setting.saveAndUpdateCache('guildId');
-		} else {
-			await setting.save();
-		}
+		await setting.save();
 		return c.json({
 			status: 'ok',
 			data: { verificationOn: setting.verificationOn },

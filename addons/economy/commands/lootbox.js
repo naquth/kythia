@@ -80,7 +80,7 @@ module.exports = {
 		user.changed('kythiaCoin', true);
 		user.changed('lastLootbox', true);
 
-		await user.saveAndUpdateCache('userId');
+		await user.save();
 
 		const msg = `## ${await t(interaction, 'economy.lootbox.lootbox.title')}\n${await t(
 			interaction,

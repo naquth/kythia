@@ -70,7 +70,7 @@ class StickyMessageHandler {
 
 			sticky.messageId = sent.id;
 			sticky.changed('messageId', true);
-			await sticky.saveAndUpdateCache('channelId');
+			await sticky.save();
 		} catch (err) {
 			logger.error('❌ Error loading sticky:', err);
 		}

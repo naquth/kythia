@@ -55,7 +55,7 @@ module.exports = {
 		user.cash += petValue;
 		await userPet.destroy();
 		user.changed('cash', true);
-		await user.saveAndUpdateCache('userId');
+		await user.save();
 
 		const components = await simpleContainer(
 			interaction,

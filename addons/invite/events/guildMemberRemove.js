@@ -62,7 +62,7 @@ module.exports = async (bot, member) => {
 			inviterStats.changed('invites', true);
 			inviterStats.changed('fake', true);
 
-			await inviterStats.saveAndUpdateCache();
+			await inviterStats.save();
 
 			logger.info(
 				`${member?.user?.username} left. Deducted ${wasFake ? 'fake' : 'real'} invite from ${history.inviterId}.`,

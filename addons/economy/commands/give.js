@@ -160,8 +160,8 @@ module.exports = {
 				giver.changed('kythiaCoin', true);
 				receiver.changed('kythiaCoin', true);
 
-				await giver.saveAndUpdateCache('userId');
-				await receiver.saveAndUpdateCache('userId');
+				await giver.save();
+				await receiver.save();
 
 				const msg = await t(interaction, 'economy.give.give.success', {
 					amount,

@@ -133,7 +133,7 @@ app.patch('/:guildId', async (c) => {
 			defaults: { guildId },
 		});
 		Object.assign(setting, updates);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 		return c.json({
 			status: 'ok',
 			message: 'Settings updated',
@@ -192,7 +192,7 @@ app.post('/:guildId/badwords', async (c) => {
 		words.push(...added);
 		setting.badwords = words;
 		setting.changed('badwords', true);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 		return c.json(
 			{ status: 'ok', data: { added, skipped, total: words.length } },
 			201,
@@ -224,7 +224,7 @@ app.delete('/:guildId/badwords', async (c) => {
 		if (body.clear) {
 			setting.badwords = [];
 			setting.changed('badwords', true);
-			await setting.saveAndUpdateCache('guildId');
+			await setting.save();
 			return c.json({ status: 'ok', message: 'All badwords cleared' });
 		}
 		const incoming = Array.isArray(body.words)
@@ -235,7 +235,7 @@ app.delete('/:guildId/badwords', async (c) => {
 		words = words.filter((w) => !incoming.includes(w));
 		setting.badwords = words;
 		setting.changed('badwords', true);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 		return c.json({ status: 'ok', data: { removed, total: words.length } });
 	} catch (error) {
 		return c.json({ status: 'error', error: error.message }, 500);
@@ -284,7 +284,7 @@ app.post('/:guildId/whitelist', async (c) => {
 		ids.push(...added);
 		setting.whitelist = ids;
 		setting.changed('whitelist', true);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 		return c.json({ status: 'ok', data: { added, total: ids.length } }, 201);
 	} catch (error) {
 		return c.json({ status: 'error', error: error.message }, 500);
@@ -309,7 +309,7 @@ app.delete('/:guildId/whitelist/:id', async (c) => {
 		ids = ids.filter((i) => i !== id);
 		setting.whitelist = ids;
 		setting.changed('whitelist', true);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 		return c.json({ status: 'ok', data: { removed: id, total: ids.length } });
 	} catch (error) {
 		return c.json({ status: 'error', error: error.message }, 500);
@@ -364,7 +364,7 @@ app.post('/:guildId/ignored-channels', async (c) => {
 		channelIds.push(...added);
 		setting.ignoredChannels = channelIds;
 		setting.changed('ignoredChannels', true);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 		return c.json(
 			{ status: 'ok', data: { added, total: channelIds.length } },
 			201,
@@ -396,7 +396,7 @@ app.delete('/:guildId/ignored-channels/:channelId', async (c) => {
 		channelIds = channelIds.filter((id) => id !== channelId);
 		setting.ignoredChannels = channelIds;
 		setting.changed('ignoredChannels', true);
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 		return c.json({
 			status: 'ok',
 			data: { removed: channelId, total: channelIds.length },
@@ -550,11 +550,7 @@ async function getANConfig(c) {
 async function saveANConfig(setting, config) {
 	setting.antiNukeConfig = serializeConfig(config);
 	setting.changed('antiNukeConfig', true);
-	if (typeof setting.saveAndUpdateCache === 'function') {
-		await setting.saveAndUpdateCache('guildId');
-	} else {
-		await setting.save();
-	}
+	await setting.save();
 }
 
 function formatANConfig(config) {

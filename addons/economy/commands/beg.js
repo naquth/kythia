@@ -70,7 +70,7 @@ module.exports = {
 		user.changed('kythiaCoin', true);
 		user.changed('lastBeg', true);
 
-		await user.saveAndUpdateCache('userId');
+		await user.save();
 
 		const msg = await t(interaction, 'economy.beg.beg.success', {
 			amount: randomCoin,

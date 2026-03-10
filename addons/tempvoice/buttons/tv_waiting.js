@@ -92,7 +92,7 @@ module.exports = {
 				);
 
 				activeChannel.waitingRoomChannelId = null;
-				await activeChannel.saveAndUpdateCache();
+				await activeChannel.save();
 
 				await interaction.reply({
 					components: await simpleContainer(
@@ -142,7 +142,7 @@ module.exports = {
 				);
 
 				activeChannel.waitingRoomChannelId = waitingRoom.id;
-				await activeChannel.saveAndUpdateCache();
+				await activeChannel.save();
 
 				await interaction.reply({
 					components: await simpleContainer(

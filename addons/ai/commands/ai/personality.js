@@ -92,9 +92,9 @@ module.exports = {
 		await user.save();
 
 		// Invalidate cache
-		await KythiaUser.invalidateCache([
-			`KythiaUser:userId:${interaction.user.id}`,
-		]);
+		// await KythiaUser.invalidateCache([
+		// 	`KythiaUser:userId:${interaction.user.id}`,
+		// ]);
 
 		// Show appropriate message
 		let msg;

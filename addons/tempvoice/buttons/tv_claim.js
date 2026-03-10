@@ -99,7 +99,7 @@ module.exports = {
 			});
 
 			activeChannel.ownerId = interaction.user.id;
-			await activeChannel.saveAndUpdateCache();
+			await activeChannel.save();
 
 			return interaction.reply({
 				components: await simpleContainer(

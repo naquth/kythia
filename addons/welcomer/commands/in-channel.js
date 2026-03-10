@@ -32,13 +32,13 @@ module.exports = {
 
 		await interaction.deferReply({ ephemeral: true });
 
-		const serverSetting = await WelcomeSetting.getOrCreateCache({
+		const [welcomeSetting] = await WelcomeSetting.getOrCreateCache({
 			guildId: interaction.guild.id,
 		});
 
 		const ch = interaction.options.getChannel('channel');
-		serverSetting.welcomeInChannelId = ch.id;
-		await serverSetting.saveAndUpdateCache('guildId');
+		welcomeSetting.welcomeInChannelId = ch.id;
+		await welcomeSetting.save();
 
 		const components = await simpleContainer(
 			interaction,

@@ -124,7 +124,7 @@ module.exports = {
 
 			user.changed('kythiaCoin', true);
 
-			await user.saveAndUpdateCache();
+			await user.save();
 
 			const msg = `## ${await t(interaction, 'economy.market.buy.success.title')}\n${await t(interaction, 'economy.market.buy.success.desc', { quantity: quantityToBuy.toFixed(6), asset: assetId.toUpperCase(), amount: amountToSpend.toLocaleString() })}`;
 			const components = await simpleContainer(interaction, msg, {

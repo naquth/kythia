@@ -434,7 +434,7 @@ module.exports = {
 				const [settingKey, featureName] = entry;
 				const status = interaction.options.getString('status');
 				serverSetting[settingKey] = status === 'enable';
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 
 				const components = await simpleContainer(
 					interaction,
@@ -476,7 +476,7 @@ module.exports = {
 				whitelist.push(targetId);
 				serverSetting.whitelist = whitelist;
 				serverSetting.changed('whitelist', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 
 				const isRole = interaction.guild.roles.cache.has(targetId);
 				const components = await simpleContainer(
@@ -511,7 +511,7 @@ module.exports = {
 				whitelist = whitelist.filter((id) => id !== targetId);
 				serverSetting.whitelist = whitelist;
 				serverSetting.changed('whitelist', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 
 				const isRole = interaction.guild.roles.cache.has(targetId);
 				const components = await simpleContainer(
@@ -594,7 +594,7 @@ module.exports = {
 				badwords.push(word.toLowerCase());
 				serverSetting.badwords = badwords;
 				serverSetting.changed('badwords', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'core.setting.setting.badword.add', { word }),
@@ -621,7 +621,7 @@ module.exports = {
 				badwords = badwords.filter((w) => w !== word.toLowerCase());
 				serverSetting.badwords = badwords;
 				serverSetting.changed('badwords', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'core.setting.setting.badword.remove', { word }),
@@ -685,7 +685,7 @@ module.exports = {
 				badwordWhitelist.push(word.toLowerCase());
 				serverSetting.badwordWhitelist = badwordWhitelist;
 				serverSetting.changed('badwordWhitelist', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'core.setting.setting.badword.whitelist.add', {
@@ -719,7 +719,7 @@ module.exports = {
 				);
 				serverSetting.badwordWhitelist = badwordWhitelist;
 				serverSetting.changed('badwordWhitelist', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(
@@ -790,7 +790,7 @@ module.exports = {
 				ignoredChannels.push(targetId);
 				serverSetting.ignoredChannels = ignoredChannels;
 				serverSetting.changed('ignoredChannels', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'core.setting.setting.exception.channel.add', {
@@ -822,7 +822,7 @@ module.exports = {
 				ignoredChannels = ignoredChannels.filter((id) => id !== targetId);
 				serverSetting.ignoredChannels = ignoredChannels;
 				serverSetting.changed('ignoredChannels', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(
@@ -895,7 +895,7 @@ module.exports = {
 
 			if (sub === 'mod-log') {
 				serverSetting.modLogChannelId = channel.id;
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'core.setting.setting.mod.log.channel.set', {
@@ -911,7 +911,7 @@ module.exports = {
 
 			if (sub === 'audit-log') {
 				serverSetting.auditLogChannelId = channel.id;
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'core.setting.setting.audit.log.channel.set', {
@@ -935,7 +935,7 @@ module.exports = {
 			const saveConfig = async (newConfig) => {
 				serverSetting.antiNukeConfig = serializeConfig(newConfig);
 				serverSetting.changed('antiNukeConfig', true);
-				await serverSetting.saveAndUpdateCache('guildId');
+				await serverSetting.save();
 			};
 
 			if (sub === 'toggle') {

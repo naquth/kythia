@@ -48,12 +48,12 @@ module.exports = {
 			});
 		}
 
-		const serverSetting = await WelcomeSetting.getOrCreateCache({
+		const [welcomeSetting] = await WelcomeSetting.getOrCreateCache({
 			guildId: interaction.guild.id,
 		});
 
-		serverSetting.welcomeOutBackgroundUrl = url;
-		await serverSetting.saveAndUpdateCache('guildId');
+		welcomeSetting.welcomeOutBackgroundUrl = url;
+		await welcomeSetting.save();
 
 		const components = await simpleContainer(
 			interaction,

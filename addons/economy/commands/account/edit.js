@@ -56,7 +56,7 @@ module.exports = {
 			// Update user's bank type
 			existingUser.bankType = bankType;
 			existingUser.changed('bankType', true);
-			await existingUser.saveAndUpdateCache('userId');
+			await existingUser.save();
 
 			const msg = await t(
 				interaction,

@@ -68,7 +68,7 @@ module.exports = {
 				reason,
 				date: new Date(),
 			});
-			await userRecord.saveAndUpdateCache();
+			await userRecord.save();
 
 			try {
 				const dmReply = await createContainer(interaction, {

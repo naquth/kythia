@@ -55,7 +55,7 @@ module.exports = {
 		// Update happiness level
 		userPet.happiness = Math.min(userPet.happiness + 20, 100);
 		userPet.changed('happiness', true);
-		await userPet.saveAndUpdateCache('userId');
+		await userPet.save();
 
 		const components = await simpleContainer(
 			interaction,

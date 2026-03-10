@@ -38,7 +38,7 @@ module.exports = {
 		const newName = interaction.options.getString('name');
 		userPet.petName = newName;
 		userPet.changed('petName', true);
-		await userPet.saveAndUpdateCache('userId');
+		await userPet.save();
 
 		const components = await simpleContainer(
 			interaction,

@@ -328,7 +328,7 @@ app.patch('/:guildId/:userId', async (c) => {
 		user.changed('level', true);
 		user.changed('xp', true);
 		try {
-			await user.saveAndUpdateCache('userId');
+			await user.save();
 		} catch {
 			await user.save();
 		}

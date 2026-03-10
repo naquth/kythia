@@ -77,7 +77,7 @@ app.patch('/:id', async (c) => {
 		if (!ticket)
 			return c.json({ success: false, error: 'Ticket not found' }, 404);
 		await ticket.update(body);
-		await ticket.saveAndUpdateCache();
+		await ticket.save();
 		return c.json({ success: true, data: ticket });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -315,7 +315,7 @@ app.post('/panels', async (c) => {
 			description: description || null,
 			image: image || null,
 		});
-		await panel.saveAndUpdateCache();
+		await panel.save();
 
 		return c.json({ success: true, data: panel });
 	} catch (error) {
@@ -337,7 +337,7 @@ app.patch('/panels/:id', async (c) => {
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
 		await panel.update(body);
-		await panel.saveAndUpdateCache();
+		await panel.save();
 
 		// Refresh the live Discord panel message
 		if (panel.messageId) {
@@ -485,7 +485,7 @@ app.post('/configs', async (c) => {
 			ticketOpenImage: body.ticketOpenImage || null,
 			askReason: body.askReason || null,
 		});
-		await config.saveAndUpdateCache();
+		await config.save();
 
 		// Refresh the parent panel so the new type appears immediately
 		await ticketHelpers.refreshTicketPanel(panelMessageId, container);
@@ -510,7 +510,7 @@ app.patch('/configs/:id', async (c) => {
 			return c.json({ success: false, error: 'TicketConfig not found' }, 404);
 
 		await config.update(body);
-		await config.saveAndUpdateCache();
+		await config.save();
 
 		// Refresh the parent panel
 		if (config.panelMessageId) {

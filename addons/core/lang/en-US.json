@@ -162,10 +162,10 @@
 						"desc": "## ❌ Restart Cancelled\nThe restart was cancelled."
 					},
 					"restarting": {
-						"desc": "## ♾️ Bot Restarting\nThe bot is restarting... please wait a moment <:kennmchead:1375315784456343572>"
+						"desc": "## ♾️ Bot Restarting\nThe bot is restarting... please wait a moment"
 					},
 					"timeout": {
-						"desc": "## ⌛ Timed Out\nTime ran out! No action was taken 😭"
+						"desc": "## ⌛ Timed Out\nTime ran out! No action was taken "
 					}
 				},
 				"button": {
@@ -1497,6 +1497,9 @@
 							"welcome": {
 								"desc": "## 🎉 Thank you for inviting me!\nHello everyone! I'm **{bot}** and I'm ready to help your server!\n\nHere are some steps to get started:\n• Use `/help` to see all my features and commands.\n• Configure your server settings with `/set view` (admin only).\n• Visit my website at [kythia.my.id](https://kythia.my.id/commands) for documentation and more info.\n\nIf you need help, just mention me or contact my owner `kenndeclouv`!\n",
 								"fallback": "## 🎉 Thank you for inviting me!\nHello everyone! I'm **{bot}** and I'm ready to help your server!\n\nHere are some steps to get started:\n• Use `/help` to see all my features and commands.\n• Configure your server settings with `/set view` (admin only).\n• Visit my website at [kythia.my.id](https://kythia.my.id/commands) for documentation and more info.\n\nIf you need help, just mention me or contact my owner `kenndeclouv`!\n"
+							},
+							"min": {
+								"members": "## 🌸 {bot} Leave!\nSorry, I only join servers with at least **{threshold} members**.\nFeel free to invite me back once your server has grown — I'd love to be part of your community! 🌸"
 							}
 						}
 					}

@@ -84,7 +84,7 @@ function renderBoard(guesses, answer) {
 	return lines.join('\n');
 }
 
-async function buildGameEmbed(interaction, game) {
+async function buildGameEmbed(interaction, game, actionRow = null) {
 	let description = renderBoard(game.guesses, game.answer);
 	const { t, helpers, kythiaConfig } = interaction.client.container;
 	const { convertColor } = helpers.color;
@@ -103,7 +103,7 @@ async function buildGameEmbed(interaction, game) {
 		? await t(interaction, 'fun.wordle.footer.end')
 		: await t(interaction, 'fun.wordle.footer.play');
 
-	return new ContainerBuilder()
+	const container = new ContainerBuilder()
 		.setAccentColor(
 			convertColor(
 				game.isOver
@@ -127,6 +127,9 @@ async function buildGameEmbed(interaction, game) {
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(`-# ${footer}`),
 		);
+
+	if (actionRow) container.addActionRowComponents(actionRow);
+	return container;
 }
 
 module.exports = {
@@ -161,7 +164,6 @@ module.exports = {
 		};
 		const game = games[userId];
 
-		const gameContainer = await buildGameEmbed(interaction, game);
 		const row = new ActionRowBuilder().addComponents(
 			new ButtonBuilder()
 				.setCustomId('wordle_guess_button')
@@ -169,8 +171,10 @@ module.exports = {
 				.setStyle(ButtonStyle.Primary),
 		);
 
+		const gameContainer = await buildGameEmbed(interaction, game, row);
+
 		const message = await interaction.reply({
-			components: [gameContainer, row],
+			components: [gameContainer],
 			flags: MessageFlags.IsComponentsV2,
 			fetchReply: true,
 		});
@@ -254,7 +258,11 @@ module.exports = {
 					collector.stop('lose');
 				}
 
-				const updatedContainer = await buildGameEmbed(interaction, game);
+				const updatedContainer = await buildGameEmbed(
+					interaction,
+					game,
+					game.isOver ? null : row,
+				);
 				await interaction.editReply({
 					components: [updatedContainer],
 					flags: MessageFlags.IsComponentsV2,
@@ -267,7 +275,6 @@ module.exports = {
 
 			delete games[userId];
 
-			const finalContainer = await buildGameEmbed(interaction, game);
 			const finalRow = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setCustomId('wordle_guess_button')
@@ -275,8 +282,9 @@ module.exports = {
 					.setStyle(ButtonStyle.Secondary)
 					.setDisabled(true),
 			);
+			const finalContainer = await buildGameEmbed(interaction, game, finalRow);
 			await interaction.editReply({
-				components: [finalContainer, finalRow],
+				components: [finalContainer],
 				flags: MessageFlags.IsComponentsV2,
 			});
 		});

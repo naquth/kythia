@@ -64,7 +64,7 @@ app.post('/', async (c) => {
 
 	try {
 		const result = await AutoReact.create(body);
-		await result.saveAndUpdateCache();
+		await result.save();
 		return c.json({ success: true, data: result });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -83,7 +83,7 @@ app.patch('/:id', async (c) => {
 			return c.json({ success: false, error: 'AutoReact not found' }, 404);
 
 		await result.update(body);
-		await result.saveAndUpdateCache();
+		await result.save();
 
 		return c.json({ success: true, data: result });
 	} catch (error) {

@@ -116,7 +116,7 @@ module.exports = async (bot, member) => {
 					inviteData.changed('fake', true);
 				}
 
-				await inviteData.saveAndUpdateCache();
+				await inviteData.save();
 
 				await InviteHistory.create({
 					guildId: guild.id,

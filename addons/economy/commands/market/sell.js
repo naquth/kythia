@@ -123,7 +123,7 @@ module.exports = {
 
 			user.changed('kythiaCoin', true);
 
-			await user.saveAndUpdateCache();
+			await user.save();
 
 			const pnl = (currentPrice - holding.avgBuyPrice) * sellQuantity;
 			const pnlSign = pnl >= 0 ? '+' : '';

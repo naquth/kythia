@@ -139,7 +139,7 @@ module.exports = {
 
 		user.changed('kythiaCoin', true);
 
-		await user.saveAndUpdateCache();
+		await user.save();
 
 		const outcomeColors = {
 			success: 'Green',

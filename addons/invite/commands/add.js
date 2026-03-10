@@ -48,7 +48,7 @@ module.exports = {
 
 		row.invites = (row.invites || 0) + amountToAdd;
 
-		await row.saveAndUpdateCache();
+		await row.save();
 
 		const title = await t(interaction, 'invite.invite.command.title');
 		const successMsg = await t(interaction, 'invite.command.add.success', {

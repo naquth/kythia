@@ -79,7 +79,7 @@ app.patch('/settings/:guildId', async (c) => {
 				defaults: { guildId },
 			});
 			await setting.update(settingUpdates);
-			await setting.saveAndUpdateCache('guildId');
+			await setting.save();
 		}
 
 		// Update ServerSetting fields — auto-create if not exists
@@ -93,7 +93,7 @@ app.patch('/settings/:guildId', async (c) => {
 				defaults: { guildId },
 			});
 			await serverSetting.update(serverUpdates);
-			await serverSetting.saveAndUpdateCache('guildId');
+			await serverSetting.save();
 		}
 
 		return c.json({ success: true, message: 'Invite settings updated.' });
@@ -252,7 +252,7 @@ app.patch('/:guildId/user/:userId', async (c) => {
 			return c.json({ success: false, error: 'No valid fields provided' }, 400);
 
 		await row.update(updates);
-		await row.saveAndUpdateCache();
+		await row.save();
 
 		return c.json({
 			success: true,
@@ -486,7 +486,7 @@ app.post('/:guildId/milestones', async (c) => {
 		setting.milestoneRoles = milestones;
 		setting.changed('milestoneRoles', true);
 		await setting.save();
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 
 		return c.json({ success: true, data: { milestoneRoles: milestones } });
 	} catch (error) {
@@ -519,7 +519,7 @@ app.delete('/:guildId/milestones/:invites', async (c) => {
 		setting.milestoneRoles = newMilestones;
 		setting.changed('milestoneRoles', true);
 		await setting.save();
-		await setting.saveAndUpdateCache('guildId');
+		await setting.save();
 
 		return c.json({ success: true, data: { milestoneRoles: newMilestones } });
 	} catch (error) {

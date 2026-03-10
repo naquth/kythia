@@ -125,7 +125,7 @@ app.post('/add', async (c) => {
 			if (webhookId !== undefined) existing.webhookId = webhookId;
 			if (webhookToken !== undefined) existing.webhookToken = webhookToken;
 			try {
-				await existing.saveAndUpdateCache('guildId');
+				await existing.save();
 			} catch {
 				await existing.save();
 			}
@@ -244,7 +244,7 @@ app.patch('/:guildId/webhook', async (c) => {
 		if (globalChannelId) guild.globalChannelId = globalChannelId;
 
 		try {
-			await guild.saveAndUpdateCache('guildId');
+			await guild.save();
 		} catch {
 			await guild.save();
 		}

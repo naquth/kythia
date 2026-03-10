@@ -139,7 +139,7 @@ module.exports = {
 						const oldHp = freshUser.hp;
 
 						freshUser.hp = Math.min(freshUser.hp + healAmount, freshUser.maxHp);
-						await freshUser.saveAndUpdateCache();
+						await freshUser.save();
 
 						const healed = freshUser.hp - oldHp;
 						const itemName = targetItem.nameKey
@@ -160,7 +160,7 @@ module.exports = {
 						);
 					} else {
 						freshUser.hp = Math.floor(freshUser.maxHp * 0.5);
-						await freshUser.saveAndUpdateCache();
+						await freshUser.save();
 
 						const itemName = targetItem.nameKey
 							? await t(interaction, targetItem.nameKey)

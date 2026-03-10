@@ -138,7 +138,7 @@ module.exports = {
 		user.changed('kythiaCoin', true);
 		user.changed('kythiaBank', true);
 
-		await user.saveAndUpdateCache();
+		await user.save();
 
 		const msg = await t(interaction, 'economy.deposit.deposit.success', {
 			amount,

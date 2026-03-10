@@ -173,7 +173,7 @@ module.exports = async (bot, oldState, newState) => {
 					const requests = mainChannel.pendingJoinRequests || {};
 					requests[member.id] = reqMsg.id;
 					mainChannel.pendingJoinRequests = requests;
-					await mainChannel.saveAndUpdateCache();
+					await mainChannel.save();
 				}
 			} catch (e) {
 				logger.error(
@@ -232,7 +232,7 @@ module.exports = async (bot, oldState, newState) => {
 
 				delete requests[member.id];
 				mainChannel.pendingJoinRequests = requests;
-				await mainChannel.saveAndUpdateCache();
+				await mainChannel.save();
 			}
 		}
 	}

@@ -149,8 +149,8 @@ module.exports = {
 			user.changed('kythiaCoin', true);
 			target.changed('kythiaCoin', true);
 
-			await user.saveAndUpdateCache('userId');
-			await target.saveAndUpdateCache('userId');
+			await user.save();
+			await target.save();
 
 			const msg = await t(interaction, 'economy.rob.rob.success.text', {
 				amount: robAmount,
@@ -212,8 +212,8 @@ module.exports = {
 			user.changed('kythiaCoin', true);
 			target.changed('kythiaCoin', true);
 
-			await user.saveAndUpdateCache('userId');
-			await target.saveAndUpdateCache('userId');
+			await user.save();
+			await target.save();
 
 			const msg = await t(interaction, 'economy.rob.rob.fail.text', {
 				target: targetUser.username,

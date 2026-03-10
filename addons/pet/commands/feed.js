@@ -72,7 +72,7 @@ module.exports = {
 		await petFood.destroy();
 		userPet.hunger = Math.min(userPet.hunger + 20, 100);
 		userPet.changed('hunger', true);
-		await userPet.saveAndUpdateCache('userId');
+		await userPet.save();
 
 		// Check if hunger exceeds the maximum limit
 		if (userPet.hunger >= 100) {

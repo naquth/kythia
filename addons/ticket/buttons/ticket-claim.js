@@ -87,7 +87,7 @@ module.exports = {
 			}
 
 			ticket.claimedByUserId = interaction.user.id;
-			await ticket.saveAndUpdateCache();
+			await ticket.save();
 
 			const message = interaction.message;
 

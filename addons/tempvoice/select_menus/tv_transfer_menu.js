@@ -104,7 +104,7 @@ module.exports = {
 			});
 
 			activeChannel.ownerId = newOwnerId;
-			await activeChannel.saveAndUpdateCache();
+			await activeChannel.save();
 
 			// This message informs the previous owner (interaction.user) the transfer was successful.
 			await interaction.update({

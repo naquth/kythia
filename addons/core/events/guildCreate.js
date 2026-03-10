@@ -80,6 +80,50 @@ module.exports = async (bot, guild) => {
 		});
 	}
 
+	const minMembers = kythiaConfig.bot.minMembers ?? 0;
+	if (minMembers > 0 && (guild.memberCount ?? 0) < minMembers) {
+		logger.info(
+			`[guildCreate] Left guild "${guild.name}" (${guild.id}) — only ${guild.memberCount} members (min: ${minMembers})`,
+			{ label: 'guildCreate:minMembers' },
+		);
+
+		const { simpleContainer } = helpers.discord;
+		let channel = guild.systemChannel;
+		if (!channel) {
+			channel = guild.channels.cache.find(
+				(ch) =>
+					ch.type === 0 &&
+					typeof ch.name === 'string' &&
+					ch.name.toLowerCase() === 'general',
+			);
+		}
+
+		if (channel) {
+			try {
+				const fakeInteraction = {
+					client: bot.client,
+					guild: guild,
+					user: bot.client.user,
+				};
+				const msg = await t(
+					fakeInteraction,
+					'core.events.guildCreate.events.guild.create.min.members',
+					{ bot: bot.client.user.username, threshold: minMembers },
+				);
+				const components = await simpleContainer(fakeInteraction, msg, {
+					color: 'Red',
+				});
+				await channel.send({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (_e) {}
+		}
+
+		await guild.leave();
+		return;
+	}
+
 	let ownerName = 'Unknown';
 	try {
 		let owner = guild.members?.cache?.get(guild.ownerId);

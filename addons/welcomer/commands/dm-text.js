@@ -34,13 +34,13 @@ module.exports = {
 
 		await interaction.deferReply({ ephemeral: true });
 
-		const serverSetting = await WelcomeSetting.getOrCreateCache({
+		const [welcomeSetting] = await WelcomeSetting.getOrCreateCache({
 			guildId: interaction.guild.id,
 		});
 
 		const text = interaction.options.getString('text');
-		serverSetting.welcomeDmText = text;
-		await serverSetting.saveAndUpdateCache('guildId');
+		welcomeSetting.welcomeDmText = text;
+		await welcomeSetting.save();
 
 		const components = await simpleContainer(
 			interaction,

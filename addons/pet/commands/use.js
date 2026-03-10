@@ -46,7 +46,7 @@ module.exports = {
 		}
 
 		const { pet: updatedPet, justDied } = updatePetStatus(userPet);
-		await updatedPet.saveAndUpdateCache();
+		await updatedPet.save();
 
 		if (justDied) {
 			try {
@@ -110,9 +110,9 @@ module.exports = {
 		}
 
 		updatedPet.lastUse = new Date();
-		await updatedPet.saveAndUpdateCache();
+		await updatedPet.save();
 
-		await kythiaUser.saveAndUpdateCache();
+		await kythiaUser.save();
 
 		const components = await simpleContainer(
 			interaction,

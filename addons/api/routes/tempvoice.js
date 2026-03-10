@@ -143,7 +143,7 @@ app.post('/setup', async (c) => {
 			controlPanelChannelId: controlPanel.id,
 			interfaceMessageId: interfaceMessage.id,
 		});
-		await config.saveAndUpdateCache();
+		await config.save();
 
 		return c.json({
 			success: true,
@@ -208,7 +208,7 @@ app.post('/configs/:guildId/refresh', async (c) => {
 			const newMessage = await channel.send({ components, flags });
 			config.interfaceMessageId = newMessage.id;
 			await config.save();
-			await config.saveAndUpdateCache();
+			await config.save();
 		}
 
 		return c.json({

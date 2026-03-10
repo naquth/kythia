@@ -32,13 +32,13 @@ module.exports = {
 
 		await interaction.deferReply({ ephemeral: true });
 
-		const serverSetting = await WelcomeSetting.getOrCreateCache({
+		const [welcomeSetting] = await WelcomeSetting.getOrCreateCache({
 			guildId: interaction.guild.id,
 		});
 
 		const role = interaction.options.getRole('role');
-		serverSetting.welcomeRoleId = role.id;
-		await serverSetting.saveAndUpdateCache('guildId');
+		welcomeSetting.welcomeRoleId = role.id;
+		await welcomeSetting.save();
 
 		const components = await simpleContainer(
 			interaction,

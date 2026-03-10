@@ -81,7 +81,7 @@ app.patch('/:guildId', async (c) => {
 			}
 		}
 
-		await settings.saveAndUpdateCache('guildId');
+		await settings.save();
 
 		return c.json({ success: true, settings });
 	} catch (e) {

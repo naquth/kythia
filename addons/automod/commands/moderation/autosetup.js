@@ -89,7 +89,7 @@ module.exports = {
 			const setting = await ServerSetting.getCache({ guildId: guild.id });
 			setting.modLogChannelId = modLogChannel.id;
 			setting.muteRoleId = muteRole.id;
-			await setting.saveAndUpdateCache();
+			await setting.save();
 
 			const description =
 				createdItems.length > 0

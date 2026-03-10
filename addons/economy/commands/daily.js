@@ -78,7 +78,7 @@ module.exports = {
 		user.changed('kythiaCoin', true);
 		user.changed('lastDaily', true);
 
-		await user.saveAndUpdateCache('userId');
+		await user.save();
 
 		const msg = await t(interaction, 'economy.daily.daily.success', {
 			amount: randomCoin,

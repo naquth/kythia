@@ -174,7 +174,7 @@ module.exports = {
 			warmResult.name = `${testName} [UPDATED]`;
 
 			const startSave = Date.now();
-			await warmResult.saveAndUpdateCache();
+			await warmResult.save();
 			const tSave = Date.now() - startSave;
 
 			addLog('💾', `**Step ${step++}: saveAndUpdateCache** -> ${tSave}ms`);

@@ -165,8 +165,8 @@ module.exports = {
 				user.changed('lastHack', true);
 				target.changed('kythiaBank', true);
 
-				await user.saveAndUpdateCache('userId');
-				await target.saveAndUpdateCache('userId');
+				await user.save();
+				await target.save();
 
 				const dmMsg = await t(interaction, 'economy.hack.hack.success.dm', {
 					hacker: interaction.user.username,
@@ -218,13 +218,13 @@ module.exports = {
 					user.changed('kythiaBank', true);
 					target.changed('kythiaBank', true);
 
-					await user.saveAndUpdateCache('userId');
-					await target.saveAndUpdateCache('userId');
+					await user.save();
+					await target.save();
 				}
 
 				user.lastHack = Date.now();
 				user.changed('lastHack', true);
-				await user.saveAndUpdateCache('userId');
+				await user.save();
 
 				const failMsg = await t(interaction, 'economy.hack.hack.failure', {
 					target: targetUser.username,

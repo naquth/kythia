@@ -127,7 +127,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 
 	user.changed('xp', true);
 	user.changed('level', true);
-	await user.saveAndUpdateCache();
+	await user.save();
 
 	if (!leveledUp) return;
 

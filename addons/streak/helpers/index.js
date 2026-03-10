@@ -66,6 +66,14 @@ function getYesterdayDateString() {
 	return yesterday.toISOString().slice(0, 10);
 }
 
+function getMissedDays(lastClaimDateStr) {
+	if (!lastClaimDateStr) return Infinity;
+	const todayMs = new Date(getTodayDateString()).getTime();
+	const lastMs = new Date(lastClaimDateStr).getTime();
+	const diff = (todayMs - lastMs) / (1000 * 60 * 60 * 24);
+	return Math.round(diff);
+}
+
 async function syncStreakRoles(member, streakCount, streakRoleRewards) {
 	if (!Array.isArray(streakRoleRewards) || streakRoleRewards.length === 0)
 		return [];
@@ -121,6 +129,47 @@ async function syncStreakRoles(member, streakCount, streakRoleRewards) {
 	return rolesGiven;
 }
 
+async function restoreStreak(container, member, settings) {
+	const userId = member.id;
+	const guildId = member.guild.id;
+	const today = getTodayDateString();
+	const streak = await getOrCreateStreak(container, userId, guildId);
+
+	const previousStreak = streak.currentStreak;
+	streak.currentStreak = previousStreak + 1;
+
+	if (streak.currentStreak > (streak.highestStreak || 0)) {
+		streak.highestStreak = streak.currentStreak;
+	}
+
+	streak.lastClaimTimestamp = new Date(today);
+	await streak.save();
+
+	const streakEmoji = settings.streakEmoji || '🔥';
+	const streakMinimum = settings.streakMinimum || 3;
+	const updateStreakNickname = settings.streakNickname || false;
+
+	if (updateStreakNickname) {
+		await updateNickname(
+			member,
+			streak.currentStreak,
+			streakEmoji,
+			streakMinimum,
+		);
+	}
+
+	const rewards = Array.isArray(settings.streakRoleRewards)
+		? settings.streakRoleRewards
+		: [];
+	const rewardRolesGiven = await syncStreakRoles(
+		member,
+		streak.currentStreak,
+		rewards,
+	);
+
+	return { streak, rewardRolesGiven };
+}
+
 async function claimStreak(container, member, settings) {
 	const userId = member.id;
 	const guildId = member.guild.id;
@@ -138,10 +187,14 @@ async function claimStreak(container, member, settings) {
 
 	let status = 'CONTINUE';
 	if (lastClaimDateStr !== yesterday && streak.currentStreak > 0) {
+		const missed = getMissedDays(lastClaimDateStr);
 		if (streak.streakFreezes > 0) {
 			streak.streakFreezes -= 1;
 			streak.currentStreak += 1;
 			status = 'FREEZE_USED';
+		} else if (missed === 1) {
+			// Missed exactly 1 day — offer restore via vote, don't save yet
+			return { status: 'CAN_RESTORE', streak };
 		} else {
 			streak.currentStreak = 1;
 			status = 'RESET';
@@ -159,7 +212,7 @@ async function claimStreak(container, member, settings) {
 	}
 
 	streak.lastClaimTimestamp = new Date(today);
-	await streak.saveAndUpdateCache(['userId', 'guildId']);
+	await streak.save();
 
 	const streakEmoji = settings.streakEmoji || '🔥';
 	const streakMinimum = settings.streakMinimum || 3;
@@ -193,6 +246,8 @@ module.exports = {
 	updateNickname,
 	getTodayDateString,
 	getYesterdayDateString,
+	getMissedDays,
 	syncStreakRoles,
 	claimStreak,
+	restoreStreak,
 };

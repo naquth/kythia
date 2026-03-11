@@ -1,0 +1,251 @@
+/**
+ * @namespace: addons/social-alerts/tasks/poller.js
+ * @type: Scheduled Task
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	SectionBuilder,
+	ThumbnailBuilder,
+	MediaGalleryBuilder,
+	MediaGalleryItemBuilder,
+} = require('discord.js');
+
+const { fetchLatestVideo } = require('../helpers/youtube');
+const { fetchLatestTikTok } = require('../helpers/tiktok');
+const { fetchLatestInstagram } = require('../helpers/instagram');
+
+const TIKTOK_LOGO_URL =
+	'https://sf16-website-login.neutral.ttwstatic.com/obj/tiktok_web_login_static/tiktok/webapp/main/webapp-desktop/8152caf0c8e8bc67ae0d.png';
+
+module.exports = {
+	taskName: 'social-alert-poller',
+	schedule: '*/5 * * * *',
+	active: true,
+
+	execute: async (container) => {
+		const { client, models, helpers, logger, kythiaConfig, t } = container;
+		const { SocialAlertSubscription, SocialAlertSetting } = models;
+		const { convertColor } = helpers.color;
+		const { getGuildSafe } = helpers.discord;
+
+		const rsshubUrl =
+			kythiaConfig?.addons?.socialAlerts?.rsshubUrl || 'https://rsshub.app';
+
+		logger.info('📡 Running social alert poller...', {
+			label: 'social-alerts',
+		});
+
+		let subscriptions;
+		try {
+			subscriptions = await SocialAlertSubscription.getAllCache();
+			if (!subscriptions || subscriptions.length === 0) return;
+		} catch (err) {
+			logger.error('[social-alerts] Failed to fetch subscriptions:', err);
+			return;
+		}
+
+		const accentColor = convertColor(kythiaConfig?.bot?.color || '#FF0000', {
+			from: 'hex',
+			to: 'decimal',
+		});
+
+		for (const sub of subscriptions) {
+			try {
+				const platform = sub.platform || 'youtube';
+
+				// Fetch the latest content based on platform
+				let latest = null;
+				if (platform === 'tiktok') {
+					latest = await fetchLatestTikTok(sub.youtubeChannelId, rsshubUrl);
+				} else if (platform === 'instagram') {
+					latest = await fetchLatestInstagram(sub.youtubeChannelId, rsshubUrl);
+				} else {
+					latest = await fetchLatestVideo(sub.youtubeChannelId);
+				}
+
+				if (!latest) continue;
+
+				// No new content
+				if (latest.videoId === sub.lastVideoId) continue;
+
+				// Look up the guild and channel
+				const guild = await getGuildSafe(client, sub.guildId);
+				if (!guild) continue;
+
+				const channel = guild.channels.cache.get(sub.discordChannelId);
+				if (!channel) continue;
+
+				// Fetch setting for optional role mention
+				let setting = null;
+				try {
+					setting = await SocialAlertSetting.getCache({ guildId: sub.guildId });
+				} catch {
+					// Proceed without setting
+				}
+
+				const mentionText = setting?.mentionRoleId
+					? `<@&${setting.mentionRoleId}>`
+					: null;
+
+				// Resolve the alert message
+				const alertMessage = sub.message
+					? sub.message
+							.replace(/{title}/g, latest.title)
+							.replace(/{url}/g, latest.url)
+							.replace(/{channel}/g, sub.youtubeChannelName)
+					: platform === 'tiktok'
+						? await t(guild, 'social-alert.poller.tiktok.default_message', {
+								channel: sub.youtubeChannelName,
+							})
+						: platform === 'instagram'
+							? await t(
+									guild,
+									'social-alert.poller.instagram.default_message',
+									{ channel: sub.youtubeChannelName },
+								)
+							: await t(guild, 'social-alert.poller.youtube.default_message', {
+									channel: sub.youtubeChannelName,
+								});
+
+				const publishTimestamp = latest.publishedAt
+					? `\n-# Published <t:${Math.floor(new Date(latest.publishedAt).getTime() / 1000)}:R>`
+					: '';
+
+				// Platform-specific UI values
+				const platformLabel =
+					platform === 'tiktok'
+						? await t(guild, 'social-alert.poller.tiktok.label')
+						: platform === 'instagram'
+							? await t(guild, 'social-alert.poller.instagram.label')
+							: await t(guild, 'social-alert.poller.youtube.label');
+				const watchLabel =
+					platform === 'tiktok'
+						? await t(guild, 'social-alert.poller.tiktok.watch')
+						: platform === 'instagram'
+							? await t(guild, 'social-alert.poller.instagram.watch')
+							: await t(guild, 'social-alert.poller.youtube.watch');
+				const channelLabel =
+					platform === 'tiktok'
+						? `🎵 ${sub.youtubeChannelName}`
+						: platform === 'instagram'
+							? `📸 ${sub.youtubeChannelName}`
+							: `� ${sub.youtubeChannelName}`;
+				const channelLink =
+					platform === 'tiktok'
+						? `https://www.tiktok.com/${sub.youtubeChannelId}`
+						: platform === 'instagram'
+							? `https://www.instagram.com/${sub.youtubeChannelId.replace(/^@/, '')}/`
+							: `https://www.youtube.com/channel/${sub.youtubeChannelId}`;
+
+				// Choose thumbnail — TikTok: video thumbnail if available, else logo
+				const thumbnailUrl =
+					sub.youtubeThumbnailUrl ||
+					(platform === 'tiktok' ? TIKTOK_LOGO_URL : null);
+
+				// Build Components V2 alert
+				const builder = new ContainerBuilder()
+					.setAccentColor(accentColor)
+					.addSectionComponents(
+						new SectionBuilder()
+							.addTextDisplayComponents(
+								new TextDisplayBuilder().setContent(
+									`## ${platformLabel}\n${alertMessage}\n\n### ${latest.title}${publishTimestamp}`,
+								),
+							)
+							.setThumbnailAccessory(
+								thumbnailUrl
+									? new ThumbnailBuilder()
+											.setURL(thumbnailUrl)
+											.setDescription(sub.youtubeChannelName)
+									: new ThumbnailBuilder()
+											.setURL('https://www.youtube.com/favicon.ico')
+											.setDescription('YouTube'),
+							),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					);
+
+				// Show video thumbnail in gallery if available
+				if (latest.thumbnail) {
+					builder
+						.addMediaGalleryComponents(
+							new MediaGalleryBuilder().addItems([
+								new MediaGalleryItemBuilder()
+									.setURL(latest.thumbnail)
+									.setDescription(`${latest.title} thumbnail`),
+							]),
+						)
+						.addSeparatorComponents(
+							new SeparatorBuilder()
+								.setSpacing(SeparatorSpacingSize.Small)
+								.setDivider(true),
+						);
+				}
+
+				builder
+					.addActionRowComponents(
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder()
+								.setStyle(ButtonStyle.Link)
+								.setLabel(watchLabel)
+								.setURL(latest.url),
+							new ButtonBuilder()
+								.setStyle(ButtonStyle.Link)
+								.setLabel(channelLabel)
+								.setURL(channelLink),
+						),
+					)
+					.addSeparatorComponents(
+						new SeparatorBuilder()
+							.setSpacing(SeparatorSpacingSize.Small)
+							.setDivider(true),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							`-# 📡 ${client.user.username} · Social Alerts`,
+						),
+					);
+
+				const messagePayload = {
+					components: [builder],
+					flags: MessageFlags.IsComponentsV2,
+				};
+
+				if (mentionText) {
+					messagePayload.content = mentionText;
+				}
+
+				await channel.send(messagePayload);
+
+				// Update the last seen content ID
+				sub.lastVideoId = latest.videoId;
+				await sub.save();
+
+				logger.info(
+					`[${platform}] Posted alert for "${latest.title}" in guild ${sub.guildId}`,
+					{ label: 'SOCIAL-ALERTS' },
+				);
+			} catch (err) {
+				logger.error(
+					`Error processing subscription ${sub.id} (${sub.youtubeChannelId}):`,
+					{ label: 'SOCIAL-ALERTS' },
+					err,
+				);
+			}
+		}
+	},
+};

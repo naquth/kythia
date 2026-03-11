@@ -359,7 +359,7 @@ async function runStatsUpdater(client) {
 	const { ServerSetting } = models;
 	logger.info('📊 Starting server stats update cycle...');
 	try {
-		const allSettings = await ServerSetting.findAll();
+		const allSettings = await ServerSetting.getAllCache();
 		const guildsCache = client.guilds.cache;
 
 		if (!guildsCache) {

@@ -1,0 +1,149 @@
+/**
+ * @namespace: addons/social-alerts/commands/list.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const {
+	MessageFlags,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	SectionBuilder,
+	ThumbnailBuilder,
+} = require('discord.js');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('list')
+			.setDescription(
+				'📋 View all active social alert subscriptions for this server.',
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { models, helpers, kythiaConfig, t } = container;
+		const { SocialAlertSubscription, SocialAlertSetting } = models;
+		const { simpleContainer } = helpers.discord;
+		const { convertColor } = helpers.color;
+
+		await interaction.deferReply();
+
+		const [subs, setting] = await Promise.all([
+			SocialAlertSubscription.getAllCache({ guildId: interaction.guild.id }),
+			SocialAlertSetting.getCache({ guildId: interaction.guild.id }),
+		]);
+
+		if (!subs || subs.length === 0) {
+			return interaction.editReply({
+				components: await simpleContainer(
+					interaction,
+					await t(interaction, 'social-alert.list.empty'),
+				),
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		const accentColor = convertColor(kythiaConfig?.bot?.color || '#FF0000', {
+			from: 'hex',
+			to: 'decimal',
+		});
+
+		const rolePing = setting?.mentionRoleId
+			? await t(interaction, 'social-alert.list.role_ping', {
+					role: setting.mentionRoleId,
+				})
+			: '';
+
+		const header = await t(interaction, 'social-alert.list.header', {
+			count: subs.length,
+			plural: subs.length !== 1 ? 's' : '',
+			role_ping: rolePing,
+		});
+
+		const builder = new ContainerBuilder()
+			.setAccentColor(accentColor)
+			.addTextDisplayComponents(new TextDisplayBuilder().setContent(header))
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			);
+
+		for (const sub of subs) {
+			const platform = sub.platform || 'youtube';
+			const platformBadge =
+				platform === 'tiktok'
+					? '🎵 TikTok'
+					: platform === 'instagram'
+						? '📸 Instagram'
+						: '📺 YouTube';
+			const fallbackThumb =
+				platform === 'tiktok'
+					? 'https://sf16-website-login.neutral.ttwstatic.com/obj/tiktok_web_login_static/tiktok/webapp/main/webapp-desktop/8152caf0c8e8bc67ae0d.png'
+					: platform === 'instagram'
+						? 'https://www.instagram.com/favicon.ico'
+						: 'https://www.youtube.com/favicon.ico';
+
+			const msgPreview = sub.message
+				? await t(interaction, 'social-alert.list.message_preview', {
+						message:
+							sub.message.length > 80
+								? `${sub.message.slice(0, 80)}…`
+								: sub.message,
+					})
+				: '';
+
+			const entryText = await t(interaction, 'social-alert.list.entry', {
+				name: sub.youtubeChannelName,
+				channel: sub.discordChannelId,
+				message_preview: msgPreview,
+				platform_badge: platformBadge,
+				id: sub.youtubeChannelId,
+			});
+
+			builder.addSectionComponents(
+				new SectionBuilder()
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(entryText),
+					)
+					.setThumbnailAccessory(
+						sub.youtubeThumbnailUrl
+							? new ThumbnailBuilder()
+									.setURL(sub.youtubeThumbnailUrl)
+									.setDescription(sub.youtubeChannelName)
+							: new ThumbnailBuilder()
+									.setURL(fallbackThumb)
+									.setDescription(platformBadge),
+					),
+			);
+
+			builder.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(false),
+			);
+		}
+
+		const footer = await t(interaction, 'social-alert.list.footer', {
+			bot: interaction.client.user.username,
+		});
+
+		builder.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(footer),
+		);
+
+		return interaction.editReply({
+			components: [builder],
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

@@ -24,6 +24,8 @@ const {
 	MediaGalleryItemBuilder,
 } = require('discord.js');
 
+const TICKET_STYLE_THREAD = 'thread';
+
 function getSafeEmoji(emoji, fallback = '🎫') {
 	if (!emoji || typeof emoji !== 'string') return fallback;
 
@@ -224,27 +226,61 @@ async function createTicketChannel(
 			.toLowerCase()
 			.replace(/[^a-z0-9]/g, '')
 			.slice(0, 8);
-		const channelName = `${ticketConfig.typeName.toLowerCase().replace(/\s+/g, '-')}-${username}`;
+		const ticketName = `${ticketConfig.typeName.toLowerCase().replace(/\s+/g, '-')}-${username}`;
 
-		const ticketChannel = await interaction.guild.channels.create({
-			name: channelName,
-			type: ChannelType.GuildText,
-			parent: ticketConfig.ticketCategoryId || null,
-			permissionOverwrites: [
-				{
-					id: interaction.guild.id,
-					deny: [PermissionsBitField.Flags.ViewChannel],
-				},
-				{
-					id: interaction.user.id,
-					allow: [PermissionsBitField.Flags.ViewChannel],
-				},
-				{
-					id: ticketConfig.staffRoleId,
-					allow: [PermissionsBitField.Flags.ViewChannel],
-				},
-			],
-		});
+		// ─── Determine ticket style: channel (default) or thread ───
+		const style = ticketConfig.ticketStyle || 'channel';
+		let ticketChannel;
+
+		if (style === TICKET_STYLE_THREAD) {
+			// Thread style: create a private thread inside the designated parent channel
+			const parentChannel = await interaction.guild.channels
+				.fetch(ticketConfig.ticketThreadChannelId)
+				.catch(() => null);
+
+			if (!parentChannel) {
+				const desc = await t(
+					interaction,
+					'ticket.errors.thread_channel_required',
+				);
+				return interaction.reply({
+					components: await simpleContainer(interaction, desc, {
+						color: 'Red',
+					}),
+					flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+				});
+			}
+
+			ticketChannel = await parentChannel.threads.create({
+				name: ticketName,
+				type: ChannelType.PrivateThread,
+				invitable: false,
+			});
+
+			// Add the ticket opener to the private thread
+			await ticketChannel.members.add(interaction.user.id);
+		} else {
+			// Channel style (default): create a new guild text channel
+			ticketChannel = await interaction.guild.channels.create({
+				name: ticketName,
+				type: ChannelType.GuildText,
+				parent: ticketConfig.ticketCategoryId || null,
+				permissionOverwrites: [
+					{
+						id: interaction.guild.id,
+						deny: [PermissionsBitField.Flags.ViewChannel],
+					},
+					{
+						id: interaction.user.id,
+						allow: [PermissionsBitField.Flags.ViewChannel],
+					},
+					{
+						id: ticketConfig.staffRoleId,
+						allow: [PermissionsBitField.Flags.ViewChannel],
+					},
+				],
+			});
+		}
 
 		const defaultMessage = await t(
 			interaction,

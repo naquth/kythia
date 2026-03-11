@@ -407,6 +407,154 @@ app.post('/panels/:messageId/refresh', async (c) => {
 	}
 });
 
+// POST /api/tickets/panels/:id/resend - Resend a panel to a (optionally different) channel
+// Deletes the old Discord message, posts a fresh panel message to the target channel,
+// updates the DB record (channelId + messageId), then refreshes with all ticket types.
+// Body: { channelId? }
+app.post('/panels/:id/resend', async (c) => {
+	const client = getBot(c);
+	const container = getContainer(c);
+	const { TicketPanel } = getModels(c);
+	const { kythiaConfig, helpers } = container;
+	const { convertColor } = helpers.color;
+	const id = c.req.param('id');
+
+	let body = {};
+	try {
+		body = await c.req.json();
+	} catch (_) {}
+
+	try {
+		const panel = await TicketPanel.findByPk(id);
+		if (!panel)
+			return c.json({ success: false, error: 'Panel not found' }, 404);
+
+		const targetChannelId = body.channelId || panel.channelId;
+
+		const targetChannel = await client.channels
+			.fetch(targetChannelId)
+			.catch(() => null);
+		if (!targetChannel)
+			return c.json(
+				{ success: false, error: `Channel ${targetChannelId} not found` },
+				404,
+			);
+
+		// Delete old Discord message (best-effort — may already be gone)
+		try {
+			const oldChannel = await client.channels
+				.fetch(panel.channelId)
+				.catch(() => null);
+			if (oldChannel) {
+				const oldMessage = await oldChannel.messages
+					.fetch(panel.messageId)
+					.catch(() => null);
+				if (oldMessage) await oldMessage.delete();
+			}
+		} catch (_) {}
+
+		// Post a fresh panel stub to the target channel
+		const {
+			ContainerBuilder,
+			TextDisplayBuilder,
+			SeparatorBuilder,
+			SeparatorSpacingSize,
+			MediaGalleryBuilder,
+			MediaGalleryItemBuilder,
+			MessageFlags,
+		} = require('discord.js');
+
+		const accentColor = convertColor(kythiaConfig.bot.color, {
+			from: 'hex',
+			to: 'decimal',
+		});
+
+		const panelContainer = new ContainerBuilder()
+			.setAccentColor(accentColor)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`## ${panel.title}`),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			);
+
+		if (panel.description) {
+			panelContainer.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(panel.description),
+			);
+		}
+
+		if (
+			panel.image &&
+			(panel.image.startsWith('http://') || panel.image.startsWith('https://'))
+		) {
+			panelContainer.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(false),
+			);
+			panelContainer.addMediaGalleryComponents(
+				new MediaGalleryBuilder().addItems([
+					new MediaGalleryItemBuilder().setURL(panel.image),
+				]),
+			);
+		}
+
+		panelContainer
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(false),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					'> No ticket types configured yet.',
+				),
+			);
+
+		const newMessage = await targetChannel.send({
+			components: [panelContainer],
+			flags: MessageFlags.IsComponentsV2,
+		});
+
+		// Update DB record with new channel + message IDs
+		const oldMessageId = panel.messageId;
+		await panel.update({
+			channelId: targetChannelId,
+			messageId: newMessage.id,
+		});
+		await panel.save();
+
+		// Update all linked TicketConfig records to point to the new messageId.
+		// Without this, refreshTicketPanel finds no types (they still reference
+		// the old panelMessageId) and the panel renders as empty.
+		const { TicketConfig } = getModels(c);
+		const linkedTypes = await TicketConfig.findAll({
+			where: { panelMessageId: oldMessageId },
+		});
+		for (const type of linkedTypes) {
+			await type.update({ panelMessageId: newMessage.id });
+		}
+
+		// Refresh the panel to populate ticket type buttons
+		await ticketHelpers.refreshTicketPanel(newMessage.id, container);
+
+		return c.json({
+			success: true,
+			message: `Panel "${panel.title}" resent to channel ${targetChannelId}`,
+			data: {
+				panelId: panel.id,
+				channelId: targetChannelId,
+				messageId: newMessage.id,
+			},
+		});
+	} catch (error) {
+		return c.json({ success: false, error: error.message }, 500);
+	}
+});
+
 // =============================================================================
 // TICKET TYPE (TicketConfig) endpoints  (/api/tickets/configs/...)
 // =============================================================================
@@ -440,7 +588,8 @@ app.get('/configs/id/:id', async (c) => {
 // POST /api/tickets/configs - Create a new ticket type and refresh the parent panel
 // Mirrors /ticket type create command behaviour (step2 submit).
 // Body: { guildId, panelMessageId, typeName, typeEmoji?, staffRoleId, logsChannelId,
-//         transcriptChannelId, ticketCategoryId?, ticketOpenMessage?, ticketOpenImage?, askReason? }
+//         transcriptChannelId, ticketCategoryId?, ticketOpenMessage?, ticketOpenImage?,
+//         askReason?, ticketStyle?, ticketThreadChannelId? }
 app.post('/configs', async (c) => {
 	const container = getContainer(c);
 	const { TicketConfig } = getModels(c);
@@ -471,6 +620,18 @@ app.post('/configs', async (c) => {
 			400,
 		);
 
+	const ticketStyle = body.ticketStyle || 'channel';
+	const ticketThreadChannelId = body.ticketThreadChannelId || null;
+
+	if (ticketStyle === 'thread' && !ticketThreadChannelId)
+		return c.json(
+			{
+				success: false,
+				error: 'ticketThreadChannelId is required when ticketStyle is "thread"',
+			},
+			400,
+		);
+
 	try {
 		const config = await TicketConfig.create({
 			guildId,
@@ -484,6 +645,8 @@ app.post('/configs', async (c) => {
 			ticketOpenMessage: body.ticketOpenMessage || null,
 			ticketOpenImage: body.ticketOpenImage || null,
 			askReason: body.askReason || null,
+			ticketStyle,
+			ticketThreadChannelId,
 		});
 		await config.save();
 

@@ -15,6 +15,7 @@ const {
 	MessageFlags,
 	TextInputBuilder,
 	TextInputStyle,
+	StringSelectMenuBuilder,
 } = require('discord.js');
 
 module.exports = {
@@ -72,12 +73,52 @@ module.exports = {
 								.setMaxValues(1),
 						),
 					new LabelBuilder()
-						.setLabel('Select Ticket Category (Optional)')
+						.setLabel('Select Ticket Category (Optional, for Channel style)')
 						.setChannelSelectMenuComponent(
 							new ChannelSelectMenuBuilder()
 								.setCustomId('ticketCategoryId')
 								.setPlaceholder('Select a category (optional)...')
 								.addChannelTypes(ChannelType.GuildCategory)
+								.setRequired(false)
+								.setMinValues(0)
+								.setMaxValues(1),
+						),
+					new LabelBuilder()
+						.setLabel('Ticket Style')
+						.setDescription(
+							'Channel = new private channel per ticket. Thread = new private thread inside a text channel.',
+						)
+						.setStringSelectMenuComponent(
+							new StringSelectMenuBuilder()
+								.setCustomId('ticketStyle')
+								.setPlaceholder('Select ticket style...')
+								.addOptions([
+									{
+										label: 'Channel (Default)',
+										description: 'Each ticket opens in its own text channel.',
+										value: 'channel',
+										default: true,
+									},
+									{
+										label: 'Thread',
+										description:
+											'Each ticket opens as a thread inside a parent channel.',
+										value: 'thread',
+									},
+								])
+								.setMinValues(1)
+								.setMaxValues(1),
+						),
+					new LabelBuilder()
+						.setLabel('Thread Parent Channel (Required for Thread style)')
+						.setDescription(
+							'Only used when Ticket Style is set to Thread. Tickets will be opened as threads inside this channel.',
+						)
+						.setChannelSelectMenuComponent(
+							new ChannelSelectMenuBuilder()
+								.setCustomId('ticketThreadChannelId')
+								.setPlaceholder('Select a text channel for threads...')
+								.addChannelTypes(ChannelType.GuildText)
 								.setRequired(false)
 								.setMinValues(0)
 								.setMaxValues(1),

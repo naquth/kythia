@@ -34,6 +34,42 @@
   - **Type:** User
 
 
+### 💾 `/math`
+
+**Description:** 🔢 Speed math quiz — answer streaks build your leaderboard score!
+
+### 💻 Usage
+
+`/math play`
+`/math leaderboard`
+
+### 🔧 Subcommands
+
+**`/math play`**
+> ▶️ Start a math quiz
+
+
+**`/math leaderboard`**
+> 🏆 View the global math leaderboard
+
+
+
+
+### 💾 `/rps`
+
+**Description:** ✂️ Play Rock Paper Scissors — against the bot or a friend!
+
+### 💻 Usage
+
+`/rps [opponent]`
+
+### ⚙️ Options
+
+- **`opponent`**
+  - **Description:** Challenge a friend (leave empty to play vs bot)
+  - **Type:** User
+
+
 ### 💾 `/tictactoe`
 
 **Description:** ⭕ Play Tic Tac Toe with a friend or bot.

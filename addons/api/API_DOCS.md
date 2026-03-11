@@ -1198,6 +1198,37 @@ Force-refresh the live Discord panel for `messageId`.
 
 **Response:** `{ "success": true, "message": "Panel refreshed" }`
 
+##### `POST /api/tickets/panels/:id/resend`
+Resend a panel as a **new message** to the same or a different channel. The old Discord message is deleted (best-effort), a fresh panel message is posted to the target channel, the DB record is updated with the new `channelId` and `messageId`, and then the panel is immediately refreshed to repopulate all ticket type buttons.
+
+> Use this when the original panel message is lost, or when you want to move the panel to a different channel.
+
+**Path Parameters:** `id` — panel's database PK.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `channelId` | `string` | No | Target text channel to post the panel in. Defaults to the panel's current channel if omitted |
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Panel \"Support\" resent to channel 112233445566778899",
+  "data": {
+    "panelId": 1,
+    "channelId": "112233445566778899",
+    "messageId": "998877665544332211"
+  }
+}
+```
+
+**Errors:**
+| Status | Condition |
+|---|---|
+| `404` | Panel not found, or target channel not found |
+| `500` | Discord API or database error |
+
 ---
 
 #### Ticket Types / Configs (`/api/tickets/configs`)
@@ -1227,17 +1258,23 @@ Create a new ticket type and automatically refresh the parent panel.
 | `logsChannelId` | `string` | ✅ | Channel for ticket logs |
 | `transcriptChannelId` | `string` | ✅ | Channel for HTML transcripts |
 | `typeEmoji` | `string` | No | Optional emoji shown on the button |
-| `ticketCategoryId` | `string` | No | Category to create ticket channels in |
+| `ticketCategoryId` | `string` | No | Category to create ticket channels in (channel style only) |
 | `ticketOpenMessage` | `string` | No | Message sent when ticket opens |
 | `ticketOpenImage` | `string` | No | Image shown in the ticket open message |
-| `askReason` | `boolean` | No | Whether to ask for a reason on open |
+| `askReason` | `string` | No | Question prompt shown to the user before opening (if set, a modal is shown) |
+| `ticketStyle` | `string` | No | `"channel"` (default) or `"thread"` — whether tickets open as new channels or private threads |
+| `ticketThreadChannelId` | `string` | No* | Parent text channel for threads. **Required** when `ticketStyle` is `"thread"` |
+
+> When `ticketStyle` is `"thread"`, the ticket is created as a **private thread** inside `ticketThreadChannelId`. `ticketCategoryId` is ignored for thread-style types.
 
 **Response:** `{ "success": true, "data": { ...config } }`
+
+**Error (400):** Missing required fields, or `ticketStyle` is `"thread"` but `ticketThreadChannelId` is not provided.
 
 ##### `PATCH /api/tickets/configs/:id`
 Update a ticket type and refresh the parent panel.
 
-**Request Body:** Any `TicketConfig` fields.
+**Request Body:** Any `TicketConfig` fields (including `ticketStyle` and `ticketThreadChannelId`).
 
 **Response:** `{ "success": true, "data": { ...config } }`
 
@@ -6414,3 +6451,219 @@ Archive:  kythia-backup.zip
 3. Writes the SQL output to a temporary file in `os.tmpdir()`.
 4. Creates a ZIP archive (zlib level 9) in `os.tmpdir()` containing the SQL dump, `.env`, and `kythia.config.js`.
 5. Reads the ZIP into a buffer, responds with it, then deletes both temp files.
+
+---
+
+## Minecraft API (`/api/minecraft`)
+
+Manages Minecraft server status and stat channel configuration per guild.
+
+All routes require Bearer token authentication.
+
+---
+
+### `GET /api/minecraft/status/raw`
+
+Query any Minecraft server directly without a guild context.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `host` | `string` | Yes | Server hostname or IP |
+| `port` | `number` | No | Server port (default: `25565`) |
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "data": {
+    "online": true,
+    "players": { "online": 12, "max": 100 },
+    "version": "1.21.4",
+    "motd": { "clean": "Welcome to my server" }
+  }
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Missing required query param: host" }` | `host` not provided |
+| `502` | `{ "success": false, "error": "..." }` | API fetch failed |
+
+---
+
+### `GET /api/minecraft/status/:guildId`
+
+Fetch the Minecraft server status using the guild's configured IP and port.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID |
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "host": "play.example.net",
+  "port": 25565,
+  "data": { "online": true, "players": { "online": 12, "max": 100 } }
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "Guild settings not found" }` | No ServerSetting for guild |
+| `404` | `{ "success": false, "error": "No Minecraft server configured for this guild" }` | `minecraftIp` not set |
+| `502` | `{ "success": false, "error": "..." }` | mcsrvstat.us fetch failed |
+
+---
+
+### `GET /api/minecraft/settings/:guildId`
+
+Returns the Minecraft-related fields from `ServerSetting` for the given guild.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "minecraftStatsOn": true,
+    "minecraftIp": "play.example.net",
+    "minecraftPort": 25565,
+    "minecraftIpChannelId": "111111111111111111",
+    "minecraftPortChannelId": "222222222222222222",
+    "minecraftStatusChannelId": "333333333333333333",
+    "minecraftPlayersChannelId": "444444444444444444"
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `minecraftStatsOn` | `boolean` | Whether the stat cron is active |
+| `minecraftIp` | `string \| null` | Server hostname/IP |
+| `minecraftPort` | `number` | Server port |
+| `minecraftIpChannelId` | `string \| null` | Voice channel showing the IP |
+| `minecraftPortChannelId` | `string \| null` | Voice channel showing the port |
+| `minecraftStatusChannelId` | `string \| null` | Voice channel showing online/offline |
+| `minecraftPlayersChannelId` | `string \| null` | Voice channel showing player count |
+
+---
+
+### `PATCH /api/minecraft/settings/:guildId`
+
+Update any Minecraft-related setting fields for the given guild.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID |
+
+**Request Body** (all fields optional):
+```json
+{
+  "minecraftIp": "play.example.net",
+  "minecraftPort": 25565,
+  "minecraftStatsOn": true,
+  "minecraftIpChannelId": "111111111111111111",
+  "minecraftPortChannelId": "222222222222222222",
+  "minecraftStatusChannelId": "333333333333333333",
+  "minecraftPlayersChannelId": "444444444444444444"
+}
+```
+
+Only the fields listed above are accepted — all others are ignored.
+
+**Response:**
+```json
+{ "success": true, "data": { /* full ServerSetting record */ } }
+```
+
+---
+
+### `POST /api/minecraft/autosetup/:guildId`
+
+Mirrors the `/minecraft set autosetup` Discord command via API. Creates a category and 4 stat voice channels in the guild, saves all IDs to `ServerSetting`, and enables `minecraftStatsOn`.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID |
+
+**Request Body:**
+```json
+{
+  "host": "play.example.net",
+  "port": 25565,
+  "categoryName": "⛏️ Minecraft Server"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `host` | `string` | Yes | Minecraft server hostname or IP |
+| `port` | `number` | No | Server port (default: `25565`) |
+| `categoryName` | `string` | No | Name for the new Discord category (default: `⛏️ Minecraft Server`) |
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "data": {
+    "categoryId": "555555555555555555",
+    "host": "play.example.net",
+    "port": 25565,
+    "channels": {
+      "minecraftIpChannelId": "111111111111111111",
+      "minecraftPortChannelId": "222222222222222222",
+      "minecraftStatusChannelId": "333333333333333333",
+      "minecraftPlayersChannelId": "444444444444444444"
+    }
+  }
+}
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Missing required field: host" }` | `host` not in body |
+| `404` | `{ "success": false, "error": "Guild not found in cache" }` | Guild not in bot cache |
+| `500` | `{ "success": false, "error": "..." }` | Channel creation or DB error |
+
+> **Note:** Channels are created with `@everyone` denied `Connect`, so they are display-only stat counters. Initial channel names are set using a live status fetch; if the server is unreachable they default to `🔴 Offline` / `👥 —/—`.
+
+---
+
+### `POST /api/minecraft/trigger-update/:guildId`
+
+Force an immediate Minecraft stat channel rename cycle for one guild or all guilds.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID, or `"all"` to trigger all guilds |
+
+**Response:**
+```json
+{ "success": true, "message": "Update triggered for guild 123456789012345678" }
+```
+
+> The update runs asynchronously in the background. The API returns immediately; channel renames happen shortly after (subject to Discord rate limits). Use `GET /api/minecraft/status/:guildId` to verify the current state.
+

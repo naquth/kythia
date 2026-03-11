@@ -56,8 +56,30 @@ module.exports = {
 			const askReason =
 				interaction.fields.getTextInputValue('askReason') || null;
 
+			// New: ticket style
+			const ticketStyle =
+				interaction.fields.getStringSelectValues('ticketStyle')?.[0] ||
+				'channel';
+			const ticketThreadChannelId =
+				interaction.fields.getSelectedChannels('ticketThreadChannelId')?.first()
+					?.id || null;
+
 			if (!staffRoleId || !logsChannelId || !transcriptChannelId) {
 				const desc = await t(interaction, 'ticket.errors.mega_modal_missing');
+				return interaction.followUp({
+					components: await simpleContainer(interaction, desc, {
+						color: 'Red',
+					}),
+					flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+				});
+			}
+
+			// Validate: thread style requires a parent channel
+			if (ticketStyle === 'thread' && !ticketThreadChannelId) {
+				const desc = await t(
+					interaction,
+					'ticket.errors.thread_channel_required',
+				);
 				return interaction.followUp({
 					components: await simpleContainer(interaction, desc, {
 						color: 'Red',
@@ -74,6 +96,8 @@ module.exports = {
 				transcriptChannelId: transcriptChannelId,
 				ticketCategoryId: ticketCategoryId || null,
 				askReason: askReason,
+				ticketStyle: ticketStyle,
+				ticketThreadChannelId: ticketThreadChannelId,
 			});
 
 			await refreshTicketPanel(step1Data.panelMessageId, container);

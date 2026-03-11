@@ -30,7 +30,8 @@
 			"no_message_id": "## ❌ Error\nCould not find the original setup message. Please restart the setup.",
 			"setup_expired": "## ❌ Error\nYour setup session has expired. Please restart the setup.",
 			"invalid_selection": "## ❌ Error\nInvalid ticket selection. Please try again.",
-			"only_staff": "## ❌ Error\nOnly staff members can claim this ticket."
+			"only_staff": "## ❌ Error\nOnly staff members can claim this ticket.",
+			"thread_channel_required": "## ❌ Error\nYou selected **Thread** style but did not provide a parent text channel. Please reconfigure this ticket type."
 		},
 		"create": {
 			"success": "## ✅ Ticket Created\nYour ticket has been successfully created: {ticketChannel}"

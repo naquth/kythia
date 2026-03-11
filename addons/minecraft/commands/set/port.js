@@ -1,0 +1,63 @@
+/**
+ * @namespace: addons/minecraft/commands/set/port.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { MessageFlags, PermissionFlagsBits } = require('discord.js');
+
+module.exports = {
+	subcommand: true,
+	guildOnly: true,
+	permissions: [PermissionFlagsBits.ManageGuild],
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('port')
+			.setDescription('🔌 Set the Minecraft server port for this guild')
+			.addIntegerOption((opt) =>
+				opt
+					.setName('port')
+					.setDescription('Minecraft server port (default: 25565)')
+					.setRequired(true)
+					.setMinValue(1)
+					.setMaxValue(65535),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, helpers, models } = container;
+		const { ServerSetting } = models;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply({ ephemeral: true });
+
+		const port = interaction.options.getInteger('port');
+
+		const [serverSetting] = await ServerSetting.findOrCreateWithCache({
+			where: { guildId: interaction.guild.id },
+			defaults: {
+				guildId: interaction.guild.id,
+				guildName: interaction.guild.name,
+			},
+		});
+
+		serverSetting.minecraftPort = port;
+		await serverSetting.save();
+
+		const components = await simpleContainer(
+			interaction,
+			await t(interaction, 'core.setting.setting.minecraft.port.set', { port }),
+			{ color: 'Green' },
+		);
+
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

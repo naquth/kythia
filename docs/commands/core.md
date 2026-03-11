@@ -18,11 +18,6 @@
 `/set leveling cooldown <cooldown>`
 `/set leveling xp <xp>`
 `/set leveling rolereward <action> <level> <role>`
-`/set minecraft ip <ip>`
-`/set minecraft port <port>`
-`/set minecraft ip-channel <channel>`
-`/set minecraft port-channel <channel>`
-`/set minecraft status-channel <channel>`
 `/set language set <lang>`
 `/set testimony testimony-channel <channel>`
 `/set testimony feedback-channel <channel>`
@@ -154,41 +149,6 @@
 - **`role*`**
   - **Description:** Role to be given
   - **Type:** Role
-**`/set minecraft ip <ip>`**
-> 🎮 Set Minecraft server IP
-
-**Options for this subcommand:**
-- **`ip*`**
-  - **Description:** Minecraft server IP
-  - **Type:** Text
-**`/set minecraft port <port>`**
-> 🎮 Set Minecraft server port
-
-**Options for this subcommand:**
-- **`port*`**
-  - **Description:** Minecraft server port
-  - **Type:** Integer
-**`/set minecraft ip-channel <channel>`**
-> 🎮 Set channel to display Minecraft server IP
-
-**Options for this subcommand:**
-- **`channel*`**
-  - **Description:** Channel for Minecraft IP
-  - **Type:** Channel
-**`/set minecraft port-channel <channel>`**
-> 🎮 Set channel to display Minecraft server port
-
-**Options for this subcommand:**
-- **`channel*`**
-  - **Description:** Channel for Minecraft port
-  - **Type:** Channel
-**`/set minecraft status-channel <channel>`**
-> 🎮 Set channel for Minecraft server status
-
-**Options for this subcommand:**
-- **`channel*`**
-  - **Description:** Channel for Minecraft status
-  - **Type:** Channel
 **`/set language set <lang>`**
 > 🌐 Set bot language
 

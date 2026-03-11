@@ -1,0 +1,63 @@
+/**
+ * @namespace: addons/minecraft/commands/set/ip-channel.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { MessageFlags, PermissionFlagsBits } = require('discord.js');
+
+module.exports = {
+	subcommand: true,
+	guildOnly: true,
+	permissions: [PermissionFlagsBits.ManageGuild],
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('ip-channel')
+			.setDescription('📢 Set a channel to display the Minecraft server IP')
+			.addChannelOption((opt) =>
+				opt
+					.setName('channel')
+					.setDescription('Channel to display the server IP')
+					.setRequired(true),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, helpers, models } = container;
+		const { ServerSetting } = models;
+		const { simpleContainer } = helpers.discord;
+
+		await interaction.deferReply({ ephemeral: true });
+
+		const channel = interaction.options.getChannel('channel');
+
+		const [serverSetting] = await ServerSetting.findOrCreateWithCache({
+			where: { guildId: interaction.guild.id },
+			defaults: {
+				guildId: interaction.guild.id,
+				guildName: interaction.guild.name,
+			},
+		});
+
+		serverSetting.minecraftIpChannelId = channel.id;
+		await serverSetting.save();
+
+		const components = await simpleContainer(
+			interaction,
+			await t(interaction, 'core.setting.setting.minecraft.ip.channel.set', {
+				channel: `<#${channel.id}>`,
+			}),
+			{ color: 'Green' },
+		);
+
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

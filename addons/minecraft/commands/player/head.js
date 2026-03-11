@@ -1,0 +1,101 @@
+/**
+ * @namespace: addons/minecraft/commands/player/head.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const {
+	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	MediaGalleryBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryItemBuilder,
+} = require('discord.js');
+
+const SKIN_API_BASE = 'https://starlightskins.lunareclipse.studio/render';
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,16}$/;
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('head')
+			.setDescription(
+				'Shows the Minecraft: Java Edition head of the provided player name',
+			)
+			.addStringOption((option) =>
+				option
+					.setName('player')
+					.setDescription('The Minecraft Java Edition player name')
+					.setRequired(true)
+					.setMinLength(3)
+					.setMaxLength(16),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, kythiaConfig, helpers } = container;
+
+		const playerName = interaction.options.getString('player');
+
+		if (!USERNAME_REGEX.test(playerName)) {
+			return interaction.reply({
+				content: await t(
+					interaction,
+					'minecraft.player.errors.invalid_username',
+				),
+				flags: MessageFlags.Ephemeral,
+			});
+		}
+
+		const imageUrl = `${SKIN_API_BASE}/head/${encodeURIComponent(playerName)}/full`;
+		const accentColor = helpers.color.convertColor(kythiaConfig.bot.color, {
+			from: 'hex',
+			to: 'decimal',
+		});
+
+		const container_ = new ContainerBuilder()
+			.setAccentColor(accentColor)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'minecraft.player.head.title', {
+						player: playerName,
+					}),
+				),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addMediaGalleryComponents(
+				new MediaGalleryBuilder().addItems([
+					new MediaGalleryItemBuilder().setURL(imageUrl),
+				]),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'common.container.footer', {
+						username: interaction.client.user.username,
+					}),
+				),
+			);
+
+		return interaction.reply({
+			components: [container_],
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

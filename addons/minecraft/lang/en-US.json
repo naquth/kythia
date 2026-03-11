@@ -1,0 +1,71 @@
+{
+	"minecraft": {
+		"player": {
+			"avatar": {
+				"title": "## {player}'s Avatar\n-# Minecraft: Java Edition"
+			},
+			"body": {
+				"title": "## {player}'s Body\n-# Minecraft: Java Edition"
+			},
+			"head": {
+				"title": "## {player}'s Head\n-# Minecraft: Java Edition"
+			},
+			"skin": {
+				"title": "## {player}'s Skin\n-# Minecraft: Java Edition"
+			},
+			"wallpaper": {
+				"title": "## {wallpaper}\n-# Featuring: {players}",
+				"errors": {
+					"api_error": "❌ The wallpaper API returned an error for `{players}`. Make sure the player name(s) are correct.",
+					"api_unreachable": "❌ Could not reach the wallpaper API. Please try again later."
+				}
+			},
+			"errors": {
+				"invalid_username": "❌ Invalid player name! Minecraft usernames must be 3–16 characters and only contain letters, numbers, or underscores."
+			}
+		},
+		"server": {
+			"status": {
+				"title": "Minecraft Server Status",
+				"online": "Online",
+				"offline": "Offline",
+				"unknown": "`Unknown`",
+				"info_header": "💻 Server Information",
+				"players_header": "👥 Players",
+				"motd_header": "📋 MOTD",
+				"last_updated": "-# Last updated | {timestamp}",
+				"type": {
+					"java": "☕ Java",
+					"bedrock": "🪨 Bedrock"
+				},
+				"field": {
+					"ip": "**IP:**",
+					"type": "**Type:**",
+					"version": "**Version:**",
+					"online": "**Online:**"
+				},
+				"button": {
+					"refresh": "Refresh"
+				}
+			},
+			"errors": {
+				"invalid_host": "❌ Invalid server address! Please provide a valid hostname or IP (e.g. `mc.hypixel.net` or `play.server.net:25565`).",
+				"fetch_failed": "❌ Failed to reach the server status API. Please try again later."
+			}
+		},
+		"set": {
+			"autosetup": {
+				"error": {
+					"category": "❌ Failed to create the category: {error}"
+				},
+				"success": {
+					"title": "Minecraft Stats Auto-Setup Complete!",
+					"server": "**Server:**",
+					"category": "**Category:**",
+					"channels": "📢 Channels Created",
+					"note": "Channels will update automatically every 5 minutes. Make sure the bot has permission to rename voice channels!"
+				}
+			}
+		}
+	}
+}

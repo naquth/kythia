@@ -45,7 +45,7 @@ function getResult(p1, p2) {
  * Builds the game ContainerBuilder with the action row embedded inside it.
  * @param {object} options - { title, body, footer, accentColor, row }
  */
-async function buildRPSContainer(
+function buildRPSContainer(
 	interaction,
 	{ title, body, footer, accentColor, row = null },
 ) {

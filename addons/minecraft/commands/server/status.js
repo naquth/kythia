@@ -18,7 +18,7 @@ const {
 } = require('discord.js');
 const axios = require('axios');
 
-const HOST_REGEX = /^[a-zA-Z0-9._\-]+(:\d{1,5})?$/;
+const HOST_REGEX = /^[a-zA-Z0-9._-]+(:\d{1,5})?$/;
 
 /**
  * Parse host string into { host, port } — port defaults to 25565 for Java.

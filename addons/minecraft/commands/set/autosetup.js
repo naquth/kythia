@@ -28,7 +28,7 @@ const {
 } = require('discord.js');
 const { fetchMcStatus } = require('../../helpers/mcstats');
 
-const HOST_REGEX = /^[a-zA-Z0-9._\-]+(:\d{1,5})?$/;
+const HOST_REGEX = /^[a-zA-Z0-9._-]+(:\d{1,5})?$/;
 
 module.exports = {
 	subcommand: true,

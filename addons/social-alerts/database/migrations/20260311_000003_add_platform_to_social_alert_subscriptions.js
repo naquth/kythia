@@ -6,10 +6,8 @@
  * @version 1.0.0-rc
  */
 
-const { DataTypes } = require('sequelize');
-
 module.exports = {
-	up: async (queryInterface) => {
+	async up(queryInterface, DataTypes) {
 		// Add platform column — defaults to 'youtube' so all existing rows get the correct value
 		await queryInterface.addColumn('social_alert_subscriptions', 'platform', {
 			type: DataTypes.STRING(20),
@@ -18,7 +16,7 @@ module.exports = {
 		});
 	},
 
-	down: async (queryInterface) => {
+	async down(queryInterface) {
 		await queryInterface.removeColumn('social_alert_subscriptions', 'platform');
 	},
 };

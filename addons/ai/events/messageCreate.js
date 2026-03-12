@@ -15,6 +15,13 @@ let messageHandler;
  * Delegates all processing to AIMessageHandler class
  */
 module.exports = async (bot, message) => {
+	// Ignore messages starting with modmail prefix
+	if (
+		message.content.startsWith(bot.container.kythiaConfig.addons.modmail.prefix)
+	) {
+		return;
+	}
+
 	// Lazy initialization of handler
 	if (!messageHandler) {
 		messageHandler = new AIMessageHandler(bot.container);

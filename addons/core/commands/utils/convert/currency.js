@@ -86,7 +86,7 @@ module.exports = {
 			});
 		} catch (e) {
 			logger.error('Currency convert error:', e, {
-				label: 'core:utils:convert',
+				label: 'convert',
 			});
 			const components = await simpleContainer(
 				interaction,

@@ -59,7 +59,7 @@ module.exports = {
 			});
 		} catch (error) {
 			logger.error('Error setting avatar:', error, {
-				label: 'core:utils:presence',
+				label: 'presence',
 			});
 			const components = await simpleContainer(
 				interaction,

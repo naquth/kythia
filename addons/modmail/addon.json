@@ -1,0 +1,8 @@
+{
+	"name": "Modmail",
+	"featureName": "Modmail",
+	"featureFlag": "modmailOn",
+	"version": "1.0.0",
+	"description": "Let users contact your moderation team privately by DMing the bot. Messages are relayed to a private inbox thread where your staff can reply, discuss internally, and manage tickets — all with full transcript logs and anonymous reply support.",
+	"author": "kenndeclouv"
+}

@@ -6,10 +6,8 @@
  * @version 1.0.0-rc
  */
 
-const { DataTypes } = require('sequelize');
-
 module.exports = {
-	up: async (queryInterface) => {
+	async up(queryInterface, DataTypes) {
 		await queryInterface.createTable('user_birthdays', {
 			id: {
 				type: DataTypes.INTEGER,
@@ -65,7 +63,7 @@ module.exports = {
 		]);
 	},
 
-	down: async (queryInterface) => {
+	async down(queryInterface) {
 		await queryInterface.dropTable('user_birthdays');
 	},
 };

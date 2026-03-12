@@ -1,0 +1,22 @@
+/**
+ * @namespace: addons/modmail/commands/_command.js
+ * @type: Command Group Definition
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0
+ */
+
+const {
+	InteractionContextType,
+	PermissionFlagsBits,
+	SlashCommandBuilder,
+} = require('discord.js');
+
+module.exports = {
+	slashCommand: new SlashCommandBuilder()
+		.setName('modmail')
+		.setDescription('📬 All commands related to the Modmail system.')
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+	permissions: [PermissionFlagsBits.ManageGuild],
+};

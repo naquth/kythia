@@ -1,0 +1,37 @@
+/**
+ * @namespace: addons/modmail/commands/reply.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0
+ *
+ * /modmail reply <message>
+ * Sends a visible (named) reply to the user's DMs from inside a modmail thread.
+ * The staff member's username is shown in the reply.
+ */
+
+const { relayStaffReply } = require('../helpers');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('reply')
+			.setDescription('Reply to the user — your username will be visible.')
+			.addStringOption((option) =>
+				option
+					.setName('message')
+					.setDescription('The message to send to the user.')
+					.setRequired(true)
+					.setMaxLength(2000),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	execute(interaction, container) {
+		const content = interaction.options.getString('message');
+		return relayStaffReply(interaction, content, false, container);
+	},
+};

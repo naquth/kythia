@@ -107,7 +107,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			logger.error('TikTok fetch error:', err, { label: 'core:tools:tiktok' });
+			logger.error('TikTok fetch error:', err, { label: 'tools tiktok' });
 			let title, desc;
 			if (err.message?.includes('No video found')) {
 				title = await t(interaction, 'core.tools.tiktok.error.no.video.title');

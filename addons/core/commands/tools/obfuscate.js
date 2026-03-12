@@ -93,7 +93,7 @@ module.exports = {
 					logger.error(
 						'Unexpected response from Lua obfuscator:',
 						response.data,
-						{ label: 'core:tools:obfuscate' },
+						{ label: 'obfuscate' },
 					);
 					return interaction.editReply({
 						content: await t(interaction, 'core.tools.obfuscate.failed.lua'),
@@ -107,7 +107,7 @@ module.exports = {
 				);
 				filename = `${file.name.replace(/\.lua$/i, '')}.obf.lua`;
 			} catch (error) {
-				logger.error(error, { label: 'core:tools:obfuscate' });
+				logger.error(error, { label: 'obfuscate' });
 				return interaction.editReply({
 					content: await t(interaction, 'core.tools.obfuscate.failed.lua'),
 					ephemeral: true,

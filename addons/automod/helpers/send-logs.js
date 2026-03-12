@@ -56,13 +56,13 @@ async function sendLogsWarning(
 			logger.warn(
 				`Failed to send DM to ${message.author.tag}. DMs may be disabled.`,
 				{
-					label: 'core:helpers:send-logs',
+					label: 'core',
 				},
 			);
 		});
 	} catch (dmError) {
 		logger.error(`Failed to send DM to ${message.author.tag}:`, dmError, {
-			label: 'core:helpers:send-logs',
+			label: 'core',
 		});
 	}
 
@@ -81,12 +81,12 @@ async function sendLogsWarning(
 		logger.info(
 			`Automod log for user ${message.author.tag} saved successfully.`,
 			{
-				label: 'core:helpers:send-logs',
+				label: 'core',
 			},
 		);
 	} catch (dbError) {
 		logger.error('Failed to save moderation log to database:', dbError, {
-			label: 'core:helpers:send-logs',
+			label: 'core',
 		});
 	}
 
@@ -133,7 +133,7 @@ async function sendLogsWarning(
 
 		logChannel.send({ embeds: [embed] }).catch((e) => {
 			logger.error('Failed to send log embed to moderation log channel:', e, {
-				label: 'core:helpers:send-logs',
+				label: 'core',
 			});
 		});
 	}

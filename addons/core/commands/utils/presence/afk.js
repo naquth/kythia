@@ -48,7 +48,7 @@ module.exports = {
 			});
 		} catch (error) {
 			logger.error('Error setting AFK:', error, {
-				label: 'core:utils:presence',
+				label: 'presence',
 			});
 			const components = await simpleContainer(
 				interaction,

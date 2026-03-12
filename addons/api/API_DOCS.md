@@ -33,6 +33,14 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [PATCH /api/guilds/settings/:guildId](#patch-apiguildssettingsguildid)
 - [PATCH /api/guilds/branding/:guildId](#patch-apiguildsbrandingguildid)
 - [Ticket API (`/api/tickets`)](#ticket-api-apitickets)
+- [Modmail API (`/api/modmail`)](#modmail-api-apimodmail)
+  - [Threads](#modmail-threads-apimodmail)
+  - [Open / Close](#modmail-actions-open--close)
+  - [Staff Reply](#modmail-action-staff-reply)
+  - [Internal Notes](#modmail-action-internal-note)
+  - [Config](#modmail-config-apimodmailconfigsguildid)
+  - [Block / Unblock](#modmail-block--unblock)
+  - [Snippets](#modmail-snippets)
 - [AutoReact API (`/api/autoreact`)](#autoreact-api-apiautoreact)
 - [AutoReply API (`/api/autoreply`)](#autoreply-api-apiautoreply)
 - [Invite API (`/api/invite`)](#invite-api-apiinvite)
@@ -6667,3 +6675,451 @@ Force an immediate Minecraft stat channel rename cycle for one guild or all guil
 
 > The update runs asynchronously in the background. The API returns immediately; channel renames happen shortly after (subject to Discord rate limits). Use `GET /api/minecraft/status/:guildId` to verify the current state.
 
+
+---
+
+## Modmail API (`/api/modmail`)
+
+The **Modmail API** provides programmatic access to manage modmail threads, per-guild configurations, block lists, and quick-reply snippets. All endpoints require bearer token authentication.
+
+---
+
+### Modmail Threads (`/api/modmail`)
+
+#### `GET /api/modmail`
+
+List all modmail thread records. Supports query-parameter filtering.
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Filter by guild ID |
+| `userId` | `string` | Filter by user who opened the modmail |
+| `threadChannelId` | `string` | Filter by the Discord thread channel ID |
+| `status` | `string` | `open` or `closed` |
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 3,
+  "data": [
+    {
+      "id": 1,
+      "guildId": "123456789012345678",
+      "userId": "987654321098765432",
+      "threadChannelId": "111111111111111111",
+      "status": "open",
+      "openedAt": 1741800000000,
+      "closedAt": null,
+      "closedByUserId": null,
+      "closedReason": null
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Primary key |
+| `guildId` | `string` | Guild the modmail belongs to |
+| `userId` | `string` | Discord user who opened the modmail |
+| `threadChannelId` | `string` | Discord private thread channel ID |
+| `status` | `string` | `open` or `closed` |
+| `openedAt` | `integer` | Unix timestamp (ms) when the thread was opened |
+| `closedAt` | `integer \| null` | Unix timestamp (ms) when the thread was closed |
+| `closedByUserId` | `string \| null` | Discord user ID of the staff who closed it |
+| `closedReason` | `string \| null` | Optional closing reason |
+
+---
+
+#### `GET /api/modmail/:id`
+
+Get a single modmail thread by its primary key.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `integer` | Modmail record primary key |
+
+**Response:** Same shape as the object inside `data[]` above.
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `404` | No modmail found with that ID |
+
+---
+
+#### `PATCH /api/modmail/:id`
+
+Partially update fields on a modmail record (e.g. `closedReason`). Does **not** close the thread — use `POST /api/modmail/:id/close` for a graceful close.
+
+**Request Body:** Any subset of modmail fields.
+
+```json
+{ "closedReason": "Resolved via support ticket" }
+```
+
+**Response:** `{ "success": true, "data": { ...updatedModmail } }`
+
+---
+
+#### `DELETE /api/modmail/:id`
+
+Hard-delete a modmail record from the database. Does **not** delete the Discord thread channel.
+
+> [!WARNING]
+> This does not close the Discord thread. Use `/close` for a graceful shutdown.
+
+**Response:** `{ "success": true, "message": "Modmail record deleted" }`
+
+---
+
+### Modmail Actions: Open / Close
+
+#### `POST /api/modmail/open`
+
+Programmatically open a modmail thread for a user in a guild. Sends the greeting DM, creates the private thread, and notifies staff.
+
+**Request Body:**
+
+```json
+{
+  "guildId": "123456789012345678",
+  "userId": "987654321098765432",
+  "initialMessage": "Hello, I need help with my account."
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | ✅ | Target guild ID |
+| `userId` | `string` | ✅ | Discord user ID to open modmail for |
+| `initialMessage` | `string` | ❌ | First message content to relay into the thread |
+
+**Errors:**
+
+| Status | Error | Condition |
+|---|---|---|
+| `400` | `Missing required: guildId, userId` | Required fields absent |
+| `403` | `User is blocked from modmail in this guild` | User is on the guild's blocklist |
+| `404` | `User/Guild not found` | Bot cannot find the user or guild |
+| `404` | `Modmail not configured for this guild` | No config exists for the guild |
+| `409` | `User already has an open modmail in this guild` | Duplicate open thread |
+| `500` | `Failed to create modmail thread` | Internal helper error (check bot logs) |
+
+**Response (success):**
+```json
+{ "success": true, "data": { ...modmailRecord } }
+```
+
+---
+
+#### `POST /api/modmail/:id/close`
+
+Gracefully close a modmail thread. Generates a transcript, posts it to the transcript channel, sends the user a closing DM, marks the DB record as `closed`, and deletes the Discord thread.
+
+**Request Body:**
+
+```json
+{
+  "closerId": "111111111111111111",
+  "reason": "Issue resolved"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `closerId` | `string` | ✅ | Discord user ID of the staff member closing the thread |
+| `reason` | `string` | ❌ | Closing reason (shown in logs) |
+
+**Errors:**
+
+| Status | Error | Condition |
+|---|---|---|
+| `400` | `Modmail is already closed` | Thread was closed previously |
+| `400` | `Missing required: closerId` | No closer provided |
+| `404` | `Guild or thread channel not found` | Bot cannot fetch the thread |
+| `404` | `User (closer) not found` | Closer user does not exist |
+
+**Response:** `{ "success": true, "message": "Modmail closed successfully" }`
+
+---
+
+### Modmail Action: Staff Reply
+
+#### `POST /api/modmail/:id/reply`
+
+Send a staff reply from the API. Relays the message as a Components V2 card to both the Discord thread and the user's DM — identical to what happens when staff types in the thread.
+
+**Request Body:**
+
+```json
+{
+  "staffId": "111111111111111111",
+  "content": "Thank you for reaching out! We are looking into this.",
+  "anonymous": false
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `staffId` | `string` | ✅ | Discord user ID of the replying staff member |
+| `content` | `string` | ✅ | Message content to send |
+| `anonymous` | `boolean` | ❌ | If `true`, shown as "Staff" instead of the staff member's name. Default: `false` |
+
+**Errors:**
+
+| Status | Error | Condition |
+|---|---|---|
+| `400` | `Cannot reply to a closed modmail` | Thread is already closed |
+| `400` | `Missing required: staffId, content` | Required fields absent |
+| `404` | `Thread channel not found` | Bot cannot find the Discord thread |
+| `404` | `User (staff) not found` | Staff user does not exist |
+
+**Response:** `{ "success": true, "message": "Reply sent to user" }`
+
+---
+
+### Modmail Action: Internal Note
+
+#### `POST /api/modmail/:id/note`
+
+Post an internal staff note to the modmail thread. Notes appear as grey Components V2 cards in the thread and are **never relayed** to the user.
+
+**Request Body:**
+
+```json
+{
+  "staffId": "111111111111111111",
+  "content": "User seems frustrated — escalate to senior staff if not resolved in 30 minutes."
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `staffId` | `string` | ✅ | Discord user ID of the note author |
+| `content` | `string` | ✅ | Note content (only visible to staff in the thread) |
+
+**Response:** `{ "success": true, "message": "Note posted to thread" }`
+
+---
+
+### Modmail Config (`/api/modmail/configs/:guildId`)
+
+#### `GET /api/modmail/configs/:guildId`
+
+Retrieve the modmail configuration for a guild.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "guildId": "123456789012345678",
+    "inboxChannelId": "222222222222222222",
+    "staffRoleId": "333333333333333333",
+    "logsChannelId": "444444444444444444",
+    "transcriptChannelId": "555555555555555555",
+    "pingStaff": true,
+    "greetingMessage": "## 📬 Modmail Opened\nThank you for contacting us!",
+    "closingMessage": "## 🔒 Modmail Closed\nYour thread has been closed.",
+    "greetingColor": "#5865F2",
+    "greetingImage": "https://example.com/greeting-banner.png",
+    "closingColor": "#FF5555",
+    "closingImage": null,
+    "blockedUserIds": [],
+    "snippets": {
+      "hello": "Hello! Thanks for reaching out. How can we help?",
+      "rules": "Please review our server rules at #rules."
+    }
+  }
+}
+```
+
+#### Config Object Schema
+
+| Field | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Guild snowflake ID |
+| `inboxChannelId` | `string` | Channel where private thread are created |
+| `staffRoleId` | `string \| null` | Role pinged on new threads |
+| `logsChannelId` | `string \| null` | Channel for close event logs |
+| `transcriptChannelId` | `string \| null` | Channel where transcripts are saved |
+| `pingStaff` | `boolean` | Whether to ping the staff role on new threads |
+| `greetingMessage` | `string \| null` | Custom DM text sent when a thread opens |
+| `closingMessage` | `string \| null` | Custom DM text sent when a thread closes |
+| `greetingColor` | `string \| null` | Hex accent for the opening DM card (e.g. `#5865F2`) |
+| `greetingImage` | `string \| null` | Banner image URL for the opening DM card |
+| `closingColor` | `string \| null` | Hex accent for the closing DM card |
+| `closingImage` | `string \| null` | Banner image URL for the closing DM card |
+| `blockedUserIds` | `string[]` | User IDs blocked from modmail in this guild |
+| `snippets` | `object` | Key-value map of snippet name → content |
+
+---
+
+#### `PUT /api/modmail/configs/:guildId`
+
+Create or fully replace the modmail config for a guild.
+
+**Request Body:**
+
+```json
+{
+  "inboxChannelId": "222222222222222222",
+  "staffRoleId": "333333333333333333",
+  "logsChannelId": "444444444444444444",
+  "transcriptChannelId": "555555555555555555",
+  "pingStaff": true,
+  "greetingMessage": "## 📬 Modmail Opened\nWe'll get back to you shortly!",
+  "closingMessage": "## 🔒 Thread Closed\nFeel free to DM again if you need help.",
+  "greetingColor": "#5865F2",
+  "greetingImage": "https://example.com/open-banner.png",
+  "closingColor": "#FF5555",
+  "closingImage": null
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `inboxChannelId` | `string` | ✅ | Channel where new threads are created |
+| `staffRoleId` | `string` | ❌ | Role to ping on new threads |
+| `logsChannelId` | `string` | ❌ | Channel for close logs |
+| `transcriptChannelId` | `string` | ❌ | Channel for transcripts |
+| `pingStaff` | `boolean` | ❌ | Default: `true` |
+| `greetingMessage` | `string` | ❌ | DM text on open — markdown supported |
+| `closingMessage` | `string` | ❌ | DM text on close — markdown supported |
+| `greetingColor` | `string` | ❌ | Hex color for opening card (e.g. `#5865F2`) |
+| `greetingImage` | `string` | ❌ | Image URL for opening card banner |
+| `closingColor` | `string` | ❌ | Hex color for closing card |
+| `closingImage` | `string` | ❌ | Image URL for closing card banner |
+
+**Response:** `{ "success": true, "data": { ...config } }`
+
+---
+
+#### `PATCH /api/modmail/configs/:guildId`
+
+Partially update the modmail config. Only provided fields are changed.
+
+**Request Body:** Any subset of the config fields above.
+
+```json
+{ "greetingColor": "#00FF99", "pingStaff": false }
+```
+
+**Response:** `{ "success": true, "data": { ...updatedConfig } }`
+
+---
+
+#### `DELETE /api/modmail/configs/:guildId`
+
+Delete the modmail config for a guild. This effectively **disables modmail** for that guild — users will no longer be able to open threads.
+
+**Response:** `{ "success": true, "message": "Modmail config for guild 123... deleted" }`
+
+---
+
+### Modmail Block / Unblock
+
+#### `GET /api/modmail/configs/:guildId/block`
+
+List all user IDs blocked from modmail in a guild.
+
+**Response:**
+```json
+{ "success": true, "count": 1, "data": ["987654321098765432"] }
+```
+
+---
+
+#### `POST /api/modmail/configs/:guildId/block`
+
+Block a user from opening new modmail threads in this guild.
+
+**Request Body:**
+```json
+{ "userId": "987654321098765432" }
+```
+
+**Errors:**
+
+| Status | Error | Condition |
+|---|---|---|
+| `400` | `Missing required: userId` | — |
+| `409` | `User is already blocked` | User already in the block list |
+
+**Response:** `{ "success": true, "data": { "blockedUserIds": ["987..."] } }`
+
+---
+
+#### `DELETE /api/modmail/configs/:guildId/block/:userId`
+
+Unblock a user so they can open modmail again.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Guild ID |
+| `userId` | `string` | User ID to unblock |
+
+**Response:** `{ "success": true, "data": { "blockedUserIds": [] } }`
+
+---
+
+### Modmail Snippets
+
+Snippets are quick-reply templates stored per-guild. Staff can use them via `/modmail snippet use` to quickly reply with pre-written text.
+
+#### `GET /api/modmail/configs/:guildId/snippets`
+
+List all snippets for a guild.
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": {
+    "hello": "Hello! Thanks for reaching out. How can we help?",
+    "rules": "Please review our server rules at #rules before we proceed."
+  }
+}
+```
+
+---
+
+#### `PUT /api/modmail/configs/:guildId/snippets/:name`
+
+Create or replace a snippet by name. Names are automatically lowercased.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Guild ID |
+| `name` | `string` | Snippet trigger name (e.g. `hello`, `scam`, `appeal`) |
+
+**Request Body:**
+```json
+{ "content": "Hello! How can we help you today?" }
+```
+
+**Response:** `{ "success": true, "data": { "name": "hello", "content": "Hello! ..." } }`
+
+---
+
+#### `DELETE /api/modmail/configs/:guildId/snippets/:name`
+
+Delete a snippet by name.
+
+**Response:** `{ "success": true, "message": "Snippet \"hello\" deleted" }`
+
+**Error (404):** If the snippet doesn't exist.
+
+---

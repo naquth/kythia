@@ -140,7 +140,7 @@ Creates: `addons/core/database/migrations/20250128120000_create_users_table.js`
 
 ```javascript
 module.exports = {
-  up: async (queryInterface, DataTypes) => {
+  async up(queryInterface, DataTypes) {
     await queryInterface.createTable('users', {
       id: {
         type: DataTypes.INTEGER,
@@ -153,7 +153,7 @@ module.exports = {
     });
   },
 
-  down: async (queryInterface) => {
+  async down(queryInterface) {
     await queryInterface.dropTable('users');
   }
 };

@@ -83,8 +83,8 @@ module.exports = async (bot, guild) => {
 	const minMembers = kythiaConfig.bot.minMembers ?? 0;
 	if (minMembers > 0 && (guild.memberCount ?? 0) < minMembers) {
 		logger.info(
-			`[guildCreate] Left guild "${guild.name}" (${guild.id}) — only ${guild.memberCount} members (min: ${minMembers})`,
-			{ label: 'guildCreate:minMembers' },
+			`Left guild "${guild.name}" (${guild.id}) — only ${guild.memberCount} members (min: ${minMembers})`,
+			{ label: 'guildCreate' },
 		);
 
 		const { simpleContainer } = helpers.discord;
@@ -179,7 +179,7 @@ module.exports = async (bot, guild) => {
 				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`-# ${bot.client.user.username} by kenndeclouv`,
+						`-# © ${bot.client.user.username} by kenndeclouv`,
 					),
 				);
 

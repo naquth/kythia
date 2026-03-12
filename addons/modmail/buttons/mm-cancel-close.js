@@ -1,0 +1,23 @@
+/**
+ * @namespace: addons/modmail/buttons/mm-cancel-close.js
+ * @type: Module
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0
+ */
+
+const { MessageFlags } = require('discord.js');
+
+module.exports = {
+	execute: async (interaction, container) => {
+		const { t, helpers } = container;
+		const { simpleContainer } = helpers.discord;
+		const desc = await t(interaction, 'modmail.close.cancelled');
+		return interaction.reply({
+			components: await simpleContainer(interaction, desc, {
+				color: 'Blurple',
+			}),
+			flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+		});
+	},
+};

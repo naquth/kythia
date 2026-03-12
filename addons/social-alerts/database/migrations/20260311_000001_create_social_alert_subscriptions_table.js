@@ -6,10 +6,8 @@
  * @version 1.0.0-rc
  */
 
-const { DataTypes } = require('sequelize');
-
 module.exports = {
-	up: async (queryInterface) => {
+	async up(queryInterface, DataTypes) {
 		await queryInterface.createTable('social_alert_subscriptions', {
 			id: {
 				type: DataTypes.INTEGER,
@@ -67,7 +65,7 @@ module.exports = {
 		await queryInterface.addIndex('social_alert_subscriptions', ['guildId']);
 	},
 
-	down: async (queryInterface) => {
+	async down(queryInterface) {
 		await queryInterface.dropTable('social_alert_subscriptions');
 	},
 };

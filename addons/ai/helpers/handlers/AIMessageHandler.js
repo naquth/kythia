@@ -90,6 +90,18 @@ class AIMessageHandler {
 			!message.mentions.everyone &&
 			(!message.mentions.roles || message.mentions.roles.size === 0);
 
+		// ── Modmail collision guard ──────────────────────────────────────────
+		// If the user DMs the bot while having an active modmail session (or
+		// while the modmail addon is routing them to pick a server), skip AI
+		// entirely so modmail has exclusive handling of the DM.
+		if (isDm) {
+			const activeDMs = client.modmailActiveDMs;
+			if (activeDMs instanceof Set && activeDMs.has(message.author.id)) {
+				return;
+			}
+		}
+		// ───────────────────────────────────────────────────────────────────
+
 		let isAiChannel = false;
 		if (message.guild) {
 			try {

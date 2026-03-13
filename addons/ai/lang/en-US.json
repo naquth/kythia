@@ -26,7 +26,8 @@
 					"blocked": "Sorry, I can't do that.",
 					"everyone": {}
 				},
-				"mention": "Hey, what do you want to say? >,<"
+				"mention": "Hey, what do you want to say? >,<",
+				"cooldown": "Slow down a bit! 😅 You're sending messages too fast. Please wait **{seconds}s** before chatting with me again. ^-^"
 			}
 		},
 		"translate": {

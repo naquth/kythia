@@ -1,0 +1,95 @@
+/**
+ * @namespace: addons/core/commands/utils/kyth/blacklist/user-remove.js
+ * @type: Module
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { MessageFlags } = require('discord.js');
+
+module.exports = {
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('user-remove')
+			.setDescription('Remove a user from the blacklist')
+			.addUserOption((option) =>
+				option
+					.setName('user')
+					.setDescription('User to remove from blacklist')
+					.setRequired(true),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, models, logger, helpers } = container;
+		const { KythiaBlacklist } = models;
+		const { createContainer } = helpers.discord;
+
+		await interaction.deferReply();
+
+		const user = interaction.options.getUser('user');
+
+		try {
+			const existing = await KythiaBlacklist.getCache({
+				where: { type: 'user', targetId: user.id },
+			});
+			if (!existing) {
+				const components = await createContainer(interaction, {
+					description: await t(
+						interaction,
+						'core.utils.kyth.blacklist.user.remove.not.found',
+						{ tag: user.tag },
+					),
+					color: 'Red',
+				});
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+
+			await KythiaBlacklist.destroy({
+				where: { type: 'user', targetId: user.id },
+			});
+
+			const components = await createContainer(interaction, {
+				title: await t(
+					interaction,
+					'core.utils.kyth.blacklist.user.remove.title',
+				),
+				description: await t(
+					interaction,
+					'core.utils.kyth.blacklist.user.remove.success',
+					{ tag: user.tag, id: user.id },
+				),
+				color: 'Green',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+			logger.info(
+				`User ${user.tag} (${user.id}) removed from blacklist by ${interaction.user.tag}`,
+			);
+		} catch (error) {
+			logger.error('Failed to remove user from blacklist:', error);
+			const components = await createContainer(interaction, {
+				description: await t(
+					interaction,
+					'core.utils.kyth.blacklist.user.remove.error',
+					{ error: error.message },
+				),
+				color: 'Red',
+			});
+			await interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	},
+};

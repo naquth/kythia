@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/leave-guild/cleanup.js
+ * @namespace: addons/core/commands/utils/kyth/mass-leave.js
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
@@ -12,7 +12,7 @@ module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand
-			.setName('cleanup')
+			.setName('mass-leave')
 			.setDescription('Mass leave guilds with member count below threshold.')
 			.addIntegerOption((option) =>
 				option
@@ -62,7 +62,7 @@ module.exports = {
 		const threshold = interaction.options.getInteger('min_member');
 		const customMsg =
 			interaction.options.getString('message') ||
-			(await t(interaction, 'core.utils.leave-guild.cleanup.goodbye', {
+			(await t(interaction, 'core.utils.kyth.mass-leave.goodbye', {
 				threshold,
 			}));
 
@@ -75,7 +75,7 @@ module.exports = {
 		if (targets.size === 0) {
 			const components = await simpleContainer(
 				interaction,
-				await t(interaction, 'core.utils.leave-guild.cleanup.empty', {
+				await t(interaction, 'core.utils.kyth.mass-leave.empty', {
 					threshold,
 				}),
 			);
@@ -129,7 +129,7 @@ module.exports = {
 			}
 		}
 
-		let desc = await t(interaction, 'core.utils.leave-guild.cleanup.success', {
+		let desc = await t(interaction, 'core.utils.kyth.mass-leave.success', {
 			threshold,
 			leftCount,
 			errorCount,
@@ -138,11 +138,11 @@ module.exports = {
 			const sliced = leftNames.slice(0, 10);
 			const extra =
 				leftNames.length > 10
-					? await t(interaction, 'core.utils.leave-guild.cleanup.more', {
+					? await t(interaction, 'core.utils.kyth.mass-leave.more', {
 							count: leftNames.length - 10,
 						})
 					: '';
-			desc += await t(interaction, 'core.utils.leave-guild.cleanup.list', {
+			desc += await t(interaction, 'core.utils.kyth.mass-leave.list', {
 				names: sliced.join('\n') + (extra ? `\n${extra}` : ''),
 			});
 		}

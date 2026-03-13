@@ -14,10 +14,24 @@ module.exports = {
 		if (!command.teamOnly) return true;
 		if (container.helpers.discord.isOwner(interaction.user.id)) return true;
 
-		const isTeamMember = await container.helpers.discord.isTeam(
-			container,
-			interaction.user.id,
-		);
+		const { redis } = container;
+		const cacheKey = `kythia:middleware:teamOnly:${interaction.user.id}`;
+		let isTeamMember = await redis.get(cacheKey);
+
+		if (isTeamMember) {
+			isTeamMember = JSON.parse(isTeamMember);
+		} else {
+			isTeamMember = await container.helpers.discord.isTeam(
+				container,
+				interaction.user.id,
+			);
+			await redis.set(
+				cacheKey,
+				JSON.stringify(Boolean(isTeamMember)),
+				'EX',
+				1800,
+			);
+		}
 
 		if (!isTeamMember) {
 			if (interaction.isRepliable()) {

@@ -200,6 +200,41 @@ async function broadcastGetMeta(client) {
 }
 
 /**
+ * Collect detailed statistics for each shard.
+ *
+ * @param {import('discord.js').Client} client
+ * @returns {Promise<Array<{id: number, ping: number, guilds: number, members: number, uptime: number, ram_usage: number}>>}
+ */
+async function broadcastGetDetailedShards(client) {
+	if (!client.shard) {
+		return [
+			{
+				id: 0,
+				ping: Math.round(client.ws.ping),
+				guilds: client.guilds.cache.size,
+				members: client.guilds.cache.reduce(
+					(acc, g) => acc + (g.memberCount || 0),
+					0,
+				),
+				uptime: client.uptime,
+				ram_usage: process.memoryUsage().rss,
+			},
+		];
+	}
+
+	const results = await client.shard.broadcastEval((c) => ({
+		id: c.shard.ids[0],
+		ping: Math.round(c.ws.ping),
+		guilds: c.guilds.cache.size,
+		members: c.guilds.cache.reduce((acc, g) => acc + (g.memberCount || 0), 0),
+		uptime: c.uptime,
+		ram_usage: process.memoryUsage().rss,
+	}));
+
+	return results.sort((a, b) => a.id - b.id);
+}
+
+/**
  * Edit the bot's GuildMember on the shard that owns the given guild.
  * Returns `true` if the edit was applied, `false` if the guild wasn't found on any shard.
  * Throws if Discord rejects the edit (propagate to the caller for error handling).
@@ -236,5 +271,6 @@ module.exports = {
 	broadcastFindGuild,
 	broadcastGetStats,
 	broadcastGetMeta,
+	broadcastGetDetailedShards,
 	broadcastEditMember,
 };

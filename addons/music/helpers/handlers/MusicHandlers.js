@@ -253,6 +253,17 @@ class MusicHandlers {
 				player.queue.add(track);
 			}
 		} else {
+			if (!res.tracks || res.tracks.length === 0) {
+				const components = await this.simpleContainer(
+					interaction,
+					await this.t(interaction, 'music.helpers.handlers.music.results'),
+					{ color: 'Red' },
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
 			const track = res.tracks[0];
 			track.info.requester = interaction.user;
 			player.queue.add(track);

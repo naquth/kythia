@@ -8,6 +8,38 @@ module.exports = async (bot, message) => {
 	const container = client.container;
 
 	try {
+		const { models, logger } = container;
+		const { KythiaBlacklist } = models;
+
+		// 0. Global Blacklist Checks (Stop propagation if true)
+		if (message.author && !message.author.bot) {
+			const userBlacklisted = await KythiaBlacklist.getCache({
+				where: { type: 'user', targetId: message.author.id },
+			}).catch(() => null);
+
+			if (userBlacklisted) {
+				logger.info(
+					`Blocked message from blacklisted user: ${message.author.tag} (${message.author.id})`,
+					{ label: 'blacklist' },
+				);
+				return true; // Stop propagation to other addons
+			}
+		}
+
+		if (message.guild) {
+			const guildBlacklisted = await KythiaBlacklist.getCache({
+				where: { type: 'guild', targetId: message.guild.id },
+			}).catch(() => null);
+
+			if (guildBlacklisted) {
+				logger.info(
+					`Blocked message from blacklisted guild: ${message.guild.name} (${message.guild.id})`,
+					{ label: 'blacklist' },
+				);
+				return true; // Stop propagation to other addons
+			}
+		}
+
 		// 1. Try prefix command handling
 		const prefixHandler = new PrefixCommandHandler();
 		const handled = await prefixHandler.handle(message, container);

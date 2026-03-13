@@ -18,7 +18,7 @@ app.get('/', async (c) => {
 
 	return c.json({
 		ping: client.ws.ping,
-		uptime: client.uptime,
+		uptime: client.container.shutdownManager.getMasterUptime(),
 		guilds,
 		users,
 		ram_usage: `${(process.memoryUsage().rss / 1024 / 1024).toFixed(2)} MB`,

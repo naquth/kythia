@@ -57,6 +57,9 @@ class AIMessageHandler {
 			logger: this.logger,
 			geminiApiKey: this.aiConfig.geminiApiKeys.split(',')[0],
 		});
+
+		// Per-user cooldown: Map<userId, number[]> (timestamps of recent requests)
+		this.userCooldowns = new Map();
 	}
 
 	/**
@@ -120,12 +123,54 @@ class AIMessageHandler {
 			return;
 		}
 
+		// Check per-user cooldown (owners can bypass if ownerBypassFilter is true)
+		const isOwnerUser = this.isOwner(message.author.id);
+		if (!isOwnerUser || !this.aiConfig.ownerBypassFilter) {
+			const cooldownResult = this.checkUserCooldown(message.author.id);
+			if (cooldownResult.limited) {
+				const seconds = Math.ceil(cooldownResult.resetIn / 1000);
+				const cooldownMsg = (
+					await this.t(message, 'ai.events.messageCreate.cooldown')
+				).replace('{seconds}', seconds);
+				await message.reply(cooldownMsg).catch(() => {});
+				return;
+			}
+		}
+
 		// Check for memory command
 		const memoryResult = await this.checkMemoryCommand(content, message);
 		if (memoryResult) return;
 
 		// Process AI request
 		await this.processAIRequest(bot, message, client);
+	}
+
+	/**
+	 * Check and enforce per-user AI request cooldown.
+	 * Records the current timestamp and evicts old ones outside the window.
+	 * @param {string} userId - Discord user ID
+	 * @returns {{ limited: boolean, resetIn?: number }} Result with ms until reset if limited
+	 */
+	checkUserCooldown(userId) {
+		const maxRequests = this.aiConfig.userCooldownRequests ?? 2;
+		const windowMs = (this.aiConfig.userCooldownWindowSec ?? 60) * 1000;
+		const now = Date.now();
+
+		let timestamps = this.userCooldowns.get(userId) || [];
+
+		// Evict timestamps outside the window
+		timestamps = timestamps.filter((ts) => now - ts < windowMs);
+
+		if (timestamps.length >= maxRequests) {
+			// Time until the oldest request expires
+			const resetIn = windowMs - (now - timestamps[0]);
+			this.userCooldowns.set(userId, timestamps);
+			return { limited: true, resetIn };
+		}
+
+		timestamps.push(now);
+		this.userCooldowns.set(userId, timestamps);
+		return { limited: false };
 	}
 
 	/**

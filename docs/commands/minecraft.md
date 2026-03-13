@@ -77,9 +77,9 @@
 - **`wallpaper*`**
   - **Description:** Choose a wallpaper style
   - **Type:** Text
-  - **Choices:** `Herobrine Hill` (`herobrine_hill`), `Quick Hide (Support 3 Players)` (`quick_hide`), `Malevolent` (`malevolent`), `Off to the Stars` (`off_to_the_stars`), `Wheat` (`wheat`)
+  - **Choices:** `Herobrine Hill` (`herobrine_hill`), `Quick Hide` (`quick_hide`), `Malevolent` (`malevolent`), `Off to the Stars` (`off_to_the_stars`), `Wheat` (`wheat`)
 - **`players*`**
-  - **Description:** Player name(s) — e.g. kenndeclouv,ribellflow (JUST FOR WALLPAPER QUICK HIDE, 3 PLAYERS MAX)
+  - **Description:** Player name(s) — separate multiple with commas, no spaces (e.g. kenndeclouv,ribellflow)
   - **Type:** Text
 **`/minecraft server status <host> [<type>]`**
 > Check the status of a Minecraft server

@@ -61,9 +61,23 @@ async function getInviteLink(guild) {
 module.exports = async (bot, guild) => {
 	const container = bot.client.container;
 	const { t, models, helpers, kythiaConfig, logger } = container;
-	const { ServerSetting } = models;
+	const { ServerSetting, KythiaBlacklist } = models;
 
 	const { convertColor } = helpers.color;
+
+	// ─── Guild Blacklist Check ────────────────────────────────────────────────
+	const blacklisted = await KythiaBlacklist.getCache({
+		where: { type: 'guild', targetId: guild.id },
+	}).catch(() => null);
+
+	if (blacklisted) {
+		logger.info(
+			`Left blacklisted guild "${guild.name}" (${guild.id}) | Reason: ${blacklisted.reason ?? 'none'}`,
+			{ label: 'guildCreate:blacklist' },
+		);
+		await guild.leave().catch(() => {});
+		return;
+	}
 
 	const locale = guild.preferredLocale || 'en';
 	const [_setting, created] = await ServerSetting.findOrCreateWithCache({

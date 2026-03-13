@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/leave-guild/target.js
+ * @namespace: addons/core/commands/utils/kyth/leave.js
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
@@ -12,7 +12,7 @@ module.exports = {
 	subcommand: true,
 	slashCommand: (subcommand) =>
 		subcommand
-			.setName('target')
+			.setName('leave')
 			.setDescription('Force leave a specific guild by ID.')
 			.addStringOption((option) =>
 				option
@@ -54,7 +54,7 @@ module.exports = {
 		if (SAFE_GUILDS.includes(guildId)) {
 			const components = await simpleContainer(
 				interaction,
-				await t(interaction, 'core.utils.leave-guild.target.protected', {
+				await t(interaction, 'core.utils.kyth.leave.protected', {
 					guildId,
 				}),
 				{ color: 'Yellow' },
@@ -69,7 +69,7 @@ module.exports = {
 		if (!guild) {
 			const components = await simpleContainer(
 				interaction,
-				await t(interaction, 'core.utils.leave-guild.target.not.found', {
+				await t(interaction, 'core.utils.kyth.leave.not.found', {
 					guildId,
 				}),
 				{ color: 'Red' },
@@ -84,7 +84,7 @@ module.exports = {
 		const memberCount = guild.memberCount;
 		await guild.leave();
 
-		const desc = await t(interaction, 'core.utils.leave-guild.target.success', {
+		const desc = await t(interaction, 'core.utils.kyth.leave.success', {
 			guildName,
 			guildId,
 			memberCount,

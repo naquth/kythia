@@ -11,7 +11,10 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { getCommandsData } = require('../helpers/commands');
 const { parseChangelog } = require('../helpers/changelog');
-const { broadcastGetMeta } = require('../helpers/shard');
+const {
+	broadcastGetMeta,
+	broadcastGetDetailedShards,
+} = require('../helpers/shard');
 
 const app = new Hono();
 
@@ -23,10 +26,21 @@ app.get('/stats', async (c) => {
 	return c.json({
 		totalServers,
 		totalMembers,
-		uptime: client.uptime,
+		uptime: client.container.shutdownManager.getMasterUptime(),
 		ping: client.ws.ping,
 		ram_usage: `${(process.memoryUsage().rss / 1024 / 1024).toFixed(2)} MB`,
 	});
+});
+
+app.get('/shards', async (c) => {
+	const client = c.get('client');
+
+	try {
+		const shards = await broadcastGetDetailedShards(client);
+		return c.json({ shards, totalShards: shards.length });
+	} catch (error) {
+		return c.json({ error: `Failed to fetch shards info: ${error}` }, 500);
+	}
 });
 
 app.get('/commands', async (c) => {

@@ -34,6 +34,7 @@ const BLACKLIST_COMMANDS = [
 	'ascii',
 	'convert',
 	'presence',
+	'kyth',
 ];
 
 // ─── Mock Message ─────────────────────────────────────────────────────────────

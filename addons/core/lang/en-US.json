@@ -459,22 +459,6 @@
 					"topgg": "🩷 Vote {username}"
 				}
 			},
-			"leave-guild": {
-				"target": {
-					"protected": "🛡️ **Protected Guild**\nID: `{guildId}` is exempted and cannot be left.",
-					"not": {
-						"found": "❌ **Guild Not Found**\nID: `{guildId}`"
-					},
-					"success": "✅ **Successfully Left Guild**\n\n**Name:** {guildName}\n**ID:** `{guildId}`\n**Members:** {memberCount}\n\n📉 Server Count is now: **{serverCount}**"
-				},
-				"cleanup": {
-					"goodbye": "👋 **Good Bye!**\n\nI am leaving this server because it has fewer than {threshold} members (Cleanup Policy).\nIf you want to use me, please invite me to a more active server!",
-					"empty": "✅ **No Cleanup Needed**\nNo guilds found with less than {threshold} members.",
-					"success": "🧹 **Cleanup Complete**\n\n**Threshold:** < {threshold} members\n**Success:** {leftCount} guilds\n**Failed:** {errorCount} guilds",
-					"more": "...and {count} more",
-					"list": "\n\n**Left Guilds:**\n```\n{names}```"
-				}
-			},
 			"kyth": {
 				"team": {
 					"list": {
@@ -502,6 +486,86 @@
 						"success": "Successfully added **{tag}** to Kythia Team!\n\n**User ID:** {id}\n**Name/Role:** {name}",
 						"error": "❌ Failed to add team member: {error}"
 					}
+				},
+				"servers": {
+					"title": "🌐 Bot Servers",
+					"empty": "The bot is not in any servers.",
+					"entry": "**{rank}.** {name} ({id}",
+					"footer": "Page {page} of {totalPages} | Total Servers: {totalServers}"
+				},
+				"chat": {
+					"success": {
+						"title": "✅ Message Sent",
+						"desc": "Successfully sent the message to **{tag}**."
+					},
+					"error": "❌ Failed to send message (user may have DMs disabled): {error}"
+				},
+				"blacklist": {
+					"no": {
+						"reason": "No reason provided"
+					},
+					"guild": {
+						"add": {
+							"already": "❌ Guild {id}",
+							"title": "🚫 Guild Blacklisted",
+							"success": "Successfully blacklisted guild {id}",
+							"left": "\n\n⚡ Bot was in this guild and has **left** immediately.",
+							"error": "❌ Failed to blacklist guild: {error}"
+						},
+						"remove": {
+							"not": {
+								"found": "❌ Guild {id}"
+							},
+							"title": "✅ Guild Removed from Blacklist",
+							"success": "Successfully removed guild {id}",
+							"error": "❌ Failed to remove guild from blacklist: {error}"
+						},
+						"list": {
+							"empty": "📋 No guilds are currently blacklisted.",
+							"title": "🚫 Blacklisted Guilds",
+							"total": "Total blacklisted: **{count}**",
+							"row": "**ID:** {id}",
+							"error": "❌ Failed to list blacklisted guilds: {error}"
+						}
+					},
+					"user": {
+						"add": {
+							"already": "❌ **{tag}** is already blacklisted!",
+							"title": "🚫 User Blacklisted",
+							"success": "Successfully blacklisted **{tag}**!\n\n**User ID:** {id}\n**Reason:** {reason}",
+							"error": "❌ Failed to blacklist user: {error}"
+						},
+						"remove": {
+							"not": {
+								"found": "❌ **{tag}** is not in the blacklist!"
+							},
+							"title": "✅ User Removed from Blacklist",
+							"success": "Successfully removed **{tag}** from the blacklist!\n\n**User ID:** {id}",
+							"error": "❌ Failed to remove user from blacklist: {error}"
+						},
+						"list": {
+							"empty": "📋 No users are currently blacklisted.",
+							"title": "🚫 Blacklisted Users",
+							"total": "Total blacklisted: **{count}**",
+							"unknown": "Unknown User",
+							"row": "**{tag}**\n**ID:** {id}\n**Reason:** {reason}",
+							"error": "❌ Failed to list blacklisted users: {error}"
+						}
+					}
+				},
+				"leave": {
+					"protected": "🛡️ **Protected Guild**\nID: `{guildId}` is exempted and cannot be left.",
+					"not": {
+						"found": "❌ **Guild Not Found**\nID: `{guildId}`"
+					},
+					"success": "✅ **Successfully Left Guild**\n\n**Name:** {guildName}\n**ID:** `{guildId}`\n**Members:** {memberCount}\n\n📉 Server Count is now: **{serverCount}**"
+				},
+				"mass-leave": {
+					"goodbye": "👋 **Good Bye!**\n\nI am leaving this server because it has fewer than {threshold} members (Cleanup Policy).\nIf you want to use me, please invite me to a more active server!",
+					"empty": "✅ **No Cleanup Needed**\nNo guilds found with less than {threshold} members.",
+					"success": "🧹 **Cleanup Complete**\n\n**Threshold:** < {threshold} members\n**Success:** {leftCount} guilds\n**Failed:** {errorCount} guilds",
+					"more": "...and {count} more",
+					"list": "\n\n**Left Guilds:**\n```\n{names}```"
 				}
 			},
 			"global-announcement": {
@@ -514,7 +578,7 @@
 						}
 					},
 					"prefix": "## 📢 {title}\n\n{content}",
-					"footer": "Announcement from Developer {username} \u2022 <t:{timestamp}:R>"
+					"footer": "Announcement from Developer {username} • <t:{timestamp}:R>"
 				},
 				"complex": {
 					"modal": {
@@ -772,6 +836,86 @@
 						"row": "**{name}**\n**ID:** {id}\n**Role:** {role}",
 						"error": "❌ Failed to list team members: {error}"
 					}
+				},
+				"servers": {
+					"title": "🌐 Bot Servers",
+					"empty": "The bot is not in any servers.",
+					"entry": "**{rank}.** {name} ({id})",
+					"footer": "Page {page} of {totalPages} | Total Servers: {totalServers}"
+				},
+				"chat": {
+					"success": {
+						"title": "✅ Message Sent",
+						"desc": "Successfully sent the message to **{tag}**."
+					},
+					"error": "❌ Failed to send message (user may have DMs disabled): {error}"
+				},
+				"blacklist": {
+					"no": {
+						"reason": "No reason provided"
+					},
+					"guild": {
+						"add": {
+							"already": "❌ Guild {id}",
+							"title": "🚫 Guild Blacklisted",
+							"success": "Successfully blacklisted guild {id}",
+							"left": "\n\n⚡ Bot was in this guild and has **left** immediately.",
+							"error": "❌ Failed to blacklist guild: {error}"
+						},
+						"remove": {
+							"not": {
+								"found": "❌ Guild {id}"
+							},
+							"title": "✅ Guild Removed from Blacklist",
+							"success": "Successfully removed guild {id}",
+							"error": "❌ Failed to remove guild from blacklist: {error}"
+						},
+						"list": {
+							"empty": "📋 No guilds are currently blacklisted.",
+							"title": "🚫 Blacklisted Guilds",
+							"total": "Total blacklisted: **{count}**",
+							"row": "**ID:** {id}",
+							"error": "❌ Failed to list blacklisted guilds: {error}"
+						}
+					},
+					"user": {
+						"add": {
+							"already": "❌ **{tag}** is already blacklisted!",
+							"title": "🚫 User Blacklisted",
+							"success": "Successfully blacklisted **{tag}**!\n\n**User ID:** {id}\n**Reason:** {reason}",
+							"error": "❌ Failed to blacklist user: {error}"
+						},
+						"remove": {
+							"not": {
+								"found": "❌ **{tag}** is not in the blacklist!"
+							},
+							"title": "✅ User Removed from Blacklist",
+							"success": "Successfully removed **{tag}** from the blacklist!\n\n**User ID:** {id}",
+							"error": "❌ Failed to remove user from blacklist: {error}"
+						},
+						"list": {
+							"empty": "📋 No users are currently blacklisted.",
+							"title": "🚫 Blacklisted Users",
+							"total": "Total blacklisted: **{count}**",
+							"unknown": "Unknown User",
+							"row": "**{tag}**\n**ID:** {id}\n**Reason:** {reason}",
+							"error": "❌ Failed to list blacklisted users: {error}"
+						}
+					}
+				},
+				"leave": {
+					"protected": "🛡️ **Protected Guild**\nID: `{guildId}` is exempted and cannot be left.",
+					"not": {
+						"found": "❌ **Guild Not Found**\nID: `{guildId}`"
+					},
+					"success": "✅ **Successfully Left Guild**\n\n**Name:** {guildName}\n**ID:** `{guildId}`\n**Members:** {memberCount}\n\n📉 Server Count is now: **{serverCount}**"
+				},
+				"mass-leave": {
+					"goodbye": "👋 **Good Bye!**\n\nI am leaving this server because it has fewer than {threshold} members (Cleanup Policy).\nIf you want to use me, please invite me to a more active server!",
+					"empty": "✅ **No Cleanup Needed**\nNo guilds found with less than {threshold} members.",
+					"success": "🧹 **Cleanup Complete**\n\n**Threshold:** < {threshold} members\n**Success:** {leftCount} guilds\n**Failed:** {errorCount} guilds",
+					"more": "...and {count} more",
+					"list": "\n\n**Left Guilds:**\n```\n{names}```"
 				}
 			},
 			"global-announcement": {
@@ -1642,6 +1786,11 @@
 				"removed": "✅ Role **{roleName}** has been removed!",
 				"added": "✅ Role **{roleName}** has been added!"
 			}
+		}
+	},
+	"system": {
+		"maintenance": {
+			"active": "🚧 **Bot is currently under maintenance!**\n\n**Reason:** {reason}\n\n*Please try again later. We apologize for the inconvenience!*"
 		}
 	}
 }

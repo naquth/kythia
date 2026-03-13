@@ -7,7 +7,7 @@
  */
 
 const { ActivityType, MessageFlags } = require('discord.js');
-const { ACTIVITY_TYPE_OPTIONS } = require('./_command');
+const { ACTIVITY_TYPE_OPTIONS } = require('./_group');
 
 module.exports = {
 	subcommand: true,

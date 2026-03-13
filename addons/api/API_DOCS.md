@@ -23,6 +23,7 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [GET /api/meta/stats](#get-apimetastats)
 - [GET /api/meta/commands](#get-apimetacommands)
 - [GET /api/meta/changelog](#get-apimetachangelog)
+- [GET /api/meta/shards](#get-apimetashards)
 - [GET /api/chat/:guildId/channels](#get-apichatguildidchannels)
 - [GET /api/chat/messages/:channelId](#get-apichatmessageschannelid)
 - [POST /api/chat/messages/:channelId](#post-apichatmessageschannelidest)
@@ -469,6 +470,41 @@ The parser expects entries in one of these header formats:
 
 ## 0.11.0-beta (2025-01-15)
 ```
+
+---
+
+### `GET /api/meta/shards`
+
+Returns detailed statistics and information about each individual shard.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+"shards": [
+  {
+    "id": 0,
+    "ping": 42,
+    "guilds": 150,
+    "members": 48200,
+    "uptime": 3600000,
+    "ram_usage": 134689280
+  }
+],
+"totalShards": 1
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `shards[].id` | `number` | Shard ID |
+| `shards[].ping` | `number` | WebSocket latency in milliseconds |
+| `shards[].guilds` | `number` | Number of guilds handled by this shard |
+| `shards[].members` | `number` | Total member count across all guilds on this shard |
+| `shards[].uptime` | `number` | Uptime of the shard process in milliseconds |
+| `shards[].ram_usage` | `number` | Current RSS memory usage in bytes |
+| `totalShards` | `number` | Total number of shards |
 
 ---
 

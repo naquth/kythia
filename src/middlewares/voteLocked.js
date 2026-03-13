@@ -23,16 +23,32 @@ module.exports = {
 		if (!command.voteLocked) return true;
 		if (container.helpers.discord.isOwner(interaction.user.id)) return true;
 
-		const { kythiaConfig, t, helpers } = container;
+		const { kythiaConfig, t, helpers, redis } = container;
 		const { KythiaVoter } = container.models;
 		const { convertColor } = helpers.color;
 
-		const voter = await KythiaVoter.getCache({
-			userId: interaction.user.id,
-		});
-		const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+		const cacheKey = `kythia:middleware:voteLocked:${interaction.user.id}`;
+		let isVoteLocked = await redis.get(cacheKey);
 
-		if (!voter || new Date(voter.votedAt) < twelveHoursAgo) {
+		if (isVoteLocked !== null) {
+			isVoteLocked = JSON.parse(isVoteLocked);
+		} else {
+			const voter = await KythiaVoter.getCache({
+				userId: interaction.user.id,
+			});
+			const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+			isVoteLocked = !voter || new Date(voter.votedAt) < twelveHoursAgo;
+
+			if (!isVoteLocked) {
+				// Cache that they are NOT vote locked for 30 minutes
+				await redis.set(cacheKey, JSON.stringify(false), 'EX', 1800);
+			} else {
+				// Cache that they ARE vote locked for a short time (60s) so they can vote and retry quickly
+				await redis.set(cacheKey, JSON.stringify(true), 'EX', 60);
+			}
+		}
+
+		if (isVoteLocked) {
 			const errContainer = new ContainerBuilder().setAccentColor(
 				convertColor(kythiaConfig.bot.color, {
 					from: 'hex',

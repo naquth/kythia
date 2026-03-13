@@ -7,7 +7,7 @@
  */
 
 const { MessageFlags } = require('discord.js');
-const { STATUS_OPTIONS } = require('./_command');
+const { STATUS_OPTIONS } = require('./_group');
 
 module.exports = {
 	subcommand: true,

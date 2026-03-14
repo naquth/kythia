@@ -21,7 +21,8 @@
 		},
 		"setup": {
 			"success_title": "## ✅ Modmail Configured!",
-			"info": "-# Users can now DM this bot to contact your moderation team. Use `/modmail snippet add` to create quick-reply templates."
+			"info": "-# Users can now DM this bot to contact your moderation team. Use `/modmail snippet add` to create quick-reply templates.",
+			"invalid_color": "## ❌ Invalid Color\n`{field}` must be a valid hex color (e.g. `#5865F2` or `#FFF`)."
 		},
 		"thread": {
 			"open_title": "New Modmail Thread",

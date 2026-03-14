@@ -8,7 +8,6 @@
 
 const { toBigIntSafe } = require('./bigint');
 const { getMarketData } = require('./market');
-const cron = require('node-cron');
 
 async function processOrders(bot) {
 	const { models, logger } = bot.container;
@@ -111,41 +110,4 @@ async function processOrders(bot) {
 	}
 }
 
-/**
- * Initialize scheduled market order processing.
- * Mimics the style used in @ai/tasks/dailyGreeter.js.
- * @param {Object} [options] Optional scheduling options (e.g. custom cron, timezone).
- */
-function initializeOrderProcessing(bot, options = {}) {
-	const kythiaConfig = bot.container.kythiaConfig;
-	const client = bot.client;
-	const logger = bot.container.logger;
-
-	// Only process orders on Shard 0 — prevents duplicate fills across shards
-	const isShardZeroOrNoShard = !client.shard || client.shard.ids.includes(0);
-	if (!isShardZeroOrNoShard) {
-		logger.info(
-			`🚫 Economy order processor disabled on Shard ${client.shard.ids[0]} (runs on Shard 0 only)`,
-		);
-		return;
-	}
-
-	const schedule = kythiaConfig.addons.economy.orderProcessorSchedule
-		? kythiaConfig.addons.economy.orderProcessorSchedule
-		: '*/5 * * * *';
-
-	cron.schedule(
-		schedule,
-		async () => {
-			await processOrders(bot);
-		},
-		{
-			timezone: kythiaConfig.bot.timezone
-				? kythiaConfig.bot.timezone
-				: undefined,
-			...options,
-		},
-	);
-}
-
-module.exports = { processOrders, initializeOrderProcessing };
+module.exports = { processOrders };

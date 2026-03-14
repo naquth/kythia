@@ -19,12 +19,12 @@ module.exports = {
 		const summary = [];
 
 		container.musicHandlers = new MusicHandlers(container);
-		summary.push('   └─ 🎵 Music Handlers Injected');
+		summary.push('   ╰┈➤ 🎵 Music Handlers Injected');
 
 		container.music = new MusicManager(container);
 		await container.music.init();
 
-		summary.push('   └─ 🎵 Initialize Music Manager');
+		summary.push('   ╰┈➤ 🎵 Initialize Music Manager');
 
 		bot.addClientReadyHook(async (client) => {
 			logger.info('🎵 [24/7 Resurrector] Checking persistent 24/7 sessions...');
@@ -80,12 +80,12 @@ module.exports = {
 			);
 		});
 
-		summary.push('   └─ 🎵 24/7 Resurrector Hook is Active');
+		summary.push('   ╰┈➤ 🎵 24/7 Resurrector Hook is Active');
 
 		const tempPath = path.join(__dirname, '../../../temp');
 		if (!fs.existsSync(tempPath)) {
 			fs.mkdirSync(tempPath, { recursive: true });
-			summary.push('   └─ 📁 Temp Folder Created');
+			summary.push('   ╰┈➤ 📁 Temp Folder Created');
 		}
 
 		return summary;

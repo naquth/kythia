@@ -58,6 +58,7 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [POST /api/webhooks/topgg](#post-apiwebhookstopgg)
 - [POST /api/webhooks/license-created](#post-apiwebhookslicense-created)
 - [Addon Status API (`/api/addons`)](#addon-status-api-apiaddons)
+- [Social Alerts API (`/api/social-alerts`)](#social-alerts-api-apisocial-alerts)
 - [Pro API (`/api/pro`)](#pro-api-apipro)
   - [Subdomains (`/api/pro/subdomains`)](#subdomains-apiprosubdomains)
   - [DNS Records (`/api/pro/dns`)](#dns-records-apiprodns)
@@ -3727,8 +3728,6 @@ function formatMs(ms) {
 
 ---
 
----
-
 ## Addon Status API (`/api/addons`)
 
 Returns the active/inactive status of every addon, derived from `kythia.config.js`. The dashboard uses this to conditionally show or hide sidebar links and feature sections.
@@ -7157,5 +7156,123 @@ Delete a snippet by name.
 **Response:** `{ "success": true, "message": "Snippet \"hello\" deleted" }`
 
 **Error (404):** If the snippet doesn't exist.
+
+---
+
+
+## Social Alerts API (`/api/social-alerts`)
+
+Endpoints to manage and retrieve social media alerts.
+
+### `GET /api/social-alerts`
+
+Returns a list of all social alert subscriptions.
+
+**Query Parameters:**
+- `guildId` (optional) - Filter by guild ID.
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 1,
+  "data": [
+    {
+      "id": 1,
+      "guildId": "123456789012345678",
+      "discordChannelId": "987654321098765432",
+      "youtubeChannelId": "UC1234567890",
+      "youtubeChannelName": "Cool Creator",
+      "youtubeThumbnailUrl": "https://example.com/thumb.jpg",
+      "message": "New video! {url}",
+      "lastVideoId": "v123abc",
+      "platform": "youtube"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/social-alerts/:id`
+
+Returns a single subscription by its database ID.
+
+---
+
+### `POST /api/social-alerts`
+
+Creates a new social alert subscription.
+
+**Request Body:**
+```json
+{
+  "guildId": "123456789012345678",
+  "discordChannelId": "987654321098765432",
+  "youtubeChannelId": "UC1234567890",
+  "youtubeChannelName": "Cool Creator",
+  "platform": "youtube",
+  "message": "Hey check out this new video {url}"
+}
+```
+
+---
+
+### `PATCH /api/social-alerts/:id`
+
+Updates an existing subscription.
+
+**Request Body:**
+```json
+{
+  "discordChannelId": "111222333444",
+  "message": "Updated alert message"
+}
+```
+
+---
+
+### `DELETE /api/social-alerts/:id`
+
+Deletes a subscription.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Subscription deleted successfully"
+}
+```
+
+---
+
+### `GET /api/social-alerts/settings/:guildId`
+
+Fetches the overall Social Alerts settings for a specific guild (e.g. mention roles).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "guildId": "123456789012345678",
+    "mentionRoleId": "888888888888888888"
+  }
+}
+```
+
+---
+
+### `PATCH /api/social-alerts/settings/:guildId`
+
+Updates or creates the overall Social Alerts settings for a guild.
+
+**Request Body:**
+```json
+{
+  "mentionRoleId": "888888888888888888"
+}
+```
 
 ---

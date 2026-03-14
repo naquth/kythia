@@ -49,7 +49,7 @@ module.exports = {
 		});
 
 		summary.push(
-			`  └─ Hook: clientReady (repopulate ${'{n}'} active sessions from DB)`,
+			`  ╰┈➤ Hook: clientReady (repopulate ${'{n}'} active sessions from DB)`,
 		);
 		return summary;
 	},

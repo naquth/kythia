@@ -16,7 +16,7 @@ module.exports = {
 			const container = bot.client.container;
 			const { logger, kythiaConfig, models } = container;
 
-			summary.push(' └─ DnsRecord & Monitor model associations registered.');
+			summary.push(' ╰┈➤ DnsRecord & Monitor model associations registered.');
 
 			try {
 				const cloudflareService = new CloudflareApi({
@@ -31,13 +31,13 @@ module.exports = {
 
 				bot.client.container.services.cloudflare = cloudflareService;
 
-				summary.push(' └─ ✅ Cloudflare Service ready.');
+				summary.push(' ╰┈➤ ✅ Cloudflare Service ready.');
 			} catch (error) {
 				logger.error(
 					'🔥 FATAL: Failed to initialize Cloudflare Service:',
 					error,
 				);
-				summary.push(' └─ ❌ FAILED to load Cloudflare Service.');
+				summary.push(' ╰┈➤ ❌ FAILED to load Cloudflare Service.');
 			}
 		});
 

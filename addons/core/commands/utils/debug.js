@@ -161,7 +161,7 @@ module.exports = {
 			);
 			addLog('├─', `Has Tracks? ✅ YES (${tracksWarm.length})`);
 			addLog(
-				'└─',
+				'╰┈➤',
 				`BigInt Field Type: \`${lengthType}\` (Value: ${trackOne?.length})`,
 			);
 

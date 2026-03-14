@@ -15,7 +15,7 @@ const initialize = (bot) => {
 			await refreshGuildInvites(guild);
 		}
 	});
-	summary.push('  └─ ReadyHook: warm invite caches');
+	summary.push('  ╰┈➤ ReadyHook: warm invite caches');
 	return summary;
 };
 

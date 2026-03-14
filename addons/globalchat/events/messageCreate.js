@@ -7,10 +7,13 @@
  */
 
 const { handleGlobalChat } = require('../helpers/handleGlobalChat');
-const GlobalChat = require('../database/models/GlobalChat');
 
 module.exports = async (bot, message) => {
 	if (!message.guild) return;
+	const { container } = bot;
+	const { models } = container;
+	const { GlobalChat } = models;
+
 	const registeredChannel = await GlobalChat.getCache({
 		globalChannelId: message.channel.id,
 	});

@@ -17,10 +17,10 @@ module.exports = {
 		const summery = [];
 
 		geminiHelper.init({ logger, config: bot.container.kythiaConfig });
-		summery.push('   └─ Gemini Helper initialized.');
+		summery.push('   ╰┈➤ Gemini Helper initialized.');
 
 		promptBuilder.init({ isOwner, config: bot.container.kythiaConfig });
-		summery.push('   └─ Prompt Builder initialized.');
+		summery.push('   ╰┈➤ Prompt Builder initialized.');
 
 		bot.addClientReadyHook(() => {
 			bot.aiCommandSchema = generateCommandSchema(bot.client);

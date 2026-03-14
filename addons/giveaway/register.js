@@ -28,11 +28,11 @@ module.exports = {
 				await container.giveawayManager.init();
 			});
 			summary.push(
-				'   └─ 🎁 Giveaway Manager (Scheduler Queued, Shard 0 only)',
+				'   ╰┈➤ 🎁 Giveaway Manager (Scheduler Queued, Shard 0 only)',
 			);
 		} else {
 			summary.push(
-				'   └─ 🎁 Giveaway Manager (Scheduler skipped on this shard)',
+				'   ╰┈➤ 🎁 Giveaway Manager (Scheduler skipped on this shard)',
 			);
 		}
 

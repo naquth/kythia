@@ -13,7 +13,7 @@ module.exports = {
 		const summary = [];
 		const server = await initializeServer(bot);
 		if (server) {
-			summary.push('   └─ 🚀 Initializing API...');
+			summary.push('   ╰┈➤ 🚀 Initializing API...');
 		}
 
 		return summary;

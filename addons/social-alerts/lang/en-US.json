@@ -57,12 +57,12 @@
 			"youtube": {
 				"default_message": "**{channel}** just uploaded a new video!",
 				"label": "🔴 New Video!",
-				"watch": "▶ Watch on YouTube"
+				"watch": "Watch on YouTube"
 			},
 			"tiktok": {
 				"default_message": "**{channel}** just posted a new TikTok!",
 				"label": "🎵 New TikTok!",
-				"watch": "▶ Watch on TikTok"
+				"watch": "Watch on TikTok"
 			},
 			"instagram": {
 				"default_message": "**{channel}** just shared a new Instagram post!",

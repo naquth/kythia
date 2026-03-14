@@ -128,7 +128,7 @@ module.exports = (bot) => {
 					app.use(routePath, addonGuard(routeName));
 					app.use(`${routePath}/*`, addonGuard(routeName));
 					logger.info(
-						`   └─ 🛡️  Auto-guard: ${routePath} → addon '${routeName}'`,
+						`     ╰┈➤ 🛡️  Auto-guard: ${routePath} → addon '${routeName}'`,
 					);
 				}
 
@@ -136,9 +136,9 @@ module.exports = (bot) => {
 					const routeModule = require(fullPath);
 
 					app.route(routePath, routeModule);
-					logger.info(`   └─ ♊️  Route loaded: ${routePath} -> ${file}`);
+					logger.info(`   ╰┈➤ ♊️  Route loaded: ${routePath} -> ${file}`);
 				} catch (err) {
-					logger.error(`  └─ ❌ Error loading route ${file}:`, err);
+					logger.error(`  ╰┈➤ ❌ Error loading route ${file}:`, err);
 				}
 			}
 		});

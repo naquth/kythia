@@ -17,7 +17,9 @@ let messageHandler;
 module.exports = async (bot, message) => {
 	// Ignore messages starting with modmail prefix
 	if (
-		message.content.startsWith(bot.container.kythiaConfig.addons.modmail.prefix)
+		message.content.startsWith(
+			bot.container.kythiaConfig.addons.modmail?.prefix,
+		)
 	) {
 		return;
 	}

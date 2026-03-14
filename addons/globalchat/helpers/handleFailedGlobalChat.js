@@ -119,6 +119,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				continue;
 			}
 
+			let remainingWebhooksCount = 0;
 			try {
 				logger.info(
 					`🧹 [GlobalChat] Checking for old webhooks in #${channel.name}...`,
@@ -126,7 +127,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				const webhooks = await channel.fetchWebhooks();
 
 				const kythWebhooks = webhooks.filter(
-					(wh) => wh.owner && wh.owner.id === client.user.id,
+					(wh) => wh.owner?.id === client.user.id,
 				);
 
 				if (kythWebhooks.size > 0) {
@@ -152,11 +153,20 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				} else {
 					logger.debug(`✨ [GlobalChat] No old webhooks found to clean.`);
 				}
+
+				remainingWebhooksCount = webhooks.size - kythWebhooks.size;
 			} catch (cleanupError) {
 				logger.warn(
 					`⚠️ [GlobalChat] Error during webhook cleanup (ignoring to proceed):`,
 					cleanupError,
 				);
+			}
+
+			if (remainingWebhooksCount >= 15) {
+				logger.warn(
+					`⚠️ [GlobalChat] Channel #${channel.name} (${channel.id}) in guild ${failedGuild.guildId} has reached the maximum webhook limit (15). Skipping webhook creation.`,
+				);
+				continue;
 			}
 
 			let newWebhook;

@@ -7,10 +7,8 @@
  */
 
 const setupTopGGPoster = require('./helpers/topgg-poster.js');
-const { runStatsUpdater } = require('./helpers/stats.js');
 const { loadFonts } = require('kythia-arts');
 
-const cron = require('node-cron');
 const path = require('node:path');
 
 const initialize = (bot) => {
@@ -25,19 +23,14 @@ const initialize = (bot) => {
 	if (isShardZeroOrNoShard) {
 		const topGGPoster = setupTopGGPoster(bot);
 		if (topGGPoster) {
-			summary.push('  └─ Task: Top.gg auto-poster initialized');
+			summary.push('  ╰┈➤ Task: Top.gg auto-poster initialized');
 			process.on('exit', () => {
 				topGGPoster.cleanup();
 			});
 		}
-
-		cron.schedule('*/5 * * * *', () => runStatsUpdater(bot.client));
-		summary.push(
-			'  └─ Cron: server stats updater (every 5 minutes, Shard 0 only)',
-		);
 	} else {
 		logger.info(
-			`🚫 Core background tasks (Top.gg, Stats Cron) disabled on Shard ${client.shard.ids[0]}`,
+			`🚫 Core background tasks (Top.gg) disabled on Shard ${client.shard.ids[0]}`,
 		);
 	}
 

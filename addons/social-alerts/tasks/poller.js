@@ -25,9 +25,6 @@ const { fetchLatestVideo } = require('../helpers/youtube');
 const { fetchLatestTikTok } = require('../helpers/tiktok');
 const { fetchLatestInstagram } = require('../helpers/instagram');
 
-const TIKTOK_LOGO_URL =
-	'https://sf16-website-login.neutral.ttwstatic.com/obj/tiktok_web_login_static/tiktok/webapp/main/webapp-desktop/8152caf0c8e8bc67ae0d.png';
-
 module.exports = {
 	taskName: 'social-alert-poller',
 	schedule: '*/5 * * * *',
@@ -35,6 +32,13 @@ module.exports = {
 
 	execute: async (container) => {
 		const { client, models, helpers, logger, kythiaConfig, t } = container;
+
+		// Only run the poller on Shard 0 to prevent duplicate posts
+		if (client.shard && !client.shard.ids.includes(0)) {
+			// Silently ignore on other shards
+			return;
+		}
+
 		const { SocialAlertSubscription, SocialAlertSetting } = models;
 		const { convertColor } = helpers.color;
 		const { getGuildSafe } = helpers.discord;
@@ -81,6 +85,13 @@ module.exports = {
 
 				// Look up the guild and channel
 				const guild = await getGuildSafe(client, sub.guildId);
+
+				// const fakeInteraction = {
+				// 	client: client,
+				// 	guildId: sub.guildId,
+				// 	user: client.user,
+				// };
+
 				if (!guild) continue;
 
 				const channel = guild.channels.cache.get(sub.discordChannelId);
@@ -95,8 +106,8 @@ module.exports = {
 				}
 
 				const mentionText = setting?.mentionRoleId
-					? `<@&${setting.mentionRoleId}>`
-					: null;
+					? `\nMention: <@&${setting.mentionRoleId}>`
+					: '';
 
 				// Resolve the alert message
 				const alertMessage = sub.message
@@ -148,10 +159,18 @@ module.exports = {
 							? `https://www.instagram.com/${sub.youtubeChannelId.replace(/^@/, '')}/`
 							: `https://www.youtube.com/channel/${sub.youtubeChannelId}`;
 
-				// Choose thumbnail — TikTok: video thumbnail if available, else logo
+				// Choose thumbnail:
+				// - Prefer stored thumbnail (set when subscription was created from dashboard)
+				// - For TikTok/Instagram: fall back to unavatar.io (real profile picture)
+				// - For YouTube: fall back to a generic icon
+				const _username = (sub.youtubeChannelId || '').replace(/^@/, '');
 				const thumbnailUrl =
 					sub.youtubeThumbnailUrl ||
-					(platform === 'tiktok' ? TIKTOK_LOGO_URL : null);
+					(platform === 'tiktok'
+						? `https://unavatar.io/tiktok/${_username}`
+						: platform === 'instagram'
+							? `https://unavatar.io/instagram/${_username}`
+							: null);
 
 				// Build Components V2 alert
 				const builder = new ContainerBuilder()
@@ -160,7 +179,7 @@ module.exports = {
 						new SectionBuilder()
 							.addTextDisplayComponents(
 								new TextDisplayBuilder().setContent(
-									`## ${platformLabel}\n${alertMessage}\n\n### ${latest.title}${publishTimestamp}`,
+									`## ${platformLabel}\n${alertMessage}\n\n### ${latest.title}${mentionText}${publishTimestamp}`,
 								),
 							)
 							.setThumbnailAccessory(
@@ -216,7 +235,9 @@ module.exports = {
 					)
 					.addTextDisplayComponents(
 						new TextDisplayBuilder().setContent(
-							`-# 📡 ${client.user.username} · Social Alerts`,
+							await t(guild, 'common.container.footer', {
+								username: client.user.username,
+							}),
 						),
 					);
 
@@ -225,9 +246,9 @@ module.exports = {
 					flags: MessageFlags.IsComponentsV2,
 				};
 
-				if (mentionText) {
-					messagePayload.content = mentionText;
-				}
+				// if (mentionText) {
+				// 	messagePayload.content = mentionText;
+				// }
 
 				await channel.send(messagePayload);
 
@@ -241,10 +262,12 @@ module.exports = {
 				);
 			} catch (err) {
 				logger.error(
-					`Error processing subscription ${sub.id} (${sub.youtubeChannelId}):`,
+					`Error processing subscription ${sub.id} (${sub.youtubeChannelId}): ${err?.message}`,
 					{ label: 'SOCIAL-ALERTS' },
-					err,
 				);
+				if (err?.stack) {
+					logger.error(err.stack, { label: 'SOCIAL-ALERTS' });
+				}
 			}
 		}
 	},

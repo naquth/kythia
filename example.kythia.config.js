@@ -243,25 +243,6 @@ function loadKythiaConfig() {
                 `,
 				ownerBypassFilter: true,
 			},
-			checklist: {
-				active: true,
-			},
-			core: {
-				active: true,
-				// exchangerate api key for currency conversion
-				// get yours at: https://manage.exchangeratesapi.io/signup/free
-				exchangerateApi: process.env.EXCHANGERATE_API,
-			},
-			economy: {
-				active: true,
-				// economy cooldown in second
-				dailyCooldown: 86400, // 1 day
-				begCooldown: 3600, // 1 hour
-				lootboxCooldown: 14400, // 4 hours
-				workCooldown: 28800, // 8 hours
-				robCooldown: 7200, // 2 hours
-				hackCooldown: 3600, // 1 hour
-			},
 			/** -------------------------------------------------------------------
 			 * API/DASHBOARD ADDON - Web Dashboard Interface
 			 * -------------------------------------------------------------------
@@ -283,6 +264,40 @@ function loadKythiaConfig() {
 				secret: process.env.API_SECRET,
 				// Allowed origins for CORS (comma-separated list)
 				allowedOrigin: process.env.API_ALLOWED_ORIGIN,
+			},
+			automod: {
+				active: true,
+			},
+			autoreact: {
+				active: true,
+			},
+			autoreply: {
+				active: true,
+			},
+			birthday: {
+				active: true,
+			},
+			checklist: {
+				active: true,
+			},
+			core: {
+				active: true,
+				// exchangerate api key for currency conversion
+				// get yours at: https://manage.exchangeratesapi.io/signup/free
+				exchangerateApi: process.env.EXCHANGERATE_API,
+			},
+			economy: {
+				active: true,
+				// economy cooldown in second
+				dailyCooldown: 86400, // 1 day
+				begCooldown: 3600, // 1 hour
+				lootboxCooldown: 14400, // 4 hours
+				workCooldown: 28800, // 8 hours
+				robCooldown: 7200, // 2 hours
+				hackCooldown: 3600, // 1 hour
+			},
+			embedBuilder: {
+				active: false,
 			},
 			fun: {
 				active: true,
@@ -323,12 +338,6 @@ function loadKythiaConfig() {
 				apiUrl: process.env.GLOBAL_VOICE_API_URL,
 				apiKey: process.env.GLOBAL_VOICE_API_KEY,
 			},
-			invite: {
-				active: true,
-			},
-			minecraft: {
-				active: true,
-			},
 			image: {
 				// ! WARN
 				// Need to add your own image storage
@@ -337,9 +346,20 @@ function loadKythiaConfig() {
 				storageUrl: process.env.KYTHIA_IMAGE_STORAGE_URL,
 				apiKey: process.env.KYTHIA_IMAGE_STROAGE_API_KEY,
 			},
+			invite: {
+				active: true,
+			},
 			leveling: {
 				active: true,
 				backgroundUrl: 'https://placehold.co/800x250.png',
+			},
+			minecraft: {
+				active: true,
+			},
+			modmail: {
+				active: true,
+				reopenCooldownMs: 300000, // 5 minutes
+				prefix: '=',
 			},
 			/** -------------------------------------------------------------------
 			 * MUSIC ADDON - Lavalink Music Player
@@ -396,12 +416,6 @@ function loadKythiaConfig() {
 				},
 				artworkUrlStyle: 'banner', // thumbnail, banner
 			},
-			nsfw: {
-				active: true,
-			},
-			nuke: {
-				active: true,
-			},
 			pet: {
 				active: true,
 				useCooldown: 28800, // 8 hours
@@ -431,27 +445,6 @@ function loadKythiaConfig() {
 				},
 				maxSubdomains: 5,
 			},
-			server: {
-				active: true,
-			},
-			pterodactyl: {
-				active: true,
-			},
-			store: {
-				active: false,
-			},
-			streak: {
-				active: true,
-			},
-			suggestion: {
-				active: true,
-			},
-			testimony: {
-				active: false,
-			},
-			ticket: {
-				active: true,
-			},
 			quest: {
 				// ! WARNING
 				// host your own quest api
@@ -462,6 +455,43 @@ function loadKythiaConfig() {
 				active: false, // activate if u have setup the quest api
 				scheduler: '*/30 * * * *', // cron scheduler https://crontab.guru/
 				apiUrls: process.env.QUEST_API_URLS, // seperate with comma
+			},
+			reactionRole: {
+				active: true,
+			},
+			server: {
+				active: true,
+			},
+			socialAlerts: {
+				active: true,
+				youtubeApiKey: process.env.YOUTUBE_API_KEY,
+				rsshubUrl: process.env.RSSHUB_URL || 'https://rsshub.app', // Used for TikTok RSS feeds
+				tiktokClientKey: process.env.TIKTOK_CLIENT_KEY,
+				tiktokClientSecret: process.env.TIKTOK_CLIENT_SECRET,
+			},
+			store: {
+				active: false,
+			},
+			streak: {
+				active: true,
+			},
+			suggestion: {
+				active: true,
+			},
+			tempvoice: {
+				active: true,
+			},
+			testimony: {
+				active: false,
+			},
+			ticket: {
+				active: true,
+			},
+			verification: {
+				active: true,
+			},
+			welcomer: {
+				active: true,
 			},
 		},
 

@@ -18,7 +18,7 @@ module.exports = {
 			return editCommand.modal(interaction, container);
 		});
 
-		summary.push('   └─ 🎨 Embed Builder loaded (modal handler registered)');
+		summary.push('   ╰┈➤ 🎨 Embed Builder loaded (modal handler registered)');
 
 		return summary;
 	},

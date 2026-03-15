@@ -32,7 +32,7 @@ module.exports = {
 			if (interaction.user.id !== targetUserId) {
 				return interaction.reply({
 					content: '❌ This captcha is not for you!',
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
@@ -40,7 +40,7 @@ module.exports = {
 				return interaction.reply({
 					content:
 						'⏰ This captcha has expired. Please wait for a new one to be sent.',
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 

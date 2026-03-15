@@ -43,7 +43,7 @@ module.exports = {
 		const channel = interaction.options.getChannel('channel');
 		const role = interaction.options.getRole('mention_role');
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		await QuestConfig.findOrCreateWithCache({
 			where: { guildId: guildId },

@@ -66,13 +66,16 @@ class StickyMessageHandler {
 			const sent = await message.channel.send({
 				components: [stickyContainer],
 				flags: MessageFlags.IsComponentsV2,
+				allowedMentions: {
+					parse: [],
+				},
 			});
 
 			sticky.messageId = sent.id;
 			sticky.changed('messageId', true);
 			await sticky.save();
 		} catch (err) {
-			logger.error('❌ Error loading sticky:', err);
+			logger.error(`❌ Error loading sticky: ${err}`);
 		}
 	}
 }

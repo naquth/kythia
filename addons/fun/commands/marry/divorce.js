@@ -100,15 +100,14 @@ module.exports = {
 			);
 			return interaction.reply({
 				components,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 
 		if (confirmation.confirmedBy.has(userId)) {
 			return interaction.reply({
 				content: await t(interaction, 'fun.marry.divorce.already.confirmed'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -153,7 +152,7 @@ module.exports = {
 					interaction,
 					'fun.marry.divorce.confirmed.on.your.side',
 				),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 	},

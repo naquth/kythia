@@ -57,7 +57,7 @@ module.exports = {
 				content: await t(interaction, 'fun.marry.kiss.cooldown', {
 					minutes: remaining,
 				}),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 

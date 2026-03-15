@@ -11,6 +11,7 @@ const {
 	TextInputStyle,
 	TextInputBuilder,
 	ActionRowBuilder,
+	MessageFlags,
 } = require('discord.js');
 const { sendToAllGuilds } = require('./_command');
 
@@ -69,7 +70,7 @@ module.exports = {
 		if (!modalSubmit)
 			return logger.warn('Container announcement modal timed out.');
 
-		await modalSubmit.deferReply({ ephemeral: true });
+		await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const jsonString =
 			modalSubmit.fields.getTextInputValue('announcement-json');

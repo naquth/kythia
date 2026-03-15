@@ -251,8 +251,7 @@ module.exports = {
 					"❌ You can't challenge yourself!",
 					{ color: '#e74c3c' },
 				),
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 
@@ -294,7 +293,7 @@ module.exports = {
 			if (picks[i.user.id]) {
 				return i.reply({
 					content: '✅ You already locked in! Waiting for the other player...',
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
@@ -316,7 +315,7 @@ module.exports = {
 			await i.reply({
 				content: '🤫 Pick your weapon — only you can see this!',
 				components: [epRow],
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 
 			const epCollector = i.channel.createMessageComponentCollector({

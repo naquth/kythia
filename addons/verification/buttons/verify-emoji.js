@@ -8,6 +8,7 @@
  * CustomId format: verify-emoji:{userId}:{correct|wrong}
  */
 
+const { MessageFlags } = require('discord.js');
 const { getSession, incrementAttempts } = require('../helpers/session');
 const {
 	handleSuccess,
@@ -30,14 +31,14 @@ module.exports = {
 			if (interaction.user.id !== targetUserId) {
 				return interaction.reply({
 					content: '❌ This captcha is not for you!',
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
 			if (!getSession(interaction.guild.id, interaction.user.id)) {
 				return interaction.reply({
 					content: '⏰ This captcha has expired.',
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 

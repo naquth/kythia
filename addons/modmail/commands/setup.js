@@ -138,7 +138,7 @@ module.exports = {
 		const { simpleContainer } = helpers.discord;
 		const { convertColor } = helpers.color;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		try {
 			// ── Read options ──────────────────────────────────────────────────

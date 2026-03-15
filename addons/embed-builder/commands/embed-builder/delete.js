@@ -6,7 +6,11 @@
  * @version 1.0.0
  */
 
-const { SlashCommandSubcommandBuilder, EmbedBuilder } = require('discord.js');
+const {
+	SlashCommandSubcommandBuilder,
+	EmbedBuilder,
+	MessageFlags,
+} = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandSubcommandBuilder()
@@ -36,7 +40,7 @@ module.exports = {
 		const { models } = container;
 		const { EmbedBuilder: EmbedModel } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const embedId = parseInt(interaction.options.getString('id'), 10);
 		const deleteMessage =

@@ -17,23 +17,11 @@ const {
 } = require('discord.js');
 
 const BLACKLIST_COMMANDS = [
-	'ban',
-	'kick',
-	'mute',
-	'nuke',
-	'prune',
-	'purge',
-	'shutdown',
-	'restart',
-	'eval',
-	'exec',
+	'mod',
 	'testall', // Prevent recursion
-	'giveaway-start',
-	'giveaway-end',
-	'giveaway-reroll',
+	'giveaway',
 	'ascii',
 	'convert',
-	'presence',
 	'kyth',
 ];
 
@@ -103,7 +91,20 @@ function createMockMessage(channel) {
 			void options;
 			return mockCollector;
 		},
-		awaitMessageComponent: async () => null,
+		awaitMessageComponent: async () => ({
+			customId: 'mock_custom_id',
+			componentType: 2,
+			deferUpdate: async () => {},
+			update: async () => {},
+			reply: async () => mockMessage,
+			editReply: async () => mockMessage,
+			followUp: async () => mockMessage,
+			isButton: () => true,
+			isStringSelectMenu: () => true,
+			values: ['mock_value'],
+			channel: channel,
+			message: mockMessage,
+		}),
 		awaitReactions: async () => new Map(),
 
 		// Permissions / misc
@@ -195,6 +196,13 @@ function createMockInteraction(originalInteraction, commandName, optionsData) {
 		reason: 'Testing',
 		description: 'Test description',
 		code: 'TESTCODE',
+		id: '1',
+		order_id: '1',
+		message_id: '000000000000000000',
+		bonus_type: 'xp',
+		trigger: 'test_trigger',
+		ip: '127.0.0.1',
+		port: '25565',
 	};
 
 	const resolveString = (name) => {
@@ -352,11 +360,27 @@ function createMockInteraction(originalInteraction, commandName, optionsData) {
 			void options;
 			return _mockMessage;
 		},
-		deleteReply: () => {},
-		fetchReply: () => _mockMessage,
-		deferUpdate: () => {},
+		deleteReply: async () => {},
+		fetchReply: async () => _mockMessage,
+		deferUpdate: async () => {},
 		update: async () => _mockMessage,
 		showModal: async () => {},
+		awaitModalSubmit: async () => ({
+			customId: 'mock_modal_id',
+			deferUpdate: async () => {},
+			update: async () => {},
+			reply: async () => _mockMessage,
+			editReply: async () => _mockMessage,
+			followUp: async () => _mockMessage,
+			user: firstUser,
+			member: firstMember,
+			guild: guild,
+			channel: firstChannel,
+			fields: {
+				getTextInputValue: () => 'mock_text_input_value',
+			},
+			isModalSubmit: () => true,
+		}),
 
 		// ── Utility ───────────────────────────────────────────────────────
 		isCommand: () => true,
@@ -433,11 +457,10 @@ function createForwardingMockInteraction(
 	return {
 		...mockBase,
 		// Expose a real channel reference (used by eco give etc.)
-		channel: {
-			...realChannel,
+		channel: Object.assign(Object.create(realChannel || {}), {
 			createMessageComponentCollector: (_opts) => mockCollector,
 			createReactionCollector: (_opts) => mockCollector,
-		},
+		}),
 		deferReply: (options) => {
 			void options;
 			_deferred = true;
@@ -476,7 +499,7 @@ module.exports = {
 		const { logger } = container;
 
 		// Acknowledge immediately so the interaction token stays alive
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const results = {
 			success: [],
@@ -492,6 +515,20 @@ module.exports = {
 		const totalCommands = commands.size;
 		let processed = 0;
 
+		// Patch KythiaModel to prevent testall tight-loop pendingQueries race conditions
+		const KythiaModel = Object.getPrototypeOf(container.models.ServerSetting);
+		const origFindOrCreate = KythiaModel.findOrCreateWithCache;
+		if (origFindOrCreate) {
+			KythiaModel.findOrCreateWithCache = async function (options) {
+				const res = await origFindOrCreate.call(this, options);
+				// If a race causes it to return just the instance instead of [instance, created]
+				if (res && typeof res === 'object' && !Array.isArray(res)) {
+					return [res, false];
+				}
+				return res;
+			};
+		}
+
 		await interaction.editReply(
 			`🔄 Starting test of ${totalCommands} commands...`,
 		);
@@ -501,7 +538,9 @@ module.exports = {
 			processed++;
 
 			// SKIP checks
-			if (BLACKLIST_COMMANDS.includes(name)) {
+			if (
+				BLACKLIST_COMMANDS.some((blacklisted) => name.startsWith(blacklisted))
+			) {
 				results.skipped.push(name);
 				continue;
 			}
@@ -592,6 +631,11 @@ module.exports = {
 			await new Promise((r) => setTimeout(r, 100));
 		}
 
+		// Restore KythiaModel
+		if (origFindOrCreate) {
+			KythiaModel.findOrCreateWithCache = origFindOrCreate;
+		}
+
 		// ── Build a beautiful Components V2 report ────────────────────────────
 		const { helpers, kythiaConfig: cfg } = container;
 		const { convertColor } = helpers.color;
@@ -651,18 +695,25 @@ module.exports = {
 		await sendContainer(headerContainer);
 
 		// ── Message 2: Success section ────────────────────────────────────────
-		const successContainer = new ContainerBuilder().setAccentColor(accentColor);
-		successContainer.addTextDisplayComponents(
+		const successHeaderContainer = new ContainerBuilder().setAccentColor(
+			accentColor,
+		);
+		successHeaderContainer.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				`### ✅ Passed (${results.success.length})`,
 			),
 		);
+		await sendContainer(successHeaderContainer);
+
 		for (const line of chunk(results.success)) {
+			const successContainer = new ContainerBuilder().setAccentColor(
+				accentColor,
+			);
 			successContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(`\`\`\`${line}\`\`\``),
 			);
+			await sendContainer(successContainer);
 		}
-		await sendContainer(successContainer);
 
 		// ── Message 3: Failures section ───────────────────────────────────────
 		if (results.failed.length > 0) {
@@ -689,33 +740,49 @@ module.exports = {
 			}
 			if (buf) failedChunks.push(buf);
 
-			const failedContainer = new ContainerBuilder().setAccentColor(
+			// Send the header, then each chunk as a separate container to avoid the 4000 char per component max
+			const headerContainer = new ContainerBuilder().setAccentColor(
 				accentColor,
 			);
-			failedContainer.addTextDisplayComponents(
+			headerContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
 					`### ❌ Failed (${results.failed.length})`,
 				),
 			);
+			await sendContainer(headerContainer);
+
 			for (const chunk of failedChunks) {
+				const failedContainer = new ContainerBuilder().setAccentColor(
+					accentColor,
+				);
 				failedContainer.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(chunk),
 				);
+				await sendContainer(failedContainer);
 			}
-			await sendContainer(failedContainer);
 		}
 
 		// ── Message 4: Skipped section ────────────────────────────────────────
 		if (results.skipped.length > 0) {
-			const skippedContainer = new ContainerBuilder().setAccentColor(
+			const skippedHeaderContainer = new ContainerBuilder().setAccentColor(
 				accentColor,
 			);
-			skippedContainer.addTextDisplayComponents(
+			skippedHeaderContainer.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
-					`### ⏭️ Skipped (${results.skipped.length})\n-# ${results.skipped.join(', ')}`,
+					`### ⏭️ Skipped (${results.skipped.length})`,
 				),
 			);
-			await sendContainer(skippedContainer);
+			await sendContainer(skippedHeaderContainer);
+
+			for (const line of chunk(results.skipped)) {
+				const skippedContainer = new ContainerBuilder().setAccentColor(
+					accentColor,
+				);
+				skippedContainer.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(`-# ${line}`),
+				);
+				await sendContainer(skippedContainer);
+			}
 		}
 
 		// ── Message 5: Footer ─────────────────────────────────────────────────

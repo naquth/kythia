@@ -150,8 +150,7 @@ module.exports = {
 					await t(interaction, 'fun.wordle.already.playing'),
 					{ color: '#e67e22' },
 				),
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 
@@ -193,8 +192,7 @@ module.exports = {
 						await t(i, 'fun.wordle.not.your.game'),
 						{ color: '#e67e22' },
 					),
-					flags: MessageFlags.IsComponentsV2,
-					ephemeral: true,
+					flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 				});
 			}
 
@@ -227,8 +225,7 @@ module.exports = {
 							await t(modalSubmit, 'fun.wordle.invalid.word', { word: guess }),
 							{ color: '#e74c3c' },
 						),
-						flags: MessageFlags.IsComponentsV2,
-						ephemeral: true,
+						flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 					});
 				}
 				if (game.guesses.includes(guess)) {
@@ -241,8 +238,7 @@ module.exports = {
 							}),
 							{ color: '#e67e22' },
 						),
-						flags: MessageFlags.IsComponentsV2,
-						ephemeral: true,
+						flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 					});
 				}
 

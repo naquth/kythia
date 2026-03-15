@@ -31,7 +31,7 @@ module.exports = {
 		const { UserFact } = models;
 		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const factNumber = interaction.options.getInteger('number');
 

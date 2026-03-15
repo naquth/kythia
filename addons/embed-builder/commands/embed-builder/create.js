@@ -6,7 +6,11 @@
  * @version 1.0.0
  */
 
-const { SlashCommandSubcommandBuilder, EmbedBuilder } = require('discord.js');
+const {
+	SlashCommandSubcommandBuilder,
+	EmbedBuilder,
+	MessageFlags,
+} = require('discord.js');
 
 module.exports = {
 	slashCommand: new SlashCommandSubcommandBuilder()
@@ -43,7 +47,7 @@ module.exports = {
 		const name = interaction.options.getString('name');
 		const mode = interaction.options.getString('mode') ?? 'embed';
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		// Check for duplicate name in this guild
 		const existing = await EmbedModel.findOne({

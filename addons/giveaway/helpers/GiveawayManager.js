@@ -440,8 +440,7 @@ class GiveawayManager {
 		);
 		await interaction.reply({
 			components: successContainer,
-			ephemeral: true,
-			flags: MessageFlags.IsComponentsV2,
+			flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 		});
 	}
 
@@ -456,8 +455,7 @@ class GiveawayManager {
 			});
 			return interaction.reply({
 				components: err,
-				ephemeral: true,
-				flags: MessageFlags.IsComponentsV2,
+				flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -481,8 +479,7 @@ class GiveawayManager {
 			});
 			return interaction.reply({
 				components: err,
-				ephemeral: true,
-				flags: MessageFlags.IsComponentsV2,
+				flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -563,8 +560,7 @@ class GiveawayManager {
 
 		await interaction.reply({
 			components: successContainer,
-			ephemeral: true,
-			flags: MessageFlags.IsComponentsV2,
+			flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 		});
 	}
 

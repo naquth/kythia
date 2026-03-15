@@ -81,7 +81,7 @@ module.exports = {
 
 		if (!modalSubmit) return logger.warn('Embed announcement modal timed out.');
 
-		await modalSubmit.deferReply({ ephemeral: true });
+		await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const title = modalSubmit.fields.getTextInputValue('announcement-title');
 		const content = modalSubmit.fields.getTextInputValue(

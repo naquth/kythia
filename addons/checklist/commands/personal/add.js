@@ -37,7 +37,7 @@ module.exports = {
 
 		const item = interaction.options.getString('item');
 		if (!item || typeof item !== 'string' || !item.trim()) {
-			await interaction.deferReply({ ephemeral: true });
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			const msg =
 				(await t(interaction, 'checklist.server.add.invalid.item.title')) +
 				'\n' +
@@ -60,7 +60,7 @@ module.exports = {
 
 		if (items.length >= 100) {
 			// Limit checklist size
-			await interaction.deferReply({ ephemeral: true });
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			const msg =
 				(await t(interaction, 'checklist.server.add.full.title')) +
 				'\n' +
@@ -78,7 +78,7 @@ module.exports = {
 		try {
 			await checklist.update({ items: JSON.stringify(items) });
 		} catch (_e) {
-			await interaction.deferReply({ ephemeral: true });
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			const msg = await t(interaction, 'checklist.server.add.error');
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',

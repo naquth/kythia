@@ -30,7 +30,7 @@ module.exports = async (bot, interaction) => {
 			!interaction.deferred
 		) {
 			try {
-				await interaction.deferReply({ ephemeral: true });
+				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 				await interaction.deleteReply();
 			} catch (_e) {}
 		}
@@ -54,7 +54,7 @@ module.exports = async (bot, interaction) => {
 				!interaction.deferred
 			) {
 				try {
-					await interaction.deferReply({ ephemeral: true });
+					await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 					await interaction.deleteReply();
 				} catch (_e) {}
 			}

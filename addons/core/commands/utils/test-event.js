@@ -11,6 +11,7 @@ const {
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	InteractionContextType,
+	MessageFlags,
 } = require('discord.js');
 
 module.exports = {
@@ -86,7 +87,7 @@ module.exports = {
 		// 👇 Import langsung dari events helper
 		const { createMockEventArgs } = require('../../helpers/events');
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const eventName = interaction.options.getString('event');
 		const type = interaction.options.getString('type') || 'default';

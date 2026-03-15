@@ -146,7 +146,7 @@ module.exports = {
 			container[_x.l][_x.err](error);
 			await interaction[_x.e]({
 				content: await t(interaction, 'core.utils.legal.error.fetch'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 	},

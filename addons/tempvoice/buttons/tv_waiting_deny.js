@@ -1,3 +1,5 @@
+const { MessageFlags } = require('discord.js');
+
 /**
  * @namespace: addons/tempvoice/buttons/tv_waiting_deny.js
  * @type: Module
@@ -19,7 +21,7 @@ module.exports = {
 		if (!activeChannel)
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.common.not_owner'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 
 		// 2. Fetch user
@@ -29,7 +31,7 @@ module.exports = {
 		if (!member)
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.waiting.user_or_channel_gone'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 
 		// 3. Kick user
@@ -41,7 +43,7 @@ module.exports = {
 		} catch (_e) {
 			await interaction.reply({
 				content: await t(interaction, 'tempvoice.waiting.kick_fail'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 	},

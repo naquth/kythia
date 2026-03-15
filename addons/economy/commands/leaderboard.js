@@ -224,7 +224,7 @@ module.exports = {
 			if (i.user.id !== interaction.user.id) {
 				return i.reply({
 					content: await t(i, 'economy.leaderboard.not.your.interaction'),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 

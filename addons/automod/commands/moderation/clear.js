@@ -103,7 +103,7 @@ module.exports = {
 async function showClearOptions(interaction, t, container) {
 	const { helpers } = container;
 	const { createContainer, simpleContainer } = helpers.discord;
-	await interaction.deferReply({ ephemeral: true });
+	await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 	const row = new ActionRowBuilder().addComponents(
 		new ButtonBuilder()

@@ -42,7 +42,7 @@ module.exports = {
 			? serverSetting.streakRoleRewards
 			: [];
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 		const streak = await getOrCreateStreak(container, userId, guildId);
 
 		if (streak.currentStreak === 0) {

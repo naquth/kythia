@@ -144,7 +144,7 @@ module.exports = {
 		const { StickyMessage } = models;
 		const { convertColor } = helpers.color;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		// Fetch all sticky messages for channels in this guild
 		const guild = interaction.guild;

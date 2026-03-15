@@ -19,7 +19,7 @@ module.exports = {
 		if (!channelId) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.rename.modal.error.no_id'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -30,7 +30,7 @@ module.exports = {
 		if (!activeChannel) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.rename.modal.error.not_owner'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -56,7 +56,7 @@ module.exports = {
 		if (!channel) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.rename.modal.error.not_found'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -66,7 +66,7 @@ module.exports = {
 			content: await t(interaction, 'tempvoice.rename.modal.success', {
 				newName,
 			}),
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 };

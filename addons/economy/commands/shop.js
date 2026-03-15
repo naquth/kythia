@@ -241,8 +241,7 @@ module.exports = {
 				.addTextDisplayComponents(new TextDisplayBuilder().setContent(''));
 			return interaction.reply({
 				components: [errShopContainer],
-				ephemeral: true,
-				flags: MessageFlags.IsComponentsV2,
+				flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 			});
 		}
 
@@ -272,8 +271,7 @@ module.exports = {
 		);
 
 		const message = await interaction.editReply({
-			components: [shopContainer],
-			flags: MessageFlags.IsComponentsV2,
+			components: [shopContainer] | MessageFlags.IsComponentsV2,
 			fetchReply: true,
 		});
 
@@ -295,8 +293,7 @@ module.exports = {
 					);
 				return i.reply({
 					components: [errShopContainer],
-					ephemeral: true,
-					flags: MessageFlags.IsComponentsV2,
+					flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 				});
 			}
 			await i.deferUpdate();
@@ -340,8 +337,7 @@ module.exports = {
 						);
 					return i.followUp({
 						components: [errShopContainer],
-						ephemeral: true,
-						flags: MessageFlags.IsComponentsV2,
+						flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 					});
 				}
 
@@ -370,8 +366,7 @@ module.exports = {
 						);
 					return i.followUp({
 						components: [errShopContainer],
-						ephemeral: true,
-						flags: MessageFlags.IsComponentsV2,
+						flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 					});
 				}
 
@@ -391,8 +386,7 @@ module.exports = {
 						);
 					return i.followUp({
 						components: [errShopContainer],
-						ephemeral: true,
-						flags: MessageFlags.IsComponentsV2,
+						flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 					});
 				}
 
@@ -425,8 +419,7 @@ module.exports = {
 					);
 				await i.followUp({
 					components: [successShopContainer],
-					ephemeral: true,
-					flags: MessageFlags.IsComponentsV2,
+					flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 				});
 			}
 
@@ -455,8 +448,7 @@ module.exports = {
 				newComponents,
 			);
 			await interaction.editReply({
-				components: [newShopContainer],
-				flags: MessageFlags.IsComponentsV2,
+				components: [newShopContainer] | MessageFlags.IsComponentsV2,
 			});
 		});
 

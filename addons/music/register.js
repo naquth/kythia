@@ -82,7 +82,7 @@ module.exports = {
 
 		summary.push('   ╰┈➤ 🎵 24/7 Resurrector Hook is Active');
 
-		const tempPath = path.join(__dirname, '../../../temp');
+		const tempPath = path.join(__dirname, 'temp');
 		if (!fs.existsSync(tempPath)) {
 			fs.mkdirSync(tempPath, { recursive: true });
 			summary.push('   ╰┈➤ 📁 Temp Folder Created');

@@ -6,7 +6,11 @@
  * @version 1.0.0-rc
  */
 
-const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
+const {
+	SlashCommandBuilder,
+	AttachmentBuilder,
+	MessageFlags,
+} = require('discord.js');
 const JavaScriptObfuscator = require('javascript-obfuscator');
 const axios = require('axios');
 
@@ -35,7 +39,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, logger } = container;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const type = interaction.options.getString('type');
 		const file = interaction.options.getAttachment('file');
@@ -43,7 +47,7 @@ module.exports = {
 		if (!file || !file.url) {
 			return interaction.editReply({
 				content: await t(interaction, 'core.tools.obfuscate.no.file'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -54,7 +58,7 @@ module.exports = {
 		} catch (_err) {
 			return interaction.editReply({
 				content: await t(interaction, 'core.tools.obfuscate.failed.download'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -72,7 +76,7 @@ module.exports = {
 						interaction,
 						'core.tools.obfuscate.failed.javascript',
 					),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 		} else if (type === 'lua') {
@@ -97,7 +101,7 @@ module.exports = {
 					);
 					return interaction.editReply({
 						content: await t(interaction, 'core.tools.obfuscate.failed.lua'),
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				}
 
@@ -110,13 +114,13 @@ module.exports = {
 				logger.error(error, { label: 'obfuscate' });
 				return interaction.editReply({
 					content: await t(interaction, 'core.tools.obfuscate.failed.lua'),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 		} else {
 			return interaction.editReply({
 				content: await t(interaction, 'core.tools.obfuscate.invalid.type'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -125,7 +129,7 @@ module.exports = {
 
 		await interaction.editReply({
 			content: await t(interaction, 'core.tools.obfuscate.success', { type }),
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 			files: [attachment],
 		});
 	},

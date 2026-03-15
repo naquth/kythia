@@ -74,7 +74,7 @@ module.exports = {
 		const { KythiaUser } = models;
 		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const personality = interaction.options.getString('style');
 		const personalityData = PERSONALITIES[personality];

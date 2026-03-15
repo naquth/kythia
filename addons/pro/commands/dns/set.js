@@ -94,7 +94,7 @@ module.exports = {
 		const { KythiaUser, Subdomain, DnsRecord } = models;
 		const { simpleContainer, isPremium, isVoterActive } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 

@@ -39,7 +39,7 @@ module.exports = {
 				interaction,
 				'core.utils.global-announcement.delivery.start',
 			),
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 
 		const guilds = interaction.client.guilds.cache;

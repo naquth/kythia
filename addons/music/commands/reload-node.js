@@ -10,6 +10,7 @@ const {
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	InteractionContextType,
+	MessageFlags,
 } = require('discord.js');
 const { reloadLavalinkNodes } = require('../helpers/reload-node');
 
@@ -28,7 +29,7 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { logger } = container;
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		try {
 			await reloadLavalinkNodes(interaction.client);

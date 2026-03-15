@@ -286,7 +286,12 @@ class MusicHandlers {
 			message = await this.t(
 				interaction,
 				'music.helpers.handlers.music.added.to.queue',
-				{ title: track.info.title, url: track.info.uri },
+				{
+					title: track.info.title,
+					url: track.info.uri,
+					duration: track.info.length,
+					author: track.info.author,
+				},
 			);
 		}
 		const components = await this.simpleContainer(interaction, message, {
@@ -314,8 +319,7 @@ class MusicHandlers {
 			);
 			return interaction.reply({
 				components,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 
@@ -363,8 +367,7 @@ class MusicHandlers {
 			);
 			return interaction.reply({
 				components,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 
@@ -461,8 +464,7 @@ class MusicHandlers {
 			);
 			return interaction.reply({
 				components: successComponents,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (_e) {
 			const failedComponents = await this.simpleContainer(
@@ -472,8 +474,7 @@ class MusicHandlers {
 			);
 			return interaction.reply({
 				components: failedComponents,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 	}
@@ -673,8 +674,7 @@ class MusicHandlers {
 			);
 			return interaction.reply({
 				components,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 		player.pause(true);
@@ -704,8 +704,7 @@ class MusicHandlers {
 			);
 			return interaction.reply({
 				components,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 		player.pause(false);
@@ -1339,7 +1338,7 @@ class MusicHandlers {
 						btnInt,
 						'music.helpers.musicManager.music.permission.denied',
 					),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
@@ -3711,8 +3710,7 @@ class MusicHandlers {
 				}
 				return interactionToUpdate.followUp({
 					components: [errContainer],
-					ephemeral: true,
-					flags: MessageFlags.IsComponentsV2,
+					flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 				});
 			}
 
@@ -3973,7 +3971,7 @@ class MusicHandlers {
 				.substring(0, 50) || `song_${Date.now()}`;
 
 		const fileName = `${safeName}.mp3`;
-		const filePath = path.join(__dirname, '../../../temp', fileName);
+		const filePath = path.join(__dirname, '../../temp', fileName);
 
 		const maxLength = 600000; // 10 minutes
 		if (track && track.info.length > maxLength) {

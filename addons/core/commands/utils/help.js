@@ -402,7 +402,7 @@ module.exports = {
 			if (i.user.id !== state.userId) {
 				await i.reply({
 					content: await t(i, 'common.error.not.your.interaction'),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 				return;
 			}

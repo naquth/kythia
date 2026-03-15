@@ -10,6 +10,7 @@ const {
 	ContainerBuilder,
 	TextDisplayBuilder,
 	SeparatorBuilder,
+	MessageFlags,
 } = require('discord.js');
 const Marriage = require('../database/models/Marriage');
 const { convertColor } = require('kythia-core').utils;
@@ -53,7 +54,7 @@ module.exports = {
 			if (interaction.user.id !== marriage.user2Id) {
 				return interaction.reply({
 					content: await t(interaction, 'fun.marry.not.your.proposal'),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
@@ -133,7 +134,7 @@ module.exports = {
 			if (interaction.user.id !== marriage.user2Id) {
 				return interaction.reply({
 					content: await t(interaction, 'fun.marry.not.your.proposal'),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 

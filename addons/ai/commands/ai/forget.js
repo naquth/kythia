@@ -23,7 +23,7 @@ module.exports = {
 		const { t, helpers } = container;
 		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		// Get the conversation manager from the AI message handler
 		// We need to access the singleton instance

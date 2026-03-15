@@ -60,349 +60,350 @@ const automodFeatureMap = {
 // ---------------------------------------------------------------------------
 // Slash command definition
 // ---------------------------------------------------------------------------
-const command = new SlashCommandBuilder()
-	.setName('automod')
-	.setDescription('🛡️ Automod settings')
-	.setContexts(InteractionContextType.Guild)
-	.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
-
-	// --- Whitelist ---
-	.addSubcommandGroup((group) =>
-		group
-			.setName('whitelist')
-			.setDescription(
-				'👤 Manage automod whitelist (users/roles immune to automod)',
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('add')
-					.setDescription('Add a user or role to the whitelist')
-					.addMentionableOption((opt) =>
-						opt
-							.setName('target')
-							.setDescription('User or role')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('remove')
-					.setDescription('Remove a user or role from the whitelist')
-					.addMentionableOption((opt) =>
-						opt
-							.setName('target')
-							.setDescription('User or role')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub.setName('list').setDescription('View the current whitelist'),
-			),
-	)
-
-	// --- Badwords ---
-	.addSubcommandGroup((group) =>
-		group
-			.setName('badwords')
-			.setDescription('🤬 Manage blocked words')
-			.addSubcommand((sub) =>
-				sub
-					.setName('add')
-					.setDescription('Add a word to the blocklist')
-					.addStringOption((opt) =>
-						opt
-							.setName('word')
-							.setDescription('Word to block')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('remove')
-					.setDescription('Remove a word from the blocklist')
-					.addStringOption((opt) =>
-						opt
-							.setName('word')
-							.setDescription('Word to unblock')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub.setName('list').setDescription('View the blocked words list'),
-			),
-	)
-
-	// --- Badword whitelist ---
-	.addSubcommandGroup((group) =>
-		group
-			.setName('badword-whitelist')
-			.setDescription('✅ Manage badword exceptions (whitelisted words)')
-			.addSubcommand((sub) =>
-				sub
-					.setName('add')
-					.setDescription(
-						'Whitelist a word (allow even if it contains badwords)',
-					)
-					.addStringOption((opt) =>
-						opt
-							.setName('word')
-							.setDescription('Word to allow')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('remove')
-					.setDescription('Remove a word from the badword whitelist')
-					.addStringOption((opt) =>
-						opt
-							.setName('word')
-							.setDescription('Word to remove')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub.setName('list').setDescription('View the badword whitelist'),
-			),
-	)
-
-	// --- Ignored Channels ---
-	.addSubcommandGroup((group) =>
-		group
-			.setName('ignored-channels')
-			.setDescription('🔕 Manage channels ignored by automod')
-			.addSubcommand((sub) =>
-				sub
-					.setName('add')
-					.setDescription('Add a channel to the exception list')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Channel to ignore')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('remove')
-					.setDescription('Remove a channel from the exception list')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Channel to remove')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub.setName('list').setDescription('View all automod-ignored channels'),
-			),
-	)
-
-	// --- Log channels ---
-	.addSubcommandGroup((group) =>
-		group
-			.setName('logs')
-			.setDescription('📋 Configure automod log channels')
-			.addSubcommand((sub) =>
-				sub
-					.setName('mod-log')
-					.setDescription('Set the mod log channel (automod warnings)')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Channel for mod logs')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('audit-log')
-					.setDescription('Set the audit log channel (message edits/deletes)')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Channel for audit logs')
-							.setRequired(true),
-					),
-			),
-	)
-
-	// --- Feature toggles (anti-*) ---
-	.addSubcommandGroup((group) => {
-		group
-			.setName('toggle')
-			.setDescription('🔄 Enable or disable specific automod protections');
-		for (const [subName, [, displayName]] of Object.entries(
-			automodFeatureMap,
-		)) {
-			group.addSubcommand((sub) =>
-				sub
-					.setName(subName)
-					.setDescription(`Enable or disable ${displayName}`)
-					.addStringOption(createToggleOption()),
-			);
-		}
-		return group;
-	})
-
-	// --- AntiNuke ---
-	.addSubcommandGroup((group) =>
-		group
-			.setName('antinuke')
-			.setDescription('🛡️ Configure the AntiNuke protection system')
-			.addSubcommand((sub) =>
-				sub
-					.setName('toggle')
-					.setDescription('Enable or disable the entire AntiNuke system')
-					.addStringOption((opt) =>
-						opt
-							.setName('status')
-							.setDescription('Enable or disable')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Enable', value: 'enable' },
-								{ name: 'Disable', value: 'disable' },
-							),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('module')
-					.setDescription('Enable or disable a specific AntiNuke module')
-					.addStringOption((opt) =>
-						opt
-							.setName('module')
-							.setDescription('Which module')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Mass Ban', value: 'massBan' },
-								{ name: 'Mass Kick', value: 'massKick' },
-								{ name: 'Channel Create', value: 'channelCreate' },
-								{ name: 'Channel Delete', value: 'channelDelete' },
-								{ name: 'Role Delete', value: 'roleDelete' },
-								{ name: 'Webhook Create', value: 'webhookCreate' },
-								{ name: 'Admin Grant', value: 'adminGrant' },
-							),
-					)
-					.addStringOption((opt) =>
-						opt
-							.setName('status')
-							.setDescription('Enable or disable this module')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Enable', value: 'enable' },
-								{ name: 'Disable', value: 'disable' },
-							),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('threshold')
-					.setDescription('Set threshold (count + window) for a module')
-					.addStringOption((opt) =>
-						opt
-							.setName('module')
-							.setDescription('Which module')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Mass Ban', value: 'massBan' },
-								{ name: 'Mass Kick', value: 'massKick' },
-								{ name: 'Channel Create', value: 'channelCreate' },
-								{ name: 'Channel Delete', value: 'channelDelete' },
-								{ name: 'Role Delete', value: 'roleDelete' },
-								{ name: 'Webhook Create', value: 'webhookCreate' },
-							),
-					)
-					.addIntegerOption((opt) =>
-						opt
-							.setName('count')
-							.setDescription('Number of actions before triggering (e.g. 3)')
-							.setRequired(true)
-							.setMinValue(1)
-							.setMaxValue(20),
-					)
-					.addIntegerOption((opt) =>
-						opt
-							.setName('seconds')
-							.setDescription('Time window in seconds (e.g. 10)')
-							.setRequired(true)
-							.setMinValue(3)
-							.setMaxValue(300),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('action')
-					.setDescription('Set the punishment action for a module')
-					.addStringOption((opt) =>
-						opt
-							.setName('module')
-							.setDescription('Which module')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Mass Ban', value: 'massBan' },
-								{ name: 'Mass Kick', value: 'massKick' },
-								{ name: 'Channel Create', value: 'channelCreate' },
-								{ name: 'Channel Delete', value: 'channelDelete' },
-								{ name: 'Role Delete', value: 'roleDelete' },
-								{ name: 'Webhook Create', value: 'webhookCreate' },
-								{ name: 'Admin Grant', value: 'adminGrant' },
-							),
-					)
-					.addStringOption((opt) =>
-						opt
-							.setName('action')
-							.setDescription('Action to take')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Kick', value: 'kick' },
-								{ name: 'Ban', value: 'ban' },
-								{ name: 'Strip All Roles', value: 'dehoistRole' },
-								{ name: 'Log Only (no action)', value: 'none' },
-							),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('whitelist')
-					.setDescription('Add or remove a user/role from antinuke immunity')
-					.addStringOption((opt) =>
-						opt
-							.setName('action')
-							.setDescription('Add or remove')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Add', value: 'add' },
-								{ name: 'Remove', value: 'remove' },
-							),
-					)
-					.addMentionableOption((opt) =>
-						opt
-							.setName('target')
-							.setDescription('User or role')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('log-channel')
-					.setDescription('Set a dedicated channel for AntiNuke alerts')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Log channel')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('status')
-					.setDescription('View current AntiNuke configuration'),
-			),
-	);
 
 module.exports = {
-	slashCommand: command,
+	slashCommand: new SlashCommandBuilder()
+		.setName('automod')
+		.setDescription('🛡️ Automod settings')
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+
+		// --- Whitelist ---
+		.addSubcommandGroup((group) =>
+			group
+				.setName('whitelist')
+				.setDescription(
+					'👤 Manage automod whitelist (users/roles immune to automod)',
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('add')
+						.setDescription('Add a user or role to the whitelist')
+						.addMentionableOption((opt) =>
+							opt
+								.setName('target')
+								.setDescription('User or role')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('remove')
+						.setDescription('Remove a user or role from the whitelist')
+						.addMentionableOption((opt) =>
+							opt
+								.setName('target')
+								.setDescription('User or role')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub.setName('list').setDescription('View the current whitelist'),
+				),
+		)
+
+		// --- Badwords ---
+		.addSubcommandGroup((group) =>
+			group
+				.setName('badwords')
+				.setDescription('🤬 Manage blocked words')
+				.addSubcommand((sub) =>
+					sub
+						.setName('add')
+						.setDescription('Add a word to the blocklist')
+						.addStringOption((opt) =>
+							opt
+								.setName('word')
+								.setDescription('Word to block')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('remove')
+						.setDescription('Remove a word from the blocklist')
+						.addStringOption((opt) =>
+							opt
+								.setName('word')
+								.setDescription('Word to unblock')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub.setName('list').setDescription('View the blocked words list'),
+				),
+		)
+
+		// --- Badword whitelist ---
+		.addSubcommandGroup((group) =>
+			group
+				.setName('badword-whitelist')
+				.setDescription('✅ Manage badword exceptions (whitelisted words)')
+				.addSubcommand((sub) =>
+					sub
+						.setName('add')
+						.setDescription(
+							'Whitelist a word (allow even if it contains badwords)',
+						)
+						.addStringOption((opt) =>
+							opt
+								.setName('word')
+								.setDescription('Word to allow')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('remove')
+						.setDescription('Remove a word from the badword whitelist')
+						.addStringOption((opt) =>
+							opt
+								.setName('word')
+								.setDescription('Word to remove')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub.setName('list').setDescription('View the badword whitelist'),
+				),
+		)
+
+		// --- Ignored Channels ---
+		.addSubcommandGroup((group) =>
+			group
+				.setName('ignored-channels')
+				.setDescription('🔕 Manage channels ignored by automod')
+				.addSubcommand((sub) =>
+					sub
+						.setName('add')
+						.setDescription('Add a channel to the exception list')
+						.addChannelOption((opt) =>
+							opt
+								.setName('channel')
+								.setDescription('Channel to ignore')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('remove')
+						.setDescription('Remove a channel from the exception list')
+						.addChannelOption((opt) =>
+							opt
+								.setName('channel')
+								.setDescription('Channel to remove')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('list')
+						.setDescription('View all automod-ignored channels'),
+				),
+		)
+
+		// --- Log channels ---
+		.addSubcommandGroup((group) =>
+			group
+				.setName('logs')
+				.setDescription('📋 Configure automod log channels')
+				.addSubcommand((sub) =>
+					sub
+						.setName('mod-log')
+						.setDescription('Set the mod log channel (automod warnings)')
+						.addChannelOption((opt) =>
+							opt
+								.setName('channel')
+								.setDescription('Channel for mod logs')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('audit-log')
+						.setDescription('Set the audit log channel (message edits/deletes)')
+						.addChannelOption((opt) =>
+							opt
+								.setName('channel')
+								.setDescription('Channel for audit logs')
+								.setRequired(true),
+						),
+				),
+		)
+
+		// --- Feature toggles (anti-*) ---
+		.addSubcommandGroup((group) => {
+			group
+				.setName('toggle')
+				.setDescription('🔄 Enable or disable specific automod protections');
+			for (const [subName, [, displayName]] of Object.entries(
+				automodFeatureMap,
+			)) {
+				group.addSubcommand((sub) =>
+					sub
+						.setName(subName)
+						.setDescription(`Enable or disable ${displayName}`)
+						.addStringOption(createToggleOption()),
+				);
+			}
+			return group;
+		})
+
+		// --- AntiNuke ---
+		.addSubcommandGroup((group) =>
+			group
+				.setName('antinuke')
+				.setDescription('🛡️ Configure the AntiNuke protection system')
+				.addSubcommand((sub) =>
+					sub
+						.setName('toggle')
+						.setDescription('Enable or disable the entire AntiNuke system')
+						.addStringOption((opt) =>
+							opt
+								.setName('status')
+								.setDescription('Enable or disable')
+								.setRequired(true)
+								.addChoices(
+									{ name: 'Enable', value: 'enable' },
+									{ name: 'Disable', value: 'disable' },
+								),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('module')
+						.setDescription('Enable or disable a specific AntiNuke module')
+						.addStringOption((opt) =>
+							opt
+								.setName('module')
+								.setDescription('Which module')
+								.setRequired(true)
+								.addChoices(
+									{ name: 'Mass Ban', value: 'massBan' },
+									{ name: 'Mass Kick', value: 'massKick' },
+									{ name: 'Channel Create', value: 'channelCreate' },
+									{ name: 'Channel Delete', value: 'channelDelete' },
+									{ name: 'Role Delete', value: 'roleDelete' },
+									{ name: 'Webhook Create', value: 'webhookCreate' },
+									{ name: 'Admin Grant', value: 'adminGrant' },
+								),
+						)
+						.addStringOption((opt) =>
+							opt
+								.setName('status')
+								.setDescription('Enable or disable this module')
+								.setRequired(true)
+								.addChoices(
+									{ name: 'Enable', value: 'enable' },
+									{ name: 'Disable', value: 'disable' },
+								),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('threshold')
+						.setDescription('Set threshold (count + window) for a module')
+						.addStringOption((opt) =>
+							opt
+								.setName('module')
+								.setDescription('Which module')
+								.setRequired(true)
+								.addChoices(
+									{ name: 'Mass Ban', value: 'massBan' },
+									{ name: 'Mass Kick', value: 'massKick' },
+									{ name: 'Channel Create', value: 'channelCreate' },
+									{ name: 'Channel Delete', value: 'channelDelete' },
+									{ name: 'Role Delete', value: 'roleDelete' },
+									{ name: 'Webhook Create', value: 'webhookCreate' },
+								),
+						)
+						.addIntegerOption((opt) =>
+							opt
+								.setName('count')
+								.setDescription('Number of actions before triggering (e.g. 3)')
+								.setRequired(true)
+								.setMinValue(1)
+								.setMaxValue(20),
+						)
+						.addIntegerOption((opt) =>
+							opt
+								.setName('seconds')
+								.setDescription('Time window in seconds (e.g. 10)')
+								.setRequired(true)
+								.setMinValue(3)
+								.setMaxValue(300),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('action')
+						.setDescription('Set the punishment action for a module')
+						.addStringOption((opt) =>
+							opt
+								.setName('module')
+								.setDescription('Which module')
+								.setRequired(true)
+								.addChoices(
+									{ name: 'Mass Ban', value: 'massBan' },
+									{ name: 'Mass Kick', value: 'massKick' },
+									{ name: 'Channel Create', value: 'channelCreate' },
+									{ name: 'Channel Delete', value: 'channelDelete' },
+									{ name: 'Role Delete', value: 'roleDelete' },
+									{ name: 'Webhook Create', value: 'webhookCreate' },
+									{ name: 'Admin Grant', value: 'adminGrant' },
+								),
+						)
+						.addStringOption((opt) =>
+							opt
+								.setName('action')
+								.setDescription('Action to take')
+								.setRequired(true)
+								.addChoices(
+									{ name: 'Kick', value: 'kick' },
+									{ name: 'Ban', value: 'ban' },
+									{ name: 'Strip All Roles', value: 'dehoistRole' },
+									{ name: 'Log Only (no action)', value: 'none' },
+								),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('whitelist')
+						.setDescription('Add or remove a user/role from antinuke immunity')
+						.addStringOption((opt) =>
+							opt
+								.setName('action')
+								.setDescription('Add or remove')
+								.setRequired(true)
+								.addChoices(
+									{ name: 'Add', value: 'add' },
+									{ name: 'Remove', value: 'remove' },
+								),
+						)
+						.addMentionableOption((opt) =>
+							opt
+								.setName('target')
+								.setDescription('User or role')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('log-channel')
+						.setDescription('Set a dedicated channel for AntiNuke alerts')
+						.addChannelOption((opt) =>
+							opt
+								.setName('channel')
+								.setDescription('Log channel')
+								.setRequired(true),
+						),
+				)
+				.addSubcommand((sub) =>
+					sub
+						.setName('status')
+						.setDescription('View current AntiNuke configuration'),
+				),
+		),
 	permissions: PermissionFlagsBits.ManageGuild,
 	botPermissions: PermissionFlagsBits.ManageGuild,
 
@@ -411,7 +412,7 @@ module.exports = {
 		const { getChannelSafe, simpleContainer } = helpers.discord;
 		const { ServerSetting } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const group = interaction.options.getSubcommandGroup(false);
 		const sub = interaction.options.getSubcommand();

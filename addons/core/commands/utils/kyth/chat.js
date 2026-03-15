@@ -35,7 +35,7 @@ module.exports = {
 		const { t, logger, helpers } = container;
 		const { createContainer, simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const user = interaction.options.getUser('user');
 		const message = interaction.options.getString('message');

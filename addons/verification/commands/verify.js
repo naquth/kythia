@@ -183,7 +183,7 @@ module.exports = {
 		const { models } = container;
 		const { VerificationConfig, ServerSetting } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const group = interaction.options.getSubcommandGroup(false);
 		const sub = interaction.options.getSubcommand();

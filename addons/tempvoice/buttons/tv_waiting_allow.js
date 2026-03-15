@@ -23,7 +23,7 @@ module.exports = {
 		if (!activeChannel)
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.common.not_owner'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 
 		// 2. Fetch channel & user
@@ -52,7 +52,7 @@ module.exports = {
 		if (!mainChannel || !member)
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.waiting.user_or_channel_gone'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 
 		// 3. Pindahin user
@@ -62,7 +62,7 @@ module.exports = {
 		} catch (_e) {
 			await interaction.reply({
 				content: await t(interaction, 'tempvoice.waiting.move_fail'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 	},

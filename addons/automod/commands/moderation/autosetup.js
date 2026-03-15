@@ -29,7 +29,7 @@ module.exports = {
 		const { createContainer, simpleContainer } = helpers.discord;
 		const { ServerSetting } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		try {
 			const guild = interaction.guild;
@@ -116,8 +116,7 @@ module.exports = {
 			);
 			return interaction.editReply({
 				components: reply,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 	},

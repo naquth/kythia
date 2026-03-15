@@ -10,6 +10,7 @@ const {
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	InteractionContextType,
+	MessageFlags,
 } = require('discord.js');
 const { formatTrackDuration, hasControlPermission } = require('../helpers');
 
@@ -684,7 +685,7 @@ module.exports = {
 		if (!(member instanceof GuildMember) || !member.voice.channel) {
 			return interaction.reply({
 				content: await t(interaction, 'music.music.voice.channel.not.found'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -723,14 +724,14 @@ module.exports = {
 		if (!player) {
 			return interaction.reply({
 				content: await t(interaction, 'music.music.player.not.found'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
 		if (member.voice.channel.id !== player.voiceChannel) {
 			return interaction.reply({
 				content: await t(interaction, 'music.music.required'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -778,7 +779,7 @@ module.exports = {
 						interaction,
 						'music.helpers.musicManager.music.permission.denied',
 					),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 			return topLevelHandlers[subcommand](interaction, player);
@@ -792,7 +793,7 @@ module.exports = {
 							interaction,
 							'music.helpers.musicManager.music.permission.denied',
 						),
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				}
 			}
@@ -801,7 +802,7 @@ module.exports = {
 
 		return interaction.reply({
 			content: await t(interaction, 'music.music.subcommand.not.found'),
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 };

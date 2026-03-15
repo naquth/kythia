@@ -32,7 +32,7 @@ module.exports = {
 		const { WelcomeSetting } = models;
 		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const url = interaction.options.getString('url');
 

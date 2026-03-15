@@ -31,7 +31,7 @@ module.exports = {
 		const { simpleContainer } = helpers.discord;
 		const MAX_SUBDOMAINS = kythiaConfig.addons.pro.maxSubdomains || 5;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 		const user = await KythiaUser.getCache({ userId: interaction.user.id });
 
 		if (!user) {

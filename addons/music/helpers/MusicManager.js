@@ -970,7 +970,7 @@ class MusicManager {
 								interaction,
 								'music.helpers.musicManager.music.permission.denied',
 							),
-							ephemeral: true,
+							flags: MessageFlags.Ephemeral,
 						});
 					}
 					switch (interaction.customId) {

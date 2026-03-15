@@ -24,7 +24,7 @@ module.exports = {
 		const { simpleContainer } = helpers.discord;
 		const guildId = interaction.guild.id;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const config = await TempVoiceConfig.getCache({ guildId: guildId });
 		if (!config) {

@@ -76,7 +76,7 @@ module.exports = {
 		const { t, helpers, models, kythiaConfig } = container;
 		const { ServerSetting } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const rawHost = interaction.options.getString('host').trim();
 		const port = interaction.options.getInteger('port') ?? 25565;

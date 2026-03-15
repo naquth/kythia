@@ -27,7 +27,7 @@ module.exports = {
 		if (!activeChannel) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.block.no_active_channel'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 

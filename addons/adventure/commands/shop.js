@@ -421,7 +421,7 @@ module.exports = {
 				try {
 					await i.followUp({
 						content: await t(interaction, 'common.error.generic'),
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				} catch (e) {
 					logger.error('Failed to send error followUp:', e);

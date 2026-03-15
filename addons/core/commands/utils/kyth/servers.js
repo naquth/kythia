@@ -141,7 +141,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t } = container;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const guilds = interaction.client.guilds.cache.map((g) => ({
 			id: g.id,

@@ -35,11 +35,11 @@ module.exports = {
 			return interaction.reply({
 				content:
 					'❌ Model `Playlist` atau `PlaylistTrack` tidak ditemukan di container.',
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const logs = [];
 		const addLog = (icon, msg) => {

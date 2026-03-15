@@ -65,21 +65,21 @@ module.exports = {
 		if (existingMarriage) {
 			return interaction.reply({
 				content: await t(interaction, 'fun.marry.already.married'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
 		if (targetUser.bot) {
 			return interaction.reply({
 				content: await t(interaction, 'fun.marry.bot.error'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
 		if (targetId === proposerId) {
 			return interaction.reply({
 				content: await t(interaction, 'fun.marry.yourself.error'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 

@@ -27,7 +27,7 @@ module.exports = {
 		if (!activeChannel) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.privacy.no_active_channel'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 		const channelId = activeChannel.channelId;
@@ -53,7 +53,7 @@ module.exports = {
 		if (!channel) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.privacy.channel_not_found'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 

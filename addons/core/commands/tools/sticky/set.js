@@ -37,7 +37,7 @@ module.exports = {
 		if (existingSticky) {
 			return interaction.reply({
 				content: await t(interaction, 'core.tools.sticky.set.error.exists'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -58,7 +58,7 @@ module.exports = {
 
 		return interaction.reply({
 			content: await t(interaction, 'core.tools.sticky.set.success'),
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 };

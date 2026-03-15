@@ -294,7 +294,7 @@ module.exports = {
 						if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
 							await submitted.reply({
 								content: '❌ Please enter a valid number.',
-								ephemeral: true,
+								flags: MessageFlags.Ephemeral,
 							});
 							resolve({
 								correct: false,

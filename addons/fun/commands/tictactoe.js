@@ -285,8 +285,7 @@ module.exports = {
 					`${await t(interaction, 'fun.tictactoe.error.title')}\n${await t(interaction, 'fun.tictactoe.error.self')}`,
 					{ color: 'Red' },
 				),
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 
@@ -324,8 +323,7 @@ module.exports = {
 								`${await t(i, 'fun.tictactoe.error.title')}\n${await t(i, 'fun.tictactoe.error.rematch')}`,
 								{ color: 'Yellow' },
 							),
-							flags: MessageFlags.IsComponentsV2,
-							ephemeral: true,
+							flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 						});
 					}
 					await i.deferUpdate();
@@ -343,8 +341,7 @@ module.exports = {
 							`${await t(i, 'fun.tictactoe.error.title')}\n${await t(i, 'fun.tictactoe.error.turn')}`,
 							{ color: 'Yellow' },
 						),
-						flags: MessageFlags.IsComponentsV2,
-						ephemeral: true,
+						flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 					});
 				}
 

@@ -13,6 +13,7 @@ const {
 	TextInputBuilder,
 	TextInputStyle,
 	ActionRowBuilder,
+	MessageFlags,
 } = require('discord.js');
 
 module.exports = {
@@ -48,7 +49,7 @@ module.exports = {
 						.setColor(0xef4444)
 						.setDescription('❌ Embed not found in this server.'),
 				],
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -125,7 +126,7 @@ module.exports = {
 						`**"${record.name}"** uses Components V2 mode. The full visual editor is available on the dashboard.\n\nYou can also update this embed via the API:\n\`PATCH /api/embed-builder/${record.id}\``,
 					),
 			],
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 
@@ -152,7 +153,7 @@ module.exports = {
 						.setColor(0xef4444)
 						.setDescription('❌ Embed not found. It may have been deleted.'),
 				],
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -223,7 +224,7 @@ module.exports = {
 							: `**"${record.name}"** has been saved.\nUse \`/embed-builder send\` to post it to a channel.`,
 					),
 			],
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 };

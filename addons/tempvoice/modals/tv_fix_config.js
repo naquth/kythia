@@ -5,7 +5,7 @@
  * @assistant graa & chaa
  * @version 1.0.0-rc
  */
-const { ComponentType } = require('discord.js');
+const { ComponentType, MessageFlags } = require('discord.js');
 
 module.exports = {
 	execute: async (interaction, container) => {
@@ -13,7 +13,7 @@ module.exports = {
 		const { TempVoiceConfig } = models;
 		const guild = interaction.guild;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const config = await TempVoiceConfig.findOne({
 			where: { guildId: guild.id },

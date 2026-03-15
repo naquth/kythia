@@ -15,7 +15,7 @@ module.exports = {
 		const { simpleContainer } = helpers.discord;
 		const { Giveaway } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		try {
 			const messageId = interaction.message.id;

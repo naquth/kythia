@@ -329,8 +329,7 @@ class PrefixCommandHandler {
 					allowed: false,
 					response: {
 						components: [container],
-						ephemeral: true,
-						flags: MessageFlags.IsComponentsV2,
+						flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
 					},
 				};
 			}

@@ -36,7 +36,7 @@ module.exports = {
 		const { t, helpers, kythiaConfig } = container;
 		const { createContainer, simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const user = interaction.options.getUser('user');
 		const reason =
@@ -68,8 +68,7 @@ module.exports = {
 			);
 			return interaction.editReply({
 				components: reply,
-				flags: MessageFlags.IsComponentsV2,
-				ephemeral: true,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 	},

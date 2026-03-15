@@ -20,7 +20,7 @@ module.exports = {
 		if (Number.isNaN(newLimit) || newLimit < 0 || newLimit > 99) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.limit.modal.invalid_input'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 		if (!channelId) {
@@ -29,7 +29,7 @@ module.exports = {
 					interaction,
 					'tempvoice.limit.modal.channel_id_not_found',
 				),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -40,7 +40,7 @@ module.exports = {
 		if (!activeChannel) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.limit.modal.not_owner'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -68,7 +68,7 @@ module.exports = {
 					interaction,
 					'tempvoice.limit.modal.channel_not_found',
 				),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 
@@ -80,7 +80,7 @@ module.exports = {
 						? await t(interaction, 'tempvoice.limit.modal.unlimited')
 						: newLimit,
 			}),
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 };

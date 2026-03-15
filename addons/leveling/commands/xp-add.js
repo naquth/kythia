@@ -38,7 +38,7 @@ module.exports = {
 		const { simpleContainer } = helpers.discord;
 		const { User, ServerSetting } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const serverSetting = await ServerSetting.getCache({
 			guildId: interaction.guild.id,

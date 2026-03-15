@@ -150,7 +150,7 @@ module.exports = {
 		const { t, models } = container;
 		const { UserFact } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const allFacts = await UserFact.getAllCache({
 			where: { userId: interaction.user.id },

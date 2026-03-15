@@ -32,7 +32,7 @@ module.exports = {
 		const { ServerSetting } = models;
 		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const ip = interaction.options.getString('ip');
 

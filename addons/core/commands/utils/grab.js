@@ -193,7 +193,7 @@ module.exports = {
 		}
 
 		if (interaction.isMessageContextMenuCommand?.()) {
-			await interaction.deferReply({ ephemeral: true });
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			const message = interaction.targetMessage;
 
 			if (message?.stickers && message.stickers.size > 0) {

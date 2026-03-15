@@ -101,7 +101,7 @@ module.exports = {
 		const { Subdomain, DnsRecord } = models;
 		const { simpleContainer, isPremium, isVoterActive } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const isPremiumDonatur = await isPremium(container, interaction.user.id);
 		const isVoter = await isVoterActive(container, interaction.user.id);

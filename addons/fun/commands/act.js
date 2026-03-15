@@ -99,7 +99,7 @@ module.exports = {
 		if (!VALID_ACTIONS.includes(action)) {
 			return interaction.reply({
 				content: await t(interaction, 'fun.act.errors.invalid_action'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 

@@ -35,7 +35,7 @@ module.exports = {
 		const { helpers, redis, logger } = container;
 		const { createContainer } = helpers.discord;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const enabled = interaction.options.getBoolean('enabled');
 		const reason = interaction.options.getString('reason') || 'System updates';

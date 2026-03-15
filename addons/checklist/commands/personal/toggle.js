@@ -38,7 +38,7 @@ module.exports = {
 
 		const index = interaction.options.getInteger('index');
 		if (!index || typeof index !== 'number' || index < 1) {
-			await interaction.deferReply({ ephemeral: true });
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			const msg =
 				(await t(interaction, 'checklist.server.toggle.invalid.index.title')) +
 				'\n' +

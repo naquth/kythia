@@ -978,7 +978,7 @@ async function closeModmail(interaction, container, reason = null) {
 		if (!interaction.replied && !interaction.deferred) {
 			await interaction.reply({
 				content: await t(interaction, 'modmail.close.thinking'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 

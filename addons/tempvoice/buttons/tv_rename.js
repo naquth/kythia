@@ -10,6 +10,7 @@ const {
 	TextInputBuilder,
 	TextInputStyle,
 	ActionRowBuilder,
+	MessageFlags,
 } = require('discord.js');
 
 module.exports = {
@@ -25,7 +26,7 @@ module.exports = {
 		if (!activeChannel) {
 			return interaction.reply({
 				content: await t(interaction, 'tempvoice.rename.no_active_channel'),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 

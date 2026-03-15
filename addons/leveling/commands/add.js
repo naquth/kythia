@@ -37,7 +37,7 @@ module.exports = {
 		const { simpleContainer } = helpers.discord;
 		const { User } = models;
 
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const targetUser = interaction.options.getUser('user');
 		const levelToAdd = interaction.options.getInteger('level');

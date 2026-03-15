@@ -47,15 +47,15 @@ module.exports = {
 			.setDescription(
 				'🖼️ Generate a Minecraft wallpaper featuring one or more players',
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('wallpaper')
 					.setDescription('Choose a wallpaper style')
 					.setRequired(true)
 					.addChoices(...WALLPAPERS),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('players')
 					.setDescription(
 						'Player name(s) — separate multiple with commas, no spaces (e.g. kenndeclouv,ribellflow)',

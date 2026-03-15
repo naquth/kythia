@@ -13,8 +13,8 @@ module.exports = {
 		subcommand
 			.setName('remove')
 			.setDescription('Remove a quick-reply snippet.')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('name')
 					.setDescription('Name of the snippet to remove.')
 					.setRequired(true)

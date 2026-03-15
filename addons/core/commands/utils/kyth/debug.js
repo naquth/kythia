@@ -6,20 +6,16 @@
  * @version 1.0.0-rc
  */
 
-const {
-	MessageFlags,
-	SlashCommandBuilder,
-	InteractionContextType,
-} = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
-	slashCommand: new SlashCommandBuilder()
-		.setName('debug-cache')
-		.setDescription(
-			'🛠️ [DEV] Run diagnostic tests on KythiaModel (Music Edition).',
-		)
-		.setContexts(InteractionContextType.BotDM),
-	isOwner: true,
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('debug-cache')
+			.setDescription(
+				'🛠️ [DEV] Run diagnostic tests on KythiaModel (Music Edition).',
+			),
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

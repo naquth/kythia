@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('reset')
 			.setDescription('Reset server structure to default')
-			.addBooleanOption((opt) =>
-				opt
+			.addBooleanOption((option) =>
+				option
 					.setName('clear')
 					.setDescription('Delete all channels & roles first?')
 					.setRequired(false),

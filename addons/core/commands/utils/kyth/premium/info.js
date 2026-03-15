@@ -12,8 +12,11 @@ module.exports = {
 		subcommand
 			.setName('info')
 			.setDescription('View premium info for a user')
-			.addUserOption((opt) =>
-				opt.setName('user').setDescription('User to check').setRequired(true),
+			.addUserOption((option) =>
+				option
+					.setName('user')
+					.setDescription('User to check')
+					.setRequired(true),
 			),
 
 	/**

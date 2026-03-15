@@ -1,0 +1,79 @@
+/**
+ * @namespace: addons/core/commands/utils/kyth/vote/add.js
+ * @type: Subcommand
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+module.exports = {
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('add')
+			.setDescription('Add vote points to a user')
+			.addUserOption((option) =>
+				option
+					.setName('user')
+					.setDescription('The user to add points to')
+					.setRequired(true),
+			)
+			.addIntegerOption((option) =>
+				option
+					.setName('amount')
+					.setDescription('The number of points to add')
+					.setRequired(true)
+					.setMinValue(1),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, models, helpers } = container;
+		const { simpleContainer } = helpers.discord;
+		const { KythiaUser } = models;
+
+		const targetUser = interaction.options.getUser('user', true);
+		const amount = interaction.options.getInteger('amount', true);
+
+		// Defer reply since database operations may take a brief moment
+		await interaction.deferReply();
+
+		try {
+			// Get or create KythiaUser
+			let userRecord = await KythiaUser.getCache({ userId: targetUser.id });
+
+			if (!userRecord) {
+				userRecord = await KythiaUser.create({
+					userId: targetUser.id,
+					votePoints: amount,
+				});
+				await userRecord.save();
+			} else {
+				userRecord.votePoints = (userRecord.votePoints || 0) + amount;
+				await userRecord.save();
+			}
+
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'core.utils.kyth.vote.add.success', {
+					user: targetUser.toString(),
+					amount,
+					total: userRecord.votePoints,
+				}),
+				{ mode: 'success' },
+			);
+
+			await interaction.editReply({ components });
+		} catch (error) {
+			container.logger.error(error);
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'common.error'),
+				{ mode: 'error' },
+			);
+			await interaction.editReply({ components });
+		}
+	},
+};

@@ -16,8 +16,8 @@ module.exports = {
 			.setDescription(
 				'Send a snippet as a named reply to the user in this modmail thread.',
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('name')
 					.setDescription('Name of the snippet to send.')
 					.setRequired(true)

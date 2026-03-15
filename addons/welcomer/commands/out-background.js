@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('out-background')
 			.setDescription('👋 Set farewell banner background URL')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('url')
 					.setDescription(
 						'Direct URL to the background image (must start with http)',

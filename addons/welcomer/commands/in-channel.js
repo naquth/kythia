@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('in-channel')
 			.setDescription('👋 Set the welcome channel')
-			.addChannelOption((opt) =>
-				opt
+			.addChannelOption((option) =>
+				option
 					.setName('channel')
 					.setDescription('Channel where welcome messages are sent')
 					.setRequired(true),

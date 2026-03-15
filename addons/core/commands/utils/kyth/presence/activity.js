@@ -15,18 +15,21 @@ module.exports = {
 		subcommand
 			.setName('activity')
 			.setDescription('🎮 Set bot activity only')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('type')
 					.setDescription('Activity type')
 					.setRequired(true)
 					.addChoices(...ACTIVITY_TYPE_OPTIONS),
 			)
-			.addStringOption((opt) =>
-				opt.setName('name').setDescription('Activity name').setRequired(true),
+			.addStringOption((option) =>
+				option
+					.setName('name')
+					.setDescription('Activity name')
+					.setRequired(true),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('url')
 					.setDescription('Streaming URL (Twitch/YouTube)')
 					.setRequired(false),

@@ -15,22 +15,22 @@ module.exports = {
 		subcommand
 			.setName('data')
 			.setDescription('💾 Convert data storage units (e.g. MB to GB)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('from')
 					.setDescription('From unit')
 					.setRequired(true)
 					.addChoices(...dataChoices),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('to')
 					.setDescription('To unit')
 					.setRequired(true)
 					.addChoices(...dataChoices),
 			)
-			.addNumberOption((opt) =>
-				opt
+			.addNumberOption((option) =>
+				option
 					.setName('value')
 					.setDescription('Value to convert')
 					.setRequired(true),

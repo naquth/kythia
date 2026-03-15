@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('bio')
 			.setDescription('📝 Change bot bio/about me')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('bio')
 					.setDescription('New bio text (max 190 characters)')
 					.setRequired(true)

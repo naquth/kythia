@@ -15,22 +15,22 @@ module.exports = {
 		subcommand
 			.setName('area')
 			.setDescription('🟦 Convert area units (e.g. m² to acre)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('from')
 					.setDescription('From unit')
 					.setRequired(true)
 					.addChoices(...areaChoices),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('to')
 					.setDescription('To unit')
 					.setRequired(true)
 					.addChoices(...areaChoices),
 			)
-			.addNumberOption((opt) =>
-				opt
+			.addNumberOption((option) =>
+				option
 					.setName('value')
 					.setDescription('Value to convert')
 					.setRequired(true),

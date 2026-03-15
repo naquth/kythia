@@ -15,24 +15,24 @@ module.exports = {
 		subcommand
 			.setName('currency')
 			.setDescription('💰 Convert currency (e.g. USD to IDR)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('from')
 					.setDescription('Currency code (e.g. USD)')
 					.setRequired(true)
 					.setMinLength(3)
 					.setMaxLength(3),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('to')
 					.setDescription('Currency code to convert to (e.g. IDR)')
 					.setRequired(true)
 					.setMinLength(3)
 					.setMaxLength(3),
 			)
-			.addNumberOption((opt) =>
-				opt
+			.addNumberOption((option) =>
+				option
 					.setName('amount')
 					.setDescription('Amount to convert')
 					.setRequired(true),

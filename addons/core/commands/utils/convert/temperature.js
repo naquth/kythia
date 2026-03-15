@@ -15,22 +15,22 @@ module.exports = {
 		subcommand
 			.setName('temperature')
 			.setDescription('🌡️ Convert temperature (C, F, K, R, Re)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('from')
 					.setDescription('From unit')
 					.setRequired(true)
 					.addChoices(...tempChoices),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('to')
 					.setDescription('To unit')
 					.setRequired(true)
 					.addChoices(...tempChoices),
 			)
-			.addNumberOption((opt) =>
-				opt
+			.addNumberOption((option) =>
+				option
 					.setName('value')
 					.setDescription('Value to convert')
 					.setRequired(true),

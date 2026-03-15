@@ -16,8 +16,8 @@ module.exports = {
 		subcommand
 			.setName('port')
 			.setDescription('🔌 Set the Minecraft server port for this guild')
-			.addIntegerOption((opt) =>
-				opt
+			.addIntegerOption((option) =>
+				option
 					.setName('port')
 					.setDescription('Minecraft server port (default: 25565)')
 					.setRequired(true)

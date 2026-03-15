@@ -16,8 +16,8 @@ module.exports = {
 			.setDescription(
 				'👋 Set farewell message style (banner card or plain text)',
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('style')
 					.setDescription('Choose the message style')
 					.setRequired(true)

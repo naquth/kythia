@@ -451,6 +451,11 @@
 				}
 			},
 			"vote": {
+				"leaderboard": {
+					"title": "Vote Leaderboard",
+					"empty": "❌ There are no voters on the leaderboard.",
+					"entry": "**{index}.** {user} - **{votes}** votes"
+				},
 				"container": {
 					"title": "## 🌸 Vote for {username}!",
 					"desc": "Your vote means the world to {username} and helps unlock extra goodies!\n\nVote for {username} on top.gg and let's spread even more cuteness together! (づ｡◕‿‿◕｡)づ"
@@ -460,6 +465,26 @@
 				}
 			},
 			"kyth": {
+				"vote": {
+					"add": {
+						"success": "✅ Successfully added **{amount}** vote points to {user}.\nNew balance: **{total}** points."
+					},
+					"remove": {
+						"insufficient": "❌ {user} does not have enough vote points.",
+						"success": "✅ Successfully removed **{amount}** vote points from {user}.\nNew balance: **{total}** points."
+					},
+					"reset": {
+						"user": {
+							"success": "✅ Successfully reset vote points for {user}."
+						},
+						"all": {
+							"success": "✅ Successfully reset all user vote points to 0."
+						}
+					},
+					"info": {
+						"display": "📊 **Vote Info for {user}**\n\n**Total Points:** {points}\n**Last Voted:** {lastVoted}\n**Expiration:** {expiresAt}\n**Has Active Vote:** {hasVotedStatus}"
+					}
+				},
 				"team": {
 					"list": {
 						"empty": "📋 The Kythia Team is currently empty.",

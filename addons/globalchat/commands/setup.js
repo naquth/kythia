@@ -21,8 +21,8 @@ module.exports = {
 			.setDescription(
 				'Setup a global chat channel for cross-server interaction',
 			)
-			.addChannelOption((opt) =>
-				opt
+			.addChannelOption((option) =>
+				option
 					.setName('channel')
 					.setDescription('Select a channel for global chat (optional)')
 					.addChannelTypes(ChannelType.GuildText)

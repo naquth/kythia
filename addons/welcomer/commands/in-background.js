@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('in-background')
 			.setDescription('👋 Set welcome banner background URL')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('url')
 					.setDescription(
 						'Direct URL to the background image (must start with http)',

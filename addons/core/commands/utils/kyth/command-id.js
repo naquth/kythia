@@ -6,27 +6,20 @@
  * @version 1.0.0-rc
  */
 
-const {
-	MessageFlags,
-	SlashCommandBuilder,
-	InteractionContextType,
-	PermissionFlagsBits,
-} = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
-	slashCommand: new SlashCommandBuilder()
-		.setName('command-id')
-		.setDescription("🔍 Find a command's ID and generate its mention.")
-		.addStringOption((opt) =>
-			opt
-				.setName('name')
-				.setDescription('The name of the command to look up')
-				.setRequired(true),
-		)
-		.setContexts(InteractionContextType.Guild)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-	ownerOnly: true,
-	mainGuildOnly: true,
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('command-id')
+			.setDescription("🔍 Find a command's ID and generate its mention.")
+			.addStringOption((option) =>
+				option
+					.setName('name')
+					.setDescription('The name of the command to look up')
+					.setRequired(true),
+			),
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

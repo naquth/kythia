@@ -15,8 +15,8 @@ module.exports = {
 		subcommand
 			.setName('status')
 			.setDescription('📊 Set bot status only')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('status')
 					.setDescription('Bot status')
 					.setRequired(true)

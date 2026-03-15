@@ -43,24 +43,24 @@ module.exports = {
 		subcommand
 			.setName('autosetup')
 			.setDescription('⚙️ Auto-create all Minecraft stat channels in one go')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('host')
 					.setDescription(
 						'Minecraft server IP or hostname (e.g. mc.hypixel.net)',
 					)
 					.setRequired(true),
 			)
-			.addIntegerOption((opt) =>
-				opt
+			.addIntegerOption((option) =>
+				option
 					.setName('port')
 					.setDescription('Server port (default: 25565)')
 					.setRequired(false)
 					.setMinValue(1)
 					.setMaxValue(65535),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('category_name')
 					.setDescription(
 						'Name for the new category (default: ⛏️ Minecraft Server)',

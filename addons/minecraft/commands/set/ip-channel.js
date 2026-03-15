@@ -16,8 +16,8 @@ module.exports = {
 		subcommand
 			.setName('ip-channel')
 			.setDescription('📢 Set a channel to display the Minecraft server IP')
-			.addChannelOption((opt) =>
-				opt
+			.addChannelOption((option) =>
+				option
 					.setName('channel')
 					.setDescription('Channel to display the server IP')
 					.setRequired(true),

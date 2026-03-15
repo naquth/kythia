@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('afk')
 			.setDescription('😴 Set bot AFK status')
-			.addBooleanOption((opt) =>
-				opt
+			.addBooleanOption((option) =>
+				option
 					.setName('afk')
 					.setDescription('Whether to set as AFK')
 					.setRequired(true),

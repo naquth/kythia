@@ -16,8 +16,8 @@ module.exports = {
 		subcommand
 			.setName('status-channel')
 			.setDescription('📢 Set a channel to display the Minecraft server status')
-			.addChannelOption((opt) =>
-				opt
+			.addChannelOption((option) =>
+				option
 					.setName('channel')
 					.setDescription('Channel to display the server status')
 					.setRequired(true),

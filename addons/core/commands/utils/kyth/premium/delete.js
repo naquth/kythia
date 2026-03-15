@@ -13,8 +13,8 @@ module.exports = {
 		subcommand
 			.setName('delete')
 			.setDescription('Remove a user from premium')
-			.addUserOption((opt) =>
-				opt
+			.addUserOption((option) =>
+				option
 					.setName('user')
 					.setDescription('User to remove premium from')
 					.setRequired(true),

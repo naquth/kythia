@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('username')
 			.setDescription('👤 Change bot username')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('username')
 					.setDescription('New username (2-32 characters)')
 					.setRequired(true)

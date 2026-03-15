@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('role')
 			.setDescription('👋 Set auto-role given to new members on join')
-			.addRoleOption((opt) =>
-				opt
+			.addRoleOption((option) =>
+				option
 					.setName('role')
 					.setDescription('Role to assign on join')
 					.setRequired(true),

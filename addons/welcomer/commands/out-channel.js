@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('out-channel')
 			.setDescription('👋 Set the farewell channel')
-			.addChannelOption((opt) =>
-				opt
+			.addChannelOption((option) =>
+				option
 					.setName('channel')
 					.setDescription('Channel where farewell messages are sent')
 					.setRequired(true),

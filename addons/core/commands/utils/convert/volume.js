@@ -15,22 +15,22 @@ module.exports = {
 		subcommand
 			.setName('volume')
 			.setDescription('🧪 Convert volume units (e.g. L to gal)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('from')
 					.setDescription('From unit')
 					.setRequired(true)
 					.addChoices(...volumeChoices),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('to')
 					.setDescription('To unit')
 					.setRequired(true)
 					.addChoices(...volumeChoices),
 			)
-			.addNumberOption((opt) =>
-				opt
+			.addNumberOption((option) =>
+				option
 					.setName('value')
 					.setDescription('Value to convert')
 					.setRequired(true),

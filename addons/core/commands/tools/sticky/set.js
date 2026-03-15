@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('set')
 			.setDescription('Sets a sticky message for this channel.')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('message')
 					.setDescription('The content of the sticky message.')
 					.setRequired(true),

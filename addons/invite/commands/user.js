@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('user')
 			.setDescription('Check user invites')
-			.addUserOption((opt) =>
-				opt.setName('user').setDescription('User').setRequired(false),
+			.addUserOption((option) =>
+				option.setName('user').setDescription('User').setRequired(false),
 			),
 
 	/**

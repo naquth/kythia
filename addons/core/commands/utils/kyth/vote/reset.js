@@ -1,0 +1,78 @@
+/**
+ * @namespace: addons/core/commands/utils/kyth/vote/reset.js
+ * @type: Subcommand
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { Op } = require('sequelize');
+
+module.exports = {
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('reset')
+			.setDescription('Reset vote points for a user or all users')
+			.addUserOption((option) =>
+				option
+					.setName('user')
+					.setDescription(
+						'The user to reset points for (leave empty for ALL users)',
+					)
+					.setRequired(false),
+			),
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async execute(interaction, container) {
+		const { t, models, helpers } = container;
+		const { simpleContainer } = helpers.discord;
+		const { KythiaUser } = models;
+
+		const targetUser = interaction.options.getUser('user');
+
+		await interaction.deferReply();
+
+		try {
+			if (targetUser) {
+				const userRecord = await KythiaUser.getCache({ userId: targetUser.id });
+				if (userRecord) {
+					userRecord.votePoints = 0;
+					await userRecord.save();
+				}
+
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.utils.kyth.vote.reset.user.success', {
+						user: targetUser.toString(),
+					}),
+					{ mode: 'success' },
+				);
+				await interaction.editReply({ components });
+			} else {
+				// Bulk reset all vote points
+				await KythiaUser.update(
+					{ votePoints: 0 },
+					{ where: { votePoints: { [Op.gt]: 0 } } },
+				);
+
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.utils.kyth.vote.reset.all.success'),
+					{ mode: 'success' },
+				);
+				await interaction.editReply({ components });
+			}
+		} catch (error) {
+			container.logger.error(error);
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'common.error'),
+				{ mode: 'error' },
+			);
+			await interaction.editReply({ components });
+		}
+	},
+};

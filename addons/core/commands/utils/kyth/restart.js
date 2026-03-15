@@ -14,35 +14,30 @@ const {
 	ActionRowBuilder,
 	SeparatorBuilder,
 	TextDisplayBuilder,
-	SlashCommandBuilder,
 	SeparatorSpacingSize,
-	InteractionContextType,
-	PermissionFlagsBits,
 } = require('discord.js');
 
 let restartTimer = null;
 
 module.exports = {
-	slashCommand: new SlashCommandBuilder()
-		.setName('restart')
-		.setDescription('🔁 Restarts the bot with optional scheduler.')
-		.addIntegerOption((option) =>
-			option
-				.setName('minutes')
-				.setDescription('⏱️ Restart in X minutes (e.g. 30)')
-				.setMinValue(1),
-		)
-		.addStringOption((option) =>
-			option
-				.setName('time')
-				.setDescription(
-					'⏰ Restart at specific time (Format HH:mm, e.g. 23:59)',
-				),
-		)
-		.setContexts(InteractionContextType.Guild)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-	ownerOnly: true,
-	mainGuildOnly: true,
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('restart')
+			.setDescription('🔁 Restarts the bot with optional scheduler.')
+			.addIntegerOption((option) =>
+				option
+					.setName('minutes')
+					.setDescription('⏱️ Restart in X minutes (e.g. 30)')
+					.setMinValue(1),
+			)
+			.addStringOption((option) =>
+				option
+					.setName('time')
+					.setDescription(
+						'⏰ Restart at specific time (Format HH:mm, e.g. 23:59)',
+					),
+			),
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

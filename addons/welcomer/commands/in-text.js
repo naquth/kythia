@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('in-text')
 			.setDescription('👋 Set welcome message text (supports placeholders)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('text')
 					.setDescription(
 						'Welcome text. Placeholders: {username}, {guildName}, {memberCount}, etc.',

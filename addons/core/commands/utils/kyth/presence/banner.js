@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('banner')
 			.setDescription('🎨 Change bot banner')
-			.addAttachmentOption((opt) =>
-				opt
+			.addAttachmentOption((option) =>
+				option
 					.setName('image')
 					.setDescription('New banner image')
 					.setRequired(true),

@@ -13,14 +13,14 @@ module.exports = {
 		subcommand
 			.setName('add')
 			.setDescription('Add a user to premium')
-			.addUserOption((opt) =>
-				opt
+			.addUserOption((option) =>
+				option
 					.setName('user')
 					.setDescription('User to grant premium')
 					.setRequired(true),
 			)
-			.addIntegerOption((opt) =>
-				opt
+			.addIntegerOption((option) =>
+				option
 					.setName('days')
 					.setDescription('Number of premium days (default 30)')
 					.setRequired(false),

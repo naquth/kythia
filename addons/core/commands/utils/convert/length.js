@@ -15,22 +15,22 @@ module.exports = {
 		subcommand
 			.setName('length')
 			.setDescription('📏 Convert length units (e.g. m to km)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('from')
 					.setDescription('From unit')
 					.setRequired(true)
 					.addChoices(...lengthChoices),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('to')
 					.setDescription('To unit')
 					.setRequired(true)
 					.addChoices(...lengthChoices),
 			)
-			.addNumberOption((opt) =>
-				opt
+			.addNumberOption((option) =>
+				option
 					.setName('value')
 					.setDescription('Value to convert')
 					.setRequired(true),

@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('out-text')
 			.setDescription('👋 Set farewell message text (supports placeholders)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('text')
 					.setDescription(
 						'Farewell text. Placeholders: {username}, {guildName}, etc.',

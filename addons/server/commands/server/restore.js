@@ -14,14 +14,14 @@ module.exports = {
 		subcommand
 			.setName('restore')
 			.setDescription('Restore server structure from a JSON backup file')
-			.addAttachmentOption((opt) =>
-				opt
+			.addAttachmentOption((option) =>
+				option
 					.setName('file')
 					.setDescription('Server backup file (.json)')
 					.setRequired(true),
 			)
-			.addBooleanOption((opt) =>
-				opt
+			.addBooleanOption((option) =>
+				option
 					.setName('clear')
 					.setDescription('Delete all channels & roles first?')
 					.setRequired(false),

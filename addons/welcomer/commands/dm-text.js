@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('dm-text')
 			.setDescription('✉️ Set DM message sent to new members on join')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('text')
 					.setDescription(
 						'DM text. Supports placeholders like {username}, {guildName}.',

@@ -16,8 +16,8 @@ module.exports = {
 		subcommand
 			.setName('ip')
 			.setDescription('🖥️ Set the Minecraft server IP for this guild')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('ip')
 					.setDescription('Minecraft server IP address')
 					.setRequired(true),

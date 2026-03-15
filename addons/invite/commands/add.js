@@ -14,11 +14,11 @@ module.exports = {
 		subcommand
 			.setName('add')
 			.setDescription('Add invites to a user (Admin only)')
-			.addUserOption((opt) =>
-				opt.setName('user').setDescription('User').setRequired(true),
+			.addUserOption((option) =>
+				option.setName('user').setDescription('User').setRequired(true),
 			)
-			.addIntegerOption((opt) =>
-				opt.setName('number').setDescription('Amount').setRequired(true),
+			.addIntegerOption((option) =>
+				option.setName('number').setDescription('Amount').setRequired(true),
 			),
 	permissions: [
 		PermissionFlagsBits.ManageGuild,

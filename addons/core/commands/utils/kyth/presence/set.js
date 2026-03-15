@@ -15,28 +15,28 @@ module.exports = {
 		subcommand
 			.setName('set')
 			.setDescription('🔄 Set bot presence (status + activity)')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('status')
 					.setDescription('Bot status')
 					.setRequired(true)
 					.addChoices(...STATUS_OPTIONS),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('type')
 					.setDescription('Activity type')
 					.setRequired(true)
 					.addChoices(...ACTIVITY_TYPE_OPTIONS),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('activity')
 					.setDescription('Activity name')
 					.setRequired(true),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('url')
 					.setDescription(
 						'Streaming URL (Twitch/YouTube, required for streaming)',

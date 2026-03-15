@@ -16,8 +16,8 @@ module.exports = {
 		subcommand
 			.setName('port-channel')
 			.setDescription('📢 Set a channel to display the Minecraft server port')
-			.addChannelOption((opt) =>
-				opt
+			.addChannelOption((option) =>
+				option
 					.setName('channel')
 					.setDescription('Channel to display the server port')
 					.setRequired(true),

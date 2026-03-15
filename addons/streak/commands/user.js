@@ -15,8 +15,8 @@ module.exports = {
 		subcommand
 			.setName('user')
 			.setDescription('Lihat streak user lain.')
-			.addUserOption((opt) =>
-				opt
+			.addUserOption((option) =>
+				option
 					.setName('target')
 					.setDescription('User yang ingin dicek streak-nya')
 					.setRequired(false),

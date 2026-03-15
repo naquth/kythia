@@ -13,8 +13,8 @@ module.exports = {
 		subcommand
 			.setName('edit')
 			.setDescription('Edit a premium user')
-			.addUserOption((opt) =>
-				opt
+			.addUserOption((option) =>
+				option
 					.setName('user')
 					.setDescription('User to edit premium access')
 					.setRequired(true),

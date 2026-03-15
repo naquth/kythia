@@ -6,21 +6,12 @@
  * @version 1.0.0-rc
  */
 
-const {
-	SlashCommandBuilder,
-	InteractionContextType,
-	MessageFlags,
-	PermissionFlagsBits,
-} = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
-	slashCommand: new SlashCommandBuilder()
-		.setName('flush')
-		.setDescription('💥 Flush Redis Cache (Global)')
-		.setContexts(InteractionContextType.Guild)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-	ownerOnly: true,
-	mainGuildOnly: true,
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand.setName('flush').setDescription('💥 Flush Redis Cache (Global)'),
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
 	 * @param {KythiaDI.Container} container

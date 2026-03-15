@@ -14,8 +14,8 @@ module.exports = {
 		subcommand
 			.setName('avatar')
 			.setDescription('🖼️ Change bot avatar')
-			.addAttachmentOption((opt) =>
-				opt
+			.addAttachmentOption((option) =>
+				option
 					.setName('image')
 					.setDescription('New avatar image')
 					.setRequired(true),

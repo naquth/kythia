@@ -13,8 +13,8 @@ module.exports = {
 		subcommand
 			.setName('add')
 			.setDescription('Add a new quick-reply snippet.')
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('name')
 					.setDescription(
 						'Short name/trigger for the snippet (e.g. "hello", "scam").',
@@ -22,8 +22,8 @@ module.exports = {
 					.setRequired(true)
 					.setMaxLength(32),
 			)
-			.addStringOption((opt) =>
-				opt
+			.addStringOption((option) =>
+				option
 					.setName('content')
 					.setDescription('The snippet text content.')
 					.setRequired(true)

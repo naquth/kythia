@@ -40,48 +40,46 @@ Kythia is packed with a massive amount of features, all organized into a clean, 
 
 Here's a glimpse of what Kythia has to offer:
 
-### 🛡️ Core Features (from the `core` addon)
-
-*   **Advanced Moderation:** A full suite of moderation commands, including `ban`, `kick`, `mute`, `warn`, `clear`, and more.
-*   **Automod:** Automatically delete messages containing spam, bad words, or other unwanted content.
-*   **Logging:** Keep track of everything that happens on your server with detailed logs for message deletions, member joins, and more.
-*   **Customizable Settings:** Configure the bot's prefix, welcome messages, and other settings to your liking.
-*   **Powerful Tools:** A variety of tools to help you manage your server, such as `sticky` messages, `embed` builders, and `hash` crackers.
+### 🛡️ Core & Moderation
+*   **Core Systems (`core`):** Essential tools, settings, advanced moderation commands (`ban`, `kick`, `mute`, `warn`, `clear`), currency conversion, and maintenance mode.
+*   **Automod (`automod`):** Automatically detect and manage spam, duplicate messages, zalgo, fast messages, and bad words.
+*   **Verification (`verification`):** Secure your server with a robust verification system.
+*   **Welcomer (`welcomer`):** Welcome new members with customizable cards featuring avatar decorations and badges!
+*   **Logging:** Comprehensive logging for errors, votes, and events.
 
 ### 🎉 Engagement & Fun
-
-*   **Adventure Game (`adventure`):** Embark on an epic text-based adventure, fight monsters, and collect loot!
-*   **Economy System (`economy`):** Earn virtual currency, rob your friends, and gamble your way to riches.
-*   **Music (`music`):** Listen to your favorite tunes with a feature-rich music player.
-*   **Pets (`pet`):** Adopt and raise your own virtual pet.
-*   **NSFW (`nsfw`):** For the more... adventurous servers.
-*   **And more!** Including `fun` games, `giveaways`, and `streaks`.
+*   **Economy (`economy`):** Earn virtual currency, work, daily rewards, rob your friends, and gamble your way to riches.
+*   **Adventure Game (`adventure`):** Embark on an epic text-based RPG adventure, fight monsters, and collect loot!
+*   **Pets (`pet`):** Adopt, raise, and gacha your own virtual pets.
+*   **Music (`music`):** Listen to your favorite tunes with a feature-rich, Lavalink-powered music player with Spotify support.
+*   **Leveling (`leveling`):** Reward your users for their activity with a customizable leveling system and profile cards.
+*   **Fun & Games (`fun`):** Enjoy interactive games like Wordle.
+*   **Global Chat (`globalchat`):** Connect and chat with users across different servers!
 
 ### 🚀 Server Management & Utility
-
-*   **Ticket System (`ticket`):** A complete ticket system to help you manage user support requests.
+*   **Ticket System (`ticket`):** A complete ticket system and `modmail` to help you manage user support requests.
 *   **Suggestions (`suggestion`):** Allow users to submit suggestions and vote on their favorites.
-*   **Clan System (`clan`):** Create and manage clans for your server members.
-*   **Leveling System (`leveling`):** Reward your users for their activity with a customizable leveling system.
-*   **And much more!** Including `invite` tracking, `server` templates, and `pterodactyl` integration.
+*   **Social Alerts (`social-alerts`):** Get notified for new content from YouTube and TikTok.
+*   **Temporary Voice (`tempvoice`):** Allow users to create and manage their own temporary voice channels.
+*   **Giveaways (`giveaway`):** Host and manage giveaways easily.
+*   **Reaction Roles (`reaction-role`):** Allow members to self-assign roles using emojis.
 
 ### ✨ And Many More Addons!
-
-Kythia comes with a huge collection of addons, including:
-
-*   `ai`
-*   `checklist`
-*   `dashboard`
-*   `minecraft`
-*   `nuke`
-*   `store`
-*   `testimony`
+Kythia comes with a huge collection of modular addons, including:
+*   `ai` (Powered by Google Gemini)
+*   `autoreact` & `autoreply`
+*   `birthday` & `checklist`
+*   `embed-builder` & `image`
+*   `invite` tracking
+*   `minecraft` integration
+*   `pro` (Cloudflare integration)
+*   `quest`, `server`, `store`, `streak`, `testimony`
 
 ...and the list is always growing!
 
 ---
 
-## 🤔 Why Kythia?
+## 🌸 Why Kythia?
 
 There are many Discord bots out there, but Kythia stands out from the crowd. Here's why:
 
@@ -252,7 +250,7 @@ This project is licensed under the CC BY-NC 4.0 License. See the [LICENSE](LICEN
 Copyright © 2025 Kythia Labs - All rights reserved.
 
 > [!IMPORTANT]
-> **License Required:** Use of this bot requires a valid license from the author. For commercial use or to obtain a license, please contact us at [kenndeclouv@gmail.com](mailto:kenndeclouv@gmail.com).
+> **License Required:** Use of this bot requires a valid license from the author. For commercial use or to obtain a license, please contact me at [kenndeclouv@gmail.com](mailto:kenndeclouv@gmail.com) OR join official discord server [Discord](https://dsc.gg/kythia)
 
 ---
 
@@ -264,3 +262,16 @@ Need help or want to connect with other Kythia users? Join our community!
 *   **🔑 Portal:** [portal.kythia.xyz](https://portal.kythia.xyz)
 *   **💬 Discord Server:** [dsc.gg/kythia](https://dsc.gg/kythia)
 *   **📧 Email:** [kenndeclouv@gmail.com](mailto:kenndeclouv@gmail.com)
+
+
+## Special Thanks
+
+* **One and only GOD**
+* **Contributors**
+   - [idMJA](https://github.com/idMJA)
+* **Testers**
+   - [Naqent](https://github.com/naqent)
+   - [Razaeldotexe](https://github.com/razaeldotexe)
+   - [Aryandita](https://github.com/Aryandita)
+* **Special Mention**
+   - [Colly](https://github.com/collygit1)

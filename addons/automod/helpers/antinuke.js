@@ -123,13 +123,21 @@ async function executeAction(guild, member, action, reason) {
 	switch (action) {
 		case 'ban':
 			if (!member.bannable) return false;
-			await member.ban({ reason, deleteMessageSeconds: 0 });
-			return true;
+			try {
+				await member.ban({ reason, deleteMessageSeconds: 0 });
+				return true;
+			} catch {
+				return false;
+			}
 
 		case 'kick':
 			if (!member.kickable) return false;
-			await member.kick(reason);
-			return true;
+			try {
+				await member.kick(reason);
+				return true;
+			} catch {
+				return false;
+			}
 
 		case 'dehoistRole':
 			// Strip ALL roles except @everyone AND managed roles

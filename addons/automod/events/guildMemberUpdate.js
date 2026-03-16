@@ -11,6 +11,7 @@
 
 const { AuditLogEvent, PermissionFlagsBits } = require('discord.js');
 const { checkInstant } = require('../helpers/antinuke');
+const { getAntiNukeConfig } = require('../helpers/antinuke');
 
 module.exports = async (bot, oldMember, newMember) => {
 	if (!newMember.guild) return;
@@ -24,6 +25,19 @@ module.exports = async (bot, oldMember, newMember) => {
 			PermissionFlagsBits.Administrator,
 		);
 		if (hadAdmin || !hasAdmin) return; // only care about newly granted
+
+		// Early exit if antiNuke is not enabled — avoids useless API calls
+		const { ServerSetting } = bot.client.container.models;
+		const settings = await ServerSetting.getCache({
+			guildId: newMember.guild.id,
+		}).catch(() => null);
+		const config = getAntiNukeConfig(settings);
+		if (!config.enabled) return;
+		if (!config.modules?.adminGrant?.enabled) return;
+
+		// Bot must have ViewAuditLog permission to fetch audit logs
+		const me = newMember.guild.members.me;
+		if (!me?.permissions.has(PermissionFlagsBits.ViewAuditLog)) return;
 
 		// Find who granted it
 		const audit = await newMember.guild.fetchAuditLogs({
@@ -44,9 +58,13 @@ module.exports = async (bot, oldMember, newMember) => {
 			detail: `Granted Administrator to ${newMember.user.tag}`,
 		});
 	} catch (err) {
-		bot.client.container.logger.error(
-			'[AntiNuke] guildMemberUpdate (adminGrant) error:',
-			err,
-		);
+		// Log non-permission errors only, permission errors are expected
+		// when bot doesn't have required permissions in certain guilds
+		if (err?.code !== 50013) {
+			bot.client.container.logger.error(
+				'[AntiNuke] guildMemberUpdate (adminGrant) error:',
+				err,
+			);
+		}
 	}
 };

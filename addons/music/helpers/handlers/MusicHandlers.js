@@ -782,6 +782,7 @@ class MusicHandlers {
 	async handleStop(interaction, player) {
 		player.autoplay = false;
 		player.manualStop = true;
+		player.loop = 'NONE';
 		player.trackRepeat = false;
 		player.queueRepeat = false;
 
@@ -986,6 +987,8 @@ class MusicHandlers {
 				interaction,
 				'music.helpers.handlers.music.nowplaying.text',
 				{
+					title: track.info.title,
+					url: track.info.uri,
 					duration: formatTrackDuration(track.info.length),
 					author: track.info.author,
 				},
@@ -1010,9 +1013,11 @@ class MusicHandlers {
 		if (interaction.isChatInputCommand()) {
 			nextMode = interaction.options.getString('mode');
 		} else {
-			if (!player.trackRepeat && !player.queueRepeat) {
+			// Determine current state from Poru's native loop property
+			const currentLoop = player.loop || 'NONE';
+			if (currentLoop === 'NONE') {
 				nextMode = 'track';
-			} else if (player.trackRepeat) {
+			} else if (currentLoop === 'TRACK') {
 				nextMode = 'queue';
 			} else {
 				nextMode = 'off';
@@ -1023,6 +1028,9 @@ class MusicHandlers {
 
 		switch (nextMode) {
 			case 'track':
+				// Set Poru's native loop property so it actually repeats the track
+				player.loop = 'TRACK';
+				// Keep custom booleans for UI state checks
 				player.trackRepeat = true;
 				player.queueRepeat = false;
 				descriptionText = await this.t(
@@ -1031,6 +1039,8 @@ class MusicHandlers {
 				);
 				break;
 			case 'queue':
+				// Set Poru's native loop property for queue repeat
+				player.loop = 'QUEUE';
 				player.trackRepeat = false;
 				player.queueRepeat = true;
 				descriptionText = await this.t(
@@ -1039,6 +1049,8 @@ class MusicHandlers {
 				);
 				break;
 			default:
+				// Turn off all looping
+				player.loop = 'NONE';
 				player.trackRepeat = false;
 				player.queueRepeat = false;
 				descriptionText = await this.t(
@@ -1079,6 +1091,8 @@ class MusicHandlers {
 		player.autoplay = nextState;
 
 		if (player.autoplay) {
+			// Disable all loop modes when autoplay is on
+			player.loop = 'NONE';
 			player.trackRepeat = false;
 			player.queueRepeat = false;
 		}
@@ -1169,7 +1183,6 @@ class MusicHandlers {
 	 * @param {Map} guildStates - The passed guildStates map.
 	 */
 	async handleBack(interaction, player, guildStates) {
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 		const container = interaction.client.container;
 		const { logger } = container;
 		try {
@@ -1181,6 +1194,10 @@ class MusicHandlers {
 				!guildState.previousTracks ||
 				guildState.previousTracks.length === 0
 			) {
+				// Already handled — just use reply directly if not yet deferred
+				if (!interaction.deferred && !interaction.replied) {
+					await interaction.deferReply();
+				}
 				const components = await this.simpleContainer(
 					interaction,
 					await this.t(
@@ -1197,13 +1214,20 @@ class MusicHandlers {
 
 			const previousTrack = guildState.previousTracks.shift();
 
+			if (!interaction.deferred && !interaction.replied) {
+				await interaction.deferReply();
+			}
+
 			if (player.currentTrack) {
 				player.queue.unshift(player.currentTrack);
 			}
 
 			player.queue.unshift(previousTrack);
 
+			player._isGoingBack = true;
 			player.skip();
+
+			player._isGoingBack = false;
 
 			const components = await this.simpleContainer(
 				interaction,
@@ -1222,9 +1246,19 @@ class MusicHandlers {
 		} catch (error) {
 			logger.error('[HandleBack] Error:', error);
 
-			return interaction.editReply({
-				content: '❌ An error occurred while trying to go back.',
-			});
+			try {
+				if (!interaction.deferred && !interaction.replied) {
+					return await interaction.reply({
+						content: '❌ An error occurred while trying to go back.',
+						flags: MessageFlags.Ephemeral,
+					});
+				}
+				return await interaction.editReply({
+					content: '❌ An error occurred while trying to go back.',
+				});
+			} catch (_e) {
+				// Interaction may have expired — nothing we can do
+			}
 		}
 	}
 	/**

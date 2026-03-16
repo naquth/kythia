@@ -149,6 +149,7 @@ class MusicManager {
 			player._247 = false;
 			player._latestSuggestionRow = null;
 			player.disconnectTimeout = null;
+			player._isGoingBack = false;
 
 			this.broadcastUpdate(player, 'playerCreate');
 		});
@@ -276,8 +277,14 @@ class MusicManager {
 				};
 				this.guildStates.set(player.guildId, state);
 			}
-			state.previousTracks.unshift(track);
-			if (state.previousTracks.length > 10) state.previousTracks.pop();
+
+			// Don't add to history when we're explicitly going back —
+			// handleBack already manages history via previousTracks.shift().
+			// Also guard against Poru emitting trackEnd with null track (e.g. during loop repeat).
+			if (!player._isGoingBack && track) {
+				state.previousTracks.unshift(track);
+				if (state.previousTracks.length > 10) state.previousTracks.pop();
+			}
 
 			if (player.updateInterval) clearInterval(player.updateInterval);
 
@@ -287,11 +294,8 @@ class MusicManager {
 				} catch (_e) {}
 				player.buttonCollector = null;
 			}
-			if (player.trackRepeat) {
-				player.queue.add(track);
-			} else if (player.queueRepeat) {
-				player.queue.add(track);
-			}
+			// Note: Poru/Lavalink handles trackRepeat and queueRepeat internally via player.loop.
+			// Manually adding to queue here caused double-queueing and wrong-song bugs.
 		});
 
 		/**
@@ -698,14 +702,6 @@ class MusicManager {
 					!player.currentTrack
 				) {
 					continue;
-				}
-				const track = player.currentTrack;
-				if (track.info) {
-					if (!track.info.isStream && track.info.length > 0) {
-						if (player.position >= track.info.length - 5000) {
-							continue;
-						}
-					}
 				}
 				await this.updateNowPlayingUI(player);
 			} catch (e) {

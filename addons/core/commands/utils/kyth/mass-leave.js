@@ -68,64 +68,139 @@ module.exports = {
 
 		const customMsgContainer = await simpleContainer(interaction, customMsg);
 
-		const targets = client.guilds.cache.filter(
-			(g) => g.memberCount < threshold && !SAFE_GUILDS.includes(g.id),
-		);
-
-		if (targets.size === 0) {
-			const components = await simpleContainer(
-				interaction,
-				await t(interaction, 'core.utils.kyth.mass-leave.empty', {
-					threshold,
-				}),
-			);
-			return interaction.editReply({
-				components,
-				flags: MessageFlags.IsComponentsV2,
-			});
-		}
-
 		let leftCount = 0;
 		let errorCount = 0;
 		const leftNames = [];
 
-		for (const [, guild] of targets) {
-			try {
-				let channel = guild.systemChannel;
-				if (!channel) {
-					channel = guild.channels.cache.find(
-						(c) =>
-							c.isTextBased() &&
-							c.permissionsFor(guild.members.me).has('SendMessages') &&
-							(c.name.includes('general') ||
-								c.name.includes('chat') ||
-								c.name.includes('obrolan')),
+		if (client.shard) {
+			const results = await client.shard.broadcastEval(
+				async (c, context) => {
+					const localTargets = c.guilds.cache.filter(
+						(g) =>
+							g.memberCount < context.threshold &&
+							!context.SAFE_GUILDS.includes(g.id),
 					);
-				}
-				if (!channel) {
-					channel = guild.channels.cache.find(
-						(c) =>
-							c.isTextBased() &&
-							c.permissionsFor(guild.members.me).has('SendMessages'),
-					);
-				}
-				if (channel) {
-					await channel
-						.send({
-							components: customMsgContainer,
-							flags: MessageFlags.IsComponentsV2,
-						})
-						.catch(() => null);
-				}
-				await guild.leave();
-				leftCount++;
-				leftNames.push(`${guild.name} (${guild.memberCount})`);
-				await new Promise((r) => setTimeout(r, 1000));
-			} catch (e) {
-				logger.error(`Failed to cleanup guild ${guild.name}:`, e, {
-					label: 'leave-guild',
+
+					if (localTargets.size === 0)
+						return { leftCount: 0, errorCount: 0, leftNames: [] };
+
+					let lCount = 0;
+					let eCount = 0;
+					const lNames = [];
+
+					for (const [, guild] of localTargets) {
+						try {
+							let channel = guild.systemChannel;
+							if (!channel) {
+								channel = guild.channels.cache.find(
+									(ch) =>
+										ch.isTextBased() &&
+										ch.permissionsFor(guild.members.me).has('SendMessages') &&
+										(ch.name.includes('general') ||
+											ch.name.includes('chat') ||
+											ch.name.includes('obrolan')),
+								);
+							}
+							if (!channel) {
+								channel = guild.channels.cache.find(
+									(ch) =>
+										ch.isTextBased() &&
+										ch.permissionsFor(guild.members.me).has('SendMessages'),
+								);
+							}
+							if (channel) {
+								await channel
+									.send({
+										content: context.customMsg,
+									})
+									.catch(() => null);
+							}
+							await guild.leave();
+							lCount++;
+							lNames.push(`${guild.name} (${guild.memberCount})`);
+							// Delay 1s per guild leave to avoid ratelimits
+							await new Promise((r) => setTimeout(r, 1000));
+						} catch {
+							eCount++;
+						}
+					}
+					return { leftCount: lCount, errorCount: eCount, leftNames: lNames };
+				},
+				{ context: { threshold, SAFE_GUILDS, customMsg } },
+			);
+
+			leftCount = results.reduce((acc, r) => acc + r.leftCount, 0);
+			errorCount = results.reduce((acc, r) => acc + r.errorCount, 0);
+			leftNames.push(...results.flatMap((r) => r.leftNames));
+
+			if (leftCount === 0 && errorCount === 0) {
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.utils.kyth.mass-leave.empty', {
+						threshold,
+					}),
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
 				});
-				errorCount++;
+			}
+		} else {
+			const targets = client.guilds.cache.filter(
+				(g) => g.memberCount < threshold && !SAFE_GUILDS.includes(g.id),
+			);
+
+			if (targets.size === 0) {
+				const components = await simpleContainer(
+					interaction,
+					await t(interaction, 'core.utils.kyth.mass-leave.empty', {
+						threshold,
+					}),
+				);
+				return interaction.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+
+			for (const [, guild] of targets) {
+				try {
+					let channel = guild.systemChannel;
+					if (!channel) {
+						channel = guild.channels.cache.find(
+							(c) =>
+								c.isTextBased() &&
+								c.permissionsFor(guild.members.me).has('SendMessages') &&
+								(c.name.includes('general') ||
+									c.name.includes('chat') ||
+									c.name.includes('obrolan')),
+						);
+					}
+					if (!channel) {
+						channel = guild.channels.cache.find(
+							(c) =>
+								c.isTextBased() &&
+								c.permissionsFor(guild.members.me).has('SendMessages'),
+						);
+					}
+					if (channel) {
+						await channel
+							.send({
+								components: customMsgContainer,
+								flags: MessageFlags.IsComponentsV2,
+							})
+							.catch(() => null);
+					}
+					await guild.leave();
+					leftCount++;
+					leftNames.push(`${guild.name} (${guild.memberCount})`);
+					await new Promise((r) => setTimeout(r, 1000));
+				} catch (e) {
+					logger.error(`Failed to cleanup guild ${guild.name}:`, e, {
+						label: 'leave-guild',
+					});
+					errorCount++;
+				}
 			}
 		}
 

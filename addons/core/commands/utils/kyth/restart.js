@@ -37,6 +37,22 @@ module.exports = {
 					.setDescription(
 						'⏰ Restart at specific time (Format HH:mm, e.g. 23:59)',
 					),
+			)
+			.addStringOption((option) =>
+				option
+					.setName('target')
+					.setDescription('🎯 What to restart')
+					.addChoices(
+						{ name: 'Current Shard', value: 'current' },
+						{ name: 'All Shards', value: 'all' },
+						{ name: 'Master Process', value: 'master' },
+					),
+			)
+			.addIntegerOption((option) =>
+				option
+					.setName('shard_id')
+					.setDescription('🔢 Specific shard ID to restart (Overrides target)')
+					.setMinValue(0),
 			),
 
 	/**
@@ -50,6 +66,46 @@ module.exports = {
 
 		const minutes = interaction.options.getInteger('minutes');
 		const timeStr = interaction.options.getString('time');
+		const target = interaction.options.getString('target') || 'current';
+		const shardId = interaction.options.getInteger('shard_id');
+
+		const doRestart = async () => {
+			if (shardId !== null) {
+				if (!interaction.client.shard) {
+					process.exit(0);
+				} else {
+					await interaction.client.shard.broadcastEval(
+						(client, context) => {
+							if (client.shard.ids.includes(context.shardId)) {
+								process.exit(0);
+							}
+						},
+						{ context: { shardId } },
+					);
+				}
+				return;
+			}
+
+			if (target === 'all') {
+				if (!interaction.client.shard) {
+					process.exit(0);
+				} else {
+					await interaction.client.shard.respawnAll();
+				}
+				return;
+			}
+
+			if (target === 'master') {
+				if (interaction.client.shard) {
+					process.kill(process.ppid);
+				} else {
+					process.exit(0);
+				}
+				return;
+			}
+
+			process.exit(0);
+		};
 
 		if (minutes || timeStr) {
 			let delayMs = 0;
@@ -91,7 +147,7 @@ module.exports = {
 			if (restartTimer) clearTimeout(restartTimer);
 
 			restartTimer = setTimeout(() => {
-				process.exit(0);
+				doRestart();
 			}, delayMs);
 
 			interaction.client.kythiaRestartTimestamp = targetTime.getTime();
@@ -223,7 +279,7 @@ module.exports = {
 						flags: MessageFlags.IsComponentsV2,
 					});
 				} catch {}
-				setTimeout(() => process.exit(0), 1000);
+				setTimeout(() => doRestart(), 1000);
 			}
 		});
 

@@ -128,11 +128,40 @@ module.exports = {
 
 		const uptime = container.shutdownManager.getMasterUptime();
 		const memory = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
-		const guilds = client.guilds.cache.size;
-		const users = client.guilds.cache.reduce(
+		let guilds = client.guilds.cache.size;
+		let users = client.guilds.cache.reduce(
 			(acc, guild) => acc + guild.memberCount,
 			0,
 		);
+
+		let shardStatusSection = '';
+		if (client.shard) {
+			const shardInfo = await client.shard.broadcastEval((c) => ({
+				id: c.shard.ids[0],
+				ping: Math.round(c.ws.ping),
+				guilds: c.guilds.cache.size,
+				members: c.guilds.cache.reduce(
+					(acc, guild) => acc + guild.memberCount,
+					0,
+				),
+			}));
+
+			guilds = shardInfo.reduce((acc, data) => acc + data.guilds, 0);
+			users = shardInfo.reduce((acc, data) => acc + data.members, 0);
+
+			const totalShards = shardInfo.length;
+			const shardDetails = shardInfo
+				.sort((a, b) => a.id - b.id)
+				.map(
+					(s) =>
+						`> \`#${s.id}\` 🟢 **Operational** • 📶 ${s.ping}ms • 🛡️ ${s.guilds} • 👥 ${s.members}`,
+				)
+				.join('\n');
+
+			shardStatusSection = `\n\n**Shards (${totalShards})**\n${shardDetails}`;
+		} else {
+			shardStatusSection = '\n\n**Shards**\n> `❌` **Sharding Disabled**';
+		}
 		let runtimeDisplay;
 		if (process.versions.bun) {
 			runtimeDisplay = `**Bun:** \`${process.versions.bun}\``;
@@ -167,32 +196,6 @@ module.exports = {
 			cacheHits: cacheHits,
 			cacheMisses: cacheMisses,
 		});
-
-		let shardStatusSection = '';
-		if (client.shard) {
-			const shardInfo = await client.shard.broadcastEval((c) => ({
-				id: c.shard.ids[0],
-				ping: Math.round(c.ws.ping),
-				guilds: c.guilds.cache.size,
-				members: c.guilds.cache.reduce(
-					(acc, guild) => acc + guild.memberCount,
-					0,
-				),
-			}));
-
-			const totalShards = shardInfo.length;
-			const shardDetails = shardInfo
-				.sort((a, b) => a.id - b.id)
-				.map(
-					(s) =>
-						`> \`#${s.id}\` 🟢 **Operational** • 📶 ${s.ping}ms • 🛡️ ${s.guilds} • 👥 ${s.members}`,
-				)
-				.join('\n');
-
-			shardStatusSection = `\n\n**Shards (${totalShards})**\n${shardDetails}`;
-		} else {
-			shardStatusSection = '\n\n**Shards**\n> `❌` **Sharding Disabled**';
-		}
 
 		// Append shard stats to the description
 		const descWithShards = desc + shardStatusSection;

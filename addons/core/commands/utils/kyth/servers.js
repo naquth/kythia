@@ -143,11 +143,24 @@ module.exports = {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-		const guilds = interaction.client.guilds.cache.map((g) => ({
-			id: g.id,
-			name: g.name,
-			members: g.memberCount,
-		}));
+		let guilds = [];
+
+		if (interaction.client.shard) {
+			const results = await interaction.client.shard.broadcastEval((c) =>
+				c.guilds.cache.map((g) => ({
+					id: g.id,
+					name: g.name,
+					members: g.memberCount,
+				})),
+			);
+			guilds = results.flat();
+		} else {
+			guilds = interaction.client.guilds.cache.map((g) => ({
+				id: g.id,
+				name: g.name,
+				members: g.memberCount,
+			}));
+		}
 
 		// Sort by members descending
 		guilds.sort((a, b) => b.members - a.members);

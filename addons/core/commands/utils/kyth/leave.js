@@ -65,8 +65,42 @@ module.exports = {
 			});
 		}
 
-		const guild = client.guilds.cache.get(guildId);
-		if (!guild) {
+		let guildName = 'Unknown Guild';
+		let memberCount = 0;
+		let found = false;
+
+		if (client.shard) {
+			const results = await client.shard.broadcastEval(
+				async (c, context) => {
+					const g = c.guilds.cache.get(context.guildId);
+					if (g) {
+						const gName = g.name;
+						const mCount = g.memberCount;
+						await g.leave();
+						return { found: true, name: gName, members: mCount };
+					}
+					return { found: false };
+				},
+				{ context: { guildId } },
+			);
+
+			const successResult = results.find((r) => r.found);
+			if (successResult) {
+				found = true;
+				guildName = successResult.name;
+				memberCount = successResult.members;
+			}
+		} else {
+			const guild = client.guilds.cache.get(guildId);
+			if (guild) {
+				found = true;
+				guildName = guild.name;
+				memberCount = guild.memberCount;
+				await guild.leave();
+			}
+		}
+
+		if (!found) {
 			const components = await simpleContainer(
 				interaction,
 				await t(interaction, 'core.utils.kyth.leave.not.found', {
@@ -80,15 +114,18 @@ module.exports = {
 			});
 		}
 
-		const guildName = guild.name;
-		const memberCount = guild.memberCount;
-		await guild.leave();
+		const totalServers = client.shard
+			? (await client.shard.broadcastEval((c) => c.guilds.cache.size)).reduce(
+					(acc, size) => acc + size,
+					0,
+				)
+			: client.guilds.cache.size;
 
 		const desc = await t(interaction, 'core.utils.kyth.leave.success', {
 			guildName,
 			guildId,
 			memberCount,
-			serverCount: client.guilds.cache.size,
+			serverCount: totalServers,
 		});
 		const components = await simpleContainer(interaction, desc);
 		return interaction.reply({

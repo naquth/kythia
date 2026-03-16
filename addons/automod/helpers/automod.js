@@ -68,15 +68,21 @@ async function automodSystem(message) {
 	const { ServerSetting } = models;
 	if (message.author.bot || !message.guild) return;
 
-	const { guild, author: user, member } = message;
+	const { guild, author: user } = message;
 
 	const setting = await ServerSetting.getCache({ guildId: guild.id });
 	if (!setting) return;
 
 	if (setting.ignoredChannels?.includes(message.channel.id)) return;
+
+	let member = message.member;
+	if (!member && guild) {
+		member = await guild.members.fetch(user.id).catch(() => null);
+	}
+
 	if (
 		setting.whitelist?.includes(user.id) ||
-		member.roles.cache.some((r) => setting.whitelist?.includes(r.id))
+		member?.roles.cache.some((r) => setting.whitelist?.includes(r.id))
 	)
 		return;
 

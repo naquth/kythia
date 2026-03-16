@@ -289,7 +289,7 @@ class MusicHandlers {
 				{
 					title: track.info.title,
 					url: track.info.uri,
-					duration: track.info.length,
+					duration: formatTrackDuration(track.info.length),
 					author: track.info.author,
 				},
 			);
@@ -446,6 +446,8 @@ class MusicHandlers {
 				interaction,
 				'music.helpers.handlers.music.nowplaying.text',
 				{
+					title: track.info.title,
+					url: track.info.uri,
 					duration: formatTrackDuration(track.info.length),
 					author: track.info.author,
 				},

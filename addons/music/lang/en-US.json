@@ -123,7 +123,7 @@
 					"empty": "❌ The queue is empty.",
 					"nowplaying": {
 						"error": "❌ An error occurred while showing the now playing panel.",
-						"text": "## 🎵 Now Playing\n Duration: `{duration}`\n Author: `{author}`"
+						"text": "## 🎵 Now Playing\n[{title}]({url})\nDuration: `{duration}`\nAuthor: `{author}`"
 					},
 					"track": "🔁 Loop track enabled.",
 					"queue": "🔁 Queue repeat enabled.",

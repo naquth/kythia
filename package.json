@@ -54,7 +54,7 @@
 		"poru-spotify": "^2.0.2",
 		"sequelize": "^6.37.7",
 		"socket.io": "^4.8.1",
-		"sqlite3": "^5.1.7",
+		"sqlite3": "^6.0.1",
 		"tmp": "^0.2.5",
 		"topgg-autoposter": "^2.0.2",
 		"uuid": "^13.0.0",
@@ -121,5 +121,9 @@
 		"es5-ext",
 		"javascript-obfuscator",
 		"unrs-resolver"
-	]
+	],
+	"overrides": {
+		"undici": "6.24.1",
+		"ajv": "8.18.0"
+	}
 }

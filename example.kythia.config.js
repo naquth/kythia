@@ -31,7 +31,7 @@
  *
  * 🆘 RESOURCES:
  *   - Discord Server (Advanced Support Only): https://dsc.gg/kythia
- *   - Documentation: https://kythia.me
+ *   - Documentation: https://portal.kythia.xyz/docs
  *   - README.md: Read it thoroughly before asking anything
  *
  * ⚠️  IMPORTANT NOTES:
@@ -58,7 +58,7 @@ function loadKythiaConfig() {
 		licenseKey: process.env.LICENSE_KEY,
 
 		/** ⚠️  CRITICAL - LEGAL ACCEPTANCE REQUIRED ⚠️
-		 * Read the Terms of Service at https://kythia.me/tos
+		 * Read the Terms of Service at https://kythia.xyz/tos
 		 *
 		 * YOU MUST SET BOTH VALUES TO true TO USE THE BOT:
 		 * - acceptTOS: true     (Accept Terms of Service)
@@ -531,7 +531,7 @@ function loadKythiaConfig() {
 			// Owner's website
 			ownerWeb: 'https://kenndeclouv.me',
 			// Kythia website
-			kythiaWeb: 'https://kythia.me',
+			kythiaWeb: 'https://kythia.xyz',
 			// Banner image URL for embeds or dashboard
 			// you can host it on your own server
 			// or you can use a CDN like Cloudflare Images/ imagekit/ etc

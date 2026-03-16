@@ -25,7 +25,6 @@ module.exports = (bot) => {
 	const PORT = kythiaConfig.addons.api?.port || 3000;
 	const API_SECRET = kythiaConfig.addons.api?.secret || process.env.API_SECRET;
 
-	// Parse comma-separated allowed origins, e.g. "http://localhost:8000,https://kythia.me"
 	const rawAllowedOrigin =
 		kythiaConfig.addons.api?.allowedOrigin ||
 		process.env.API_ALLOWED_ORIGIN ||

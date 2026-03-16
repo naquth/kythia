@@ -107,6 +107,8 @@ module.exports = {
 		const imageName = 'level-profile.png';
 
 		const buffer = await profileImage(targetUser.id, {
+			botToken: kythiaConfig.bot.token,
+
 			customWidth: 1024,
 			customHeight: 450,
 			customTag: `Level ${user.level}`,

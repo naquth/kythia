@@ -27,6 +27,8 @@ module.exports = {
 		const { KythiaVoter } = container.models;
 		const { convertColor } = helpers.color;
 
+		if (!kythiaConfig.api.topgg.authToken) return true;
+
 		const cacheKey = `kythia:middleware:voteLocked:${interaction.user.id}`;
 		let isVoteLocked = await redis.get(cacheKey);
 

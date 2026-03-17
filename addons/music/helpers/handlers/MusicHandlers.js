@@ -172,6 +172,35 @@ class MusicHandlers {
 				deaf: true,
 			});
 
+			if (
+				!player.isPlaying &&
+				guild.members.me?.voice?.channelId === member.voice.channel.id
+			) {
+				const shard = guild.client.ws.shards.get(guild.shardId);
+				if (shard) {
+					shard.send({
+						op: 4,
+						d: {
+							guild_id: guild.id,
+							channel_id: member.voice.channel.id,
+							self_mute: true,
+							self_deaf: true,
+						},
+					});
+					setTimeout(() => {
+						shard.send({
+							op: 4,
+							d: {
+								guild_id: guild.id,
+								channel_id: member.voice.channel.id,
+								self_mute: false,
+								self_deaf: true,
+							},
+						});
+					}, 250);
+				}
+			}
+
 			for (const track of res.tracks) {
 				track.info.requester = interaction.user;
 				player.queue.add(track);
@@ -246,6 +275,35 @@ class MusicHandlers {
 			textChannel: channel.id,
 			deaf: true,
 		});
+
+		if (
+			!player.isPlaying &&
+			guild.members.me?.voice?.channelId === member.voice.channel.id
+		) {
+			const shard = guild.client.ws.shards.get(guild.shardId);
+			if (shard) {
+				shard.send({
+					op: 4,
+					d: {
+						guild_id: guild.id,
+						channel_id: member.voice.channel.id,
+						self_mute: true,
+						self_deaf: true,
+					},
+				});
+				setTimeout(() => {
+					shard.send({
+						op: 4,
+						d: {
+							guild_id: guild.id,
+							channel_id: member.voice.channel.id,
+							self_mute: false,
+							self_deaf: true,
+						},
+					});
+				}, 250);
+			}
+		}
 
 		if (res.loadType === 'playlist' || res.loadType === 'PLAYLIST_LOADED') {
 			for (const track of res.tracks) {
@@ -337,6 +395,32 @@ class MusicHandlers {
 			textChannel: channel.id,
 			deaf: true,
 		});
+
+		if (guild.members.me?.voice?.channelId === member.voice.channel.id) {
+			const shard = guild.client.ws.shards.get(guild.shardId);
+			if (shard) {
+				shard.send({
+					op: 4,
+					d: {
+						guild_id: guild.id,
+						channel_id: member.voice.channel.id,
+						self_mute: true,
+						self_deaf: true,
+					},
+				});
+				setTimeout(() => {
+					shard.send({
+						op: 4,
+						d: {
+							guild_id: guild.id,
+							channel_id: member.voice.channel.id,
+							self_mute: false,
+							self_deaf: true,
+						},
+					});
+				}, 250);
+			}
+		}
 
 		const components = await this.simpleContainer(
 			interaction,

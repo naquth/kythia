@@ -416,6 +416,14 @@ function loadKythiaConfig() {
 				},
 				artworkUrlStyle: 'banner', // thumbnail, banner
 			},
+			nsfw: {
+				// ! WARN: DANGER ZONE! 🔞
+				// By setting this to `true`, you fully acknowledge and accept ALL the risks involved.
+				// This includes your server getting nuked by Discord, getting raided by members,
+				// and most importantly, the ETERNAL SINS YOU WILL CARRY ON YOUR OWN SHOULDERS
+				// Kythia and the Developer hold zero responsibility for your actions.
+				active: false,
+			},
 			pet: {
 				active: true,
 				useCooldown: 28800, // 8 hours

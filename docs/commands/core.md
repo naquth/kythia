@@ -600,16 +600,6 @@
 
 
 
-### 💾 `/debug-cache`
-
-**Description:** 🛠️ [DEV] Run diagnostic tests on KythiaModel (Music Edition).
-
-### 💻 Usage
-
-`/debug-cache`
-
-
-
 ### 💾 `/grab`
 
 **Description:** 🛍️ grab stickers or emojis from messages.
@@ -727,6 +717,16 @@
 - **`user`**
   - **Description:** User to get info about
   - **Type:** User
+
+
+### 💾 `/vote-leaderboard`
+
+**Description:** 🏆 View top voters for Kythia!
+
+### 💻 Usage
+
+`/vote-leaderboard`
+
 
 
 ### 💾 `/vote`

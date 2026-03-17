@@ -1,0 +1,8 @@
+{
+	"name": "NSFW",
+	"featureName": "NSFW",
+	"featureFlag": "nsfwOn",
+	"version": "1.0.0-rc",
+	"description": "NSFW random content (only in nsfw channel)",
+	"author": "kenndeclouv"
+}

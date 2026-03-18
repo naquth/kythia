@@ -133,7 +133,8 @@ module.exports = {
 				});
 			} catch (sendErr) {
 				logger.error(
-					`[TempVoice] Gagal kirim notif transfer ke channel: ${sendErr.message}`,
+					`Gagal kirim notif transfer ke channel: ${sendErr.message}`,
+					{ label: 'tempvoice' },
 				);
 			}
 		} catch (_err) {

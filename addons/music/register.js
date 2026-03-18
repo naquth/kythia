@@ -31,9 +31,9 @@ module.exports = {
 
 			const Music247 = container.models.Music247;
 			if (!Music247) {
-				logger.warn(
-					'🎵 [24/7 Resurrector] Music247 model not found. Skipping.',
-				);
+				logger.warn(`Music247 model not found. Skipping.`, {
+					label: '24 7 resurrector',
+				});
 				return;
 			}
 
@@ -70,7 +70,8 @@ module.exports = {
 					restoredCount++;
 				} catch (e) {
 					logger.warn(
-						`🎵 [24/7 Resurrector] Failed to restore ${session.guildId}: ${e.message}. Removing from DB.`,
+						`Failed to restore ${session.guildId}: ${e.message}. Removing from DB.`,
+						{ label: '24 7 resurrector' },
 					);
 					await session.destroy();
 				}

@@ -4,12 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * @description
- * Renders a Minecraft player in any available pose/style from Starlight Skins.
- * Supports all 31 render types with their valid crop options.
- *
- * API: https://starlightskins.lunareclipse.studio/render/:type/:player/:crop
  */
 
 const {

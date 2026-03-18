@@ -30,9 +30,9 @@ module.exports = {
 		const checkDelayMs =
 			kythiaConfig.addons.globalchat.healthCheckDelay || 1000;
 
-		logger.info(
-			'🌏 [GlobalChat] Starting webhook health check (API+DB sync, then probe)...',
-		);
+		logger.info('Starting webhook health check (API+DB sync, then probe)...', {
+			label: 'global chat',
+		});
 
 		// Step 1: Get list from API
 		let apiGuilds;
@@ -53,10 +53,9 @@ module.exports = {
 			}
 			apiGuilds = apiData.data.guilds;
 		} catch (apiErr) {
-			logger.error(
-				`❌ [GlobalChat-Cron] Failed to fetch /list from API:`,
-				apiErr,
-			);
+			logger.error(`Failed to fetch /list from API: ${apiErr}`, {
+				label: 'global chat',
+			});
 			return;
 		}
 
@@ -65,10 +64,9 @@ module.exports = {
 		try {
 			dbGuilds = await GlobalChat.getAllCache();
 		} catch (err) {
-			logger.error(
-				'❌ [GlobalChat-Cron] Failed to fetch guild list from local DB:',
-				err,
-			);
+			logger.error(`Failed to fetch guild list from local DB: ${err}`, {
+				label: 'global chat',
+			});
 			return;
 		}
 
@@ -89,39 +87,23 @@ module.exports = {
 
 			if (shouldUpdate) {
 				logger.warn(
-					`⚠️ [GlobalChat-Cron] DB desync: Entry for ${apiGuild.guildName || apiGuild.id} is missing/out-of-date vs API. Will update local DB cache.`,
+					`DB desync: Entry for ${apiGuild.guildName || apiGuild.id} is missing/out-of-date vs API. Will update local DB cache.`,
+					{ label: 'global chat' },
 				);
-				// Use update; if no rows updated, perform create (save fallback)
 				try {
-					const updateRes = await GlobalChat.update(
+					await GlobalChat.updateOrCreateCache(
+						{ guildId: apiGuild.id },
 						{
 							guildName: apiGuild.guildName,
 							globalChannelId: apiGuild.globalChannelId,
 							webhookId: apiGuild.webhookId,
 							webhookToken: apiGuild.webhookToken,
-						},
-						{
-							where: { guildId: apiGuild.id },
 						},
 					);
-					// If nothing was updated (updateRes[0] === 0 or falsey), create a new record
-					const updatedCount =
-						(Array.isArray(updateRes) ? updateRes[0] : updateRes) || 0;
-					if (!updatedCount) {
-						// fallback to create, using save
-						const newRec = GlobalChat.build({
-							guildId: apiGuild.id,
-							guildName: apiGuild.guildName,
-							globalChannelId: apiGuild.globalChannelId,
-							webhookId: apiGuild.webhookId,
-							webhookToken: apiGuild.webhookToken,
-						});
-						await newRec.save();
-					}
 				} catch (err) {
 					logger.error(
-						`❌ [GlobalChat-Cron] Failed to update DB from API for guild ${apiGuild.id}:`,
-						err,
+						`Failed to update DB from API for guild ${apiGuild.id}: ${err}`,
+						{ label: 'global chat' },
 					);
 				}
 			}
@@ -133,7 +115,8 @@ module.exports = {
 		);
 
 		logger.info(
-			`🌏 [GlobalChat-Cron] Checking webhook health for ${managedGuildsToCheck.length} guild(s) in our local DB...`,
+			`Checking webhook health for ${managedGuildsToCheck.length} guild(s) in our local DB...`,
+			{ label: 'global chat' },
 		);
 
 		for (const guildInfo of managedGuildsToCheck) {
@@ -141,7 +124,8 @@ module.exports = {
 			const apiGuild = apiGuildMap.get(guildInfo.guildId);
 			if (!apiGuild) {
 				logger.warn(
-					`[GlobalChat-Cron] Skipping guild ${guildInfo.guildId}: not present in latest API list.`,
+					`Skipping guild ${guildInfo.guildId}: not present in latest API list.`,
+					{ label: 'global chat' },
 				);
 				continue;
 			}
@@ -152,7 +136,8 @@ module.exports = {
 
 				if (webhookRes.status === 404) {
 					logger.warn(
-						`⚠️ [GlobalChat-Cron] DEAD webhook (404) for guild ${guildInfo.guildName || guildInfo.guildId}. Will trigger self-heal!`,
+						`DEAD webhook (404) for guild ${guildInfo.guildName || guildInfo.guildId}. Will trigger self-heal!`,
+						{ label: 'global chat' },
 					);
 					const failedGuild = {
 						guildId: guildInfo.guildId,
@@ -164,24 +149,27 @@ module.exports = {
 						error: 'Proactive check failed: 404 Not Found',
 					};
 					handleFailedGlobalChat([failedGuild], container).catch((err) => {
-						logger.error(`❌ [GlobalChat-Cron] Self-heal attempt failed:`, err);
+						logger.error(`Self-heal attempt failed: ${err}`, {
+							label: 'global chat',
+						});
 					});
 				} else if (!webhookRes.ok) {
 					logger.warn(
-						`⚠️ [GlobalChat-Cron] Webhook for ${guildInfo.guildId} returned non-OK status: ${webhookRes.status}`,
+						`Webhook for ${guildInfo.guildId} returned non-OK status: ${webhookRes.status}`,
+						{ label: 'global chat' },
 					);
 				}
 			} catch (fetchErr) {
 				logger.error(
-					`❌ [GlobalChat-Cron] Error fetching webhook for guild ${guildInfo.guildId}:`,
-					fetchErr,
+					`Error fetching webhook for guild ${guildInfo.guildId}: ${fetchErr}`,
+					{ label: 'global chat' },
 				);
 			}
 			await sleep(checkDelayMs);
 		}
 
-		logger.info(
-			'🌏 [GlobalChat] Webhook health check (API+DB sync & probe) finished.',
-		);
+		logger.info('Webhook health check (API+DB sync & probe) finished.', {
+			label: 'global chat',
+		});
 	},
 };

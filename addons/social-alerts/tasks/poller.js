@@ -55,7 +55,9 @@ module.exports = {
 			subscriptions = await SocialAlertSubscription.getAllCache();
 			if (!subscriptions || subscriptions.length === 0) return;
 		} catch (err) {
-			logger.error('[social-alerts] Failed to fetch subscriptions:', err);
+			logger.error(`Failed to fetch subscriptions: ${err}`, {
+				label: 'social-alerts',
+			});
 			return;
 		}
 

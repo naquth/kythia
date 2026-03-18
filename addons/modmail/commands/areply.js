@@ -3,12 +3,7 @@
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * /modmail areply <message>
- * Sends an ANONYMOUS reply to the user's DMs from inside a modmail thread.
- * The message shows "Staff" as the sender instead of the real username.
- * Useful for ban appeals or sensitive situations to protect mod identity.
+ * @version 1.0.0-rc
  */
 
 const { relayStaffReply } = require('../helpers');

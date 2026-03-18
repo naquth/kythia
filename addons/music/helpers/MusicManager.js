@@ -70,7 +70,7 @@ class MusicManager {
 		this.logger.info('🎵 Initializing Music Manager Service...');
 		// Config Check
 		if (!this.config.addons.music.lavalink.hosts) {
-			this.logger.warn('⚠️ Lavalink config missing.');
+			this.logger.warn('Lavalink config missing.', { label: 'music manager' });
 			return;
 		}
 
@@ -317,7 +317,10 @@ class MusicManager {
 					}
 				}
 			} catch (err) {
-				this.logger.error('❌ Error checking voice channel members:', err);
+				this.logger.error(
+					`Error checking voice channel members: ${err.message}`,
+					{ label: 'music manager' },
+				);
 			}
 
 			if (!shouldContinue) {
@@ -557,7 +560,9 @@ class MusicManager {
 					'Use "/music play" and hear the melody',
 				);
 			} catch (e) {
-				this.logger.error('❌ Failed to set voice channel status', e);
+				this.logger.error(`Failed to set voice channel status: ${e.message}`, {
+					label: 'music manager',
+				});
 			}
 
 			const lastTrack =

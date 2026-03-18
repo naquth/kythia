@@ -81,7 +81,9 @@ module.exports = {
 			});
 			inviteUrl = invite.url;
 		} catch (err) {
-			logger.error(`[TempVoice] Gagal bikin invite: ${err.message}`);
+			logger.error(`Gagal bikin invite: ${err.message}`, {
+				label: 'tempvoice',
+			});
 			return interaction.update({
 				components: await simpleContainer(
 					interaction,
@@ -108,9 +110,9 @@ module.exports = {
 					});
 					successNames.push(user.globalName || user.username);
 				} catch (dmError) {
-					logger.warn(
-						`[TempVoice] Gagal DM user ${user.tag}: ${dmError.message}`,
-					);
+					logger.warn(`Gagal DM user ${user.tag}: ${dmError.message}`, {
+						label: 'tempvoice',
+					});
 					failNames.push(user.globalName || user.username);
 				}
 			}

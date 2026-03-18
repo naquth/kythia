@@ -21,9 +21,9 @@ async function fetchQuestsFromAny(urls, logger) {
 	for (const url of urls) {
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => {
-			logger.warn(
-				`⏰ [QuestNotifier] API timeout (5s) for ${url}. Aborting...`,
-			);
+			logger.warn(`API timeout (5s) for ${url}. Aborting...`, {
+				label: 'questnotifier',
+			});
 			controller.abort();
 		}, TIMEOUT_MS);
 
@@ -38,7 +38,8 @@ async function fetchQuestsFromAny(urls, logger) {
 
 			if (!response.ok) {
 				logger.warn(
-					`⏰ [QuestNotifier] API fetch failed with status ${response.status} for ${url}`,
+					`API fetch failed with status ${response.status} for ${url}`,
+					{ label: 'questnotifier' },
 				);
 				continue;
 			}
@@ -51,9 +52,9 @@ async function fetchQuestsFromAny(urls, logger) {
 
 			if (e.name === 'AbortError') {
 			} else {
-				logger.warn(
-					`⏰ [QuestNotifier] Error fetching from ${url}: ${e.message}`,
-				);
+				logger.warn(`Error fetching from ${url}: ${e.message}`, {
+					label: 'questnotifier',
+				});
 			}
 		}
 	}
@@ -77,7 +78,7 @@ module.exports = {
 			.filter((v) => v.length > 0);
 
 		if (apiUrls.length === 0) {
-			logger.error('⏰ [QuestNotifier] No API URLs configured!');
+			logger.error('No API URLs configured!', { label: 'questnotifier' });
 			return;
 		}
 
@@ -85,9 +86,9 @@ module.exports = {
 			const apiQuests = await fetchQuestsFromAny(apiUrls, logger);
 
 			if (!apiQuests) {
-				logger.error(
-					'⏰ [QuestNotifier] All API quest endpoints failed. No quests retrieved.',
-				);
+				logger.error(`All API quest endpoints failed. No quests retrieved.`, {
+					label: 'questnotifier',
+				});
 				return;
 			}
 
@@ -124,7 +125,8 @@ module.exports = {
 						.catch(() => null);
 					if (!channel) {
 						logger.warn(
-							`⏰ [QuestNotifier] Channel ${config.channelId} not found for guild ${config.guildId}. Skipping.`,
+							`Channel ${config.channelId} not found for guild ${config.guildId}. Skipping.`,
+							{ label: 'questnotifier' },
 						);
 						continue;
 					}
@@ -165,13 +167,16 @@ module.exports = {
 					}
 				} catch (guildError) {
 					logger.error(
-						`⏰ [QuestNotifier] Failed to process guild ${config.guildId}: ${guildError.message}`,
+						`Failed to process guild ${config.guildId}: ${guildError.message}`,
+						{ label: 'questnotifier' },
 					);
 				}
 			}
 			logger.info('⏰ [QuestNotifier] Cron job finished.');
 		} catch (error) {
-			logger.error(`⏰ [QuestNotifier] CRON JOB FAILED: ${error.message}`);
+			logger.error(`CRON JOB FAILED: ${error.message}`, {
+				label: 'questnotifier',
+			});
 		}
 	},
 };

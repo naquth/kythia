@@ -137,7 +137,9 @@ module.exports = (bot) => {
 					app.route(routePath, routeModule);
 					logger.info(`   ╰┈➤ ♊️  Route loaded: ${routePath} -> ${file}`);
 				} catch (err) {
-					logger.error(`  ╰┈➤ ❌ Error loading route ${file}:`, err);
+					logger.error(`  ╰┈➤ Error loading route ${file}: ${err.message}`, {
+						label: 'api',
+					});
 				}
 			}
 		});

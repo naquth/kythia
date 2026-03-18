@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/database/migrations/20260307_000003_create_verification_configs.js
+ * @namespace: addons/verification/database/migrations/20260307_000003_create_verification_configs.js
  * @type: Database Migration
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa

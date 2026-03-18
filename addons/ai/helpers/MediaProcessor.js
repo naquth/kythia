@@ -91,7 +91,9 @@ class MediaProcessor {
 				},
 			};
 		} catch (err) {
-			this.logger.error('❌ Error processing image:', err);
+			this.logger.error(`Error processing image: ${err.message}`, {
+				label: 'media processor',
+			});
 			return null;
 		}
 	}
@@ -171,7 +173,9 @@ class MediaProcessor {
 
 			return createPartFromUri(uploadedFile.uri, uploadedFile.mimeType);
 		} catch (err) {
-			this.logger.error('❌ Error processing video/audio:', err);
+			this.logger.error(`Error processing video/audio: ${err.message}`, {
+				label: 'media processor',
+			});
 			return null;
 		}
 	}

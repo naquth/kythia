@@ -3,10 +3,7 @@
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * Handles the server picker select menu sent in DMs.
- * On selection: replaces the dropdown with a "Now chatting with Server" card.
+ * @version 1.0.0-rc
  */
 
 const {
@@ -131,7 +128,7 @@ module.exports = {
 				container,
 			);
 		} catch (error) {
-			logger.error('mm-server-select handler failed:', error, {
+			logger.error(`mm-server-select handler failed: ${error}`, {
 				label: 'modmail',
 			});
 			client.modmailActiveDMs?.delete(userId);

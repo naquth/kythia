@@ -4,9 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Detects mass webhook creation (webhookCreate module).
- * Core's webhooksUpdate.js handles audit logging — we only add protection here.
  */
 
 const { AuditLogEvent } = require('discord.js');
@@ -35,6 +32,8 @@ module.exports = async (bot, channel) => {
 			detail: `Created webhook in <#${channel.id}>: ${entry.target?.name || 'unknown'}`,
 		});
 	} catch (err) {
-		bot.client.container.logger.error('[AntiNuke] webhooksUpdate error:', err);
+		bot.client.container.logger.error(`webhooksUpdate error: ${err}`, {
+			label: 'antinuke',
+		});
 	}
 };

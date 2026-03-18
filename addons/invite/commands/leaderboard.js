@@ -13,7 +13,6 @@ const {
 	ActionRowBuilder,
 	ContainerBuilder,
 	SeparatorBuilder,
-	TextDisplayBuilder,
 	SeparatorSpacingSize,
 } = require('discord.js');
 
@@ -60,6 +59,7 @@ async function generateLeaderboardContainer(
 ) {
 	const { t, kythiaConfig, helpers } = interaction.client.container;
 	const { convertColor } = helpers.color;
+	const { chunkTextDisplay } = helpers.discord;
 
 	const totalPages = Math.max(1, Math.ceil(totalUsers / USERS_PER_PAGE));
 	page = Math.max(1, Math.min(page, totalPages));
@@ -119,7 +119,7 @@ async function generateLeaderboardContainer(
 			convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 		)
 		.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
+			...chunkTextDisplay(
 				await t(interaction, 'invite.invite.command.leaderboard.title', {
 					page,
 					totalPages,
@@ -131,16 +131,14 @@ async function generateLeaderboardContainer(
 				.setSpacing(SeparatorSpacingSize.Small)
 				.setDivider(true),
 		)
-		.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(leaderboardText),
-		)
+		.addTextDisplayComponents(...chunkTextDisplay(leaderboardText))
 		.addSeparatorComponents(
 			new SeparatorBuilder()
 				.setSpacing(SeparatorSpacingSize.Small)
 				.setDivider(true),
 		)
 		.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
+			...chunkTextDisplay(
 				await t(interaction, 'invite.invite.command.leaderboard.footer', {
 					totalUsers,
 				}),

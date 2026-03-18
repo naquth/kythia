@@ -37,9 +37,9 @@ async function rolePrefix(guild, container) {
 	try {
 		allMembers = await guild.members.fetch();
 	} catch (e) {
-		logger.error(
-			`[RolePrefix] Failed to fetch members for ${guild.name}: ${e.message}`,
-		);
+		logger.error(`Failed to fetch members for ${guild.name}: ${e.message}`, {
+			label: 'roleprefix',
+		});
 		return 0;
 	}
 

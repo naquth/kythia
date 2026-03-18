@@ -3,11 +3,7 @@
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * /modmail block <user> [reason]
- * Prevents a user from opening new modmail threads.
- * Blocked users receive an informative DM if they try to contact modmail again.
+ * @version 1.0.0-rc
  */
 
 const { MessageFlags } = require('discord.js');
@@ -89,7 +85,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error('[modmail] block command failed:', error, {
+			logger.error(error.message || String(error), {
 				label: 'modmail:block',
 			});
 			const desc = await t(interaction, 'modmail.errors.generic');

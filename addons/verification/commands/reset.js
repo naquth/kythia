@@ -1,0 +1,75 @@
+/**
+ * @namespace: addons/verification/commands/reset.js
+ * @type: Command
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { SlashCommandSubcommandBuilder, MessageFlags } = require('discord.js');
+const { sendCaptcha } = require('../../../helpers/verify');
+const { clearSession } = require('../../../helpers/session');
+
+module.exports = {
+	slashCommand: new SlashCommandSubcommandBuilder()
+		.setName('reset')
+		.setDescription('Re-send captcha to a member')
+		.addUserOption((o) =>
+			o.setName('member').setDescription('Target member').setRequired(true),
+		),
+	async execute(interaction, container) {
+		const { models, helpers, kythiaConfig, t } = container;
+		const { simpleContainer } = helpers.discord;
+		const { VerificationConfig } = models;
+		const guildId = interaction.guild.id;
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+		const user = interaction.options.getUser('member');
+		const member = await interaction.guild.members
+			.fetch(user.id)
+			.catch(() => null);
+		if (!member) {
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'verify.member.not.found'),
+				{
+					color: kythiaConfig.bot.color,
+				},
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		const config = await VerificationConfig.findOne({ where: { guildId } });
+		if (!config) {
+			const components = await simpleContainer(
+				interaction,
+				await t(interaction, 'verify.setup.not.configured'),
+				{
+					color: kythiaConfig.bot.color,
+				},
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		clearSession(guildId, user.id);
+		await sendCaptcha(member, config);
+		const components = await simpleContainer(
+			interaction,
+			await t(interaction, 'verify.captcha.sent', { user: member.user.tag }),
+			{
+				color: kythiaConfig.bot.color,
+			},
+		);
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	},
+};

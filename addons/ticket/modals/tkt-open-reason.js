@@ -32,7 +32,7 @@ module.exports = {
 
 			await createTicketChannel(interaction, ticketConfig, container, reason);
 		} catch (error) {
-			logger.error('Error in tkt-open-reason handler:', error, {
+			logger.error(`Error in tkt-open-reason handler: ${error}`, {
 				label: 'core:modals:tkt-open-reason',
 			});
 			const descError = await t(interaction, 'ticket.errors.create_failed');

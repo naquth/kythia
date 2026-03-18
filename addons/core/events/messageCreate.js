@@ -1,3 +1,11 @@
+/**
+ * @namespace: addons/core/events/messageCreate.js
+ * @type: Event Handler
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
 const PrefixCommandHandler = require('../helpers/handlers/PrefixCommandHandler');
 const AFKHandler = require('../helpers/handlers/AFKHandler');
 const StickyMessageHandler = require('../helpers/handlers/StickyMessageHandler');

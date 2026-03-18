@@ -3,10 +3,7 @@
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * /modmail unblock <user>
- * Removes a block, allowing the user to open modmail threads again.
+ * @version 1.0.0-rc
  */
 
 const { MessageFlags } = require('discord.js');
@@ -78,7 +75,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error('[modmail] unblock command failed:', error, {
+			logger.error(error.message || String(error), {
 				label: 'modmail:unblock',
 			});
 			const desc = await t(interaction, 'modmail.errors.generic');

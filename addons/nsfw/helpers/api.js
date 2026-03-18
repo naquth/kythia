@@ -1,8 +1,8 @@
 /**
  * @namespace: addons/nsfw/helpers/api.js
- * @type: Utility
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
+ * @assistant graa & chaa
  * @version 1.0.0-rc
  */
 
@@ -69,9 +69,9 @@ const fetchContent = async (category, logger) => {
 		throw new Error('NekoBot response invalid');
 	} catch (error) {
 		if (logger) {
-			logger.warn(
-				`[NekoBot API Error] ${error.message} - Falling back to Waifu.pics...`,
-			);
+			logger.warn(`${error.message} - Falling back to Waifu.pics...`, {
+				label: 'nekobot api error',
+			});
 		}
 
 		try {
@@ -87,7 +87,8 @@ const fetchContent = async (category, logger) => {
 		} catch (fallbackError) {
 			if (logger) {
 				logger.warn(
-					`[Waifu.pics API Error] ${fallbackError.message} - Falling back to Nekos.life...`,
+					`${fallbackError.message} - Falling back to Nekos.life...`,
+					{ label: 'waifu pics api error' },
 				);
 			}
 
@@ -103,7 +104,9 @@ const fetchContent = async (category, logger) => {
 				throw new Error('Nekos.life response invalid');
 			} catch (nekosError) {
 				if (logger) {
-					logger.error(`[Nekos.life API Error] ${nekosError.message}`);
+					logger.error(`${nekosError.message}`, {
+						label: 'nekos life api error',
+					});
 				}
 				return null;
 			}

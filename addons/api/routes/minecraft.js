@@ -4,14 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Routes:
- *   GET  /api/minecraft/status/:guildId          - Get current MC server status for a guild
- *   GET  /api/minecraft/status/raw               - Query any host:port directly (pass ?host=&port=)
- *   GET  /api/minecraft/settings/:guildId        - Get MC-related settings for a guild
- *   PATCH /api/minecraft/settings/:guildId       - Update MC server settings (ip, port, channels)
- *   POST /api/minecraft/autosetup/:guildId       - Auto-create stat channels (mirrors the Discord command)
- *   POST /api/minecraft/trigger-update/:guildId  - Force an immediate stat channel rename cycle
  */
 
 const { Hono } = require('hono');
@@ -279,7 +271,9 @@ app.post('/trigger-update/:guildId', async (c) => {
 		if (guildId === 'all') {
 			// Fire and forget — run the full updater cycle in background
 			runMinecraftStatsUpdater(client).catch((e) =>
-				logger.error('[MC API] trigger-update all failed:', e),
+				logger.error(`[MC API] trigger-update all failed: ${e.message || e}`, {
+					label: 'mc-api',
+				}),
 			);
 			return c.json({
 				success: true,
@@ -300,7 +294,10 @@ app.post('/trigger-update/:guildId', async (c) => {
 
 		// Run updater for this single guild
 		runMinecraftStatsUpdater(client, [settings]).catch((e) =>
-			logger.error(`[MC API] trigger-update ${guildId} failed:`, e),
+			logger.error(
+				`[MC API] trigger-update ${guildId} failed: ${e.message || e}`,
+				{ label: 'mc-api' },
+			),
 		);
 		return c.json({
 			success: true,

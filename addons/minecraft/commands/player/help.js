@@ -1,13 +1,9 @@
 /**
- * @namespace: addons/minecraft/commands/player/info.js
+ * @namespace: addons/minecraft/commands/player/help.js
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * @description
- * Comprehensive info/tutorial command for the Minecraft addon.
- * Shows all available commands and features with usage examples.
  */
 
 const {

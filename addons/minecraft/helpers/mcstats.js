@@ -4,16 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * @description
- * Fetches the status of each guild's configured Minecraft server and updates
- * the configured voice channels with live info (IP, port, status, player count).
- *
- * Channels updated (if configured in ServerSetting):
- *  - minecraftIpChannelId      → channel name = the server IP
- *  - minecraftPortChannelId    → channel name = the server port
- *  - minecraftStatusChannelId  → channel name = 🟢 Online | 12/100 or 🔴 Offline
- *  - minecraftPlayersChannelId → channel name = 👥 12/100
  */
 
 const axios = require('axios');
@@ -46,9 +36,9 @@ async function safeRename(channel, newName, logger) {
 	try {
 		await channel.setName(trimmed, 'Minecraft Stats Update');
 	} catch (err) {
-		logger.warn(
-			`[MC STATS] Failed to rename channel ${channel.id}: ${err.message}`,
-		);
+		logger.warn(`Failed to rename channel ${channel.id}: ${err.message}`, {
+			label: 'mc stats',
+		});
 	}
 }
 
@@ -117,7 +107,8 @@ async function runMinecraftStatsUpdater(client, settingsOverride = null) {
 				data = await fetchMcStatus(host, port);
 			} catch (err) {
 				logger.warn(
-					`[MC STATS] Failed to fetch status for ${host}:${port} (guild: ${guild.name}): ${err.message}`,
+					`Failed to fetch status for ${host}:${port} (guild: ${guild.name}): ${err.message}`,
+					{ label: 'mc stats' },
 				);
 			}
 
@@ -162,7 +153,8 @@ async function runMinecraftStatsUpdater(client, settingsOverride = null) {
 				);
 			} catch (err) {
 				logger.error(
-					`[MC STATS] Failed to update channels for guild ${guild.name}: ${err.message}`,
+					`Failed to update channels for guild ${guild.name}: ${err.message}`,
+					{ label: 'mc stats' },
 				);
 				Sentry.captureException(err, { extra: { guildId: guild.id } });
 			}

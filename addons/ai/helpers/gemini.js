@@ -79,7 +79,8 @@ async function loadUsageData() {
 		return data;
 	} catch (e) {
 		_logger.warn(
-			`⚠️ Error loading usage data or file not found/invalid: ${e.message}. Resetting...`,
+			`Error loading usage data or file not found/invalid: ${e.message}. Resetting...`,
+			{ label: 'gemini' },
 		);
 		const minuteKey = new Date().toISOString().slice(0, 16);
 		const data = Array.from({ length: _GEMINI_TOKEN_COUNT }, () => ({
@@ -101,7 +102,9 @@ async function saveUsageData(data) {
 	try {
 		await fs.writeFile(aiUsageFilePath, JSON.stringify(data, null, 2));
 	} catch (err) {
-		_logger.error('❌ Failed to save AI usage data:', err);
+		_logger.error(`Failed to save AI usage data: ${err.message}`, {
+			label: 'gemini',
+		});
 	}
 }
 
@@ -123,7 +126,10 @@ async function getUsageMeta(file, key) {
 		try {
 			await fs.writeFile(metaPath, JSON.stringify(initialMeta, null, 2));
 		} catch (err) {
-			_logger.error(`❌ Failed to write initial meta file ${file}:`, err);
+			_logger.error(
+				`Failed to write initial meta file ${file}: ${err.message}`,
+				{ label: 'gemini' },
+			);
 		}
 		return initialMeta;
 	}
@@ -141,7 +147,9 @@ async function setUsageMeta(file, meta) {
 	try {
 		await fs.writeFile(metaPath, JSON.stringify(meta, null, 2));
 	} catch (err) {
-		_logger.error(`❌ Failed to save meta file ${file}:`, err);
+		_logger.error(`Failed to save meta file ${file}: ${err.message}`, {
+			label: 'gemini',
+		});
 	}
 }
 
@@ -155,7 +163,7 @@ async function getAndUseNextAvailableToken() {
 	try {
 		const usageData = await loadUsageData();
 		if (_GEMINI_TOKEN_COUNT === 0) {
-			_logger.warn('⚠️ No Gemini API keys configured.');
+			_logger.warn('No Gemini API keys configured.', { label: 'gemini' });
 			return -1;
 		}
 		const meta = await getUsageMeta('ai_usage_meta.json', 'lastIndex');
@@ -176,7 +184,9 @@ async function getAndUseNextAvailableToken() {
 				return idx;
 			}
 		}
-		_logger.warn('⚠️ All Gemini tokens are currently rate-limited.');
+		_logger.warn('All Gemini tokens are currently rate-limited.', {
+			label: 'gemini',
+		});
 		return -1;
 	} finally {
 		release();
@@ -192,16 +202,16 @@ async function getAndUseNextAvailableToken() {
 async function generateContent(promptOrContents) {
 	const tokenIdx = await getAndUseNextAvailableToken();
 	if (tokenIdx === -1) {
-		_logger.error(
-			'❌ Cannot generate content: All AI tokens are rate-limited.',
-		);
+		_logger.error('Cannot generate content: All AI tokens are rate-limited.', {
+			label: 'gemini',
+		});
 		return null;
 	}
 	const GEMINI_API_KEY = _GEMINI_API_KEYS[tokenIdx];
 	if (!GEMINI_API_KEY) {
-		_logger.error(
-			`❌ Cannot generate content: Invalid token index ${tokenIdx}.`,
-		);
+		_logger.error(`Cannot generate content: Invalid token index ${tokenIdx}.`, {
+			label: 'gemini',
+		});
 		return null;
 	}
 	const GEMINI_MODEL = _aiConfig.model || 'gemini-pro';
@@ -223,8 +233,8 @@ async function generateContent(promptOrContents) {
 		return text || null;
 	} catch (err) {
 		_logger.error(
-			`❌ Error generating content with token index ${tokenIdx}:`,
-			err,
+			`Error generating content with token index ${tokenIdx}: ${err.message}`,
+			{ label: 'gemini' },
 		);
 		return null;
 	}

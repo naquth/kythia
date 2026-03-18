@@ -1,12 +1,9 @@
 /**
  * @namespace: addons/verification/helpers/captcha-image.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Generates a distorted image captcha using @napi-rs/canvas.
- * Returns: { code: string, attachment: AttachmentBuilder }
  */
 
 const { createCanvas } = require('@napi-rs/canvas');

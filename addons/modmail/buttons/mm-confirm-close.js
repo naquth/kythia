@@ -3,10 +3,7 @@
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * Confirms the close action. The reason is encoded in the customId after ":".
- * customId format: "mm-confirm-close:{encodedReason}"
+ * @version 1.0.0-rc
  */
 
 const { closeModmail } = require('../helpers');

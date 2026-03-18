@@ -387,7 +387,10 @@ async function runStatsUpdater(client) {
 		await updateStats(client, activeSettings);
 		logger.info('📊 Server stats update cycle finished.');
 	} catch (err) {
-		logger.error('❌ A critical error occurred in runStatsUpdater:', err);
+		logger.error(
+			`A critical error occurred in runStatsUpdater: ${err.message}`,
+			{ label: 'stats' },
+		);
 		if (kythiaConfig?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

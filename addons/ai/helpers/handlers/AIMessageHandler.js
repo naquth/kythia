@@ -250,7 +250,9 @@ class AIMessageHandler {
 			await message.channel.sendTyping();
 			typingInterval = setInterval(() => {
 				message.channel.sendTyping().catch((err) => {
-					this.logger.warn('❌ Error sending typing indicator:', err.message);
+					this.logger.warn(`Error sending typing indicator: ${err.message}`, {
+						label: 'AIMessageHandler',
+					});
 					clearInterval(typingInterval);
 				});
 			}, 8000);
@@ -345,7 +347,9 @@ class AIMessageHandler {
 					.catch(() => {});
 			}
 		} catch (err) {
-			this.logger.error('❌ AI Pre-flight Error:', err);
+			this.logger.error(`AI Pre-flight Error: ${err.message}`, {
+				label: 'AIMessageHandler',
+			});
 			await message.channel
 				.send(await this.t(message, 'ai.events.messageCreate.error'))
 				.catch(() => {});
@@ -579,9 +583,12 @@ class AIMessageHandler {
 				) {
 					this.logger.warn(
 						`Token index ${tokenIdx} hit 429 limit. Retrying with next token...`,
+						{ label: 'AIMessageHandler' },
 					);
 				} else {
-					this.logger.error('❌ AI Message Error (non-429):', err);
+					this.logger.error(`AI Message Error (non-429): ${err.message}`, {
+						label: 'AIMessageHandler',
+					});
 					await message.channel
 						.send(await this.t(message, 'ai.events.messageCreate.error'))
 						.catch(() => {});

@@ -3,10 +3,7 @@
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * The messageCreate event is auto-loaded by the framework from events/messageCreate.js.
- * This register.js only handles the clientReady hook to repopulate active sessions from DB.
+ * @version 1.0.0-rc
  */
 
 module.exports = {
@@ -42,7 +39,7 @@ module.exports = {
 					);
 				}
 			} catch (err) {
-				logger.error('Failed to repopulate modmailActiveDMs from DB:', err, {
+				logger.error(`Failed to repopulate modmailActiveDMs from DB: ${err}`, {
 					label: 'modmail',
 				});
 			}

@@ -4,17 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * @description
- * Automatically creates a "⛏️ Minecraft Server" category with 4 voice channels
- * for live server stats, saves all IDs + IP/port to ServerSetting, and enables
- * minecraftStatsOn in one shot.
- *
- * Channels created:
- *   🖥️ IP: play.example.net
- *   🔌 Port: 25565
- *   🟢 Online | 0/0   ← status (renamed every 5 min by cron)
- *   👥 0/0             ← player count (renamed every 5 min by cron)
  */
 
 const {

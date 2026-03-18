@@ -5,11 +5,7 @@
  * @assistant graa & chaa
  * @version 1.0.0-rc
  */
-const {
-	TextDisplayBuilder,
-	ContainerBuilder,
-	MessageFlags,
-} = require('discord.js');
+const { ContainerBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
 	subcommand: true,
@@ -24,6 +20,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, helpers, logger } = container;
 		const { ReactionRole } = models;
+		const { chunkTextDisplay } = helpers.discord;
 		const { convertColor } = helpers.color;
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -68,20 +65,15 @@ module.exports = {
 				description += '\n';
 			}
 
-			// Handle long descriptions (truncate if necessary, though simple list is usually fine)
-			if (description.length > 4000) {
-				description = `${description.substring(0, 3997)}...`;
-			}
+			const title = await t(interaction, 'reaction-role.list.title');
+			const fullContent = `### ${title}\n\n${description}`;
 
+			const chunks = chunkTextDisplay(fullContent);
 			const listContainer = new ContainerBuilder()
 				.setAccentColor(
 					convertColor('Blue', { from: 'discord', to: 'decimal' }),
 				)
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						`### ${await t(interaction, 'reaction-role.list.title')}\n\n${description}`,
-					),
-				);
+				.addTextDisplayComponents(...chunks);
 
 			return interaction.editReply({
 				components: [listContainer],

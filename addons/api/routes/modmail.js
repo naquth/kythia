@@ -3,20 +3,7 @@
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * Modmail REST API — full CRUD + action endpoints.
- *
- * Sections:
- *  ┌──────────────────────────────────────────────────────────────┐
- *  │  /api/modmail               — Modmail thread records         │
- *  │  /api/modmail/configs       — Per-guild modmail configs       │
- *  │  /api/modmail/:id/close     — Close a modmail thread          │
- *  │  /api/modmail/:id/reply     — Send a staff reply via API      │
- *  │  /api/modmail/:id/note      — Add an internal staff note      │
- *  │  /api/modmail/block         — Block / unblock a user          │
- *  │  /api/modmail/snippets      — Manage quick-reply snippets     │
- *  └──────────────────────────────────────────────────────────────┘
+ * @version 1.0.0-rc
  */
 
 const { Hono } = require('hono');

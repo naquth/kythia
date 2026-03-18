@@ -1,12 +1,9 @@
 /**
  * @namespace: addons/verification/helpers/captcha-emoji.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Generates an emoji-click captcha challenge.
- * Shows 6 buttons — 1 is the target emoji, 5 are decoys.
  */
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');

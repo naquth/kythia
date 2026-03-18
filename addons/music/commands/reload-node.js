@@ -38,7 +38,9 @@ module.exports = {
 				content: '✅ Config and Lavalink nodes have been reloaded!',
 			});
 		} catch (error) {
-			logger.error('❌ Failed to reload nodes:', error);
+			logger.error(`Failed to reload nodes: ${error.message}`, {
+				label: 'reload-node',
+			});
 
 			await interaction.followUp({
 				content: `❌ Failed to reload nodes: ${error.message}`,

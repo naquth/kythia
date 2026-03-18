@@ -75,7 +75,9 @@ class StickyMessageHandler {
 			sticky.changed('messageId', true);
 			await sticky.save();
 		} catch (err) {
-			logger.error(`❌ Error loading sticky: ${err}`);
+			logger.error(`Error loading sticky: ${err.message || err}`, {
+				label: 'StickyMessageHandler',
+			});
 		}
 	}
 }

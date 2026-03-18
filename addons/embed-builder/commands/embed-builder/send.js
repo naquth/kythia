@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/embed-builder/commands/embed-builder/send.js
- * @type: Subcommand
+ * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
+ * @version 1.0.0-rc
  */
 
 const {
@@ -135,7 +135,7 @@ module.exports = {
 				],
 			});
 		} catch (error) {
-			container.logger.error('[EmbedBuilder] Send error:', error, {
+			container.logger.error(error.message || String(error), {
 				label: 'embed-builder:send',
 			});
 			return interaction.editReply({

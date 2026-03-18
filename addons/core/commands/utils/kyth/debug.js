@@ -1,6 +1,6 @@
 /**
- * @namespace: addons/core/commands/utils/debug.js
- * @type: Command
+ * @namespace: addons/core/commands/utils/kyth/debug.js
+ * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc

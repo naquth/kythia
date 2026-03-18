@@ -3,10 +3,7 @@
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * /modmail setup
- * Configures or reconfigures the modmail system for this server.
+ * @version 1.0.0-rc
  */
 
 const {
@@ -291,7 +288,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('setup command failed:', error, { label: 'modmail' });
+			logger.error(`setup command failed: ${error}`, { label: 'modmail' });
 			const desc = await t(interaction, 'modmail.errors.generic');
 			return interaction.editReply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

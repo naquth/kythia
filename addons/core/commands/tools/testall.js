@@ -23,6 +23,8 @@ const BLACKLIST_COMMANDS = [
 	'ascii',
 	'convert',
 	'kyth',
+	'server',
+	'set',
 ];
 
 // ─── Mock Message ─────────────────────────────────────────────────────────────
@@ -125,7 +127,13 @@ function createMockMessage(channel) {
  * @param {string} commandName
  * @param {Record<string,*>} optionsData - pre-populated option values
  */
-function createMockInteraction(originalInteraction, commandName, optionsData) {
+function createMockInteraction(
+	originalInteraction,
+	commandName,
+	optionsData,
+	groupName = null,
+	subcommandName = null,
+) {
 	let _replied = false;
 	let _deferred = false;
 	const _mockMessage = createMockMessage(originalInteraction.channel);
@@ -217,11 +225,11 @@ function createMockInteraction(originalInteraction, commandName, optionsData) {
 		// Subcommands
 		getSubcommand: (required = false) => {
 			void required;
-			return null;
+			return subcommandName;
 		},
 		getSubcommandGroup: (required = false) => {
 			void required;
-			return null;
+			return groupName;
 		},
 
 		// Typed getters — all follow the same pattern
@@ -404,22 +412,20 @@ function createMockInteraction(originalInteraction, commandName, optionsData) {
 	};
 }
 
-// ─── Command export ───────────────────────────────────────────────────────────
-/**
- * Creates a mock interaction that forwards replies to the real channel.
- * Pass `realChannel` so that every reply/editReply/followUp the tested command
- * sends will appear in Discord as a real message.
- */
 function createForwardingMockInteraction(
 	originalInteraction,
 	commandName,
 	optionsData,
+	groupName = null,
+	subcommandName = null,
 ) {
 	const realChannel = originalInteraction.channel;
 	const mockBase = createMockInteraction(
 		originalInteraction,
 		commandName,
 		optionsData,
+		groupName,
+		subcommandName,
 	);
 
 	// The collector on interaction.channel (some commands call this directly)
@@ -507,12 +513,34 @@ module.exports = {
 			skipped: [],
 		};
 
-		const commands = interaction.client.commands;
-		if (!commands || commands.size === 0) {
-			return interaction.editReply('❌ No commands found to test.');
+		const schema = interaction.client.applicationCommandsData;
+		if (!schema || schema.length === 0) {
+			return interaction.editReply('❌ No command schema found to test.');
 		}
 
-		const totalCommands = commands.size;
+		let totalCommands = 0;
+		// Count all testable endpoints
+		const countEndpoints = (cmd) => {
+			if (cmd.type === 2 || cmd.type === 3) return 1; // context menu
+			if (!cmd.options || cmd.options.length === 0) return 1;
+
+			const hasSubcommands = cmd.options.some(
+				(opt) => opt.type === 1 || opt.type === 2,
+			);
+			if (!hasSubcommands) return 1;
+
+			let count = 0;
+			for (const opt of cmd.options) {
+				if (opt.type === 1) count++; // subcommand
+				if (opt.type === 2 && opt.options) {
+					// group
+					count += opt.options.filter((o) => o.type === 1).length;
+				}
+			}
+			return count;
+		};
+
+		totalCommands = schema.reduce((acc, cmd) => acc + countEndpoints(cmd), 0);
 		let processed = 0;
 
 		// Patch KythiaModel to prevent testall tight-loop pendingQueries race conditions
@@ -533,32 +561,46 @@ module.exports = {
 			`🔄 Starting test of ${totalCommands} commands...`,
 		);
 
-		// ── Iterate and mock-execute every command ─────────────────────────────
-		for (const [name, command] of commands) {
+		// Recursive testing function
+		const testCommandNode = async (
+			cmdNode,
+			rootName,
+			groupName = null,
+			subcommandName = null,
+		) => {
 			processed++;
 
-			// SKIP checks
+			const fullPath = [rootName, groupName, subcommandName]
+				.filter(Boolean)
+				.join(' ');
+
 			if (
-				BLACKLIST_COMMANDS.some((blacklisted) => name.startsWith(blacklisted))
+				BLACKLIST_COMMANDS.some((blacklisted) =>
+					fullPath.startsWith(blacklisted),
+				)
 			) {
-				results.skipped.push(name);
-				continue;
-			}
-			if (!command.execute) {
-				results.skipped.push(`${name} (no execute)`);
-				continue;
+				results.skipped.push(fullPath);
+				return;
 			}
 
-			// Build option data from the slash command builder definition
+			// Retrieve the actual command handler from the client collection
+			let commandModule = interaction.client.commands.get(fullPath);
+
+			if (!commandModule && (groupName || subcommandName)) {
+				commandModule = interaction.client.commands.get(rootName);
+			}
+
+			if (!commandModule || !commandModule.execute) {
+				results.skipped.push(`${fullPath} (no handler/execute)`);
+				return;
+			}
+
+			// Build option data exactly as the schema dictates
 			const optionsData = {};
-			const slashBuilder = command.slashCommand;
-
-			if (slashBuilder?.options) {
-				for (const opt of slashBuilder.options) {
+			if (cmdNode.options) {
+				for (const opt of cmdNode.options) {
 					const optName = opt.name;
 					const optType = opt.type;
-
-					// Resolve a sensible guild-aware value for each option type
 					const guild = interaction.guild;
 
 					if (optType === ApplicationCommandOptionType.Role) {
@@ -575,8 +617,7 @@ module.exports = {
 						optionsData[optName] =
 							guild?.members?.cache?.random() ?? interaction.member;
 					} else if (optType === ApplicationCommandOptionType.Channel) {
-						// Respect channelTypes restriction from the slash builder option
-						const allowedTypes = opt.channel_types ?? opt.channelTypes ?? [];
+						const allowedTypes = opt.channel_types ?? [];
 						const wantsCategory = allowedTypes.includes(
 							ChannelType.GuildCategory,
 						);
@@ -602,33 +643,66 @@ module.exports = {
 							guild?.roles?.cache?.first() ??
 							interaction.member;
 					}
-					// All other types fall back to the TYPE_DEFAULTS inside createMockInteraction
 				}
 			}
 
-			// Execute with mock interaction
 			try {
 				const mock = createForwardingMockInteraction(
 					interaction,
-					name,
+					rootName,
 					optionsData,
+					groupName,
+					subcommandName,
 				);
-				logger.info(`🧪 Testing command: ${name}`);
+				logger.info(`🧪 Testing command: ${fullPath}`);
 
-				await command.execute(mock, container);
+				await commandModule.execute(mock, container);
 
 				if (mock._hasReplied() || mock._isDeferred()) {
-					results.success.push(name);
+					results.success.push(fullPath);
 				} else {
-					results.failed.push({ name, reason: 'no reply' });
+					results.failed.push({ name: fullPath, reason: 'no reply' });
 				}
 			} catch (err) {
-				logger.error(`❌ Test failed for ${name}:`, err);
-				results.failed.push({ name, reason: err.message });
+				logger.error(`Test failed for ${fullPath}: ${err.message}`, {
+					label: 'testall',
+				});
+				results.failed.push({ name: fullPath, reason: err.message });
 			}
 
-			// Small delay to prevent rate limits
 			await new Promise((r) => setTimeout(r, 100));
+		};
+
+		for (const cmd of schema) {
+			// Traverse context menus and simple slash commands
+			if (cmd.type === 2 || cmd.type === 3) {
+				await testCommandNode(cmd, cmd.name);
+				continue;
+			}
+
+			const hasSubcommands = cmd.options?.some(
+				(opt) => opt.type === 1 || opt.type === 2,
+			);
+			if (!hasSubcommands) {
+				await testCommandNode(cmd, cmd.name);
+				continue;
+			}
+
+			// Traverse subcommands and groups
+			for (const opt of cmd.options || []) {
+				if (opt.type === 1) {
+					// subcommand
+					await testCommandNode(opt, cmd.name, null, opt.name);
+				} else if (opt.type === 2) {
+					// group
+					for (const sub of opt.options || []) {
+						if (sub.type === 1) {
+							// subcommand in group
+							await testCommandNode(sub, cmd.name, opt.name, sub.name);
+						}
+					}
+				}
+			}
 		}
 
 		// Restore KythiaModel
@@ -668,7 +742,9 @@ module.exports = {
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} catch (err) {
-				logger.error('❌ testall: failed to send report chunk:', err);
+				logger.error(`testall: failed to send report chunk: ${err.message}`, {
+					label: 'testall',
+				});
 			}
 		};
 

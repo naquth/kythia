@@ -102,7 +102,9 @@ app.post('/setup', async (c) => {
 				);
 				await oldMsg.delete();
 			} catch (e) {
-				logger.warn(`[TempVoice API] Failed to delete old panel: ${e.message}`);
+				logger.warn(`Failed to delete old panel: ${e.message}`, {
+					label: 'tempvoice api',
+				});
 			}
 		}
 

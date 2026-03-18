@@ -1,6 +1,6 @@
 /**
- * @namespace: addons/core/commands/utils/restart.js
- * @type: Command
+ * @namespace: addons/core/commands/utils/kyth/restart.js
+ * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc

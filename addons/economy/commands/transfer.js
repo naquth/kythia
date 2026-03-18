@@ -211,7 +211,7 @@ module.exports = {
 				}
 			});
 		} catch (error) {
-			logger.error('Error during transfer command execution:', error, {
+			logger.error(`Error during transfer command execution: ${error}`, {
 				label: 'economy:transfer',
 			});
 			const msg = await t(interaction, 'economy.transfer.transfer.error');

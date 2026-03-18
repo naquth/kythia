@@ -1,22 +1,9 @@
 /**
  * @namespace: addons/verification/helpers/session.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * In-memory session store for active verification challenges.
- *
- * Session key: `${guildId}_${userId}`
- * Session value: {
- *   answer: string|number|'button',  // 'button' = button-based (math/emoji), managed via customId
- *   attempts: number,
- *   timer: NodeJS.Timeout,
- *   messageId: string,
- *   channelId: string,
- *   guildId: string,
- *   userId: string,
- * }
  */
 
 /** @type {Map<string, object>} */

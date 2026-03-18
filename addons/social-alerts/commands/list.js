@@ -9,7 +9,6 @@
 const {
 	MessageFlags,
 	ContainerBuilder,
-	TextDisplayBuilder,
 	SeparatorBuilder,
 	SeparatorSpacingSize,
 	SectionBuilder,
@@ -32,7 +31,7 @@ module.exports = {
 	async execute(interaction, container) {
 		const { models, helpers, kythiaConfig, t } = container;
 		const { SocialAlertSubscription, SocialAlertSetting } = models;
-		const { simpleContainer } = helpers.discord;
+		const { simpleContainer, chunkTextDisplay } = helpers.discord;
 		const { convertColor } = helpers.color;
 
 		await interaction.deferReply();
@@ -71,7 +70,7 @@ module.exports = {
 
 		const builder = new ContainerBuilder()
 			.setAccentColor(accentColor)
-			.addTextDisplayComponents(new TextDisplayBuilder().setContent(header))
+			.addTextDisplayComponents(...chunkTextDisplay(header))
 			.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setSpacing(SeparatorSpacingSize.Small)
@@ -112,9 +111,7 @@ module.exports = {
 
 			builder.addSectionComponents(
 				new SectionBuilder()
-					.addTextDisplayComponents(
-						new TextDisplayBuilder().setContent(entryText),
-					)
+					.addTextDisplayComponents(...chunkTextDisplay(entryText))
 					.setThumbnailAccessory(
 						sub.youtubeThumbnailUrl
 							? new ThumbnailBuilder()
@@ -137,9 +134,7 @@ module.exports = {
 			bot: interaction.client.user.username,
 		});
 
-		builder.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(footer),
-		);
+		builder.addTextDisplayComponents(...chunkTextDisplay(footer));
 
 		return interaction.editReply({
 			components: [builder],

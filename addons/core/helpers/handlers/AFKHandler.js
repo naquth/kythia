@@ -108,7 +108,10 @@ class AFKHandler {
 
 			await afkData.destroy({ individualHooks: true });
 		} catch (error) {
-			logger.error('Error when user returned from UserAFK:', error);
+			logger.error(
+				`Error when user returned from UserAFK: ${error.message || error}`,
+				{ label: 'AFKHandler' },
+			);
 
 			try {
 				const errorMessage = await t(
@@ -143,14 +146,20 @@ class AFKHandler {
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} catch (dmError) {
-				logger.error('Failed to send DM error from UserAFK to user:', dmError);
+				logger.error(
+					`Failed to send DM error from UserAFK to user: ${dmError.message || dmError}`,
+					{ label: 'AFKHandler' },
+				);
 			}
 
 			if (afkData) {
 				await afkData
 					.destroy()
 					.catch((e) =>
-						logger.error('Failed to delete UserAFK data after error:', e),
+						logger.error(
+							`Failed to delete UserAFK data after error: ${e.message || e}`,
+							{ label: 'AFKHandler' },
+						),
 					);
 			}
 		}
@@ -187,7 +196,10 @@ class AFKHandler {
 					afkReplies.push(afkReplyLine);
 				}
 			} catch (error) {
-				logger.error("Error checking mentioned user's UserAFK status:", error);
+				logger.error(
+					`Error checking mentioned user's UserAFK status: ${error.message || error}`,
+					{ label: 'AFKHandler' },
+				);
 			}
 		}
 

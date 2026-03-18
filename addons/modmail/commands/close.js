@@ -3,10 +3,7 @@
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * /modmail close [reason]
- * Staff-only command to close the modmail thread they are currently in.
+ * @version 1.0.0-rc
  */
 
 const {

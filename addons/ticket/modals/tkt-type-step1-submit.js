@@ -92,7 +92,7 @@ module.exports = {
 				components: components,
 			});
 		} catch (error) {
-			logger.error('Error in tkt-type-step1-submit handler:', error, {
+			logger.error(`Error in tkt-type-step1-submit handler: ${error}`, {
 				label: 'core:modals:tkt-type-step1-submit',
 			});
 			const desc = await t(interaction, 'ticket.errors.generic');

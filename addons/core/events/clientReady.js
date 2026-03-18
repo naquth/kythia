@@ -13,7 +13,7 @@ function setBotPresence(client) {
 	if (!client.isReady() || client.ws.shards.size === 0) return;
 
 	if (!client.user) {
-		logger.error('❌ client.user is undefined, cannot set presence.', {
+		logger.error('client.user is undefined, cannot set presence.', {
 			label: 'clientReady',
 		});
 		return;
@@ -40,7 +40,7 @@ function setBotPresence(client) {
 		});
 		logger.info('✅ Bot presence has been set.');
 	} catch (err) {
-		logger.error('❌ Failed to set bot presence:', err, {
+		logger.error(`Failed to set bot presence: ${err.message}`, {
 			label: 'clientReady',
 		});
 	}

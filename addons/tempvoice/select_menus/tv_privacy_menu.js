@@ -114,7 +114,9 @@ module.exports = {
 				}),
 			});
 		} catch (err) {
-			logger.error(`[TempVoice] Gagal ubah privasi: ${err.message}`);
+			logger.error(`Gagal ubah privasi: ${err.message}`, {
+				label: 'tempvoice',
+			});
 
 			await interaction.update({
 				components: await simpleContainer(

@@ -1,6 +1,6 @@
 /**
  * @namespace: addons/core/commands/utils/kyth/vote/reset.js
- * @type: Subcommand
+ * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
@@ -66,7 +66,7 @@ module.exports = {
 				await interaction.editReply({ components });
 			}
 		} catch (error) {
-			container.logger.error(error);
+			container.logger.error(error.message || String(error), { label: 'vote' });
 			const components = await simpleContainer(
 				interaction,
 				await t(interaction, 'common.error'),

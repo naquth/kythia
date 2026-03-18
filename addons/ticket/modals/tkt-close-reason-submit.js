@@ -18,7 +18,7 @@ module.exports = {
 
 			await closeTicket(interaction, container, reason);
 		} catch (error) {
-			logger.error('Error submitting close w/ reason modal:', error, {
+			logger.error(`Error submitting close w/ reason modal: ${error}`, {
 				label: 'ticket',
 			});
 			const descError = await t(interaction, 'ticket.errors.close_failed');

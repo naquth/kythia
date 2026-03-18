@@ -156,7 +156,9 @@ module.exports = {
 				});
 			}
 		} catch (err) {
-			logger.error(`[TempVoice] Gagal toggle waiting room: ${err.message}`);
+			logger.error(`Gagal toggle waiting room: ${err.message}`, {
+				label: 'tempvoice',
+			});
 			await interaction.reply({
 				components: await simpleContainer(
 					interaction,

@@ -28,6 +28,7 @@ module.exports = {
 		const { models, helpers, kythiaConfig, logger } = container;
 		const { ReactionRolePanel, ReactionRole } = models;
 		const { convertColor } = helpers.color;
+		const { chunkTextDisplay } = helpers.discord;
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -81,14 +82,10 @@ module.exports = {
 				description += `**[ID: ${panel.id}]** ${panel.title || '*(untitled)*'}\n${modeLabel} • <#${panel.channelId}>${messageLink} • ${emojiCount} emoji(s)\n\n`;
 			}
 
-			if (description.length > 3800) {
-				description = `${description.substring(0, 3797)}...`;
-			}
-
 			const listContainer = new ContainerBuilder()
 				.setAccentColor(accentColor)
 				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
+					...chunkTextDisplay(
 						`### 🎭 Reaction Role Panels (${panels.length})\n\n${description}`,
 					),
 				)

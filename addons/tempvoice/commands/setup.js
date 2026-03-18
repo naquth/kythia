@@ -107,7 +107,9 @@ module.exports = {
 				);
 				await oldMsg.delete();
 			} catch (e) {
-				logger.warn(`[TempVoice] Failed to delete old panel: ${e.message}`);
+				logger.warn(`Failed to delete old panel: ${e.message}`, {
+					label: 'tempvoice',
+				});
 			}
 		}
 

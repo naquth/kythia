@@ -1,11 +1,9 @@
 /**
  * @namespace: addons/verification/buttons/verify-emoji.js
- * @type: Button Handler
+ * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * CustomId format: verify-emoji:{userId}:{correct|wrong}
  */
 
 const { MessageFlags } = require('discord.js');
@@ -56,10 +54,18 @@ module.exports = {
 
 			if (result === 'correct') {
 				await handleSuccess(member, config);
+				const { simpleContainer } = bot.client.container.helpers.discord;
+				const comps = await simpleContainer(
+					interaction,
+					`✅ <@${interaction.user.id}> Correct! You're now verified. Welcome to **${interaction.guild.name}**! 🎉`,
+					{ color: 'Green' },
+				);
 				await interaction
 					.editReply({
-						content: `✅ <@${interaction.user.id}> Correct! You're now verified. Welcome to **${interaction.guild.name}**! 🎉`,
-						components: [],
+						content: null,
+						components: comps,
+						files: [],
+						flags: MessageFlags.IsComponentsV2,
 					})
 					.catch(() => null);
 			} else {
@@ -89,7 +95,9 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			logger.error('[Verification] verify-emoji button error:', err);
+			logger.error(`verify-emoji button error: ${err}`, {
+				label: 'verification',
+			});
 		}
 	},
 };

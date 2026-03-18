@@ -70,7 +70,7 @@ module.exports = {
 
 			await interaction.showModal(modal);
 		} catch (error) {
-			logger.error('Error in tkt-panel-modal-show handler:', error, {
+			logger.error(`Error in tkt-panel-modal-show handler: ${error}`, {
 				label: 'ticket',
 			});
 			if (!interaction.replied && !interaction.deferred) {

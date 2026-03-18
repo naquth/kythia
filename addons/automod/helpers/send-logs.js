@@ -61,9 +61,12 @@ async function sendLogsWarning(
 			);
 		});
 	} catch (dmError) {
-		logger.error(`Failed to send DM to ${message.author.tag}:`, dmError, {
-			label: 'core',
-		});
+		logger.error(
+			`Failed to send DM to ${message.author.tag}: ${dmError.message || dmError}`,
+			{
+				label: 'core',
+			},
+		);
 	}
 
 	// Log the action to the moderation log database
@@ -85,9 +88,12 @@ async function sendLogsWarning(
 			},
 		);
 	} catch (dbError) {
-		logger.error('Failed to save moderation log to database:', dbError, {
-			label: 'core',
-		});
+		logger.error(
+			`Failed to save moderation log to database: ${dbError.message || dbError}`,
+			{
+				label: 'core',
+			},
+		);
 	}
 
 	// Send a log embed to the moderation log channel, if configured
@@ -132,9 +138,12 @@ async function sendLogsWarning(
 		};
 
 		logChannel.send({ embeds: [embed] }).catch((e) => {
-			logger.error('Failed to send log embed to moderation log channel:', e, {
-				label: 'core',
-			});
+			logger.error(
+				`Failed to send log embed to moderation log channel: ${e.message || e}`,
+				{
+					label: 'core',
+				},
+			);
 		});
 	}
 }

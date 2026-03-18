@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/database/migrations/20260307_000002_add_antinuke_config.js
+ * @namespace: addons/automod/database/migrations/20260307_000002_add_antinuke_config.js
  * @type: Database Migration
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa

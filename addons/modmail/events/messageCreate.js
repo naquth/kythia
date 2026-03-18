@@ -3,23 +3,7 @@
  * @type: Event Handler
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * CASE 1 — User DMs the bot:
- *   Relays to open thread or opens a new one.
- *
- * CASE 2 — Staff types in a modmail thread (guild side):
- *   - Messages starting with > are staff notes (NOT relayed, kept in thread)
- *   - All other messages:
- *     • Bot deletes the staff's message
- *     • Posts a Components V2 card in the thread showing author + content
- *     • DMing the user with a Components V2 "Reply from X" card
- *
- * SPAM PROTECTIONS:
- *  1. Creation lock (pendingCreations): prevents duplicate threads on rapid DMs
- *  2. Reopen cooldown: configurable wait after close (default 5 min)
- *  3. Picker lock: drops DMs during server selection
- *  4. DB-backed startup repopulation (register.js)
+ * @version 1.0.0-rc
  */
 
 const {
@@ -122,7 +106,7 @@ async function handleGuildMessage(message, container, client) {
 
 		await relayGuildReply(message, modmail, false, content, container, client);
 	} catch (error) {
-		logger.error('handleGuildMessage failed:', error, { label: 'modmail' });
+		logger.error(`handleGuildMessage failed: ${error}`, { label: 'modmail' });
 	}
 }
 
@@ -318,7 +302,7 @@ async function handleUserDM(
 		);
 	} catch (error) {
 		pendingCreations.delete(message.author.id);
-		logger.error('messageCreate DM handler failed:', error, {
+		logger.error(`messageCreate DM handler failed: ${error}`, {
 			label: 'modmail',
 		});
 	}

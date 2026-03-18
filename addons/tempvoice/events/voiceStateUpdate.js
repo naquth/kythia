@@ -176,9 +176,9 @@ module.exports = async (bot, oldState, newState) => {
 					await mainChannel.save();
 				}
 			} catch (e) {
-				logger.error(
-					`[TempVoice] Failed to send waiting room notification: ${e.message}`,
-				);
+				logger.error(`Failed to send waiting room notification: ${e.message}`, {
+					label: 'tempvoice',
+				});
 			}
 		}
 	}

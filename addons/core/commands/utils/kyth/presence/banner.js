@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/presence/banner.js
+ * @namespace: addons/core/commands/utils/kyth/presence/banner.js
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
@@ -58,7 +58,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('Error setting banner:', error, {
+			logger.error(`Error setting banner: ${error}`, {
 				label: 'presence',
 			});
 			const components = await simpleContainer(

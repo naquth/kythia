@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/presence/username.js
+ * @namespace: addons/core/commands/utils/kyth/presence/username.js
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
@@ -52,7 +52,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('Error setting username:', error, {
+			logger.error(`Error setting username: ${error}`, {
 				label: 'presence',
 			});
 			const components = await simpleContainer(

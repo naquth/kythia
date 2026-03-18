@@ -131,7 +131,7 @@ class ErrorHandler {
 					.catch(() => {});
 			}
 		} catch (e) {
-			logger.error('Failed to send messageCreate error message to user:', e, {
+			logger.error(`Failed to send messageCreate error message to user: ${e}`, {
 				label: 'core:helpers:handlers:ErrorHandler',
 			});
 		}

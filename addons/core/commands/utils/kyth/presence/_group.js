@@ -1,6 +1,6 @@
 /**
- * @namespace: addons/core/commands/utils/presence/_command.js
- * @type: Command Group Definition
+ * @namespace: addons/core/commands/utils/kyth/presence/_group.js
+ * @type: Subcommand Group Definition
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc

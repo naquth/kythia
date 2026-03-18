@@ -3,11 +3,7 @@
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * /modmail reply <message>
- * Sends a visible (named) reply to the user's DMs from inside a modmail thread.
- * The staff member's username is shown in the reply.
+ * @version 1.0.0-rc
  */
 
 const { relayStaffReply } = require('../helpers');

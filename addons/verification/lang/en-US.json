@@ -1,0 +1,82 @@
+{
+	"verify": {
+		"member": {
+			"not": {
+				"found": "❌ Member not found."
+			}
+		},
+		"setup": {
+			"not": {
+				"configured": "❌ Verification not configured."
+			},
+			"role": {
+				"success": "✅ Verified role set to {role}."
+			},
+			"unverified": {
+				"role": {
+					"success": "✅ Unverified role set to {role}."
+				}
+			},
+			"channel": {
+				"success": "✅ Verification channel set to {channel}.",
+				"cleared": "✅ Verification channel cleared — will use DM only."
+			},
+			"type": {
+				"success": "✅ Captcha type set to **{type}**."
+			},
+			"timeout": {
+				"success": "✅ Timeout set to **{seconds}s**."
+			},
+			"attempts": {
+				"success": "✅ Max attempts set to **{count}**."
+			},
+			"kick": {
+				"fail": {
+					"success": "✅ Kick on fail: **{status}**."
+				},
+				"timeout": {
+					"success": "✅ Kick on timeout: **{status}**."
+				}
+			},
+			"log": {
+				"channel": {
+					"invalid": "❌ That is not a text channel.",
+					"success": "✅ Log channel set to {channel}."
+				}
+			},
+			"welcome": {
+				"disabled": "✅ Welcome message disabled.",
+				"success": "✅ Welcome message saved."
+			}
+		},
+		"captcha": {
+			"sent": "✅ New captcha sent to {user}."
+		},
+		"manual": {
+			"verified": {
+				"success": "✅ {user} has been manually verified.",
+				"log": "✅ **Manually Verified:** {user} (<@{id}>) by {admin}."
+			}
+		},
+		"revoke": {
+			"success": "✅ Verification revoked for {user}. They will need to verify again."
+		},
+		"status": {
+			"title": "🛡️ Verification Status",
+			"not": {
+				"configured": "⚠️ Verification not configured yet. Use `/verify setup role` to start."
+			},
+			"system": "**System:** {systemStatus}\n**Captcha Type:** {typeLabel}\n**Verified Role:** {verifiedRole}\n**Unverified Role:** {unverifiedRole}\n**Channel:** {channel}\n**Timeout:** {timeout}s\n**Max Attempts:** {maxAttempts}\n**Kick on Fail:** {kickOnFail}\n**Kick on Timeout:** {kickOnTimeout}\n**Log Channel:** {logChannel}\n**Welcome DM:** {welcomeMessage}"
+		},
+		"panel": {
+			"disabled": "⚠️ Verification is currently disabled on this server.",
+			"not": {
+				"configured": "⚠️ Verification has not been fully configured yet."
+			},
+			"already": {
+				"verified": "✅ You are already verified!"
+			},
+			"success": "✅ Verification panel has been generated and sent to {channel}!"
+		}
+	}
+}

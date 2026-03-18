@@ -47,9 +47,9 @@ module.exports = async (bot, member) => {
 
 	const me = guild.members.me || (await guild.members.fetchMe());
 	if (!me.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-		logger.warn(
-			`[INVITE TRACKER] Missing 'Manage Guild' permission in ${guild.name}`,
-		);
+		logger.warn(`Missing 'Manage Guild' permission in ${guild.name}`, {
+			label: 'invite tracker',
+		});
 	}
 
 	const cacheBefore = getGuildInviteCache(guild.id);
@@ -264,7 +264,7 @@ module.exports = async (bot, member) => {
 			}
 		}
 	} catch (err) {
-		logger.error(`Error guildMemberAdd:`, err, { label: 'Invite Tracker' });
+		logger.error(`Error guildMemberAdd: ${err}`, { label: 'Invite Tracker' });
 	} finally {
 		await refreshGuildInvites(guild);
 		logger.info(`Invite Cache Refreshed.`, { label: 'Invite Tracker' });

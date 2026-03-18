@@ -29,7 +29,7 @@ const embedFooter = async (source) => {
 	const client = source.client;
 
 	if (!client) {
-		logger.warn('❌ Cant find client in embedFooter');
+		logger.warn('Cant find client in embedFooter', { label: 'discord-helper' });
 		return { text: 'Kythia' };
 	}
 
@@ -66,6 +66,76 @@ async function setVoiceChannelStatus(channel, status) {
 	} catch (_e) {}
 }
 
+/**
+ * Chunks a long string into multiple TextDisplayBuilder components safely,
+ * and prevents markdown code blocks (```) from breaking.
+ * @param {string} content - Main response text
+ * @param {number} [limit=4000] - Limit of characters per text display
+ * @returns {Array<import('discord.js').TextDisplayBuilder>}
+ */
+function chunkTextDisplay(content, limit = 3999) {
+	if (!content) return [new TextDisplayBuilder().setContent('')];
+
+	const chunks = [];
+	let str = content;
+	let isInsideCodeBlock = false;
+	let currentLang = '';
+
+	while (str.length > limit) {
+		// Sisakan sedikit space buat nambahin tag penutup ``` (3 karakter)
+		const safeLimit = isInsideCodeBlock ? limit - 4 : limit;
+		let breakIndex = safeLimit;
+
+		const lastNewline = str.lastIndexOf('\n', safeLimit);
+		if (lastNewline > safeLimit - 500 && lastNewline > 0) {
+			breakIndex = lastNewline;
+		} else {
+			const lastSpace = str.lastIndexOf(' ', safeLimit);
+			if (lastSpace > safeLimit - 100 && lastSpace > 0) {
+				breakIndex = lastSpace;
+			}
+		}
+
+		let chunkText = str.substring(0, breakIndex);
+
+		// Cek apakah di dalam chunk ini ada pembuka/penutup code block
+		const codeBlocksCount = (chunkText.match(/```/g) || []).length;
+		if (codeBlocksCount % 2 !== 0) {
+			isInsideCodeBlock = !isInsideCodeBlock;
+
+			// Ambil bahasa pemrogramannya (misal: ```js) kalau baru dibuka
+			if (isInsideCodeBlock) {
+				const lastTickIndex = chunkText.lastIndexOf('```');
+				const nextNewline = chunkText.indexOf('\n', lastTickIndex);
+				currentLang =
+					nextNewline !== -1
+						? chunkText.substring(lastTickIndex + 3, nextNewline).trim()
+						: '';
+			}
+		}
+
+		// Kalau terpotong pas di tengah code block, tutup paksa di chunk ini
+		if (isInsideCodeBlock) {
+			chunkText += '\n```';
+		}
+
+		chunks.push(new TextDisplayBuilder().setContent(chunkText));
+
+		// Lanjut ke sisa string
+		str = str.substring(breakIndex).trimStart();
+
+		// Kalau tadi terpotong di tengah code block, buka lagi di awal chunk berikutnya
+		if (isInsideCodeBlock) {
+			str = `\`\`\`${currentLang}\n${str}`;
+		}
+	}
+
+	if (str.length > 0) {
+		chunks.push(new TextDisplayBuilder().setContent(str));
+	}
+
+	return chunks;
+}
 /**
  * Create a simple Discord container reply with optional color & auto-footer.
  * @param {object} interaction - Discord interaction (for t)
@@ -104,7 +174,7 @@ async function simpleContainer(interaction, content, options = {}) {
 
 	const replyContainer = new ContainerBuilder()
 		.setAccentColor(accentColor)
-		.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+		.addTextDisplayComponents(...chunkTextDisplay(content))
 		.addSeparatorComponents(
 			new SeparatorBuilder()
 				.setSpacing(SeparatorSpacingSize.Small)
@@ -159,9 +229,7 @@ async function createContainer(interaction, options = {}) {
 	const container = new ContainerBuilder().setAccentColor(accentColor);
 
 	if (title) {
-		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(`## ${title}`),
-		);
+		container.addTextDisplayComponents(...chunkTextDisplay(`## ${title}`));
 
 		container.addSeparatorComponents(
 			new SeparatorBuilder()
@@ -171,9 +239,7 @@ async function createContainer(interaction, options = {}) {
 	}
 
 	if (description) {
-		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(description),
-		);
+		container.addTextDisplayComponents(...chunkTextDisplay(description));
 	}
 
 	if (media && media.length > 0) {
@@ -218,9 +284,7 @@ async function createContainer(interaction, options = {}) {
 			});
 		}
 
-		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(footerContent),
-		);
+		container.addTextDisplayComponents(...chunkTextDisplay(footerContent));
 	}
 
 	return [container];
@@ -326,4 +390,5 @@ module.exports = {
 	isTeam,
 	isPremium,
 	isVoterActive,
+	chunkTextDisplay,
 };

@@ -30,6 +30,8 @@ module.exports = async (bot, role) => {
 			detail: `Deleted role: ${role.name}`,
 		});
 	} catch (err) {
-		bot.client.container.logger.error('[AntiNuke] roleDelete error:', err);
+		bot.client.container.logger.error(`roleDelete error: ${err}`, {
+			label: 'antinuke',
+		});
 	}
 };

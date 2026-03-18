@@ -21,7 +21,7 @@ async function roleUnprefix(guild, container) {
 	try {
 		allMembers = await guild.members.fetch();
 	} catch (e) {
-		logger.error(`[RoleUnprefix] Fetch failed: ${e.message}`);
+		logger.error(`Fetch failed: ${e.message}`, { label: 'roleunprefix' });
 		return 0;
 	}
 

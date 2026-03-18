@@ -127,7 +127,9 @@ module.exports = {
 					banner: await fetchAssetBuffer(settings.bannerURL),
 				})
 				.catch((e) =>
-					logger.warn('Failed to update server settings:', e.message),
+					logger.warn(`Failed to update server settings: ${e.message}`, {
+						label: 'restore',
+					}),
 				);
 
 			await simpleContainer(
@@ -232,7 +234,11 @@ module.exports = {
 						.then((buffer) =>
 							guild.emojis.create({ name: emoji.name, attachment: buffer }),
 						)
-						.catch((e) => logger.warn('Failed to restore emoji:', e.message)),
+						.catch((e) =>
+							logger.warn(`Failed to restore emoji: ${e.message}`, {
+								label: 'restore',
+							}),
+						),
 				);
 			});
 			backup.stickers?.forEach((sticker) => {
@@ -245,7 +251,11 @@ module.exports = {
 								file: buffer,
 							}),
 						)
-						.catch((e) => logger.warn('Failed to restore sticker:', e.message)),
+						.catch((e) =>
+							logger.warn(`Failed to restore sticker: ${e.message}`, {
+								label: 'restore',
+							}),
+						),
 				);
 			});
 			backup.soundboard?.forEach((sound) => {
@@ -258,7 +268,11 @@ module.exports = {
 								emoji: sound.emoji,
 							}),
 						)
-						.catch((e) => logger.warn('Failed to restore sound:', e.message)),
+						.catch((e) =>
+							logger.warn(`Failed to restore sound: ${e.message}`, {
+								label: 'restore',
+							}),
+						),
 				);
 			});
 			await Promise.allSettled(assetPromises);

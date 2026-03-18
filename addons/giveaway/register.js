@@ -4,10 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Note: giveaway-join button is auto-loaded from buttons/giveaway-join.js.
- * This register.js only handles the GiveawayManager initialization which
- * requires shard-specific logic that cannot be expressed as a plain file.
  */
 
 const GiveawayManager = require('./helpers/GiveawayManager');

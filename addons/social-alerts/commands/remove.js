@@ -105,7 +105,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (err) {
-			logger.error('[social-alerts] Error in remove command:', err);
+			logger.error(`Error in remove command: ${err}`, {
+				label: 'social-alerts',
+			});
 			return interaction.editReply({
 				components: await simpleContainer(
 					interaction,

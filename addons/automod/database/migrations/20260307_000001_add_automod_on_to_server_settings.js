@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/database/migrations/20260307_000001_add_automod_on_to_server_settings.js
+ * @namespace: addons/automod/database/migrations/20260307_000001_add_automod_on_to_server_settings.js
  * @type: Database Migration
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa

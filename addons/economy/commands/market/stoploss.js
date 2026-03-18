@@ -105,7 +105,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('Error in stop-loss order:', error, {
+			logger.error(`Error in stop-loss order: ${error}`, {
 				label: 'economy:market:stoploss',
 			});
 			const msg = `## ${await t(interaction, 'economy.market.order.error.title')}\n${await t(interaction, 'economy.market.order.error.desc')}`;

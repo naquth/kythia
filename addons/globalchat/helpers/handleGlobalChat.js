@@ -144,9 +144,9 @@ async function handleGlobalChat(message, container) {
 				break;
 			}
 			default:
-				logger.warn(
-					`⚠️ [GlobalChat] Unknown API response status: ${result.status}`,
-				);
+				logger.warn(`Unknown API response status: ${result.status}`, {
+					label: 'globalchat',
+				});
 				logger.info('🌏 [GlobalChat] Full response:', result);
 		}
 
@@ -156,7 +156,9 @@ async function handleGlobalChat(message, container) {
 			);
 		}
 	} catch (apiError) {
-		logger.error('❌ [GlobalChat] Failed to send message to API:', apiError);
+		logger.error(`Failed to send message to API: ${apiError}`, {
+			label: 'globalchat',
+		});
 	}
 }
 

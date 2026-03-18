@@ -110,7 +110,9 @@ module.exports = {
 						`Token index ${tokenIdx} hit 429 limit. Retrying with next token...`,
 					);
 				} else {
-					logger.error('❌ Error in /translate (non-429):', error);
+					logger.error(`Error in /translate (non-429): ${error.message}`, {
+						label: 'translate',
+					});
 					break;
 				}
 			}

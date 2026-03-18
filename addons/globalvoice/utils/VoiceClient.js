@@ -47,7 +47,7 @@ class KythiaRelayClient extends EventEmitter {
 		});
 
 		this.ws.on('error', (err) =>
-			this.logger.error('Relay Error:', err, {
+			this.logger.error(`Relay Error: ${err}`, {
 				label: 'globalvoice:VoiceClient',
 			}),
 		);

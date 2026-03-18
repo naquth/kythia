@@ -26,8 +26,20 @@ module.exports = async (bot, member) => {
 		});
 		if (!config || !config.verifiedRoleId) return;
 
+		// Assign unverified role if configured, so they get locked here
+		if (config.unverifiedRoleId) {
+			const role = member.guild.roles.cache.get(config.unverifiedRoleId);
+			if (role) await member.roles.add(role).catch(() => null);
+		}
+
+		// If channelId is present, we rely on the static panel button, do NOT DM
+		if (config.channelId) {
+			return;
+		}
+
+		// Otherwise, DM them automatically
 		await sendCaptcha(member, config);
 	} catch (err) {
-		logger.error('[Verification] guildMemberAdd error:', err);
+		logger.error(`guildMemberAdd error: ${err}`, { label: 'verification' });
 	}
 };

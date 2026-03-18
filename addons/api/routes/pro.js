@@ -1,31 +1,9 @@
 /**
  * @namespace: addons/api/routes/pro.js
- * @type: Route
+ * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * "Pro Hosting" API — subdomains, DNS records (Cloudflare-backed), and uptime monitors.
- * Auto-mounted at: /api/pro
- *
- * Subdomains
- *   GET    /subdomains                     — list (filter ?userId=)
- *   GET    /subdomains/:id                 — single, includes dns records
- *   POST   /subdomains                     — claim a new subdomain (validates name, quota)
- *   DELETE /subdomains/:id                 — release subdomain (cascades DNS records)
- *
- * DNS Records  (Cloudflare-integrated: create/update/delete call Cloudflare AND local DB)
- *   GET    /subdomains/:id/dns             — list DNS records for a subdomain
- *   POST   /subdomains/:id/dns             — add a record (A/CNAME/TXT/MX) → Cloudflare + DB
- *   PATCH  /dns/:recordId                  — update record value → Cloudflare + DB
- *   DELETE /dns/:recordId                  — delete record → Cloudflare + DB
- *
- * Monitors   (one per user, tracks uptime of a URL)
- *   GET    /monitors                       — list (filter ?userId= ?lastStatus=)
- *   GET    /monitors/:userId               — single monitor
- *   POST   /monitors                       — create / upsert monitor
- *   PATCH  /monitors/:userId               — update urlToPing or lastStatus
- *   DELETE /monitors/:userId               — delete monitor
  */
 
 const { Hono } = require('hono');

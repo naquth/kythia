@@ -1,9 +1,9 @@
 /**
  * @namespace: addons/embed-builder/commands/embed-builder/edit.js
- * @type: Subcommand
+ * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
+ * @version 1.0.0-rc
  */
 
 const {

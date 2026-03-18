@@ -13,7 +13,6 @@ const {
 	MessageFlags,
 	SeparatorBuilder,
 	SeparatorSpacingSize,
-	TextDisplayBuilder,
 } = require('discord.js');
 
 const { createTicketTranscript } = require('../helpers');
@@ -33,7 +32,8 @@ module.exports = {
 		const { models, t, kythiaConfig, helpers, logger } = container;
 		const { Ticket, TicketConfig } = models;
 		const { convertColor } = helpers.color;
-		const { simpleContainer, getChannelSafe } = helpers.discord;
+		const { simpleContainer, getChannelSafe, chunkTextDisplay } =
+			helpers.discord;
 
 		const ticket = await Ticket.getCache({
 			channelId: interaction.channel.id,
@@ -120,15 +120,13 @@ module.exports = {
 			const v2Components = [
 				new ContainerBuilder()
 					.setAccentColor(accentColor)
-					.addTextDisplayComponents(new TextDisplayBuilder().setContent(title))
+					.addTextDisplayComponents(...chunkTextDisplay(title))
 					.addSeparatorComponents(
 						new SeparatorBuilder()
 							.setSpacing(SeparatorSpacingSize.Small)
 							.setDivider(true),
 					)
-					.addTextDisplayComponents(
-						new TextDisplayBuilder().setContent(userLine),
-					)
+					.addTextDisplayComponents(...chunkTextDisplay(userLine))
 					.addSeparatorComponents(
 						new SeparatorBuilder()
 							.setSpacing(SeparatorSpacingSize.Small)
@@ -142,9 +140,7 @@ module.exports = {
 							.setSpacing(SeparatorSpacingSize.Small)
 							.setDivider(true),
 					)
-					.addTextDisplayComponents(
-						new TextDisplayBuilder().setContent(footerText),
-					),
+					.addTextDisplayComponents(...chunkTextDisplay(footerText)),
 			];
 
 			await transcriptChannel.send({
@@ -163,7 +159,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error('Failed to create transcript:', error, { label: 'ticket' });
+			logger.error(`Failed to create transcript: ${error}`, {
+				label: 'ticket',
+			});
 			const desc = await t(interaction, 'ticket.errors.transcript_failed');
 			return interaction.reply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

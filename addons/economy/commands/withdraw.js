@@ -88,7 +88,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('Error during withdraw command execution:', error, {
+			logger.error(`Error during withdraw command execution: ${error}`, {
 				label: 'economy:withdraw',
 			});
 			const msg = await t(interaction, 'economy.withdraw.withdraw.error');

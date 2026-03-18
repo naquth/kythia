@@ -3,9 +3,7 @@
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * Handles the modal submission from the "Close With Reason" flow.
+ * @version 1.0.0-rc
  */
 
 const { closeModmail } = require('../helpers');

@@ -71,7 +71,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('Error during account edit command execution:', error, {
+			logger.error(`Error during account edit command execution: ${error}`, {
 				label: 'core:commands:economy:account:edit',
 			});
 			const msg = await t(

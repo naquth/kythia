@@ -1,8 +1,8 @@
 /**
  * @namespace: addons/nsfw/buttons/nsfw_delete.js
- * @type: Button Handler
+ * @type: Module
  * @copyright © 2026 kenndeclouv
- * @assistant chaa & graa
+ * @assistant graa & chaa
  * @version 1.0.0-rc
  */
 

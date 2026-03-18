@@ -1,11 +1,9 @@
 /**
  * @namespace: addons/verification/helpers/captcha-math.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Generates a math-based captcha challenge using Discord button components.
  */
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');

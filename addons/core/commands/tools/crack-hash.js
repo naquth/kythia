@@ -94,7 +94,7 @@ module.exports = {
 				}
 			}
 		} catch (error) {
-			logger.error('Hash lookup API error:', error, {
+			logger.error(`Hash lookup API error: ${error}`, {
 				label: 'crack-hash',
 			});
 			resultText = await t(interaction, 'core.tools.crackhash.api.error');

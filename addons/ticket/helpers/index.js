@@ -181,7 +181,7 @@ async function refreshTicketPanel(panelMessageId, container) {
 			flags: MessageFlags.IsComponentsV2,
 		});
 	} catch (error) {
-		logger.error(`REFRESH PANEL FAILED (${panelMessageId}):`, error, {
+		logger.error(`REFRESH PANEL FAILED (${panelMessageId}): ${error}`, {
 			label: 'core:helpers:ticket:refresh-ticket-panel',
 		});
 	}
@@ -394,7 +394,7 @@ async function createTicketChannel(
 			flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 		});
 	} catch (error) {
-		logger.error('Error in createTicketChannel helper:', error, {
+		logger.error(`Error in createTicketChannel helper: ${error}`, {
 			label: 'core:helpers:ticket:create-ticket-channel',
 		});
 
@@ -665,7 +665,7 @@ async function closeTicket(interaction, container, reason = null) {
 
 		await interaction.channel.delete();
 	} catch (error) {
-		logger.error('Failed to close ticket:', error, {
+		logger.error(`Failed to close ticket: ${error}`, {
 			label: 'core:helpers:ticket:close-ticket',
 		});
 

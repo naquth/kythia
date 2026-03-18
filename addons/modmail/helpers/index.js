@@ -3,15 +3,7 @@
  * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * Core helper functions for the Modmail addon.
- *
- * Flow (per Discord's official modmail guidance):
- * 1. User DMs the bot → createModmailThread() opens a private thread in the inbox channel
- * 2. Staff reply with /modmail reply or /modmail areply (anonymous) → relayStaffReply()
- * 3. User replies in DM → relayUserMessage() mirrors to thread
- * 4. Staff close with /modmail close [reason] → closeModmail() saves transcript + logs
+ * @version 1.0.0-rc
  */
 
 const {
@@ -392,7 +384,7 @@ async function createModmailThread(
 
 		return modmail;
 	} catch (error) {
-		logger.error('[modmail] createModmailThread failed:', error, {
+		logger.error(error.message || String(error), {
 			label: 'modmail:helpers:create-thread',
 		});
 		return null;
@@ -547,7 +539,7 @@ async function relayUserMessage(message, modmail, container) {
 			});
 		} catch (_e) {}
 	} catch (error) {
-		logger.error('relayUserMessage failed:', error, { label: 'modmail' });
+		logger.error(`relayUserMessage failed: ${error}`, { label: 'modmail' });
 	}
 }
 
@@ -642,7 +634,7 @@ async function relayStaffReply(interaction, content, anonymous, container) {
 			flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 		});
 	} catch (error) {
-		logger.error('[modmail] relayStaffReply failed:', error, {
+		logger.error(error.message || String(error), {
 			label: 'modmail:helpers:relay-staff-reply',
 		});
 		const descError = await t(interaction, 'modmail.errors.generic');
@@ -771,7 +763,7 @@ async function relayGuildReply(
 			allowedMentions: { parse: [] },
 		});
 	} catch (err) {
-		logger.error('relayGuildReply: failed to send thread card:', err, {
+		logger.error(`relayGuildReply: failed to send thread card: ${err}`, {
 			label: 'modmail',
 		});
 	}
@@ -1140,7 +1132,7 @@ async function closeModmail(interaction, container, reason = null) {
 		// ─── Delete (archive) thread ─────────────────────────────────────────
 		await interaction.channel.delete();
 	} catch (error) {
-		logger.error('[modmail] closeModmail failed:', error, {
+		logger.error(error.message || String(error), {
 			label: 'modmail:helpers:close-modmail',
 		});
 

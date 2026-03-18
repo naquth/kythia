@@ -135,7 +135,8 @@ class CloudflareApi {
 				dbError,
 			);
 			this.logger.warn(
-				`[CF] Rolling back Cloudflare record ${apiResponse.result.id}...`,
+				`Rolling back Cloudflare record ${apiResponse.result.id}...`,
+				{ label: 'cf' },
 			);
 			await this.deleteRecordByCloudflareId(apiResponse.result.id);
 			return {
@@ -167,7 +168,8 @@ class CloudflareApi {
 		if (!apiResponse.success) {
 			if (apiResponse.errors[0]?.code === 81044) {
 				this.logger.warn(
-					`[CF] Record ${record.cloudflareId} already deleted on Cloudflare.`,
+					`Record ${record.cloudflareId} already deleted on Cloudflare.`,
+					{ label: 'cf' },
 				);
 			} else {
 				return { success: false, error: apiResponse.errors[0]?.message };

@@ -1,11 +1,9 @@
 /**
  * @namespace: addons/verification/buttons/verify-math.js
- * @type: Button Handler
+ * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * CustomId format: verify-math:{userId}:{correct|wrong_VALUE}
  */
 
 const { getSession, incrementAttempts } = require('../helpers/session');
@@ -58,18 +56,20 @@ module.exports = {
 
 			if (result === 'correct') {
 				await handleSuccess(member, config);
+				const { simpleContainer } = bot.client.container.helpers.discord;
+				const comps = await simpleContainer(
+					interaction,
+					`✅ <@${interaction.user.id}> Correct! You're now verified. Welcome to **${interaction.guild.name}**! 🎉`,
+					{ color: 'Green' },
+				);
 				await interaction
 					.editReply({
-						content: `✅ <@${interaction.user.id}> Correct! You're now verified. Welcome to **${interaction.guild.name}**! 🎉`,
-						components: [],
+						content: null,
+						components: comps,
 						files: [],
 						flags: MessageFlags.IsComponentsV2,
 					})
-					.catch(() =>
-						interaction.channel
-							?.send(`✅ <@${interaction.user.id}> Verified successfully!`)
-							.catch(() => null),
-					);
+					.catch(() => null);
 			} else {
 				const attempts = incrementAttempts(
 					interaction.guild.id,
@@ -97,7 +97,9 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			logger.error('[Verification] verify-math button error:', err);
+			logger.error(`verify-math button error: ${err}`, {
+				label: 'verification',
+			});
 		}
 	},
 };

@@ -61,9 +61,9 @@ module.exports = {
 
 					const tokenIdx = await getAndUseNextAvailableToken();
 					if (tokenIdx === -1) {
-						logger.info(
-							`❌ No AI tokens available for daily greeter. Skipping.`,
-						);
+						logger.info('No AI tokens available for daily greeter. Skipping.', {
+							label: 'daily-greeter',
+						});
 						return;
 					}
 
@@ -82,13 +82,15 @@ module.exports = {
 					await mainChannel.send(greeting);
 				} catch (err) {
 					logger.error(
-						`❌ Failed to process greeting for guild ${guildId}:`,
-						err.message,
+						`Failed to process greeting for guild ${guildId}: ${err.message}`,
+						{ label: 'daily-greeter' },
 					);
 				}
 			}
 		} catch (err) {
-			logger.error('❌ Failed to run daily greeter task:', err);
+			logger.error(`Failed to run daily greeter task: ${err.message}`, {
+				label: 'daily-greeter',
+			});
 		}
 	},
 };

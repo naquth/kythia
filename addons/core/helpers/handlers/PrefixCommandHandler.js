@@ -402,7 +402,10 @@ class PrefixCommandHandler {
 				await fakeInteraction.reply(helpMessage);
 			}
 		} catch (err) {
-			logger.error(`❌ Error executing prefix command '${commandKey}':`, err);
+			logger.error(
+				`Error executing prefix command '${commandKey}': ${err.message}`,
+				{ label: 'PrefixCommandHandler' },
+			);
 			await fakeInteraction
 				.reply(
 					await t(fakeInteraction, 'core.events.messageCreate.error', {

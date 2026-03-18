@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/core/commands/utils/kyth/team/_group.js
+ * @namespace: addons/core/commands/utils/kyth/premium/_group.js
  * @type: Subcommand Group Definition
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa

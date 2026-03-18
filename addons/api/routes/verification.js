@@ -1,31 +1,9 @@
 /**
  * @namespace: addons/api/routes/verification.js
- * @type: Route
+ * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * REST API for the Verification addon.
- * Auto-mounted at: /api/verification
- *
- * Endpoints:
- *   GET    /:guildId                     — full config snapshot + enabled status
- *   PUT    /:guildId                     — replace entire config
- *   PATCH  /:guildId/toggle              — enable / disable system
- *   PATCH  /:guildId/captcha-type        — set captcha type (math|emoji|image)
- *   PATCH  /:guildId/roles               — set verified / unverified roles
- *   PATCH  /:guildId/channel             — set verification channel (null = DM)
- *   PATCH  /:guildId/timeout             — set timeout seconds
- *   PATCH  /:guildId/attempts            — set max attempts
- *   PATCH  /:guildId/kick                — set kickOnFail / kickOnTimeout
- *   PATCH  /:guildId/log-channel         — set log channel
- *   PATCH  /:guildId/welcome-message     — set welcome DM text
- *   GET    /:guildId/whitelist           — not applicable (verification has no whitelist)
- *
- * Action endpoints (bot side-effects):
- *   POST   /:guildId/members/:userId/reset   — resend captcha to a member
- *   POST   /:guildId/members/:userId/force   — manually verify a member
- *   DELETE /:guildId/members/:userId/revoke  — revoke verification from a member
  */
 
 const { Hono } = require('hono');
@@ -53,6 +31,8 @@ function formatConfig(config, systemEnabled) {
 		dmFallback: config?.dmFallback ?? true,
 		welcomeMessage: config?.welcomeMessage ?? null,
 		logChannelId: config?.logChannelId ?? null,
+		panelMessageId: config?.panelMessageId ?? null,
+		panelConfig: config?.panelConfig ?? null,
 	};
 }
 
@@ -74,12 +54,12 @@ app.get('/:guildId', async (c) => {
 	try {
 		const { config, setting } = await getOrCreateConfig(c);
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: formatConfig(config, setting?.verificationOn),
 		});
 	} catch (error) {
 		getLogger(c).error('GET /api/verification/:guildId error:', error);
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -92,7 +72,7 @@ app.put('/:guildId', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 
 	const ALLOWED = [
@@ -117,11 +97,18 @@ app.put('/:guildId', async (c) => {
 			if (field in body) config[field] = body[field];
 		}
 
+		if ('panelConfig' in body) {
+			config.panelConfig =
+				typeof body.panelConfig === 'object'
+					? JSON.stringify(body.panelConfig)
+					: body.panelConfig;
+		}
+
 		// Validate captchaType
 		if (config.captchaType && !CAPTCHA_TYPES.includes(config.captchaType)) {
 			return c.json(
 				{
-					status: 'error',
+					success: false,
 					error: `captchaType must be one of: ${CAPTCHA_TYPES.join(', ')}`,
 				},
 				400,
@@ -130,12 +117,12 @@ app.put('/:guildId', async (c) => {
 
 		await config.save();
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: formatConfig(config, setting?.verificationOn),
 		});
 	} catch (error) {
 		getLogger(c).error('PUT /api/verification/:guildId error:', error);
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -148,11 +135,11 @@ app.patch('/:guildId/toggle', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	if (typeof body.enabled !== 'boolean')
 		return c.json(
-			{ status: 'error', error: '"enabled" (boolean) required' },
+			{ success: false, error: '"enabled" (boolean) required' },
 			400,
 		);
 
@@ -171,11 +158,11 @@ app.patch('/:guildId/toggle', async (c) => {
 		setting.verificationOn = body.enabled;
 		await setting.save();
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: { verificationOn: setting.verificationOn },
 		});
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -188,11 +175,11 @@ app.patch('/:guildId/captcha-type', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	if (!['math', 'emoji', 'image'].includes(body.type)) {
 		return c.json(
-			{ status: 'error', error: 'type must be: math, emoji, or image' },
+			{ success: false, error: 'type must be: math, emoji, or image' },
 			400,
 		);
 	}
@@ -200,9 +187,9 @@ app.patch('/:guildId/captcha-type', async (c) => {
 		const { config } = await getOrCreateConfig(c);
 		config.captchaType = body.type;
 		await config.save();
-		return c.json({ status: 'ok', data: { captchaType: config.captchaType } });
+		return c.json({ success: true, data: { captchaType: config.captchaType } });
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -215,7 +202,7 @@ app.patch('/:guildId/roles', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	try {
 		const { config } = await getOrCreateConfig(c);
@@ -225,14 +212,14 @@ app.patch('/:guildId/roles', async (c) => {
 			config.unverifiedRoleId = body.unverifiedRoleId || null;
 		await config.save();
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: {
 				verifiedRoleId: config.verifiedRoleId,
 				unverifiedRoleId: config.unverifiedRoleId,
 			},
 		});
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -245,15 +232,15 @@ app.patch('/:guildId/channel', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	try {
 		const { config } = await getOrCreateConfig(c);
 		config.channelId = body.channelId || null;
 		await config.save();
-		return c.json({ status: 'ok', data: { channelId: config.channelId } });
+		return c.json({ success: true, data: { channelId: config.channelId } });
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -266,13 +253,13 @@ app.patch('/:guildId/timeout', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	const secs = Number(body.seconds);
 	if (!Number.isInteger(secs) || secs < 30 || secs > 600) {
 		return c.json(
 			{
-				status: 'error',
+				success: false,
 				error: '"seconds" must be an integer between 30 and 600',
 			},
 			400,
@@ -283,11 +270,11 @@ app.patch('/:guildId/timeout', async (c) => {
 		config.timeoutSeconds = secs;
 		await config.save();
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: { timeoutSeconds: config.timeoutSeconds },
 		});
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -300,12 +287,12 @@ app.patch('/:guildId/attempts', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	const count = Number(body.count);
 	if (!Number.isInteger(count) || count < 1 || count > 10) {
 		return c.json(
-			{ status: 'error', error: '"count" must be an integer between 1 and 10' },
+			{ success: false, error: '"count" must be an integer between 1 and 10' },
 			400,
 		);
 	}
@@ -313,9 +300,9 @@ app.patch('/:guildId/attempts', async (c) => {
 		const { config } = await getOrCreateConfig(c);
 		config.maxAttempts = count;
 		await config.save();
-		return c.json({ status: 'ok', data: { maxAttempts: config.maxAttempts } });
+		return c.json({ success: true, data: { maxAttempts: config.maxAttempts } });
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -328,7 +315,7 @@ app.patch('/:guildId/kick', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	try {
 		const { config } = await getOrCreateConfig(c);
@@ -338,14 +325,14 @@ app.patch('/:guildId/kick', async (c) => {
 			config.kickOnTimeout = body.kickOnTimeout;
 		await config.save();
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: {
 				kickOnFail: config.kickOnFail,
 				kickOnTimeout: config.kickOnTimeout,
 			},
 		});
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -358,18 +345,18 @@ app.patch('/:guildId/log-channel', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	try {
 		const { config } = await getOrCreateConfig(c);
 		config.logChannelId = body.channelId || null;
 		await config.save();
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: { logChannelId: config.logChannelId },
 		});
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -382,18 +369,18 @@ app.patch('/:guildId/welcome-message', async (c) => {
 	try {
 		body = await c.req.json();
 	} catch {
-		return c.json({ status: 'error', error: 'Invalid JSON' }, 400);
+		return c.json({ success: false, error: 'Invalid JSON' }, 400);
 	}
 	try {
 		const { config } = await getOrCreateConfig(c);
 		config.welcomeMessage = body.message || null;
 		await config.save();
 		return c.json({
-			status: 'ok',
+			success: true,
 			data: { welcomeMessage: config.welcomeMessage },
 		});
 	} catch (error) {
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -407,7 +394,7 @@ app.post('/:guildId/members/:userId/reset', async (c) => {
 		if (!config.verifiedRoleId) {
 			return c.json(
 				{
-					status: 'error',
+					success: false,
 					error: 'Verification not configured (no verifiedRoleId)',
 				},
 				422,
@@ -417,11 +404,11 @@ app.post('/:guildId/members/:userId/reset', async (c) => {
 		const bot = getBot(c);
 		const guild = await bot.guilds.fetch(guildId).catch(() => null);
 		if (!guild)
-			return c.json({ status: 'error', error: 'Guild not found' }, 404);
+			return c.json({ success: false, error: 'Guild not found' }, 404);
 
 		const member = await guild.members.fetch(userId).catch(() => null);
 		if (!member)
-			return c.json({ status: 'error', error: 'Member not found' }, 404);
+			return c.json({ success: false, error: 'Member not found' }, 404);
 
 		// Lazy-require to avoid circular deps
 		const { clearSession } = require('../../verification/helpers/session');
@@ -430,12 +417,12 @@ app.post('/:guildId/members/:userId/reset', async (c) => {
 		await sendCaptcha(member, config);
 
 		return c.json({
-			status: 'ok',
+			success: true,
 			message: `Captcha resent to ${member.user.tag}`,
 		});
 	} catch (error) {
 		getLogger(c).error('POST verification/reset error:', error);
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -449,11 +436,11 @@ app.post('/:guildId/members/:userId/force', async (c) => {
 		const bot = getBot(c);
 		const guild = await bot.guilds.fetch(guildId).catch(() => null);
 		if (!guild)
-			return c.json({ status: 'error', error: 'Guild not found' }, 404);
+			return c.json({ success: false, error: 'Guild not found' }, 404);
 
 		const member = await guild.members.fetch(userId).catch(() => null);
 		if (!member)
-			return c.json({ status: 'error', error: 'Member not found' }, 404);
+			return c.json({ success: false, error: 'Member not found' }, 404);
 
 		const { clearSession } = require('../../verification/helpers/session');
 		const { handleSuccess } = require('../../verification/helpers/verify');
@@ -461,12 +448,12 @@ app.post('/:guildId/members/:userId/force', async (c) => {
 		await handleSuccess(member, config);
 
 		return c.json({
-			status: 'ok',
+			success: true,
 			message: `${member.user.tag} manually verified`,
 		});
 	} catch (error) {
 		getLogger(c).error('POST verification/force error:', error);
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
@@ -480,11 +467,11 @@ app.delete('/:guildId/members/:userId/revoke', async (c) => {
 		const bot = getBot(c);
 		const guild = await bot.guilds.fetch(guildId).catch(() => null);
 		if (!guild)
-			return c.json({ status: 'error', error: 'Guild not found' }, 404);
+			return c.json({ success: false, error: 'Guild not found' }, 404);
 
 		const member = await guild.members.fetch(userId).catch(() => null);
 		if (!member)
-			return c.json({ status: 'error', error: 'Member not found' }, 404);
+			return c.json({ success: false, error: 'Member not found' }, 404);
 
 		if (config.verifiedRoleId) {
 			const role = guild.roles.cache.get(config.verifiedRoleId);
@@ -496,12 +483,248 @@ app.delete('/:guildId/members/:userId/revoke', async (c) => {
 		}
 
 		return c.json({
-			status: 'ok',
+			success: true,
 			message: `Verification revoked for ${member.user.tag}`,
 		});
 	} catch (error) {
 		getLogger(c).error('DELETE verification/revoke error:', error);
-		return c.json({ status: 'error', error: error.message }, 500);
+		return c.json({ success: false, error: error.message }, 500);
+	}
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/verification/:guildId/panel/send — deploy/edit static panel
+// ---------------------------------------------------------------------------
+app.post('/:guildId/panel/send', async (c) => {
+	const { guildId } = c.req.param();
+	try {
+		const { config } = await getOrCreateConfig(c);
+		if (!config.channelId) {
+			return c.json(
+				{ success: false, error: 'No verification channel configured' },
+				422,
+			);
+		}
+
+		const bot = getBot(c);
+		const guild = await bot.guilds.fetch(guildId).catch(() => null);
+		if (!guild)
+			return c.json({ success: false, error: 'Guild not found' }, 404);
+
+		const ch = await guild.channels.fetch(config.channelId).catch(() => null);
+		if (!ch || !ch.isTextBased())
+			return c.json(
+				{ success: false, error: 'Channel not found or invalid' },
+				404,
+			);
+
+		let panelConfig = {};
+		if (config.panelConfig) {
+			try {
+				panelConfig = JSON.parse(config.panelConfig);
+			} catch {
+				// skip
+			}
+		}
+
+		const title = panelConfig.title || '🛡️ Server Verification';
+		const description =
+			panelConfig.description ||
+			'Welcome! To gain access to the rest of the server, please click the button below to verify yourself.';
+		const buttonText = panelConfig.buttonText || 'Verify Me';
+		const color = panelConfig.color
+			? parseInt(panelConfig.color.replace('#', ''), 16)
+			: null;
+
+		const {
+			ContainerBuilder,
+			TextDisplayBuilder,
+			SeparatorBuilder,
+			ButtonBuilder,
+			ButtonStyle,
+			ActionRowBuilder,
+			MessageFlags,
+		} = require('discord.js');
+
+		const containerPayload = new ContainerBuilder()
+			.setAccentColor(color || c.get('config').bot.color)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`## ${title}\n\n${description}`),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder().setSpacing(2).setDivider(true),
+			)
+			.addActionRowComponents(
+				new ActionRowBuilder().addComponents(
+					new ButtonBuilder()
+						.setCustomId('verify_panel_btn')
+						.setLabel(buttonText)
+						.setStyle(ButtonStyle.Success)
+						.setEmoji('🛡️'),
+				),
+			);
+
+		let msg;
+		if (config.panelMessageId) {
+			// Try to edit existing message
+			const existingMsg = await ch.messages
+				.fetch(config.panelMessageId)
+				.catch(() => null);
+			if (existingMsg) {
+				msg = await existingMsg
+					.edit({
+						components: [containerPayload],
+						flags: MessageFlags.IsComponentsV2,
+					})
+					.catch(() => null);
+			}
+		}
+
+		if (!msg) {
+			// Send brand new message
+			msg = await ch
+				.send({
+					components: [containerPayload],
+					flags: MessageFlags.IsComponentsV2,
+				})
+				.catch(() => null);
+		}
+
+		if (!msg) {
+			return c.json(
+				{
+					success: false,
+					error: 'Failed to send panel message to Discord channel',
+				},
+				500,
+			);
+		}
+
+		config.panelMessageId = msg.id;
+		await config.save();
+
+		return c.json({
+			success: true,
+			message: 'Panel deployed successfully',
+			data: { panelMessageId: msg.id },
+		});
+	} catch (error) {
+		getLogger(c).error('POST verification/panel/send error:', error);
+		return c.json({ success: false, error: error.message }, 500);
+	}
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/verification/:guildId/panel/resend — force a brand new panel at the bottom
+// ---------------------------------------------------------------------------
+app.post('/:guildId/panel/resend', async (c) => {
+	const { guildId } = c.req.param();
+	try {
+		const { config } = await getOrCreateConfig(c);
+		if (!config.channelId) {
+			return c.json(
+				{ success: false, error: 'No verification channel configured' },
+				422,
+			);
+		}
+
+		const bot = getBot(c);
+		const guild = await bot.guilds.fetch(guildId).catch(() => null);
+		if (!guild)
+			return c.json({ success: false, error: 'Guild not found' }, 404);
+
+		const ch = await guild.channels.fetch(config.channelId).catch(() => null);
+		if (!ch || !ch.isTextBased())
+			return c.json(
+				{ success: false, error: 'Channel not found or invalid' },
+				404,
+			);
+
+		let panelConfig = {};
+		if (config.panelConfig) {
+			try {
+				panelConfig = JSON.parse(config.panelConfig);
+			} catch {
+				// skip
+			}
+		}
+
+		const title = panelConfig.title || '🛡️ Server Verification';
+		const description =
+			panelConfig.description ||
+			'Welcome! To gain access to the rest of the server, please click the button below to verify yourself.';
+		const buttonText = panelConfig.buttonText || 'Verify Me';
+		const color = panelConfig.color
+			? parseInt(panelConfig.color.replace('#', ''), 16)
+			: null;
+
+		const {
+			ContainerBuilder,
+			TextDisplayBuilder,
+			SeparatorBuilder,
+			ButtonBuilder,
+			ButtonStyle,
+			ActionRowBuilder,
+			MessageFlags,
+		} = require('discord.js');
+
+		const containerPayload = new ContainerBuilder()
+			.setAccentColor(color || c.get('config').bot.color)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`## ${title}\n\n${description}`),
+			)
+			.addSeparatorComponents(
+				new SeparatorBuilder().setSpacing(2).setDivider(true),
+			)
+			.addActionRowComponents(
+				new ActionRowBuilder().addComponents(
+					new ButtonBuilder()
+						.setCustomId('verify_panel_btn')
+						.setLabel(buttonText)
+						.setStyle(ButtonStyle.Success)
+						.setEmoji('🛡️'),
+				),
+			);
+
+		// Delete old message if it exists
+		if (config.panelMessageId) {
+			const existingMsg = await ch.messages
+				.fetch(config.panelMessageId)
+				.catch(() => null);
+			if (existingMsg) {
+				await existingMsg.delete().catch(() => null);
+			}
+		}
+
+		// Send brand new message
+		const msg = await ch
+			.send({
+				components: [containerPayload],
+				flags: MessageFlags.IsComponentsV2,
+			})
+			.catch(() => null);
+
+		if (!msg) {
+			return c.json(
+				{
+					success: false,
+					error: 'Failed to send panel message to Discord channel',
+				},
+				500,
+			);
+		}
+
+		config.panelMessageId = msg.id;
+		await config.save();
+
+		return c.json({
+			success: true,
+			message: 'Panel forcefully resent successfully',
+			data: { panelMessageId: msg.id },
+		});
+	} catch (error) {
+		getLogger(c).error('POST verification/panel/resend error:', error);
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 

@@ -433,9 +433,9 @@ async function refreshPanelMessage(panelId, container) {
 		.fetch(panel.channelId)
 		.catch(() => null);
 	if (!channel) {
-		logger.warn(
-			`[reaction-role:refresh] Channel ${panel.channelId} not found for panel ${panelId}.`,
-		);
+		logger.warn(`Channel ${panel.channelId} not found for panel ${panelId}.`, {
+			label: 'reaction-role refresh',
+		});
 		return;
 	}
 
@@ -444,7 +444,8 @@ async function refreshPanelMessage(panelId, container) {
 		.catch(() => null);
 	if (!message) {
 		logger.warn(
-			`[reaction-role:refresh] Message ${panel.messageId} not found in channel ${panel.channelId}.`,
+			`Message ${panel.messageId} not found in channel ${panel.channelId}.`,
+			{ label: 'reaction-role refresh' },
 		);
 		return;
 	}
@@ -490,13 +491,17 @@ async function refreshReactionRoleMessage(messageId, container) {
 	const channelId = reactionRoles[0].channelId;
 	const channel = await client.channels.fetch(channelId).catch(() => null);
 	if (!channel) {
-		logger.warn(`[reaction-role:refresh] Channel ${channelId} not found.`);
+		logger.warn(`Channel ${channelId} not found.`, {
+			label: 'reaction-role refresh',
+		});
 		return;
 	}
 
 	const message = await channel.messages.fetch(messageId).catch(() => null);
 	if (!message) {
-		logger.warn(`[reaction-role:refresh] Message ${messageId} not found.`);
+		logger.warn(`Message ${messageId} not found.`, {
+			label: 'reaction-role refresh',
+		});
 		return;
 	}
 

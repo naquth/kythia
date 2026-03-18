@@ -1,6 +1,6 @@
 /**
  * @namespace: addons/social-alerts/helpers/youtube.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc

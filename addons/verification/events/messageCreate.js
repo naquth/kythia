@@ -4,11 +4,9 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Handles text answers for the IMAGE captcha type.
- * Button captcha (math/emoji) responses are handled by button handlers.
  */
 
+const { MessageFlags } = require('discord.js');
 const { getSession, incrementAttempts } = require('../helpers/session');
 const {
 	handleSuccess,
@@ -50,10 +48,18 @@ module.exports = async (bot, message) => {
 				.catch(() => null);
 			if (!member) return;
 			await handleSuccess(member, config);
+			const { simpleContainer } = container.helpers.discord;
+			const comps = await simpleContainer(
+				message.channel,
+				`✅ <@${message.author.id}> You're verified! Welcome to **${message.guild.name}**.`,
+				{ color: 'Green' },
+			);
 			await message.channel
 				.send({
-					content: `✅ <@${message.author.id}> You're verified! Welcome to **${message.guild.name}**.`,
+					content: `<@${message.author.id}>`,
+					components: comps,
 					allowedMentions: { users: [message.author.id] },
+					flags: MessageFlags.IsComponentsV2,
 				})
 				.then((m) => setTimeout(() => m.delete().catch(() => null), 8000));
 		} else {
@@ -78,6 +84,6 @@ module.exports = async (bot, message) => {
 			});
 		}
 	} catch (err) {
-		logger.error('[Verification] messageCreate error:', err);
+		logger.error(`messageCreate error: ${err}`, { label: 'verification' });
 	}
 };

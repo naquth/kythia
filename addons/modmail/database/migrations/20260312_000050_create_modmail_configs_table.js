@@ -3,7 +3,7 @@
  * @type: Database Migration
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
+ * @version 1.0.0-rc
  */
 
 module.exports = {

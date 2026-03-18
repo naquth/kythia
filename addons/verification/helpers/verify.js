@@ -1,15 +1,9 @@
 /**
  * @namespace: addons/verification/helpers/verify.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Core verification engine:
- * - sendCaptcha(member, config, models)
- * - handleSuccess(member, config, interaction?)
- * - handleFail(member, config, attempts, interaction?)
- * - handleTimeout(guild, userId, config, models)
  */
 
 const {
@@ -28,13 +22,21 @@ const { createSession, clearSession } = require('./session');
 // ---------------------------------------------------------------------------
 // Send log
 // ---------------------------------------------------------------------------
-async function sendLog(guild, config, message) {
+async function sendLog(guild, config, text) {
 	if (!config.logChannelId) return;
-	const ch = await guild.channels.fetch(config.logChannelId).catch(() => null);
-	if (!ch?.isTextBased()) return;
-	await ch
-		.send({ content: message, allowedMentions: { parse: [] } })
-		.catch(() => null);
+	const ch =
+		guild.channels.cache.get(config.logChannelId) ||
+		(await guild.channels.fetch(config.logChannelId).catch(() => null));
+
+	if (ch?.isTextBased()) {
+		try {
+			const { simpleContainer } = require('kythia-core').helpers.discord;
+			const comps = await simpleContainer(ch, text, { color: 'Green' });
+			await ch.send({ components: comps, flags: 1 << 16 }).catch(() => null);
+		} catch {
+			await ch.send(text).catch(() => null);
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +108,7 @@ function buildCaptchaPayload(member, config) {
 // ---------------------------------------------------------------------------
 // sendCaptcha — dispatch the challenge to channel or DM
 // ---------------------------------------------------------------------------
-async function sendCaptcha(member, config) {
+async function sendCaptcha(member, config, interaction = null) {
 	const guild = member.guild;
 
 	// Assign unverified role if configured
@@ -120,26 +122,40 @@ async function sendCaptcha(member, config) {
 	let sentMessage = null;
 	let sentChannel = null;
 
-	// Try channel first
-	if (config.channelId) {
-		const ch = await guild.channels.fetch(config.channelId).catch(() => null);
-		if (ch?.isTextBased()) {
-			const msg = await ch.send(payload).catch(() => null);
-			if (msg) {
-				sentMessage = msg;
-				sentChannel = ch;
+	if (interaction) {
+		payload.ephemeral = true;
+		if (interaction.deferred || interaction.replied) {
+			sentMessage = await interaction
+				.followUp({ ...payload, fetchReply: true })
+				.catch(() => null);
+		} else {
+			sentMessage = await interaction
+				.reply({ ...payload, fetchReply: true })
+				.catch(() => null);
+		}
+		if (sentMessage) sentChannel = interaction.channel;
+	} else {
+		// Try channel first (for non-interaction commands like /verify reset)
+		if (config.channelId) {
+			const ch = await guild.channels.fetch(config.channelId).catch(() => null);
+			if (ch?.isTextBased()) {
+				const msg = await ch.send(payload).catch(() => null);
+				if (msg) {
+					sentMessage = msg;
+					sentChannel = ch;
+				}
 			}
 		}
-	}
 
-	// Fallback to DM
-	if (!sentMessage && config.dmFallback) {
-		const dm = await member.createDM().catch(() => null);
-		if (dm) {
-			const msg = await dm.send(payload).catch(() => null);
-			if (msg) {
-				sentMessage = msg;
-				sentChannel = dm;
+		// Fallback to DM
+		if (!sentMessage && config.dmFallback) {
+			const dm = await member.createDM().catch(() => null);
+			if (dm) {
+				const msg = await dm.send(payload).catch(() => null);
+				if (msg) {
+					sentMessage = msg;
+					sentChannel = dm;
+				}
 			}
 		}
 	}

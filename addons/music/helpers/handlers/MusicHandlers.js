@@ -1328,7 +1328,7 @@ class MusicHandlers {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('[HandleBack] Error:', error);
+			logger.error(`Error: ${error}`, { label: 'handleback' });
 
 			try {
 				if (!interaction.deferred && !interaction.replied) {

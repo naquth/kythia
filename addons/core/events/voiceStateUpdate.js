@@ -120,7 +120,7 @@ module.exports = async (bot, oldState, newState) => {
 			},
 		});
 	} catch (err) {
-		logger.error('Error in voiceStateUpdate event handler:', err, {
+		logger.error(`Error in voiceStateUpdate event handler: ${err}`, {
 			label: 'core:events:voiceStateUpdate',
 		});
 		if (bot.config?.sentry?.dsn) {

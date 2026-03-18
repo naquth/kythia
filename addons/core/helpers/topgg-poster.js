@@ -36,7 +36,9 @@ function setupTopGGPoster(bot) {
 		});
 
 		poster.on('error', (error) => {
-			logger.error('❌ Failed to post stats to Top.gg:', error);
+			logger.error(`Failed to post stats to Top.gg: ${error.message}`, {
+				label: 'topgg',
+			});
 		});
 
 		logger.info('Top.gg auto-poster initialized successfully');

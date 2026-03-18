@@ -99,7 +99,9 @@ module.exports = {
 					}
 				}
 			} catch (e) {
-				logger.warn(`[TempVoice] Failed while checking category: ${e.message}`);
+				logger.warn(`Failed while checking category: ${e.message}`, {
+					label: 'tempvoice',
+				});
 			}
 		}
 

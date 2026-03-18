@@ -133,9 +133,8 @@ const startTick = (botClient) => {
 				await addXp(guildId, userId, xpToAdd, fakeMessage, levelingChannel);
 			} catch (err) {
 				botClient.container.logger.error(
-					`[leveling:voice] Failed to award XP to ${userId} in ${guildId}:`,
-					err,
-					{ label: 'leveling:voiceStateUpdate' },
+					`Failed to award XP to ${userId} in ${guildId}: ${err.message}`,
+					{ label: 'leveling:voice' },
 				);
 			}
 		}

@@ -57,7 +57,8 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 
 	for (const failedGuild of failedGuilds) {
 		logger.warn(
-			`⚠️ [GlobalChat] Handling failed guild: ${failedGuild.guildName || failedGuild.guildId}. Reason: ${failedGuild.error}`,
+			`Handling failed guild: ${failedGuild.guildName || failedGuild.guildId}. Reason: ${failedGuild.error}`,
+			{ label: 'globalchat' },
 		);
 
 		try {
@@ -69,7 +70,8 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 
 			if (!guildInfo || !guildInfo.globalChannelId) {
 				logger.warn(
-					`⚠️ [GlobalChat] Could not find registered channel info for guild ${failedGuild.guildId} in API /list response. Skipping fix.`,
+					`Could not find registered channel info for guild ${failedGuild.guildId} in API /list response. Skipping fix.`,
+					{ label: 'globalchat' },
 				);
 				continue;
 			}
@@ -81,7 +83,8 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 					.catch(() => null);
 				if (!channel || !channel.isTextBased() || channel.isDMBased()) {
 					logger.warn(
-						`⚠️ [GlobalChat] Channel ${guildInfo.globalChannelId} for guild ${failedGuild.guildId} not found, not text-based, or is DM. Skipping fix.`,
+						`Channel ${guildInfo.globalChannelId} for guild ${failedGuild.guildId} not found, not text-based, or is DM. Skipping fix.`,
+						{ label: 'globalchat' },
 					);
 					continue;
 				}
@@ -89,14 +92,16 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				const guild = channel.guild;
 				if (!guild) {
 					logger.warn(
-						`⚠️ [GlobalChat] Cannot access guild ${failedGuild.guildId} for channel ${channel.id}. Bot might have been kicked. Skipping fix.`,
+						`Cannot access guild ${failedGuild.guildId} for channel ${channel.id}. Bot might have been kicked. Skipping fix.`,
+						{ label: 'globalchat' },
 					);
 					continue;
 				}
 				const me = await guild.members.fetchMe().catch(() => null);
 				if (!me) {
 					logger.warn(
-						`⚠️ [GlobalChat] Bot is not a member of guild ${guild.name} (${guild.id}). Skipping fix.`,
+						`Bot is not a member of guild ${guild.name} (${guild.id}). Skipping fix.`,
+						{ label: 'globalchat' },
 					);
 					continue;
 				}
@@ -107,7 +112,8 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 						.has(PermissionsBitField.Flags.ManageWebhooks)
 				) {
 					logger.warn(
-						`⚠️ [GlobalChat] Missing 'Manage Webhooks' permission in channel #${channel.name} (${channel.id}) for guild ${guild.name} (${guild.id}). Cannot fix webhook.`,
+						`Missing 'Manage Webhooks' permission in channel #${channel.name} (${channel.id}) for guild ${guild.name} (${guild.id}). Cannot fix webhook.`,
+						{ label: 'globalchat' },
 					);
 					continue;
 				}
@@ -164,7 +170,8 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 
 			if (remainingWebhooksCount >= 15) {
 				logger.warn(
-					`⚠️ [GlobalChat] Channel #${channel.name} (${channel.id}) in guild ${failedGuild.guildId} has reached the maximum webhook limit (15). Skipping webhook creation.`,
+					`Channel #${channel.name} (${channel.id}) in guild ${failedGuild.guildId} has reached the maximum webhook limit (15). Skipping webhook creation.`,
+					{ label: 'globalchat' },
 				);
 				continue;
 			}

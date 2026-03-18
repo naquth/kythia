@@ -3,15 +3,7 @@
  * @type: Database Migration
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * Adds per-guild open/close card customization columns:
- *   - greetingColor  — hex accent color for the DM opening card
- *   - greetingImage  — banner image URL for the DM opening card
- *   - closingColor   — hex accent color for the DM closing card
- *   - closingImage   — banner image URL for the DM closing card
- *
- * All are nullable; when null the bot falls back to kythiaConfig.bot.color.
+ * @version 1.0.0-rc
  */
 
 module.exports = {

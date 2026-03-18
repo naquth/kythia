@@ -4,12 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * @description
- * Generates a Minecraft wallpaper using Starlight Skins.
- * Supports multiple players (comma-separated) and 5 wallpaper styles.
- *
- * API: https://starlightskins.lunareclipse.studio/render/wallpaper/:id/:players
  */
 
 const {

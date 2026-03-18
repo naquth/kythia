@@ -1,28 +1,9 @@
 /**
  * @namespace: addons/automod/helpers/antinuke.js
- * @type: Helper
+ * @type: Helper Script
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Centralized AntiNuke engine.
- *
- * Config shape (stored as JSON in server_settings.antiNukeConfig):
- * {
- *   enabled: true,
- *   modules: {
- *     massBan:      { enabled: true, threshold: 3, window: 10000, action: 'kick' },
- *     massKick:     { enabled: true, threshold: 3, window: 10000, action: 'kick' },
- *     channelCreate:{ enabled: true, threshold: 3, window: 10000, action: 'kick' },
- *     channelDelete:{ enabled: true, threshold: 3, window: 10000, action: 'kick' },
- *     roleDelete:   { enabled: true, threshold: 3, window: 10000, action: 'kick' },
- *     webhookCreate:{ enabled: true, threshold: 5, window: 10000, action: 'kick' },
- *     adminGrant:   { enabled: true, action: 'kick' },     // no threshold – instant
- *   },
- *   whitelistedRoles: [],
- *   whitelistedUsers: [],
- *   logChannelId: null,   // defaults to auditLogChannelId
- * }
  */
 
 const {
@@ -267,7 +248,9 @@ async function checkThreshold({ bot, guild, executor, moduleName, detail }) {
 			});
 		}
 	} catch (err) {
-		logger.error(`[AntiNuke] Error in checkThreshold (${moduleName}):`, err);
+		logger.error(`Error in checkThreshold (${moduleName}): ${err}`, {
+			label: 'antinuke',
+		});
 	}
 }
 
@@ -307,7 +290,9 @@ async function checkInstant({ bot, guild, executor, moduleName, detail }) {
 			});
 		}
 	} catch (err) {
-		logger.error(`[AntiNuke] Error in checkInstant (${moduleName}):`, err);
+		logger.error(`Error in checkInstant (${moduleName}): ${err}`, {
+			label: 'antinuke',
+		});
 	}
 }
 

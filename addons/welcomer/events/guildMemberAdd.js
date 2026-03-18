@@ -14,7 +14,6 @@ const {
 const { welcomeBanner } = require('kythia-arts');
 const {
 	ContainerBuilder,
-	TextDisplayBuilder,
 	SeparatorBuilder,
 	SeparatorSpacingSize,
 	MediaGalleryBuilder,
@@ -26,7 +25,7 @@ module.exports = async (bot, member) => {
 	const container = bot.client.container;
 	const { models, helpers, kythiaConfig, logger } = container;
 	const { WelcomeSetting } = models;
-	const { embedFooter, getTextChannelSafe } = helpers.discord;
+	const { embedFooter, getTextChannelSafe, chunkTextDisplay } = helpers.discord;
 	const { convertColor } = helpers.color;
 
 	const guild = member.guild;
@@ -214,9 +213,7 @@ module.exports = async (bot, member) => {
 
 		const welcomeContainer = new ContainerBuilder()
 			.setAccentColor(accentColor)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(safeWelcomeText),
-			)
+			.addTextDisplayComponents(...chunkTextDisplay(safeWelcomeText))
 			.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setSpacing(SeparatorSpacingSize.Small)
@@ -237,7 +234,7 @@ module.exports = async (bot, member) => {
 		}
 
 		welcomeContainer.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(footerContent),
+			...chunkTextDisplay(footerContent),
 		);
 
 		channel
@@ -281,8 +278,8 @@ module.exports = async (bot, member) => {
 				await member.send({ content: String(dmText) }).catch(() => {});
 			}
 		} catch (err) {
-			logger.error('[Welcomer] Failed to send welcome DM:', err, {
-				label: 'welcomer:guildMemberAdd',
+			logger.error(err.message || String(err), {
+				label: 'welcomer:guildMemberAdd:send_dm',
 			});
 		}
 	}

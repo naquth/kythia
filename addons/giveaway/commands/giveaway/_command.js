@@ -72,7 +72,7 @@ module.exports = {
 
 			await interaction.respond(result);
 		} catch (error) {
-			logger.error('[Giveaway Autocomplete] Error:', error, {
+			logger.error(error.message || String(error), {
 				label: 'giveaway:autocomplete',
 			});
 			await interaction.respond([]);

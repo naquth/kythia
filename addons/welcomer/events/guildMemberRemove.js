@@ -10,7 +10,6 @@ const {
 	MessageFlags,
 	ContainerBuilder,
 	SeparatorBuilder,
-	TextDisplayBuilder,
 	SeparatorSpacingSize,
 	MediaGalleryBuilder,
 	MediaGalleryItemBuilder,
@@ -27,7 +26,7 @@ module.exports = async (bot, member) => {
 	const container = bot.client.container;
 	const { models, helpers, kythiaConfig, logger } = container;
 	const { WelcomeSetting } = models;
-	const { embedFooter, getTextChannelSafe } = helpers.discord;
+	const { embedFooter, getTextChannelSafe, chunkTextDisplay } = helpers.discord;
 	const { convertColor } = helpers.color;
 
 	const setting = await WelcomeSetting.getCache({ guildId: member.guild.id });
@@ -193,9 +192,7 @@ module.exports = async (bot, member) => {
 
 		const goodbyeContainer = new ContainerBuilder()
 			.setAccentColor(accentColor)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(safeGoodbyeText),
-			)
+			.addTextDisplayComponents(...chunkTextDisplay(safeGoodbyeText))
 			.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setSpacing(SeparatorSpacingSize.Small)
@@ -216,7 +213,7 @@ module.exports = async (bot, member) => {
 		}
 
 		goodbyeContainer.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(footerContent),
+			...chunkTextDisplay(footerContent),
 		);
 
 		await outChannel

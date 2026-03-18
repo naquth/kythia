@@ -4,9 +4,6 @@
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
  * @version 1.0.0-rc
- *
- * Detects when a member is granted the Administrator permission via role update.
- * Core's guildMemberUpdate.js handles audit logging — we only run antinuke here.
  */
 
 const { AuditLogEvent, PermissionFlagsBits } = require('discord.js');
@@ -62,8 +59,8 @@ module.exports = async (bot, oldMember, newMember) => {
 		// when bot doesn't have required permissions in certain guilds
 		if (err?.code !== 50013) {
 			bot.client.container.logger.error(
-				'[AntiNuke] guildMemberUpdate (adminGrant) error:',
-				err,
+				`guildMemberUpdate (adminGrant) error: ${err.message}`,
+				{ label: 'antinuke' },
 			);
 		}
 	}

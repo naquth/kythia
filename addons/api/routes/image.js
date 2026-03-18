@@ -116,7 +116,7 @@ app.post('/upload', async (c) => {
 
 		return c.json({ success: true, data: savedImage }, 201);
 	} catch (error) {
-		logger.error(`[Image API] Upload failed: ${error.message}`);
+		logger.error(`Upload failed: ${error.message}`, { label: 'image api' });
 		return c.json({ success: false, error: error.message }, 500);
 	}
 });

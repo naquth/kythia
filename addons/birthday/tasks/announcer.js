@@ -223,7 +223,9 @@ module.exports = {
 			}
 		} catch (error) {
 			if (logger)
-				logger.error('❌ [Birthday] Error fetching birthdays:', error);
+				logger.error(`Error fetching birthdays: ${error}`, {
+					label: 'birthday',
+				});
 		}
 	},
 };

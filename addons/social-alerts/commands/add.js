@@ -169,9 +169,9 @@ module.exports = {
 					{ name: `🎵 ${hintUsername}`, value: hintUsername },
 				]);
 			} catch (err) {
-				logger.warn(
-					`[social-alerts] TikTok autocomplete error: ${err.message}`,
-				);
+				logger.warn(`TikTok autocomplete error: ${err.message}`, {
+					label: 'social-alerts',
+				});
 				// Don't block the user — echo their input
 				return interaction.respond([
 					{ name: `🎵 ${hintUsername}`, value: hintUsername },
@@ -213,9 +213,9 @@ module.exports = {
 					},
 				]);
 			} catch (err) {
-				logger.warn(
-					`[social-alerts] Instagram autocomplete error: ${err.message}`,
-				);
+				logger.warn(`Instagram autocomplete error: ${err.message}`, {
+					label: 'social-alerts',
+				});
 				return interaction.respond([
 					{ name: `📸 ${hintUsername}`, value: hintUsername },
 				]);
@@ -244,7 +244,9 @@ module.exports = {
 				results.map((ch) => ({ name: ch.name, value: ch.id })),
 			);
 		} catch (err) {
-			logger.warn(`[social-alerts] Autocomplete error: ${err.message}`);
+			logger.warn(`Autocomplete error: ${err.message}`, {
+				label: 'social-alerts',
+			});
 			await interaction.respond([]);
 		}
 	},
@@ -375,7 +377,7 @@ module.exports = {
 				});
 			}
 		} catch (err) {
-			logger.error('[social-alerts] Error in add command:', err);
+			logger.error(`Error in add command: ${err}`, { label: 'social-alerts' });
 			return interaction.editReply({
 				components: await simpleContainer(
 					interaction,

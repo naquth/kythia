@@ -89,7 +89,9 @@ async function reloadLavalinkNodes(client) {
 
 		return true;
 	} catch (error) {
-		logger.error(`❌ Error during player migration: ${error.message}`);
+		logger.error(`Error during player migration: ${error.message}`, {
+			label: 'reload-node',
+		});
 		return false;
 	}
 }

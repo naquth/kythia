@@ -122,7 +122,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('[GiveawayJoin] Fatal Error:', error);
+			logger.error(`Fatal Error: ${error}`, { label: 'giveawayjoin' });
 			const msg = await t(interaction, 'giveaway.error.fatal.join');
 			const err = await simpleContainer(interaction, msg, {
 				color: 'Red',

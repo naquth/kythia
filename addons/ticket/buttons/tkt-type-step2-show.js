@@ -141,7 +141,7 @@ module.exports = {
 
 			await interaction.showModal(modal);
 		} catch (error) {
-			logger.error('Error in tkt-type-step2-show handler:', error, {
+			logger.error(`Error in tkt-type-step2-show handler: ${error}`, {
 				label: 'ticket',
 			});
 			if (!interaction.replied && !interaction.deferred) {

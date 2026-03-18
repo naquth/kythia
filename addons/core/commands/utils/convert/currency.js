@@ -85,7 +85,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (e) {
-			logger.error('Currency convert error:', e, {
+			logger.error(`Currency convert error: ${e}`, {
 				label: 'convert',
 			});
 			const components = await simpleContainer(

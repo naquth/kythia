@@ -73,7 +73,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error('Error in history command:', error, {
+			logger.error(`Error in history command: ${error}`, {
 				label: 'core:commands:economy:market:history',
 			});
 			const msg = `## ${await t(interaction, 'economy.market.history.error.title')}\n${await t(interaction, 'economy.market.history.error.desc')}`;

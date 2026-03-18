@@ -84,7 +84,9 @@ module.exports = {
 				}),
 			);
 		} catch (err) {
-			logger.error(`[DNS Delete Autocomplete] Error: ${err.message}`);
+			logger.error(`Error: ${err.message}`, {
+				label: 'dns delete autocomplete',
+			});
 			await interaction.respond([
 				{ name: 'Error loading DNS records.', value: 'none' },
 			]);
@@ -159,7 +161,8 @@ module.exports = {
 
 		if (!recordToDelete.cloudflareId) {
 			logger.warn(
-				`[DNS Delete] Record ID ${recordToDelete.id} adalah zombie (tidak ada cloudflareId). Menghapus dari DB...`,
+				`Record ID ${recordToDelete.id} adalah zombie (tidak ada cloudflareId). Menghapus dari DB...`,
+				{ label: 'dns delete' },
 			);
 			await recordToDelete.destroy();
 
@@ -183,7 +186,8 @@ module.exports = {
 				await recordToDelete.destroy();
 			} catch (e) {
 				logger.warn(
-					`[DNS Delete] Gagal destroy record (mungkin udah di-destroy service): ${e.message}`,
+					`Gagal destroy record (mungkin udah di-destroy service): ${e.message}`,
+					{ label: 'dns delete' },
 				);
 			}
 

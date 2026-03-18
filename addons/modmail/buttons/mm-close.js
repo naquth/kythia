@@ -3,12 +3,7 @@
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0
- *
- * Shows a confirmation container before closing, with three options:
- *   ✅ Confirm Close
- *   🔏 Close With Reason (shows modal)
- *   ❌ Cancel
+ * @version 1.0.0-rc
  */
 
 const {

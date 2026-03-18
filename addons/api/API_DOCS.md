@@ -6304,7 +6304,14 @@ Get the full verification config plus whether the system is currently enabled.
     "kickOnTimeout": false,
     "dmFallback": true,
     "welcomeMessage": "Welcome to the server! 🎉",
-    "logChannelId": "111222444"
+    "logChannelId": "111222444",
+    "panelMessageId": "888899990000",
+    "panelConfig": {
+      "title": "Welcome to the Server",
+      "description": "Please click below to verify",
+      "buttonText": "Verify",
+      "color": "#ff0000"
+    }
   }
 }
 ```
@@ -6315,7 +6322,7 @@ Get the full verification config plus whether the system is currently enabled.
 
 Bulk-update any subset of verification config fields in one request.
 
-**Allowed fields:** `verifiedRoleId`, `unverifiedRoleId`, `channelId`, `captchaType`, `maxAttempts`, `timeoutSeconds`, `kickOnFail`, `kickOnTimeout`, `dmFallback`, `welcomeMessage`, `logChannelId`
+**Allowed fields:** `verifiedRoleId`, `unverifiedRoleId`, `channelId`, `captchaType`, `maxAttempts`, `timeoutSeconds`, `kickOnFail`, `kickOnTimeout`, `dmFallback`, `welcomeMessage`, `logChannelId`, `panelConfig`
 
 **Request Body:**
 ```json
@@ -6323,7 +6330,13 @@ Bulk-update any subset of verification config fields in one request.
   "captchaType": "emoji",
   "maxAttempts": 5,
   "kickOnFail": true,
-  "welcomeMessage": "You're verified! Welcome 🎉"
+  "welcomeMessage": "You're verified! Welcome 🎉",
+  "panelConfig": {
+    "title": "Welcome",
+    "description": "Click to verify",
+    "buttonText": "Let me in",
+    "color": "#00ff00"
+  }
 }
 ```
 
@@ -6397,7 +6410,35 @@ Revoke a member's verified status. Removes the verified role and re-adds the unv
 
 **Response:**
 ```json
-{ "status": "ok", "message": "Verification revoked for Username#0000" }
+{ "success": true, "message": "Verification revoked for Username#0000" }
+```
+
+---
+
+#### `POST /api/verification/:guildId/panel/send`
+
+Deploy or edit the static Ephemeral Verification Panel into the configured `channelId`. Uses the active `panelConfig` settings. If a panel is already deployed (`panelMessageId`), it edits the existing message dynamically.
+
+- Returns `422` if no verification `channelId` is configured.
+- Returns `404` if the guild or channel is missing.
+
+**Response:**
+```json
+{ "success": true, "message": "Panel deployed successfully", "data": { "panelMessageId": "123456789" } }
+```
+
+---
+
+#### `POST /api/verification/:guildId/panel/resend`
+
+Erase the currently active Ephemeral Verification Panel message in Discord and force the bot to spawn a shiny new one at the very bottom of the chat channel.
+
+- Returns `422` if no verification `channelId` is configured.
+- Returns `404` if the guild or channel is missing.
+
+**Response:**
+```json
+{ "success": true, "message": "Panel forcefully resent successfully", "data": { "panelMessageId": "987654321" } }
 ```
 
 ---

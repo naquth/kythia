@@ -13,10 +13,14 @@ module.exports = async (bot, ban) => {
 	if (!ban.guild) return;
 
 	try {
-		const audit = await ban.guild.fetchAuditLogs({
-			type: AuditLogEvent.MemberBanAdd,
-			limit: 1,
-		});
+		if (!ban.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await ban.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.MemberBanAdd,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 		const entry = audit.entries.find(
 			(e) =>
 				e.target?.id === ban.user.id && e.createdTimestamp > Date.now() - 5000,

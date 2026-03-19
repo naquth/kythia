@@ -78,6 +78,12 @@ module.exports = async (bot, oldState, newState) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		const components = [
 			new ContainerBuilder()

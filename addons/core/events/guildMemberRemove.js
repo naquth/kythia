@@ -34,10 +34,14 @@ module.exports = async (bot, member) => {
 	if (logChannel?.isTextBased()) {
 		try {
 			// Check if it was a kick
-			const kickAudit = await member.guild.fetchAuditLogs({
-				type: AuditLogEvent.MemberKick,
-				limit: 1,
-			});
+			if (!member.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+			const kickAudit = await member.guild
+				.fetchAuditLogs({
+					type: AuditLogEvent.MemberKick,
+					limit: 1,
+				})
+				.catch(() => null);
+			if (!kickAudit) return;
 
 			const kickEntry = kickAudit.entries.find(
 				(e) =>

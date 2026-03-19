@@ -64,23 +64,24 @@ const client = require('./src/client');
 // ===== 2. Load Core Helpers & Utilities with Meaningful Descriptions =====
 
 const {
-	embedFooter,
-	setVoiceChannelStatus,
-	simpleContainer,
-	createContainer,
-	getChannelSafe,
-	getTextChannelSafe,
-	getMemberSafe,
 	isTeam,
 	isPremium,
-	isVoterActive,
+	embedFooter,
 	getGuildSafe,
+	isVoterActive,
+	getMemberSafe,
+	getChannelSafe,
+	createContainer,
+	simpleContainer,
+	chunkTextDisplay,
+	getTextChannelSafe,
+	setVoiceChannelStatus,
 } = require('@coreHelpers/discord'); // Discord helper funcs for permissions/identity
 
 const {
 	checkCooldown,
-	formatDuration,
 	parseDuration,
+	formatDuration,
 } = require('@coreHelpers/time');
 
 // ===== 3. Load Additional Utilities =====
@@ -117,17 +118,18 @@ const dependencies = {
 	models: {},
 	helpers: {
 		discord: {
-			embedFooter,
-			setVoiceChannelStatus,
-			simpleContainer,
-			createContainer,
-			getChannelSafe,
-			getTextChannelSafe,
-			getMemberSafe,
 			isTeam,
 			isPremium,
-			isVoterActive,
+			embedFooter,
 			getGuildSafe,
+			isVoterActive,
+			getMemberSafe,
+			getChannelSafe,
+			createContainer,
+			simpleContainer,
+			chunkTextDisplay,
+			getTextChannelSafe,
+			setVoiceChannelStatus,
 		},
 		color: { convertColor },
 		time: { checkCooldown, formatDuration, parseDuration },

@@ -42,6 +42,12 @@ module.exports = async (bot, oldMember, newMember) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// We can check what changed. Flags?
 		const changes = [];

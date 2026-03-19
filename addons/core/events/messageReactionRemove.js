@@ -59,6 +59,12 @@ module.exports = async (bot, reaction, user) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		const emojiDisplay = reaction.emoji.id
 			? `<:${reaction.emoji.name}:${reaction.emoji.id}>`

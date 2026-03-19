@@ -34,22 +34,40 @@ module.exports = async (bot, channel) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// Check for webhook creation, update, or deletion
-		const createAudit = await channel.guild.fetchAuditLogs({
-			type: AuditLogEvent.WebhookCreate,
-			limit: 1,
-		});
+		if (!channel.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const createAudit = await channel.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.WebhookCreate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!createAudit) return;
 
-		const updateAudit = await channel.guild.fetchAuditLogs({
-			type: AuditLogEvent.WebhookUpdate,
-			limit: 1,
-		});
+		if (!channel.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const updateAudit = await channel.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.WebhookUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!updateAudit) return;
 
-		const deleteAudit = await channel.guild.fetchAuditLogs({
-			type: AuditLogEvent.WebhookDelete,
-			limit: 1,
-		});
+		if (!channel.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const deleteAudit = await channel.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.WebhookDelete,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!deleteAudit) return;
 
 		const createEntry = createAudit.entries.find(
 			(e) =>

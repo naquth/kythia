@@ -38,12 +38,22 @@ module.exports = async (bot, data) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// Fetch audit log
-		const audit = await guild.fetchAuditLogs({
-			type: AuditLogEvent.ApplicationCommandPermissionUpdate,
-			limit: 1,
-		});
+		if (!guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.ApplicationCommandPermissionUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

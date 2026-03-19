@@ -35,11 +35,21 @@ module.exports = async (bot, oldRule, newRule) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await newRule.guild.fetchAuditLogs({
-			type: AuditLogEvent.AutoModerationRuleUpdate,
-			limit: 1,
-		});
+		if (!newRule.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newRule.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.AutoModerationRuleUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

@@ -33,12 +33,22 @@ module.exports = async (bot, guild) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// Fetch audit log to see who updated it
-		const audit = await guild.fetchAuditLogs({
-			type: AuditLogEvent.IntegrationCreate, // Or Delete/Update. It's hard to distinguish perfectly without checking multiple types or checking exact time.
-			limit: 1,
-		});
+		if (!guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.IntegrationCreate, // Or Delete/Update. It's hard to distinguish perfectly without checking multiple types or checking exact time.
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		// We check for IntegrationCreate, IntegrationDelete, IntegrationUpdate
 		// Since this event just says "updated", we might not know exactly WHAT happened without looking deep at audit logs.

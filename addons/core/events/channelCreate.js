@@ -26,10 +26,14 @@ module.exports = async (bot, channel) => {
 	const guildId = channel.guild.id;
 
 	try {
-		const audit = await channel.guild.fetchAuditLogs({
-			type: AuditLogEvent.ChannelCreate,
-			limit: 1,
-		});
+		if (!channel.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await channel.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.ChannelCreate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		let entry = audit.entries.find(
 			(e) =>

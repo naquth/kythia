@@ -31,7 +31,7 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { helpers, logger, t, kythiaConfig } = container;
+		const { helpers, logger, kythiaConfig } = container;
 		const { simpleContainer } = helpers.discord;
 		const guildId = interaction.options.getString('guild_id', true);
 

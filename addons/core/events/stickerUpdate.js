@@ -49,11 +49,21 @@ module.exports = async (bot, _oldSticker, newSticker) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await newSticker.guild.fetchAuditLogs({
-			type: AuditLogEvent.StickerUpdate,
-			limit: 1,
-		});
+		if (!newSticker.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newSticker.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.StickerUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

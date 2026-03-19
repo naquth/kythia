@@ -34,11 +34,21 @@ module.exports = async (bot, sticker) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await sticker.guild.fetchAuditLogs({
-			type: AuditLogEvent.StickerCreate,
-			limit: 1,
-		});
+		if (!sticker.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await sticker.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.StickerCreate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

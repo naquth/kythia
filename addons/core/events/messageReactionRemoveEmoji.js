@@ -36,6 +36,12 @@ module.exports = async (bot, reaction) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// No specific audit log type for removing a SPECIFIC emoji usually, but it might fall under MessageReactionRemoveEmoji if triggered by a user/bot?
 		// Actually there isn't a direct audit log for this specific action often, it's usually just manual removal.

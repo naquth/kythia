@@ -34,11 +34,21 @@ module.exports = async (bot, oldStage, newStage) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await newStage.guild.fetchAuditLogs({
-			type: AuditLogEvent.StageInstanceUpdate,
-			limit: 1,
-		});
+		if (!newStage.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newStage.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.StageInstanceUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

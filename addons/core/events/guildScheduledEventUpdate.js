@@ -34,11 +34,21 @@ module.exports = async (bot, oldEvent, newEvent) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await newEvent.guild.fetchAuditLogs({
-			type: AuditLogEvent.GuildScheduledEventUpdate,
-			limit: 1,
-		});
+		if (!newEvent.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newEvent.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.GuildScheduledEventUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

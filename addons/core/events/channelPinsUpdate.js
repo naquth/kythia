@@ -34,17 +34,31 @@ module.exports = async (bot, channel, _time) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// Try to determine if it was a pin or unpin
-		const pinAudit = await channel.guild.fetchAuditLogs({
-			type: AuditLogEvent.MessagePin,
-			limit: 1,
-		});
+		if (!channel.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const pinAudit = await channel.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.MessagePin,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!pinAudit) return;
 
-		const unpinAudit = await channel.guild.fetchAuditLogs({
-			type: AuditLogEvent.MessageUnpin,
-			limit: 1,
-		});
+		if (!channel.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const unpinAudit = await channel.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.MessageUnpin,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!unpinAudit) return;
 
 		const pinEntry = pinAudit.entries.find(
 			(e) =>

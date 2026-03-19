@@ -37,10 +37,14 @@ module.exports = async (bot, oldMember, newMember) => {
 		if (!me?.permissions.has(PermissionFlagsBits.ViewAuditLog)) return;
 
 		// Find who granted it
-		const audit = await newMember.guild.fetchAuditLogs({
-			type: AuditLogEvent.MemberRoleUpdate,
-			limit: 5,
-		});
+		if (!newMember.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newMember.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.MemberRoleUpdate,
+				limit: 5,
+			})
+			.catch(() => null);
+		if (!audit) return;
 		const entry = audit.entries.find(
 			(e) =>
 				e.target?.id === newMember.id && e.createdTimestamp > Date.now() - 5000,

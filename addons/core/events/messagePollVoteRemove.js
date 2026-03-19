@@ -37,6 +37,12 @@ module.exports = async (bot, pollAnswer, userId) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		const user = await bot.client.users.fetch(userId).catch(() => null);
 

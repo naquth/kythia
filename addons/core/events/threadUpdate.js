@@ -49,11 +49,21 @@ module.exports = async (bot, _oldThread, newThread) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await newThread.guild.fetchAuditLogs({
-			type: AuditLogEvent.ThreadUpdate,
-			limit: 1,
-		});
+		if (!newThread.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newThread.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.ThreadUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

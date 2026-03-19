@@ -32,11 +32,21 @@ module.exports = async (bot, emoji) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await emoji.guild.fetchAuditLogs({
-			type: AuditLogEvent.EmojiDelete,
-			limit: 1,
-		});
+		if (!emoji.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await emoji.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.EmojiDelete,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

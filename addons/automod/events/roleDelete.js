@@ -13,10 +13,14 @@ module.exports = async (bot, role) => {
 	if (!role.guild) return;
 
 	try {
-		const audit = await role.guild.fetchAuditLogs({
-			type: AuditLogEvent.RoleDelete,
-			limit: 1,
-		});
+		if (!role.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await role.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.RoleDelete,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 		const entry = audit.entries.find(
 			(e) => e.target?.id === role.id && e.createdTimestamp > Date.now() - 5000,
 		);

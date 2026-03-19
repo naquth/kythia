@@ -49,11 +49,21 @@ module.exports = async (bot, _oldEmoji, newEmoji) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await newEmoji.guild.fetchAuditLogs({
-			type: AuditLogEvent.EmojiUpdate,
-			limit: 1,
-		});
+		if (!newEmoji.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newEmoji.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.EmojiUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

@@ -40,6 +40,12 @@ module.exports = async (bot, oldMembers, newMembers, thread) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		let description = `🧵 **Thread Members Updated** in <#${thread.id}>\n\n`;
 

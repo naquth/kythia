@@ -46,6 +46,12 @@ module.exports = async (bot, message) => {
 			.catch(() => null);
 
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// 2. Prepare Attachments (Re-upload logic)
 		// Kita siapin ini DULUAN sebelum sleep, mumpung link-nya masih hidup.

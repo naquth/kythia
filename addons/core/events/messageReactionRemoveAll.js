@@ -35,12 +35,22 @@ module.exports = async (bot, message, _reactions) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		// Try to fetch audit log to see who cleared them
-		const audit = await message.guild.fetchAuditLogs({
-			type: AuditLogEvent.MessageReactionRemoveAll,
-			limit: 1,
-		});
+		if (!message.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await message.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.MessageReactionRemoveAll,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

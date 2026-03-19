@@ -25,10 +25,14 @@ module.exports = async (bot, channel) => {
 	const { convertColor } = helpers.color;
 
 	try {
-		const audit = await channel.guild.fetchAuditLogs({
-			type: AuditLogEvent.ChannelDelete,
-			limit: 1,
-		});
+		if (!channel.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await channel.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.ChannelDelete,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		let entry = audit.entries.find(
 			(e) =>
@@ -51,6 +55,12 @@ module.exports = async (bot, channel) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
 		const executor = entry.executor;
 		const channelTypeNames = {

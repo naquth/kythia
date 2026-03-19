@@ -49,11 +49,21 @@ module.exports = async (bot, _oldRole, newRole) => {
 			.fetch(settings.auditLogChannelId)
 			.catch(() => null);
 		if (!logChannel || !logChannel.isTextBased()) return;
+		if (
+			!logChannel
+				.permissionsFor(bot.client.user)
+				?.has(['ViewChannel', 'SendMessages'])
+		)
+			return;
 
-		const audit = await newRole.guild.fetchAuditLogs({
-			type: AuditLogEvent.RoleUpdate,
-			limit: 1,
-		});
+		if (!newRole.guild.members.me?.permissions?.has('ViewAuditLog')) return;
+		const audit = await newRole.guild
+			.fetchAuditLogs({
+				type: AuditLogEvent.RoleUpdate,
+				limit: 1,
+			})
+			.catch(() => null);
+		if (!audit) return;
 
 		const entry = audit.entries.find(
 			(e) =>

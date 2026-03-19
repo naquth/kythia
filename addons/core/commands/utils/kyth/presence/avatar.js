@@ -58,7 +58,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error setting avatar: ${error}`, {
+			logger.error(`Error setting avatar: ${error.message || error}`, {
 				label: 'presence',
 			});
 			const components = await simpleContainer(

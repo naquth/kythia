@@ -97,7 +97,9 @@ module.exports = async (bot, invite) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'inviteCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'inviteCreate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

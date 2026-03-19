@@ -29,7 +29,7 @@ const embedFooter = async (source) => {
 	const client = source.client;
 
 	if (!client) {
-		logger.warn('Cant find client in embedFooter', { label: 'discord-helper' });
+		logger.warn(`Cant find client in embedFooter`, { label: 'discord-helper' });
 		return { text: 'Kythia' };
 	}
 
@@ -167,7 +167,9 @@ async function simpleContainer(interaction, content, options = {}) {
 				accentColor = convertColor(color, { from: 'discord', to: 'decimal' });
 			} catch (err) {
 				accentColor = defaultAccent;
-				logger.error(err);
+				logger.error(`Error: ${err.message || err}`, {
+					label: 'core',
+				});
 			}
 		}
 	}
@@ -221,7 +223,9 @@ async function createContainer(interaction, options = {}) {
 				accentColor = convertColor(color, { from: 'discord', to: 'decimal' });
 			} catch (err) {
 				accentColor = defaultAccent;
-				logger.error(err);
+				logger.error(`Error: ${err.message || err}`, {
+					label: 'core',
+				});
 			}
 		}
 	}

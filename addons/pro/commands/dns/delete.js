@@ -84,7 +84,7 @@ module.exports = {
 				}),
 			);
 		} catch (err) {
-			logger.error(`Error: ${err.message}`, {
+			logger.error(`Error: ${err.message || err}`, {
 				label: 'dns delete autocomplete',
 			});
 			await interaction.respond([

@@ -212,9 +212,12 @@ module.exports = async (bot, guild) => {
 				body: JSON.stringify(payload),
 			});
 		} catch (err) {
-			logger.error(`Failed to send guild create webhook: ${err.message}`, {
-				label: 'guildCreate:webhook',
-			});
+			logger.error(
+				`Failed to send guild create webhook: ${err.message || err}`,
+				{
+					label: 'guildCreate:webhook',
+				},
+			);
 			if (bot.config?.sentry?.dsn) {
 				Sentry.captureException(err);
 			}

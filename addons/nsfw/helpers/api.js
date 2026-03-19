@@ -69,7 +69,7 @@ const fetchContent = async (category, logger) => {
 		throw new Error('NekoBot response invalid');
 	} catch (error) {
 		if (logger) {
-			logger.warn(`${error.message} - Falling back to Waifu.pics...`, {
+			logger.warn(`${error.message || error} - Falling back to Waifu.pics...`, {
 				label: 'nekobot api error',
 			});
 		}

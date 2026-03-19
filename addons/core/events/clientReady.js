@@ -13,7 +13,7 @@ function setBotPresence(client) {
 	if (!client.isReady() || client.ws.shards.size === 0) return;
 
 	if (!client.user) {
-		logger.error('client.user is undefined, cannot set presence.', {
+		logger.error(`client.user is undefined, cannot set presence.`, {
 			label: 'clientReady',
 		});
 		return;
@@ -38,9 +38,9 @@ function setBotPresence(client) {
 			],
 			status: kythiaConfig.bot.status || 'online',
 		});
-		logger.info('✅ Bot presence has been set.');
+		logger.info(`✅ Bot presence has been set.`, { label: 'core' });
 	} catch (err) {
-		logger.error(`Failed to set bot presence: ${err.message}`, {
+		logger.error(`Failed to set bot presence: ${err.message || err}`, {
 			label: 'clientReady',
 		});
 	}

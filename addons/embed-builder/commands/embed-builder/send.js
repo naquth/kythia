@@ -135,9 +135,10 @@ module.exports = {
 				],
 			});
 		} catch (error) {
-			container.logger.error(error.message || String(error), {
-				label: 'embed-builder:send',
-			});
+			container.logger.error(
+				`[embed-builder:send] Error: ${error.message || String(error)}`,
+				{ label: 'embed-builder:send' },
+			);
 			return interaction.editReply({
 				embeds: [
 					new EmbedBuilder()

@@ -95,7 +95,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			logger.error(`verify-emoji button error: ${err}`, {
+			logger.error(`verify-emoji button error: ${err.message || err}`, {
 				label: 'verification',
 			});
 		}

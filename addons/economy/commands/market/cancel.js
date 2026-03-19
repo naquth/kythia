@@ -87,7 +87,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error in cancel order: ${error}`, {
+			logger.error(`Error in cancel order: ${error.message || error}`, {
 				label: 'core:commands:economy:market:cancel',
 			});
 			const msg = `## ${await t(interaction, 'economy.market.cancel.error.title')}\n${await t(interaction, 'economy.market.cancel.error.desc')}`;

@@ -85,7 +85,7 @@ app.patch('/:guildId', async (c) => {
 
 		return c.json({ success: true, settings });
 	} catch (e) {
-		logger.error('Error saving settings:', e);
+		logger.error(`Error saving settings: ${e.message || e}`, { label: 'api' });
 		return c.json(
 			{ error: 'Failed to save settings', details: e.message },
 			500,

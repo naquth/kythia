@@ -78,7 +78,9 @@ class MediaProcessor {
 	 */
 	async processImage(attachment) {
 		try {
-			this.logger.info(`🖼️ Image detected: ${attachment.name}...`);
+			this.logger.info(`🖼️ Image detected: ${attachment.name}...`, {
+				label: 'ai',
+			});
 			const res = await fetch(attachment.url);
 			const arrayBuffer = await res.arrayBuffer();
 			const buffer = Buffer.from(arrayBuffer);
@@ -91,7 +93,7 @@ class MediaProcessor {
 				},
 			};
 		} catch (err) {
-			this.logger.error(`Error processing image: ${err.message}`, {
+			this.logger.error(`Error processing image: ${err.message || err}`, {
 				label: 'media processor',
 			});
 			return null;
@@ -107,6 +109,7 @@ class MediaProcessor {
 		try {
 			this.logger.info(
 				`🎛️ ${attachment.contentType} detected: ${attachment.name}...`,
+				{ label: 'ai' },
 			);
 
 			const fetchRes = await fetch(attachment.url);
@@ -123,6 +126,7 @@ class MediaProcessor {
 			let uploadedFile;
 			this.logger.info(
 				`📤 Uploading ${attachment.contentType}: ${attachment.name}...`,
+				{ label: 'ai' },
 			);
 
 			try {
@@ -134,7 +138,9 @@ class MediaProcessor {
 				});
 			} catch (uploadErr) {
 				if (uploadErr?.details?.includes?.('not in an ACTIVE state')) {
-					this.logger.warn('File not active, retrying upload...');
+					this.logger.warn(`File not active, retrying upload...`, {
+						label: 'ai',
+					});
 					await new Promise((res) => setTimeout(res, 2000));
 					uploadedFile = await new GoogleGenAI({
 						apiKey: this.geminiApiKey,
@@ -149,6 +155,7 @@ class MediaProcessor {
 
 			this.logger.info(
 				`⏳ Waiting for file ${uploadedFile.name} to become active...`,
+				{ label: 'ai' },
 			);
 
 			let safetyNet = 0;
@@ -157,7 +164,9 @@ class MediaProcessor {
 				uploadedFile = await new GoogleGenAI({
 					apiKey: this.geminiApiKey,
 				}).files.get({ name: uploadedFile.name });
-				this.logger.info(`  - Current state: ${uploadedFile.state}`);
+				this.logger.info(`- Current state: ${uploadedFile.state}`, {
+					label: 'ai',
+				});
 				safetyNet++;
 			}
 
@@ -167,13 +176,15 @@ class MediaProcessor {
 				);
 			}
 
-			this.logger.info(`✅ File ${uploadedFile.name} is now ACTIVE!`);
+			this.logger.info(`✅ File ${uploadedFile.name} is now ACTIVE!`, {
+				label: 'ai',
+			});
 
 			tmpobj.removeCallback();
 
 			return createPartFromUri(uploadedFile.uri, uploadedFile.mimeType);
 		} catch (err) {
-			this.logger.error(`Error processing video/audio: ${err.message}`, {
+			this.logger.error(`Error processing video/audio: ${err.message || err}`, {
 				label: 'media processor',
 			});
 			return null;
@@ -189,6 +200,7 @@ class MediaProcessor {
 		try {
 			this.logger.info(
 				`📄 Document detected: ${attachment.name} (${attachment.contentType})...`,
+				{ label: 'ai' },
 			);
 			const res = await fetch(attachment.url);
 			const arrayBuffer = await res.arrayBuffer();
@@ -203,8 +215,8 @@ class MediaProcessor {
 			};
 		} catch (err) {
 			this.logger.error(
-				`❌ Error processing document ${attachment.name}:`,
-				err,
+				`❌ Error processing document ${attachment.name}: ${err.message || err}`,
+				{ label: 'ai' },
 			);
 			return null;
 		}
@@ -227,7 +239,10 @@ class MediaProcessor {
 			const videoId = match[1];
 			if (videoId) {
 				const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-				this.logger.info(`▶️ YouTube URL detected and processed: ${youtubeUrl}`);
+				this.logger.info(
+					`▶️ YouTube URL detected and processed: ${youtubeUrl}`,
+					{ label: 'ai' },
+				);
 				mediaParts.push({
 					fileData: {
 						fileUri: youtubeUrl,

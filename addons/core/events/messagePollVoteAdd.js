@@ -86,7 +86,9 @@ module.exports = async (bot, pollAnswer, userId) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'messagePollVoteAdd' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'messagePollVoteAdd',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

@@ -128,7 +128,9 @@ module.exports = async (bot, member) => {
 					isFake: isFake,
 				});
 			} catch (dbErr) {
-				logger.error(`DB CRASH: ${dbErr}`, { label: 'Invite Tracker' });
+				logger.error(`DB CRASH: ${dbErr.message || dbErr}`, {
+					label: 'Invite Tracker',
+				});
 			}
 		} else {
 			logger.warn(`No Inviter ID found, skipping DB operations.`, {
@@ -264,7 +266,9 @@ module.exports = async (bot, member) => {
 			}
 		}
 	} catch (err) {
-		logger.error(`Error guildMemberAdd: ${err}`, { label: 'Invite Tracker' });
+		logger.error(`Error guildMemberAdd: ${err.message || err}`, {
+			label: 'Invite Tracker',
+		});
 	} finally {
 		await refreshGuildInvites(guild);
 		logger.info(`Invite Cache Refreshed.`, { label: 'Invite Tracker' });

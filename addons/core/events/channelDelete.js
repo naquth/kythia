@@ -98,7 +98,7 @@ module.exports = async (bot, channel) => {
 			allowedMentions: { parse: [] },
 		});
 	} catch (err) {
-		logger.error(`Error in channelDelete: ${err}`, {
+		logger.error(`Error in channelDelete: ${err.message || err}`, {
 			label: 'core:events:channelDelete',
 		});
 		if (bot.config?.sentry?.dsn) {

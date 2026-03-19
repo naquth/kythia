@@ -94,6 +94,7 @@ async function handleGlobalChat(message, container) {
 				const stats = result.data?.deliveryStats || {};
 				logger.info(
 					`Partially delivered: ${stats.successful || 0}/${stats.total || 0}`,
+					{ label: 'globalchat' },
 				);
 				if (
 					Array.isArray(result.data?.failedGuilds) &&
@@ -102,13 +103,15 @@ async function handleGlobalChat(message, container) {
 					const failedGuildNames = result.data.failedGuilds
 						.map((g) => g.guildName || g.guildId)
 						.join(', ');
-					logger.warn(`Failed guilds: ${failedGuildNames}`);
+					logger.warn(`Failed guilds: ${failedGuildNames}`, {
+						label: 'globalchat',
+					});
 
 					handleFailedGlobalChat(result.data.failedGuilds, container).catch(
 						(err) => {
 							logger.error(
-								'[GlobalChat] Error during background webhook fix attempt:',
-								err,
+								`Error during background webhook fix attempt: ${err.message || err}`,
+								{ label: 'globalchat' },
 							);
 						},
 					);
@@ -117,7 +120,9 @@ async function handleGlobalChat(message, container) {
 			}
 
 			case 'failed': {
-				logger.error(`All deliveries failed for message ${safeMessage.id}`);
+				logger.error(`All deliveries failed for message ${safeMessage.id}`, {
+					label: 'globalchat',
+				});
 
 				if (
 					Array.isArray(result.data?.failedGuilds) &&
@@ -126,19 +131,22 @@ async function handleGlobalChat(message, container) {
 					const failedNames = result.data.failedGuilds
 						.map((g) => g.guildName || g.guildId)
 						.join(', ');
-					logger.error(`Failed guilds: ${failedNames}`);
+					logger.error(`Failed guilds: ${failedNames}`, {
+						label: 'globalchat',
+					});
 
 					handleFailedGlobalChat(result.data.failedGuilds, container).catch(
 						(err) => {
 							logger.error(
-								'[GlobalChat] Error during background webhook fix attempt:',
-								err,
+								`Error during background webhook fix attempt: ${err.message || err}`,
+								{ label: 'globalchat' },
 							);
 						},
 					);
 				} else {
 					logger.debug(
-						"[GlobalChat] Status was 'failed' but failedGuilds array was empty or missing.",
+						"Status was 'failed' but failedGuilds array was empty or missing.",
+						{ label: 'globalchat' },
 					);
 				}
 				break;
@@ -147,18 +155,24 @@ async function handleGlobalChat(message, container) {
 				logger.warn(`Unknown API response status: ${result.status}`, {
 					label: 'globalchat',
 				});
-				logger.info('🌏 [GlobalChat] Full response:', result);
+				logger.info(`Full response: ${JSON.stringify(result)}`, {
+					label: 'globalchat',
+				});
 		}
 
 		if (result.status === 'ok' || result.status === 'partial') {
 			logger.info(
-				`🌏 [GlobalChat] 📤 Sent from: ${message.guild.name} (${message.guildId}) by ${message.author.tag}`,
+				`Sent from: ${message.guild.name} (${message.guildId}) by ${message.author.tag}`,
+				{ label: 'globalchat' },
 			);
 		}
 	} catch (apiError) {
-		logger.error(`Failed to send message to API: ${apiError}`, {
-			label: 'globalchat',
-		});
+		logger.error(
+			`Failed to send message to API: ${apiError.message || apiError}`,
+			{
+				label: 'globalchat',
+			},
+		);
 	}
 }
 

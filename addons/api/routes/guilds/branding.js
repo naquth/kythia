@@ -59,7 +59,7 @@ app.patch('/:guildId', async (c) => {
 
 		return c.json({ success: true });
 	} catch (e) {
-		logger.error(e);
+		logger.error(`Error: ${e.message || e}`, { label: 'api' });
 
 		if (e.code === 50013) {
 			return c.json(

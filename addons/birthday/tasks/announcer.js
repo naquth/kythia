@@ -216,14 +216,14 @@ module.exports = {
 				} catch (err) {
 					if (logger)
 						logger.error(
-							`❌ [Birthday] Failed to announce for user ${record.userId} in guild ${record.guildId}:`,
-							err,
+							`❌ [Birthday] Failed to announce for user ${record.userId} in guild ${record.guildId}: ${err.message || err}`,
+							{ label: 'birthday' },
 						);
 				}
 			}
 		} catch (error) {
 			if (logger)
-				logger.error(`Error fetching birthdays: ${error}`, {
+				logger.error(`Error fetching birthdays: ${error.message || error}`, {
 					label: 'birthday',
 				});
 		}

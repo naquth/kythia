@@ -83,9 +83,12 @@ module.exports = {
 			});
 			logger.info(
 				`User ${user.tag} (${user.id}) blacklisted by ${interaction.user.tag} | Reason: ${reason ?? 'none'}`,
+				{ label: 'core' },
 			);
 		} catch (error) {
-			logger.error('Failed to blacklist user:', error);
+			logger.error(`Failed to blacklist user: ${error.message || error}`, {
+				label: 'core',
+			});
 			const components = await createContainer(interaction, {
 				description: await t(
 					interaction,

@@ -113,6 +113,8 @@ module.exports = async (bot, channel, _time) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'channelPinsUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'channelPinsUpdate',
+		});
 	}
 };

@@ -110,9 +110,10 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			container.logger.error(error.message || String(error), {
-				label: 'vote-leaderboard',
-			});
+			container.logger.error(
+				`[vote-leaderboard] Error: ${error.message || String(error)}`,
+				{ label: 'vote-leaderboard' },
+			);
 			const { simpleContainer } = helpers.discord;
 			const components = await simpleContainer(
 				interaction,

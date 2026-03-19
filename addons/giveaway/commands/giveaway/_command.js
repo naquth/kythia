@@ -72,9 +72,10 @@ module.exports = {
 
 			await interaction.respond(result);
 		} catch (error) {
-			logger.error(error.message || String(error), {
-				label: 'giveaway:autocomplete',
-			});
+			logger.error(
+				`[giveaway:autocomplete] Error: ${error.message || String(error)}`,
+				{ label: 'giveaway:autocomplete' },
+			);
 			await interaction.respond([]);
 		}
 	},

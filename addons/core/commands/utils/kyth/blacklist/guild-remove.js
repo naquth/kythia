@@ -75,9 +75,15 @@ module.exports = {
 			});
 			logger.info(
 				`Guild ${guildId} removed from blacklist by ${interaction.user.tag}`,
+				{ label: 'core' },
 			);
 		} catch (error) {
-			logger.error('Failed to remove guild from blacklist:', error);
+			logger.error(
+				`Failed to remove guild from blacklist: ${error.message || error}`,
+				{
+					label: 'core',
+				},
+			);
 			const components = await createContainer(interaction, {
 				description: await t(
 					interaction,

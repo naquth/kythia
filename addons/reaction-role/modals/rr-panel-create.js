@@ -195,7 +195,9 @@ module.exports = {
 				});
 			}
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:rr-panel-create' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:rr-panel-create',
+			});
 			await interaction.followUp({
 				components: await simpleContainer(
 					interaction,

@@ -111,7 +111,9 @@ module.exports = async (bot, channel) => {
 			allowedMentions: { parse: [] },
 		});
 	} catch (err) {
-		logger.error(err, { label: 'channelCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'channelCreate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

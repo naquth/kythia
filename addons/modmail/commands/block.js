@@ -85,7 +85,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error(error.message || String(error), {
+			logger.error(`Error: ${error.message || String(error)}`, {
 				label: 'modmail:block',
 			});
 			const desc = await t(interaction, 'modmail.errors.generic');

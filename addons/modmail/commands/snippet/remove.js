@@ -77,7 +77,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error(`snippet remove failed: ${error}`, { label: 'modmail' });
+			logger.error(`snippet remove failed: ${error.message || error}`, {
+				label: 'modmail',
+			});
 			const desc = await t(interaction, 'modmail.errors.generic');
 			return interaction.reply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

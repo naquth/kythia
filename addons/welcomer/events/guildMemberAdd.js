@@ -35,7 +35,8 @@ module.exports = async (bot, member) => {
 	if (!setting || !setting.welcomeInOn) return;
 
 	const channel = await getTextChannelSafe(guild, setting.welcomeInChannelId);
-	if (!channel) return logger.info('[Welcomer] Welcome channel not found');
+	if (!channel)
+		return logger.info(`Welcome channel not found`, { label: 'welcomer' });
 
 	// ── Welcome Role ──────────────────────────────────────────────
 	if (setting.welcomeRoleId) {
@@ -43,10 +44,12 @@ module.exports = async (bot, member) => {
 			const welcomeRole = guild.roles.cache.get(setting.welcomeRoleId);
 			if (welcomeRole) {
 				await member.roles.add(welcomeRole);
-				logger.info(`[Welcomer] Added welcome role to ${member.user.tag}`);
+				logger.info(`Added welcome role to ${member.user.tag}`, {
+					label: 'welcomer',
+				});
 			}
 		} catch (err) {
-			logger.error(`[Welcomer] Failed to add welcome role: ${err}`, {
+			logger.error(`Failed to add welcome role: ${err.message || err}`, {
 				label: 'welcomer:guildMemberAdd',
 			});
 		}
@@ -129,11 +132,8 @@ module.exports = async (bot, member) => {
 				}
 			} catch (err) {
 				logger.error(
-					'[Welcomer] Error in resolvePlaceholders for welcomeInText:',
-					err,
-					{
-						label: 'welcomer:guildMemberAdd',
-					},
+					`Error in resolvePlaceholders for welcomeInText: ${err.message || err}`,
+					{ label: 'welcomer:guildMemberAdd' },
 				);
 				welcomeText = `${member.user.username} has joined the server!`;
 			}
@@ -187,7 +187,7 @@ module.exports = async (bot, member) => {
 				type: 'welcome',
 			});
 		} catch (e) {
-			logger.error(`[Welcomer] Failed to generate banner: ${e.message}`, {
+			logger.error(`Failed to generate banner: ${e.message}`, {
 				label: 'welcomer:guildMemberAdd:banner',
 			});
 		}
@@ -244,14 +244,14 @@ module.exports = async (bot, member) => {
 				flags: MessageFlags.IsComponentsV2,
 			})
 			.catch((err) =>
-				logger.error(`[Welcomer] Failed to send welcome msg: ${err.message}`, {
+				logger.error(`Failed to send welcome msg: ${err.message || err}`, {
 					label: 'welcomer:guildMemberAdd:send',
 				}),
 			);
 	} else {
 		// ── Plain text mode (no card, no embed) ───────────────────
 		channel.send({ content: safeWelcomeText }).catch((err) =>
-			logger.error(`[Welcomer] Failed to send plain welcome: ${err.message}`, {
+			logger.error(`Failed to send plain welcome: ${err.message || err}`, {
 				label: 'welcomer:guildMemberAdd:send',
 			}),
 		);
@@ -278,9 +278,10 @@ module.exports = async (bot, member) => {
 				await member.send({ content: String(dmText) }).catch(() => {});
 			}
 		} catch (err) {
-			logger.error(err.message || String(err), {
-				label: 'welcomer:guildMemberAdd:send_dm',
-			});
+			logger.error(
+				`[welcomer:guildMemberAdd:send_dm] Error: ${err.message || String(err)}`,
+				{ label: 'welcomer:guildMemberAdd:send_dm' },
+			);
 		}
 	}
 };

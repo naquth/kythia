@@ -36,20 +36,22 @@ module.exports = {
 			});
 		}
 
-		logger.debug('[REDIS FLUSH] Using existing shared container connection...');
+		logger.debug(`Using existing shared container connection...`, {
+			label: 'core',
+		});
 
 		const pong = await redis.ping();
-		logger.debug(`[REDIS FLUSH] Redis ping response: ${pong}`);
+		logger.debug(`Redis ping response: ${pong}`, { label: 'core' });
 
-		logger.debug('[REDIS FLUSH] Attempting to FLUSHALL...');
+		logger.debug(`Attempting to FLUSHALL...`, { label: 'core' });
 
 		const sizeBefore = await redis.dbsize();
 
 		const result = await redis.flushall();
-		logger.debug(`[REDIS FLUSH] FLUSHALL result: ${result}`);
+		logger.debug(`FLUSHALL result: ${result}`, { label: 'core' });
 
 		const dbsize = await redis.dbsize();
-		logger.debug(`[REDIS FLUSH] dbsize after FLUSHALL: ${dbsize}`);
+		logger.debug(`dbsize after FLUSHALL: ${dbsize}`, { label: 'core' });
 
 		if (result === 'OK' && dbsize === 0) {
 			await interaction.editReply({

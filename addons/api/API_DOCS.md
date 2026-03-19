@@ -141,6 +141,18 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [Guild State (In-Memory)](#guild-state-in-memory)
   - [Integration Example (Dashboard)](#integration-example-dashboard)
 - [Backup API (`/api/backup`)](#backup-api-apibackup)
+- [Owner API (`/api/owner`)](#owner-api-apiowner)
+  - [Maintenance](#maintenance-apionwermaintenance)
+  - [Flush Redis](#flush-redis-apiownerflush)
+  - [Servers](#servers-apiownerservers)
+  - [Mass Leave](#mass-leave-apiownermass-leave)
+  - [Blacklist — Guilds](#blacklist--guilds-apiownerblacklistguilds)
+  - [Blacklist — Users](#blacklist--users-apiownerblacklistusers)
+  - [Premium](#premium-apiownerpremium)
+  - [Team](#team-apiownerteam)
+  - [Presence](#presence-apiownerpresence)
+  - [Chat (DM as bot)](#chat-dm-as-bot-apiownerchat)
+  - [Restart](#restart-apiownerrestart)
 - [Error Reference](#error-reference)
 
 ---
@@ -7315,5 +7327,617 @@ Updates or creates the overall Social Alerts settings for a guild.
   "mentionRoleId": "888888888888888888"
 }
 ```
+
+---
+
+## Owner API (`/api/owner`)
+
+> **Authentication:** All `/api/owner` endpoints require **two** credentials:
+>
+> | Header | Value | Description |
+> |---|---|---|
+> | `Authorization` | `Bearer <API_SECRET>` | Global API secret — same as all other `/api/*` routes |
+> | `X-Owner-Id` | `<Discord User ID>` | Your Discord user ID, verified against `kythiaConfig.bot.owners` |
+>
+> If `X-Owner-Id` is missing or the ID is not recognised as an owner, the request is rejected with HTTP **403**.
+>
+> These endpoints correspond to owner-only `kyth` slash commands and allow full control over the bot from the Kythia Dashboard.
+
+---
+
+### Maintenance (`/api/owner/maintenance`)
+
+#### `GET /api/owner/maintenance`
+
+Returns the current maintenance mode state.
+
+**Response:**
+```json
+{
+  "success": true,
+  "enabled": true,
+  "reason": "Scheduled updates"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | Always `true` |
+| `enabled` | `boolean` | Whether maintenance mode is currently active |
+| `reason` | `string \| null` | The reason stored in Redis, or `null` if off |
+| `warning` | `string` | Present only if Redis is unavailable |
+
+---
+
+#### `POST /api/owner/maintenance`
+
+Toggle maintenance mode on or off.
+
+**Request Body:**
+```json
+{
+  "enabled": true,
+  "reason": "Scheduled updates"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `enabled` | `boolean` | Yes | `true` to enable, `false` to disable |
+| `reason` | `string` | No | Reason shown to users (default: `"System updates"`) |
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "enabled": true,
+  "reason": "Scheduled updates",
+  "message": "Maintenance mode enabled. Reason: Scheduled updates"
+}
+```
+
+**Error (503):** Redis not connected.
+
+---
+
+### Flush Redis (`/api/owner/flush`)
+
+#### `POST /api/owner/flush`
+
+Flushes the **entire** Redis cache (`FLUSHALL`). Use with caution.
+
+**Response:**
+```json
+{
+  "success": true,
+  "result": "OK",
+  "clearedKeys": 1023,
+  "sizeAfter": 0
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | `true` if `FLUSHALL` returned `OK` and `dbsize` is `0` |
+| `result` | `string` | Raw Redis response (`"OK"`) |
+| `clearedKeys` | `number` | Number of keys that existed before the flush |
+| `sizeAfter` | `number` | Number of keys remaining after flush (should be `0`) |
+
+**Error (503):** Redis not connected.
+
+---
+
+### Servers (`/api/owner/servers`)
+
+#### `GET /api/owner/servers`
+
+Returns a paginated list of all guilds the bot is currently in.
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `page` | `number` | `1` | Page number |
+| `limit` | `number` | `20` | Items per page (max `100`) |
+| `sort` | `string` | `members` | Sort by `members` (desc) or `name` (asc) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "total": 432,
+  "page": 1,
+  "totalPages": 22,
+  "data": [
+    {
+      "id": "123456789012345678",
+      "name": "Big Server",
+      "memberCount": 15000,
+      "icon": "https://cdn.discordapp.com/icons/...",
+      "ownerId": "987654321098765432"
+    }
+  ]
+}
+```
+
+---
+
+#### `POST /api/owner/servers/:guildId/leave`
+
+Force the bot to leave a specific guild.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild ID to leave |
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "message": "Successfully left guild \"Big Server\".",
+  "guild": { "id": "123456789012345678", "name": "Big Server", "memberCount": 500 }
+}
+```
+
+**Errors:**
+
+| Status | Description |
+|---|---|
+| `403` | Guild is a protected guild (main or dev guild) |
+| `404` | Guild not found in bot's cache |
+
+---
+
+### Mass Leave (`/api/owner/mass-leave`)
+
+#### `POST /api/owner/mass-leave`
+
+Mass leave all guilds with a member count **below** a given threshold.
+
+**Request Body:**
+```json
+{
+  "minMember": 50,
+  "except": ["123456789012345678"]
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `minMember` | `number` | Yes | Leave guilds with fewer members than this |
+| `except` | `string[]` | No | Additional guild IDs to protect from being left |
+
+**Response:**
+```json
+{
+  "success": true,
+  "threshold": 50,
+  "leftCount": 12,
+  "errorCount": 1,
+  "guilds": [
+    { "name": "Tiny Server", "id": "111111111111111111", "memberCount": 3 }
+  ]
+}
+```
+
+> The main guild and dev guild from `kythiaConfig` are always protected.
+
+---
+
+### Blacklist — Guilds (`/api/owner/blacklist/guilds`)
+
+#### `GET /api/owner/blacklist/guilds`
+
+List all blacklisted guilds.
+
+**Response:**
+```json
+{
+  "success": true,
+  "total": 2,
+  "data": [
+    { "id": 1, "targetId": "111111111111111111", "reason": "Spam", "createdAt": "2026-01-01T00:00:00.000Z" }
+  ]
+}
+```
+
+---
+
+#### `POST /api/owner/blacklist/guilds`
+
+Add a guild to the blacklist. If the bot is currently in the guild, it will leave immediately.
+
+**Request Body:**
+```json
+{
+  "guildId": "111111111111111111",
+  "reason": "Spam"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `guildId` | `string` | Yes | Discord guild ID to blacklist |
+| `reason` | `string` | No | Reason for blacklisting |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": { "guildId": "111111111111111111", "reason": "Spam", "leftImmediately": true }
+}
+```
+
+**Error (409):** Guild is already blacklisted.
+
+---
+
+#### `DELETE /api/owner/blacklist/guilds/:guildId`
+
+Remove a guild from the blacklist.
+
+**Response:**
+```json
+{ "success": true, "message": "Guild 111111111111111111 removed from blacklist." }
+```
+
+**Error (404):** Guild not found in blacklist.
+
+---
+
+### Blacklist — Users (`/api/owner/blacklist/users`)
+
+#### `GET /api/owner/blacklist/users`
+
+List all blacklisted users.
+
+**Response:**
+```json
+{
+  "success": true,
+  "total": 3,
+  "data": [
+    { "id": 1, "targetId": "222222222222222222", "reason": "Abuse", "createdAt": "2026-01-01T00:00:00.000Z" }
+  ]
+}
+```
+
+---
+
+#### `POST /api/owner/blacklist/users`
+
+Add a user to the blacklist.
+
+**Request Body:**
+```json
+{
+  "userId": "222222222222222222",
+  "reason": "Abuse"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | Yes | Discord user ID to blacklist |
+| `reason` | `string` | No | Reason for blacklisting |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": { "userId": "222222222222222222", "reason": "Abuse" }
+}
+```
+
+**Error (409):** User is already blacklisted.
+
+---
+
+#### `DELETE /api/owner/blacklist/users/:userId`
+
+Remove a user from the blacklist.
+
+**Response:**
+```json
+{ "success": true, "message": "User 222222222222222222 removed from blacklist." }
+```
+
+**Error (404):** User not found in blacklist.
+
+---
+
+### Premium (`/api/owner/premium`)
+
+#### `GET /api/owner/premium`
+
+List all currently active premium users with pagination.
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `page` | `number` | `1` | Page number |
+| `limit` | `number` | `20` | Items per page (max `100`) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "total": 42,
+  "page": 1,
+  "totalPages": 3,
+  "data": [
+    { "userId": "333333333333333333", "isPremium": true, "premiumExpiresAt": "2026-04-18T00:00:00.000Z" }
+  ]
+}
+```
+
+---
+
+#### `GET /api/owner/premium/:userId`
+
+Get premium status for a specific user.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "333333333333333333",
+    "isPremium": true,
+    "premiumExpiresAt": "2026-04-18T00:00:00.000Z"
+  }
+}
+```
+
+> `isPremium` is `false` if the user has no record or if the subscription has expired.
+
+---
+
+#### `POST /api/owner/premium`
+
+Grant premium to a user.
+
+**Request Body:**
+```json
+{
+  "userId": "333333333333333333",
+  "days": 30
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | Yes | Discord user ID |
+| `days` | `number` | No | Number of premium days (default: `30`) |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": { "userId": "333333333333333333", "days": 30, "premiumExpiresAt": "2026-04-18T00:00:00.000Z" }
+}
+```
+
+---
+
+#### `DELETE /api/owner/premium/:userId`
+
+Revoke premium from a user immediately.
+
+**Response:**
+```json
+{ "success": true, "message": "Premium revoked from user 333333333333333333." }
+```
+
+**Error (404):** User does not have an active premium subscription.
+
+---
+
+### Team (`/api/owner/team`)
+
+#### `GET /api/owner/team`
+
+List all Kythia Team members.
+
+**Response:**
+```json
+{
+  "success": true,
+  "total": 4,
+  "data": [
+    { "id": 1, "userId": "444444444444444444", "name": "Lead Developer", "createdAt": "2026-01-01T00:00:00.000Z" }
+  ]
+}
+```
+
+---
+
+#### `POST /api/owner/team`
+
+Add a user to the Kythia Team.
+
+**Request Body:**
+```json
+{
+  "userId": "444444444444444444",
+  "name": "Lead Developer"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | Yes | Discord user ID |
+| `name` | `string` | No | Role/title for the team member |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": { "id": 1, "userId": "444444444444444444", "name": "Lead Developer" }
+}
+```
+
+**Error (409):** User is already a team member.
+
+---
+
+#### `DELETE /api/owner/team/:userId`
+
+Remove a user from the Kythia Team.
+
+**Response:**
+```json
+{ "success": true, "message": "User 444444444444444444 removed from Kythia Team." }
+```
+
+**Error (404):** User is not a team member.
+
+---
+
+### Presence (`/api/owner/presence`)
+
+#### `GET /api/owner/presence`
+
+Get the bot's current Discord presence.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "online",
+    "activity": {
+      "name": "the servers",
+      "type": "Watching",
+      "url": null
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | `string` | `online`, `idle`, `dnd`, or `invisible` |
+| `activity` | `object \| null` | Current activity, or `null` if none |
+| `activity.name` | `string` | Activity text |
+| `activity.type` | `string` | `Playing`, `Streaming`, `Listening`, `Watching`, `Competing`, or `Custom` |
+| `activity.url` | `string \| null` | Streaming URL (only for `Streaming` type) |
+
+---
+
+#### `PATCH /api/owner/presence`
+
+Update the bot's Discord presence across all shards.
+
+**Request Body:**
+```json
+{
+  "status": "online",
+  "type": "Watching",
+  "activity": "432 servers",
+  "url": null
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `status` | `string` | Yes | `online`, `idle`, `dnd`, `invisible` |
+| `type` | `string` | Yes | `Playing`, `Streaming`, `Listening`, `Watching`, `Competing`, `Custom` |
+| `activity` | `string` | Yes | Activity display text |
+| `url` | `string` | Only for `Streaming` | Twitch or YouTube URL |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { "status": "online", "type": "Watching", "activity": "432 servers", "url": null }
+}
+```
+
+**Errors:**
+
+| Status | Description |
+|---|---|
+| `400` | Invalid `status`, `type`, missing `activity`, or missing `url` for Streaming |
+
+---
+
+### Chat (DM as bot) (`/api/owner/chat`)
+
+#### `POST /api/owner/chat`
+
+Send a direct message to a Discord user as the bot.
+
+**Request Body:**
+```json
+{
+  "userId": "555555555555555555",
+  "message": "Hello from the Kythia dashboard!"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userId` | `string` | Yes | Discord user ID to DM |
+| `message` | `string` | Yes | Message content to send |
+
+**Response:**
+```json
+{ "success": true, "message": "DM sent to kenndeclouv (555555555555555555)." }
+```
+
+**Errors:**
+
+| Status | Description |
+|---|---|
+| `404` | User not found |
+| `422` | User has DMs disabled (Discord error 50007) |
+
+---
+
+### Restart (`/api/owner/restart`)
+
+#### `POST /api/owner/restart`
+
+Trigger a bot restart. The API acknowledges the request before the process exits.
+
+**Request Body:**
+```json
+{
+  "target": "current",
+  "shardId": null,
+  "delaySeconds": 0
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `target` | `string` | No | `current` (default), `all`, or `master` |
+| `shardId` | `number` | No | Specific shard ID to restart. Overrides `target` if set |
+| `delaySeconds` | `number` | No | Seconds to wait before restarting (default `0`) |
+
+**Target Values:**
+
+| Value | Behavior |
+|---|---|
+| `current` | Exits the current shard process (`process.exit(0)`) |
+| `all` | Respawns all shards via `ShardingManager` |
+| `master` | Kills the master/spawner process |
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Restarting now. target=current",
+  "target": "current",
+  "shardId": null,
+  "delaySeconds": 0
+}
+```
+
+> **Note:** For immediate restarts (`delaySeconds: 0`), the API response may arrive before the restart is fully executed.
 
 ---

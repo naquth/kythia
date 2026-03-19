@@ -116,7 +116,9 @@ module.exports = {
 				try {
 					await message.react(newEmoji);
 				} catch (error) {
-					logger.error(error, { label: 'reaction-role:edit:react' });
+					logger.error(`Error: ${error.message || error}`, {
+						label: 'reaction-role:edit:react',
+					});
 					return interaction.editReply({
 						content: await t(interaction, 'reaction-role.invalid_emoji'),
 					});
@@ -135,7 +137,9 @@ module.exports = {
 						await oldReaction.users.remove(interaction.client.user.id);
 					}
 				} catch (err) {
-					logger.warn(err, { label: 'reaction-role:edit:remove_old_reaction' });
+					logger.warn(`Error: ${err.message || err}`, {
+						label: 'reaction-role:edit:remove_old_reaction',
+					});
 				}
 
 				rr.emoji = newEmoji;
@@ -174,7 +178,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:edit' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:edit',
+			});
 			return interaction.editReply({
 				content: await t(interaction, 'common.error.generic'),
 			});

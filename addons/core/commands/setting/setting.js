@@ -618,6 +618,7 @@ module.exports = {
 			await ServerSetting.clearNegativeCache({ where: { guildId: guildId } });
 			logger.info(
 				`[CACHE] Cleared negative cache for new ServerSetting: ${guildId}`,
+				{ label: 'core' },
 			);
 		}
 

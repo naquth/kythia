@@ -129,7 +129,9 @@ async function checkSpam(message, setting) {
 		userData.violations > 0 &&
 		now - userData.lastPunishment > DUPLICATE_TIME_WINDOW
 	) {
-		logger.info(`🛡️ Reseting violation for user ${message.author.id}.`);
+		logger.info(`🛡️ Reseting violation for user ${message.author.id}.`, {
+			label: 'automod',
+		});
 		userData.violations = 0;
 	}
 
@@ -199,7 +201,12 @@ async function checkSpam(message, setting) {
 			if (canDeleteMessage(msg)) {
 				msg.delete().catch((err) => {
 					if (err.code !== 50013) {
-						logger.error('Failed to delete spam message:', err);
+						logger.error(
+							`Failed to delete spam message: ${err.message || err}`,
+							{
+								label: 'automod',
+							},
+						);
 					}
 				});
 			}
@@ -219,7 +226,9 @@ async function checkSpam(message, setting) {
 		) {
 			message.member.timeout(timeoutDuration * 1000, reason).catch((err) => {
 				if (err.code !== 50013) {
-					logger.error('Failed to timeout member:', err);
+					logger.error(`Failed to timeout member: ${err.message || err}`, {
+						label: 'automod',
+					});
 				}
 			});
 		}
@@ -261,7 +270,12 @@ async function checkAllCaps(message, setting) {
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
 				if (err.code !== 50013)
-					logger.error('Failed to delete ALL CAPS message:', err);
+					logger.error(
+						`Failed to delete ALL CAPS message: ${err.message || err}`,
+						{
+							label: 'automod',
+						},
+					);
 			});
 		}
 		return true;
@@ -300,7 +314,12 @@ async function checkEmojiSpam(message, setting) {
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
 				if (err.code !== 50013)
-					logger.error('Failed to delete emoji spam message:', err);
+					logger.error(
+						`Failed to delete emoji spam message: ${err.message || err}`,
+						{
+							label: 'automod',
+						},
+					);
 			});
 		}
 		return true;
@@ -333,7 +352,12 @@ async function checkZalgo(message, setting) {
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
 				if (err.code !== 50013)
-					logger.error('Failed to delete zalgo message:', err);
+					logger.error(
+						`Failed to delete zalgo message: ${err.message || err}`,
+						{
+							label: 'automod',
+						},
+					);
 			});
 		}
 		return true;
@@ -425,7 +449,12 @@ async function checkMentions(message, setting) {
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
 				if (err.code !== 50013) {
-					logger.error('Failed to delete mention spam message:', err);
+					logger.error(
+						`Failed to delete mention spam message: ${err.message || err}`,
+						{
+							label: 'automod',
+						},
+					);
 				}
 			});
 		}
@@ -645,7 +674,12 @@ async function checkLinks(message, setting) {
 		if (canDeleteMessage(message)) {
 			return message.delete().catch((err) => {
 				if (err.code !== 50013) {
-					logger.error('Failed to delete invite message:', err);
+					logger.error(
+						`Failed to delete invite message: ${err.message || err}`,
+						{
+							label: 'automod',
+						},
+					);
 				}
 			});
 		}
@@ -667,7 +701,9 @@ async function checkLinks(message, setting) {
 		if (canDeleteMessage(message)) {
 			return message.delete().catch((err) => {
 				if (err.code !== 50013) {
-					logger.error('Failed to delete link message:', err);
+					logger.error(`Failed to delete link message: ${err.message || err}`, {
+						label: 'automod',
+					});
 				}
 			});
 		}

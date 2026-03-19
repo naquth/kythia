@@ -31,8 +31,11 @@ module.exports = async (bot, ban) => {
 			detail: `Banned user: ${ban.user.tag}`,
 		});
 	} catch (err) {
-		bot.client.container.logger.error(`guildBanAdd error: ${err}`, {
-			label: 'antinuke',
-		});
+		bot.client.container.logger.error(
+			`guildBanAdd error: ${err.message || err}`,
+			{
+				label: 'antinuke',
+			},
+		);
 	}
 };

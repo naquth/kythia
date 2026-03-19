@@ -96,7 +96,9 @@ module.exports = async (bot, stageInstance) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'stageInstanceCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'stageInstanceCreate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

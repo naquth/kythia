@@ -128,9 +128,12 @@ module.exports = {
 				container,
 			);
 		} catch (error) {
-			logger.error(`mm-server-select handler failed: ${error}`, {
-				label: 'modmail',
-			});
+			logger.error(
+				`mm-server-select handler failed: ${error.message || error}`,
+				{
+					label: 'modmail',
+				},
+			);
 			client.modmailActiveDMs?.delete(userId);
 		}
 	},

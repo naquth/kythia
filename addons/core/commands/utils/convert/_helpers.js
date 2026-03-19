@@ -137,7 +137,9 @@ async function convertCurrency(container, amount, from, to) {
 		if (typeof data.result !== 'number') return null;
 		return data.result;
 	} catch (err) {
-		logger.error(`Currency API error: ${err}`, { label: 'convert' });
+		logger.error(`Currency API error: ${err.message || err}`, {
+			label: 'convert',
+		});
 		return null;
 	}
 }

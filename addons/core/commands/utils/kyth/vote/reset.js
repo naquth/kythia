@@ -66,7 +66,10 @@ module.exports = {
 				await interaction.editReply({ components });
 			}
 		} catch (error) {
-			container.logger.error(error.message || String(error), { label: 'vote' });
+			container.logger.error(
+				`[vote] Error: ${error.message || String(error)}`,
+				{ label: 'vote' },
+			);
 			const components = await simpleContainer(
 				interaction,
 				await t(interaction, 'common.error'),

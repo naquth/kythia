@@ -75,9 +75,10 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error(error.message || String(error), {
-				label: 'modmail:unblock',
-			});
+			logger.error(
+				`[modmail:unblock] Error: ${error.message || String(error)}`,
+				{ label: 'modmail:unblock' },
+			);
 			const desc = await t(interaction, 'modmail.errors.generic');
 			return interaction.reply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

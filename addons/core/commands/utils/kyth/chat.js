@@ -61,9 +61,12 @@ module.exports = {
 			});
 			logger.info(
 				`Dev chat sent to ${user.tag} (${user.id}) by ${interaction.user.tag}`,
+				{ label: 'core' },
 			);
 		} catch (error) {
-			logger.error(`Failed to DM user ${user.tag}:`, error);
+			logger.error(`Failed to DM user ${user.tag}: ${error.message || error}`, {
+				label: 'core',
+			});
 			const components = await createContainer(interaction, {
 				description: await t(interaction, 'core.utils.kyth.chat.error', {
 					error: error.message,

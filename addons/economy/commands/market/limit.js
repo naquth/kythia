@@ -156,7 +156,7 @@ module.exports = {
 				});
 			}
 		} catch (error) {
-			logger.error(`Error in limit order: ${error}`, {
+			logger.error(`Error in limit order: ${error.message || error}`, {
 				label: 'economy:market:limit',
 			});
 			const msg = `## ${await t(interaction, 'economy.market.order.error.title')}\n${await t(interaction, 'economy.market.order.error.desc')}`;

@@ -55,7 +55,7 @@ module.exports = {
 			subscriptions = await SocialAlertSubscription.getAllCache();
 			if (!subscriptions || subscriptions.length === 0) return;
 		} catch (err) {
-			logger.error(`Failed to fetch subscriptions: ${err}`, {
+			logger.error(`Failed to fetch subscriptions: ${err.message || err}`, {
 				label: 'social-alerts',
 			});
 			return;
@@ -259,17 +259,14 @@ module.exports = {
 				await sub.save();
 
 				logger.info(
-					`[${platform}] Posted alert for "${latest.title}" in guild ${sub.guildId}`,
-					{ label: 'SOCIAL-ALERTS' },
+					`Posted ${platform} alert for "${latest.title}" in guild ${sub.guildId}`,
+					{ label: 'social-alerts' },
 				);
 			} catch (err) {
 				logger.error(
-					`Error processing subscription ${sub.id} (${sub.youtubeChannelId}): ${err?.message}`,
-					{ label: 'SOCIAL-ALERTS' },
+					`Error processing subscription ${sub.id} (${sub.youtubeChannelId}): ${err?.message || err}${err?.stack ? `\n${err.stack}` : ''}`,
+					{ label: 'social-alerts' },
 				);
-				if (err?.stack) {
-					logger.error(err.stack, { label: 'SOCIAL-ALERTS' });
-				}
 			}
 		}
 	},

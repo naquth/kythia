@@ -59,7 +59,12 @@ module.exports = {
 				existingChannelId = found.globalChannelId;
 			}
 		} catch (error) {
-			logger.error('Failed to check existing guild from API:', error);
+			logger.error(
+				`Failed to check existing guild from API: ${error.message || error}`,
+				{
+					label: 'globalchat',
+				},
+			);
 			const components = await simpleContainer(
 				interaction,
 				await t(interaction, 'globalchat.setup.check.failed'),
@@ -150,8 +155,8 @@ module.exports = {
 					channel = await getChannelSafe(interaction.guild, createdChannel.id);
 				} catch (fetchError) {
 					logger.error(
-						'❌ Failed to re-fetch the newly created channel:',
-						fetchError,
+						`Failed to re-fetch the newly created channel: ${fetchError.message || fetchError}`,
+						{ label: 'globalchat' },
 					);
 				}
 
@@ -167,7 +172,10 @@ module.exports = {
 					content: `## ${await t(interaction, 'globalchat.setup.title')}\n${await t(interaction, 'globalchat.setup.intro.desc')}`,
 				});
 			} catch (err) {
-				logger.info(err);
+				logger.error(
+					`Failed to create global chat channel: ${err.message || err}`,
+					{ label: 'globalchat' },
+				);
 				const components = await simpleContainer(
 					interaction,
 					await t(interaction, 'globalchat.setup.create.channel.failed'),
@@ -188,7 +196,9 @@ module.exports = {
 				webhookToken: webhook.token,
 			});
 		} catch (err) {
-			logger.error('Failed to save GlobalChat to DB:', err);
+			logger.error(`Failed to save GlobalChat to DB: ${err.message || err}`, {
+				label: 'globalchat',
+			});
 		}
 
 		try {

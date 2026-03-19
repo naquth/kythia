@@ -61,7 +61,12 @@ module.exports = {
 						}),
 					);
 				} catch (err) {
-					logger.warn(`Failed to fetch user ${member.userId}:`, err);
+					logger.warn(
+						`Failed to fetch user ${member.userId}: ${err.message || err}`,
+						{
+							label: 'core',
+						},
+					);
 					memberList.push(
 						await t(interaction, 'core.utils.kyth.team.list.row', {
 							name: `${unknownUser}`,
@@ -88,9 +93,13 @@ module.exports = {
 				components,
 				flags: MessageFlags.IsComponentsV2,
 			});
-			logger.info(`Kythia Team list viewed by ${interaction.user.tag}`);
+			logger.info(`Kythia Team list viewed by ${interaction.user.tag}`, {
+				label: 'core',
+			});
 		} catch (error) {
-			logger.error('Failed to list team members:', error);
+			logger.error(`Failed to list team members: ${error.message || error}`, {
+				label: 'core',
+			});
 			const components = await createContainer(interaction, {
 				description: await t(interaction, 'core.utils.kyth.team.list.error', {
 					error: error.message,

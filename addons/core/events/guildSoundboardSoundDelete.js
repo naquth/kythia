@@ -91,7 +91,9 @@ module.exports = async (bot, sound) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'guildSoundboardSoundDelete' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'guildSoundboardSoundDelete',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

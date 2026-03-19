@@ -95,6 +95,8 @@ module.exports = async (bot, emoji) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'emojiCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'emojiCreate',
+		});
 	}
 };

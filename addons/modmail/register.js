@@ -39,9 +39,12 @@ module.exports = {
 					);
 				}
 			} catch (err) {
-				logger.error(`Failed to repopulate modmailActiveDMs from DB: ${err}`, {
-					label: 'modmail',
-				});
+				logger.error(
+					`Failed to repopulate modmailActiveDMs from DB: ${err.message || err}`,
+					{
+						label: 'modmail',
+					},
+				);
 			}
 		});
 

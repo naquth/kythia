@@ -34,8 +34,8 @@ module.exports = {
 				summary.push(' ╰┈➤ ✅ Cloudflare Service ready.');
 			} catch (error) {
 				logger.error(
-					'🔥 FATAL: Failed to initialize Cloudflare Service:',
-					error,
+					`🔥 FATAL: Failed to initialize Cloudflare Service: ${error.message || error}`,
+					{ label: 'pro' },
 				);
 				summary.push(' ╰┈➤ ❌ FAILED to load Cloudflare Service.');
 			}

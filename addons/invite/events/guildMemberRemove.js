@@ -151,8 +151,7 @@ module.exports = async (bot, member) => {
 				await channel.send({ components, flags: MessageFlags.IsComponentsV2 });
 			} catch (error) {
 				logger.error(
-					`Error sending invite log to channel ${inviteChannelId} in ${guild?.name}:`,
-					error,
+					`Error sending invite log to channel ${inviteChannelId} in ${guild?.name}: ${error.message || error}`,
 					{ label: 'Invite Tracker' },
 				);
 			}

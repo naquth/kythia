@@ -28,7 +28,9 @@ module.exports = async (bot, reaction, user) => {
 			try {
 				await reaction.fetch();
 			} catch (error) {
-				logger.error(error, { label: 'messageReactionRemove:fetchMessage' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'messageReactionRemove:fetchMessage',
+				});
 				return;
 			}
 		}
@@ -36,7 +38,9 @@ module.exports = async (bot, reaction, user) => {
 			try {
 				await user.fetch();
 			} catch (error) {
-				logger.error(error, { label: 'messageReactionRemove:fetchUser' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'messageReactionRemove:fetchUser',
+				});
 				return;
 			}
 		}
@@ -104,7 +108,9 @@ module.exports = async (bot, reaction, user) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'messageReactionRemove' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'messageReactionRemove',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

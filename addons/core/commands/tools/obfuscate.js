@@ -111,7 +111,9 @@ module.exports = {
 				);
 				filename = `${file.name.replace(/\.lua$/i, '')}.obf.lua`;
 			} catch (error) {
-				logger.error(error, { label: 'obfuscate' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'obfuscate',
+				});
 				return interaction.editReply({
 					content: await t(interaction, 'core.tools.obfuscate.failed.lua'),
 					flags: MessageFlags.Ephemeral,

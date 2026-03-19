@@ -287,7 +287,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (err) {
-			logger.error(err);
+			logger.error(`Error: ${err.message || err}`, {
+				label: 'server',
+			});
 			components = await simpleContainer(
 				interaction,
 				`## ${await t(interaction, 'server.server.restore.failed')}`,

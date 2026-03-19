@@ -97,7 +97,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			logger.error(`verify-math button error: ${err}`, {
+			logger.error(`verify-math button error: ${err.message || err}`, {
 				label: 'verification',
 			});
 		}

@@ -93,7 +93,9 @@ app.post('/preview', async (c) => {
 			image: dataUri,
 		});
 	} catch (e) {
-		logger.error(`Error generating canvas preview: ${e}`, { label: 'api' });
+		logger.error(`Error generating canvas preview: ${e.message || e}`, {
+			label: 'api',
+		});
 		return c.json(
 			{
 				success: false,

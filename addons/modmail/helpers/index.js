@@ -384,9 +384,10 @@ async function createModmailThread(
 
 		return modmail;
 	} catch (error) {
-		logger.error(error.message || String(error), {
-			label: 'modmail:helpers:create-thread',
-		});
+		logger.error(
+			`[modmail:helpers:create-thread] Error: ${error.message || String(error)}`,
+			{ label: 'modmail:helpers:create-thread' },
+		);
 		return null;
 	}
 }
@@ -539,7 +540,9 @@ async function relayUserMessage(message, modmail, container) {
 			});
 		} catch (_e) {}
 	} catch (error) {
-		logger.error(`relayUserMessage failed: ${error}`, { label: 'modmail' });
+		logger.error(`relayUserMessage failed: ${error.message || error}`, {
+			label: 'modmail',
+		});
 	}
 }
 
@@ -634,9 +637,10 @@ async function relayStaffReply(interaction, content, anonymous, container) {
 			flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 		});
 	} catch (error) {
-		logger.error(error.message || String(error), {
-			label: 'modmail:helpers:relay-staff-reply',
-		});
+		logger.error(
+			`[modmail:helpers:relay-staff-reply] Error: ${error.message || String(error)}`,
+			{ label: 'modmail:helpers:relay-staff-reply' },
+		);
 		const descError = await t(interaction, 'modmail.errors.generic');
 		if (interaction.replied || interaction.deferred) {
 			return interaction.followUp({
@@ -763,9 +767,12 @@ async function relayGuildReply(
 			allowedMentions: { parse: [] },
 		});
 	} catch (err) {
-		logger.error(`relayGuildReply: failed to send thread card: ${err}`, {
-			label: 'modmail',
-		});
+		logger.error(
+			`relayGuildReply: failed to send thread card: ${err.message || err}`,
+			{
+				label: 'modmail',
+			},
+		);
 	}
 
 	// ── DM card: "Reply from X" ──────────────────────────────────────────────
@@ -1132,9 +1139,10 @@ async function closeModmail(interaction, container, reason = null) {
 		// ─── Delete (archive) thread ─────────────────────────────────────────
 		await interaction.channel.delete();
 	} catch (error) {
-		logger.error(error.message || String(error), {
-			label: 'modmail:helpers:close-modmail',
-		});
+		logger.error(
+			`[modmail:helpers:close-modmail] Error: ${error.message || String(error)}`,
+			{ label: 'modmail:helpers:close-modmail' },
+		);
 
 		const descError = await t(interaction, 'modmail.errors.close_failed');
 		if (!interaction.replied && !interaction.deferred) {

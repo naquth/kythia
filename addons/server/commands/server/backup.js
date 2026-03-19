@@ -121,7 +121,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (err) {
-			logger.error(`Server backup error: ${err}`, { label: 'server:backup' });
+			logger.error(`Server backup error: ${err.message || err}`, {
+				label: 'server:backup',
+			});
 			components = await simpleContainer(
 				interaction,
 				`## ${await t(interaction, 'server.server.backup.failed')}`,

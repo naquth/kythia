@@ -152,7 +152,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			logger.error(`Instagram fetch error: ${err}`, {
+			logger.error(`Instagram fetch error: ${err.message || err}`, {
 				label: 'core:tools:instagram',
 			});
 			let title, desc;

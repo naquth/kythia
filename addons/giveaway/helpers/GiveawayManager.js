@@ -40,7 +40,7 @@ class GiveawayManager {
 	}
 
 	async init() {
-		this.logger.info('🎁 Syncing Scheduler...');
+		this.logger.info(`🎁 Syncing Scheduler...`, { label: 'giveaway' });
 		const active = await this.Giveaway.findAll({ where: { ended: false } });
 
 		for (const g of active) {
@@ -55,7 +55,9 @@ class GiveawayManager {
 		try {
 			await this.checkExpiredGiveaways();
 		} catch (e) {
-			this.logger.error('🎁 Giveaway Scheduler Error:', e);
+			this.logger.error(`🎁 Giveaway Scheduler Error: ${e.message || e}`, {
+				label: 'giveaway',
+			});
 		} finally {
 			setTimeout(() => this.startScheduler(), this.CHECK_INTERVAL);
 		}
@@ -71,6 +73,7 @@ class GiveawayManager {
 		if (expiredIds && expiredIds.length > 0) {
 			this.logger.info(
 				`🎁 Found ${expiredIds.length} expired giveaways in Redis.`,
+				{ label: 'giveaway' },
 			);
 
 			for (const mid of expiredIds) {
@@ -179,7 +182,9 @@ class GiveawayManager {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			this.logger.error('Failed to start giveaway:', error);
+			this.logger.error(`Failed to start giveaway: ${error.message || error}`, {
+				label: 'giveaway',
+			});
 			const errTitle = await this.t(
 				interaction,
 				'giveaway.error.fatal.title',
@@ -380,7 +385,12 @@ class GiveawayManager {
 		try {
 			await this.Giveaway.scheduleRemove('active_schedule', messageId);
 		} catch (e) {
-			this.logger.warn(`Failed to remove ${messageId} from scheduler:`, e);
+			this.logger.warn(
+				`Failed to remove ${messageId} from scheduler: ${e.message || e}`,
+				{
+					label: 'giveaway',
+				},
+			);
 		}
 
 		giveaway.ended = true;

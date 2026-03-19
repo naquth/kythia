@@ -178,7 +178,9 @@ async function ensureChannel(guild, category, spec, stats) {
 				try {
 					await m.pin();
 				} catch (e) {
-					logger.warn(`Gagal mem-pin pesan di channel ${ch.name}:`, e.message);
+					logger.warn(`Gagal mem-pin pesan di channel ${ch.name}:`, e.message, {
+						label: 'server',
+					});
 				}
 			}
 			await sleep(200);

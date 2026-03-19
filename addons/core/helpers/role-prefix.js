@@ -66,6 +66,7 @@ async function rolePrefix(guild, container) {
 			} catch (err) {
 				logger.warn(
 					`❌ Failed nick update for ${member.user.tag}: ${err.message}`,
+					{ label: 'core' },
 				);
 			}
 		}

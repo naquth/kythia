@@ -93,7 +93,9 @@ module.exports = async (bot, ban) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'guildBanRemove' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'guildBanRemove',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

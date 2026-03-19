@@ -148,9 +148,12 @@ module.exports = {
 				components: successContainer,
 			});
 		} catch (error) {
-			logger.error(`Error in tkt-panel-create modal handler: ${error}`, {
-				label: 'core:modals:tkt-panel-create',
-			});
+			logger.error(
+				`Error in tkt-panel-create modal handler: ${error.message || error}`,
+				{
+					label: 'core:modals:tkt-panel-create',
+				},
+			);
 			const desc = await t(interaction, 'ticket.errors.generic');
 
 			await interaction.followUp({

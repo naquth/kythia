@@ -654,7 +654,7 @@ module.exports = {
 					groupName,
 					subcommandName,
 				);
-				logger.info(`🧪 Testing command: ${fullPath}`);
+				logger.info(`🧪 Testing command: ${fullPath}`, { label: 'core' });
 
 				await commandModule.execute(mock, container);
 
@@ -664,7 +664,7 @@ module.exports = {
 					results.failed.push({ name: fullPath, reason: 'no reply' });
 				}
 			} catch (err) {
-				logger.error(`Test failed for ${fullPath}: ${err.message}`, {
+				logger.error(`Test failed for ${fullPath}: ${err.message || err}`, {
 					label: 'testall',
 				});
 				results.failed.push({ name: fullPath, reason: err.message });
@@ -742,9 +742,12 @@ module.exports = {
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} catch (err) {
-				logger.error(`testall: failed to send report chunk: ${err.message}`, {
-					label: 'testall',
-				});
+				logger.error(
+					`testall: failed to send report chunk: ${err.message || err}`,
+					{
+						label: 'testall',
+					},
+				);
 			}
 		};
 
@@ -872,6 +875,10 @@ module.exports = {
 
 		await interaction
 			.editReply({ content: '✅ Done! Results posted above.' })
-			.catch((err) => logger.warn('testall editReply failed:', err.message));
+			.catch((err) =>
+				logger.warn(`testall editReply failed: ${err.message || err}`, {
+					label: 'core',
+				}),
+			);
 	},
 };

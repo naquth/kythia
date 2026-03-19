@@ -271,7 +271,7 @@ app.post('/trigger-update/:guildId', async (c) => {
 		if (guildId === 'all') {
 			// Fire and forget — run the full updater cycle in background
 			runMinecraftStatsUpdater(client).catch((e) =>
-				logger.error(`[MC API] trigger-update all failed: ${e.message || e}`, {
+				logger.error(`trigger-update all failed: ${e.message || e}`, {
 					label: 'mc-api',
 				}),
 			);

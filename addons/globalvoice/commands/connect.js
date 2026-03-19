@@ -111,7 +111,7 @@ module.exports = {
 			});
 
 			audioStream.on('error', (err) => {
-				logger.error(`[AudioStream Error ${userId}]: ${err.message}`, {
+				logger.error(`: ${err.message || err}`, {
 					label: 'globalvoice:connect',
 				});
 				speakingUsers.delete(userId);
@@ -132,7 +132,7 @@ module.exports = {
 
 			audioPassthrough.on('error', (err) => {
 				if (err.code === 'ERR_STREAM_DESTROYED') return;
-				logger.error(err.message, {
+				logger.error(`Error: ${err.message || err}`, {
 					label: 'globalvoice:connect:stream error',
 				});
 			});
@@ -144,7 +144,7 @@ module.exports = {
 			try {
 				player.play(resource);
 			} catch (error) {
-				logger.error(error.message, {
+				logger.error(`Error: ${error.message || error}`, {
 					label: 'globalvoice:connect:player play error',
 				});
 
@@ -159,7 +159,7 @@ module.exports = {
 		});
 
 		player.on('error', (error) => {
-			logger.error(error.message, {
+			logger.error(`Error: ${error.message || error}`, {
 				label: 'globalvoice:connect:player error',
 			});
 			playStream();

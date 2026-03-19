@@ -10,21 +10,24 @@ const { reloadConfig } = require('@coreHelpers/reload-config');
 
 async function reloadLavalinkNodes(client) {
 	const { logger, kythiaConfig } = client.container;
-	logger.info('🔄 Attempting to reload Lavalink nodes...');
+	logger.info(`🔄 Attempting to reload Lavalink nodes...`, { label: 'music' });
 	reloadConfig();
 
 	for (const node of client.poru.nodes.values()) {
 		try {
 			await node.disconnect();
-			logger.info(`🔌 Disconnected from node "${node.name}".`);
+			logger.info(`🔌 Disconnected from node "${node.name}".`, {
+				label: 'music',
+			});
 		} catch (e) {
 			logger.warn(
 				`⚠️ Failed to disconnect from node "${node.name}": ${e.message}`,
+				{ label: 'music' },
 			);
 		}
 	}
 	client.poru.nodes.clear();
-	logger.info('All old nodes have been cleared.');
+	logger.info(`All old nodes have been cleared.`, { label: 'music' });
 
 	const newNodes = (kythiaConfig.addons.music.lavalink.hosts || 'localhost')
 		.split(',')
@@ -51,7 +54,9 @@ async function reloadLavalinkNodes(client) {
 	for (const nodeConfig of newNodes) {
 		client.poru.addNode(nodeConfig);
 	}
-	logger.info(`✅ Added ${newNodes.length} new node(s) to Poru.`);
+	logger.info(`✅ Added ${newNodes.length} new node(s) to Poru.`, {
+		label: 'music',
+	});
 
 	try {
 		let attempts = 0;
@@ -74,6 +79,7 @@ async function reloadLavalinkNodes(client) {
 		if (bestNode) {
 			logger.info(
 				`✅ New node "${bestNode.name}" is connected. Moving players...`,
+				{ label: 'music' },
 			);
 			let movedPlayers = 0;
 			for (const player of client.poru.players.values()) {
@@ -82,14 +88,16 @@ async function reloadLavalinkNodes(client) {
 					movedPlayers++;
 				}
 			}
-			logger.info(`🚀 Moved ${movedPlayers} player(s) successfully.`);
+			logger.info(`🚀 Moved ${movedPlayers} player(s) successfully.`, {
+				label: 'music',
+			});
 		} else {
 			throw new Error('New node failed to connect within the time limit.');
 		}
 
 		return true;
 	} catch (error) {
-		logger.error(`Error during player migration: ${error.message}`, {
+		logger.error(`Error during player migration: ${error.message || error}`, {
 			label: 'reload-node',
 		});
 		return false;

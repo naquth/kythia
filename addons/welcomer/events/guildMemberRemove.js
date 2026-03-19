@@ -223,14 +223,14 @@ module.exports = async (bot, member) => {
 				flags: MessageFlags.IsComponentsV2,
 			})
 			.catch((err) =>
-				logger.error(`[Welcomer] Failed to send goodbye msg: ${err.message}`, {
+				logger.error(`Failed to send goodbye msg: ${err.message || err}`, {
 					label: 'welcomer:guildMemberRemove:send',
 				}),
 			);
 	} else {
 		// ── Plain text mode (no card, no embed) ───────────────────
 		await outChannel.send({ content: safeGoodbyeText }).catch((err) =>
-			logger.error(`[Welcomer] Failed to send plain goodbye: ${err.message}`, {
+			logger.error(`Failed to send plain goodbye: ${err.message || err}`, {
 				label: 'welcomer:guildMemberRemove:send',
 			}),
 		);

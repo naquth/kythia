@@ -28,7 +28,7 @@ async function fetchQuestsFromAny(urls, logger) {
 		}, TIMEOUT_MS);
 
 		try {
-			logger.info(`⏰ [QuestNotifier] Trying quest API: ${url}`);
+			logger.info(`Trying quest API: ${url}`, { label: 'questnotifier' });
 
 			const response = await fetch(url, {
 				signal: controller.signal,
@@ -45,7 +45,7 @@ async function fetchQuestsFromAny(urls, logger) {
 			}
 
 			const apiQuests = await response.json();
-			logger.info(`⏰ [QuestNotifier] Got quest data from: ${url}`);
+			logger.info(`Got quest data from: ${url}`, { label: 'questnotifier' });
 			return apiQuests;
 		} catch (e) {
 			clearTimeout(timeoutId);
@@ -68,7 +68,7 @@ module.exports = {
 	execute: async (container) => {
 		const { models, logger, client, kythiaConfig } = container;
 		const { QuestConfig, QuestGuildLog } = models;
-		logger.info('⏰ [QuestNotifier] Running cron job...');
+		logger.info(`Running cron job...`, { label: 'questnotifier' });
 
 		const apiUrlsConfig = kythiaConfig.addons.quest.apiUrls || '';
 
@@ -78,7 +78,7 @@ module.exports = {
 			.filter((v) => v.length > 0);
 
 		if (apiUrls.length === 0) {
-			logger.error('No API URLs configured!', { label: 'questnotifier' });
+			logger.error(`No API URLs configured!`, { label: 'questnotifier' });
 			return;
 		}
 
@@ -106,13 +106,15 @@ module.exports = {
 			});
 
 			if (validQuests.length === 0) {
-				logger.info('⏰ [QuestNotifier] No new quests found.');
+				logger.info(`No new quests found.`, { label: 'questnotifier' });
 				return;
 			}
 
 			const allGuildConfigs = await QuestConfig.getAllCache();
 			if (allGuildConfigs.length === 0) {
-				logger.info('⏰ [QuestNotifier] No guilds have set up the notifier.');
+				logger.info(`No guilds have set up the notifier.`, {
+					label: 'questnotifier',
+				});
 				return;
 			}
 
@@ -148,6 +150,7 @@ module.exports = {
 
 					logger.info(
 						`⏰ [QuestNotifier] Sending ${questsToSend.length} new quest(s) to guild ${config.guildId}...`,
+						{ label: 'quest' },
 					);
 
 					for (const quest of questsToSend) {
@@ -172,9 +175,9 @@ module.exports = {
 					);
 				}
 			}
-			logger.info('⏰ [QuestNotifier] Cron job finished.');
+			logger.info(`Cron job finished.`, { label: 'questnotifier' });
 		} catch (error) {
-			logger.error(`CRON JOB FAILED: ${error.message}`, {
+			logger.error(`CRON JOB FAILED: ${error.message || error}`, {
 				label: 'questnotifier',
 			});
 		}

@@ -93,7 +93,9 @@ module.exports = async (bot, role) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'roleDelete' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'roleDelete',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

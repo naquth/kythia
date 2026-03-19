@@ -26,6 +26,7 @@ module.exports = {
 			bot.aiCommandSchema = generateCommandSchema(bot.client);
 			logger.info(
 				`✅ Successfully loaded ${bot.aiCommandSchema.length} command schema for AI.`,
+				{ label: 'ai' },
 			);
 		});
 

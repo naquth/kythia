@@ -107,7 +107,9 @@ module.exports = {
 		try {
 			stats = await runTemplate(interaction, tplData, opts);
 		} catch (err) {
-			logger.error(`autobuild error: ${err}`, { label: 'server:autobuild' });
+			logger.error(`autobuild error: ${err.message || err}`, {
+				label: 'server:autobuild',
+			});
 			components = await simpleContainer(
 				interaction,
 				`## ${await t(interaction, 'server.server.autobuild.failed', { error: err.message })}`,

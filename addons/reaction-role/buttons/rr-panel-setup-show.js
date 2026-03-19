@@ -92,7 +92,9 @@ module.exports = {
 
 			await interaction.showModal(modal);
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:rr-panel-setup-show' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:rr-panel-setup-show',
+			});
 			if (!interaction.replied && !interaction.deferred) {
 				await interaction.reply({
 					components: await simpleContainer(

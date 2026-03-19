@@ -95,6 +95,7 @@ module.exports = {
 
 		logger.info(
 			`[TEST COMMAND] Attempting to trigger '${eventName}' (type: ${type}) for ${user.tag}`,
+			{ label: 'core' },
 		);
 
 		try {
@@ -106,8 +107,8 @@ module.exports = {
 			});
 		} catch (err) {
 			logger.error(
-				`[TEST COMMAND] Error during event simulation '${eventName}':`,
-				err,
+				`Error during event simulation '${eventName}': ${err.message || err}`,
+				{ label: 'core' },
 			);
 			await interaction.editReply({
 				content: `❌ Failed to emit event \`${eventName}\`: ${err.message}`,

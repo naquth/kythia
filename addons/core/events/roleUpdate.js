@@ -109,7 +109,9 @@ module.exports = async (bot, _oldRole, newRole) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'roleUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'roleUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

@@ -208,7 +208,9 @@ async function updateStats(client, activeSettings) {
 	const container = client.container;
 	const { logger, helpers } = container;
 	const { getChannelSafe } = helpers.discord;
-	logger.info(`Processing stats for ${activeSettings.length} guild(s)...`);
+	logger.info(`Processing stats for ${activeSettings.length} guild(s)...`, {
+		label: 'core',
+	});
 
 	for (const setting of activeSettings) {
 		if (
@@ -305,6 +307,7 @@ async function updateStats(client, activeSettings) {
 							.catch((err) => {
 								logger.warn(
 									`Failed to update channel ${channel.id} in ${guild.name}: ${err.message}`,
+									{ label: 'core' },
 								);
 							}),
 					);
@@ -315,18 +318,19 @@ async function updateStats(client, activeSettings) {
 				await Promise.allSettled(guildUpdatePromises);
 				logger.info(
 					`Updated ${guildUpdatePromises.length} channel(s) for guild: ${guild.name}`,
+					{ label: 'core' },
 				);
 			}
 		} catch (err) {
 			logger.error(
-				`[STATS HELPER ERROR] Failed to process guild ${guild.name} (${setting.guildId}):`,
-				err,
+				`Failed to process guild ${guild.name} (${setting.guildId}): ${err.message || err}`,
+				{ label: 'core' },
 			);
 			Sentry.captureException(err, { extra: { guildId: guild.id } });
 		}
 	}
 
-	logger.info('Finished processing all channel updates.');
+	logger.info(`Finished processing all channel updates.`, { label: 'core' });
 }
 
 async function safeResolvePlaceholder(
@@ -357,7 +361,7 @@ async function safeResolvePlaceholder(
 async function runStatsUpdater(client) {
 	const { models, kythiaConfig, logger } = client.container;
 	const { ServerSetting } = models;
-	logger.info('📊 Starting server stats update cycle...');
+	logger.info(`📊 Starting server stats update cycle...`, { label: 'core' });
 	try {
 		const allSettings = await ServerSetting.getAllCache();
 		const guildsCache = client.guilds.cache;
@@ -365,6 +369,7 @@ async function runStatsUpdater(client) {
 		if (!guildsCache) {
 			logger.error(
 				'❌ client.guilds.cache is unavailable during stats update.',
+				{ label: 'core' },
 			);
 			return;
 		}
@@ -375,17 +380,19 @@ async function runStatsUpdater(client) {
 
 		if (activeSettings.length === 0) {
 			logger.info(
-				'📊 No guilds with active server stats. Skipping update cycle.',
+				`📊 No guilds with active server stats. Skipping update cycle.`,
+				{ label: 'core' },
 			);
 			return;
 		}
 
 		logger.info(
 			`📊 Found ${activeSettings.length} guild(s) to update stats for.`,
+			{ label: 'core' },
 		);
 
 		await updateStats(client, activeSettings);
-		logger.info('📊 Server stats update cycle finished.');
+		logger.info(`📊 Server stats update cycle finished.`, { label: 'core' });
 	} catch (err) {
 		logger.error(
 			`A critical error occurred in runStatsUpdater: ${err.message}`,

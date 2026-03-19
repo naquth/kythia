@@ -115,7 +115,9 @@ class AIMessageHandler {
 					isAiChannel = true;
 				}
 			} catch (e) {
-				this.logger.error('Error getting ServerSetting:', e);
+				this.logger.error(`Error getting ServerSetting: ${e.message || e}`, {
+					label: 'ai',
+				});
 			}
 		}
 
@@ -250,9 +252,12 @@ class AIMessageHandler {
 			await message.channel.sendTyping();
 			typingInterval = setInterval(() => {
 				message.channel.sendTyping().catch((err) => {
-					this.logger.warn(`Error sending typing indicator: ${err.message}`, {
-						label: 'AIMessageHandler',
-					});
+					this.logger.warn(
+						`Error sending typing indicator: ${err.message || err}`,
+						{
+							label: 'AIMessageHandler',
+						},
+					);
 					clearInterval(typingInterval);
 				});
 			}, 8000);
@@ -339,6 +344,7 @@ class AIMessageHandler {
 			if (!success) {
 				this.logger.error(
 					'❌ All AI tokens failed (likely 429). Informing user.',
+					{ label: 'ai' },
 				);
 				await message
 					.reply(
@@ -347,7 +353,7 @@ class AIMessageHandler {
 					.catch(() => {});
 			}
 		} catch (err) {
-			this.logger.error(`AI Pre-flight Error: ${err.message}`, {
+			this.logger.error(`AI Pre-flight Error: ${err.message || err}`, {
 				label: 'AIMessageHandler',
 			});
 			await message.channel
@@ -435,6 +441,7 @@ class AIMessageHandler {
 	async loadConversationHistory(message, client, userConv) {
 		this.logger.info(
 			`🧠 Cache miss for ${message.author.tag}. Reconstructing history...`,
+			{ label: 'ai' },
 		);
 
 		const CONTEXT_MESSAGES_TO_FETCH =
@@ -489,13 +496,15 @@ class AIMessageHandler {
 
 		if (commandRegex.test(clean)) {
 			this.logger.info(
-				'🧠 Intent detected as Command. Using Function Calling pathway.',
+				`🧠 Intent detected as Command. Using Function Calling pathway.`,
+				{ label: 'ai' },
 			);
 			return 'function_calling';
 		}
 
 		this.logger.info(
-			'🧠 Intent not specific. Using Google Search pathway (Default).',
+			`🧠 Intent not specific. Using Google Search pathway (Default).`,
+			{ label: 'ai' },
 		);
 		return 'google_search';
 	}
@@ -516,10 +525,12 @@ class AIMessageHandler {
 
 		const toolsConfig = [];
 		if (pathway === 'google_search') {
-			this.logger.info('🧠 Using Google Search pathway.');
+			this.logger.info(`🧠 Using Google Search pathway.`, { label: 'ai' });
 			toolsConfig.push({ googleSearch: {} });
 		} else {
-			this.logger.info('🧠 Using Function Calling pathway (Default).');
+			this.logger.info(`🧠 Using Function Calling pathway (Default).`, {
+				label: 'ai',
+			});
 			if (bot.aiCommandSchema && bot.aiCommandSchema.length > 0) {
 				toolsConfig.push({
 					functionDeclarations: bot.aiCommandSchema,
@@ -533,19 +544,24 @@ class AIMessageHandler {
 			.filter(Boolean).length;
 
 		for (let attempt = 0; attempt < totalTokens; attempt++) {
-			this.logger.info(`🧠 AI attempt ${attempt + 1}/${totalTokens}...`);
+			this.logger.info(`🧠 AI attempt ${attempt + 1}/${totalTokens}...`, {
+				label: 'ai',
+			});
 
 			const tokenIdx = await getAndUseNextAvailableToken();
 			if (tokenIdx === -1) {
 				this.logger.warn(
 					'⚠️ All tokens are locally rate-limited. Stopping retries.',
+					{ label: 'ai' },
 				);
 				break;
 			}
 
 			const GEMINI_API_KEY = this.aiConfig.geminiApiKeys.split(',')[tokenIdx];
 			if (!GEMINI_API_KEY) {
-				this.logger.warn(`Token index ${tokenIdx} is invalid. Skipping.`);
+				this.logger.warn(`Token index ${tokenIdx} is invalid. Skipping.`, {
+					label: 'ai',
+				});
 				continue;
 			}
 
@@ -572,7 +588,9 @@ class AIMessageHandler {
 					},
 				});
 
-				this.logger.info(`✅ AI request successful on attempt ${attempt + 1}`);
+				this.logger.info(`✅ AI request successful on attempt ${attempt + 1}`, {
+					label: 'ai',
+				});
 				await this.handleAIResponse(response, message, contents, bot, client);
 				return true;
 			} catch (err) {
@@ -586,9 +604,12 @@ class AIMessageHandler {
 						{ label: 'AIMessageHandler' },
 					);
 				} else {
-					this.logger.error(`AI Message Error (non-429): ${err.message}`, {
-						label: 'AIMessageHandler',
-					});
+					this.logger.error(
+						`AI Message Error (non-429): ${err.message || err}`,
+						{
+							label: 'AIMessageHandler',
+						},
+					);
 					await message.channel
 						.send(await this.t(message, 'ai.events.messageCreate.error'))
 						.catch(() => {});
@@ -675,8 +696,8 @@ class AIMessageHandler {
 		}
 
 		this.logger.info(
-			`🧠 Executing command '/${baseCommandName}' (interpreted from '${fullFunctionName}') with args:`,
-			argsFromAi,
+			`🧠 Executing command '/${baseCommandName}' (interpreted from '${fullFunctionName}') with args: ${JSON.stringify(argsFromAi)}`,
+			{ label: 'ai' },
 		);
 
 		const fakeInteraction = utils.InteractionFactory.create(
@@ -761,7 +782,10 @@ class AIMessageHandler {
 				finalReply,
 			);
 		} catch (err) {
-			this.logger.error(`🧠 Error running '${fullFunctionName}':`, err);
+			this.logger.error(
+				`🧠 Error running '${fullFunctionName}': ${err.message || err}`,
+				{ label: 'ai' },
+			);
 			await message.channel.send(
 				await this.t(message, 'ai.events.messageCreate.command.error'),
 			);

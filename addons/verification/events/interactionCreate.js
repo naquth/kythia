@@ -70,8 +70,11 @@ module.exports = async (bot, interaction) => {
 		// Dispatch captcha flow via ephemeral interaction
 		await sendCaptcha(interaction.member, config, interaction);
 	} catch (err) {
-		bot.client.container.logger.error(`Panel button error: ${err}`, {
-			label: 'verification',
-		});
+		bot.client.container.logger.error(
+			`Panel button error: ${err.message || err}`,
+			{
+				label: 'verification',
+			},
+		);
 	}
 };

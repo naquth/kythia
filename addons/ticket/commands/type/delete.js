@@ -85,7 +85,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error deleting ticket type: ${error}`, { label: 'ticket' });
+			logger.error(`Error deleting ticket type: ${error.message || error}`, {
+				label: 'ticket',
+			});
 			const desc = await t(interaction, 'ticket.errors.generic');
 			await interaction.editReply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

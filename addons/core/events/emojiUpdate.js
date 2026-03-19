@@ -109,7 +109,9 @@ module.exports = async (bot, _oldEmoji, newEmoji) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'emojiUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'emojiUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

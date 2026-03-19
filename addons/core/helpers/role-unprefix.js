@@ -42,7 +42,10 @@ async function roleUnprefix(guild, container) {
 
 				await sleep(1000);
 			} catch (err) {
-				logger.warn(`Failed nick reset for ${member.user.tag}: ${err.message}`);
+				logger.warn(
+					`Failed nick reset for ${member.user.tag}: ${err.message}`,
+					{ label: 'core' },
+				);
 			}
 		}
 	}

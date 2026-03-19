@@ -31,8 +31,7 @@ class ErrorHandler {
 
 		// Log error
 		logger.error(
-			`Error in messageCreate handler for ${message.author ? message.author.tag : '???'}:`,
-			error,
+			`Error in messageCreate handler for ${message.author ? message.author.tag : '???'}: ${error.message || error}`,
 			{ label: 'ErrorHandler' },
 		);
 
@@ -131,9 +130,12 @@ class ErrorHandler {
 					.catch(() => {});
 			}
 		} catch (e) {
-			logger.error(`Failed to send messageCreate error message to user: ${e}`, {
-				label: 'core:helpers:handlers:ErrorHandler',
-			});
+			logger.error(
+				`Failed to send messageCreate error message to user: ${e.message || e}`,
+				{
+					label: 'core:helpers:handlers:ErrorHandler',
+				},
+			);
 		}
 	}
 
@@ -174,7 +176,10 @@ class ErrorHandler {
 				});
 			}
 		} catch (webhookErr) {
-			logger.error('Error sending messageCreate error webhook:', webhookErr);
+			logger.error(
+				`Error sending messageCreate error webhook: ${webhookErr.message || webhookErr}`,
+				{ label: 'core' },
+			);
 		}
 	}
 }

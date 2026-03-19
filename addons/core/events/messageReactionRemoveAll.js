@@ -93,7 +93,9 @@ module.exports = async (bot, message, _reactions) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'messageReactionRemoveAll' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'messageReactionRemoveAll',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

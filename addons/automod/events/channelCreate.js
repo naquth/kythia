@@ -31,8 +31,11 @@ module.exports = async (bot, channel) => {
 			detail: `Created channel: ${channel.name}`,
 		});
 	} catch (err) {
-		bot.client.container.logger.error(`channelCreate error: ${err}`, {
-			label: 'antinuke',
-		});
+		bot.client.container.logger.error(
+			`channelCreate error: ${err.message || err}`,
+			{
+				label: 'antinuke',
+			},
+		);
 	}
 };

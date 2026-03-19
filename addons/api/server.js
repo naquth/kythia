@@ -38,6 +38,7 @@ module.exports = (bot) => {
 	if (client.shard && !client.shard.ids.includes(0)) {
 		logger.info(
 			`🚫 API Server & Dashboard Socket.io disabled on Shard ${client.shard.ids[0]} (Run only on Shard 0)`,
+			{ label: 'api' },
 		);
 		return;
 	}
@@ -128,6 +129,7 @@ module.exports = (bot) => {
 					app.use(`${routePath}/*`, addonGuard(routeName));
 					logger.info(
 						`     ╰┈➤ 🛡️  Auto-guard: ${routePath} → addon '${routeName}'`,
+						{ label: 'api' },
 					);
 				}
 
@@ -135,20 +137,25 @@ module.exports = (bot) => {
 					const routeModule = require(fullPath);
 
 					app.route(routePath, routeModule);
-					logger.info(`   ╰┈➤ ♊️  Route loaded: ${routePath} -> ${file}`);
-				} catch (err) {
-					logger.error(`  ╰┈➤ Error loading route ${file}: ${err.message}`, {
+					logger.info(`╰┈➤ ♊️  Route loaded: ${routePath} -> ${file}`, {
 						label: 'api',
 					});
+				} catch (err) {
+					logger.error(
+						`╰┈➤ Error loading route ${file}: ${err.message || err}`,
+						{
+							label: 'api',
+						},
+					);
 				}
 			}
 		});
 	}
 
-	logger.info('🔄 Loading API Routes...');
+	logger.info(`🔄 Loading API Routes...`, { label: 'api' });
 	loadRoutes(routesDir);
 
-	logger.info(`🔥 API Server running on port ${PORT}`);
+	logger.info(`🔥 API Server running on port ${PORT}`, { label: 'api' });
 
 	const server = serve({
 		fetch: app.fetch,
@@ -165,11 +172,13 @@ module.exports = (bot) => {
 	container.io = io;
 
 	io.on('connection', (socket) => {
-		logger.info(`🔌 Dashboard connected: ${socket.id}`);
+		logger.info(`🔌 Dashboard connected: ${socket.id}`, { label: 'api' });
 
 		socket.on('join_guild', (guildId) => {
 			socket.join(guildId);
-			logger.info(`🔌 Socket ${socket.id} joined guild room: ${guildId}`);
+			logger.info(`🔌 Socket ${socket.id} joined guild room: ${guildId}`, {
+				label: 'api',
+			});
 		});
 	});
 

@@ -93,7 +93,9 @@ module.exports = async (bot, stageInstance) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'stageInstanceDelete' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'stageInstanceDelete',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

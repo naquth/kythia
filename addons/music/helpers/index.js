@@ -77,7 +77,9 @@ async function generateLyricsWithTranscript(
 			transcriptText = transcript.map((line) => line.text).join(' ');
 		}
 	} catch (e) {
-		logger.warn(`Can't get transcript for ${trackUri}: ${e.message}`);
+		logger.warn(`Can't get transcript for ${trackUri}: ${e.message}`, {
+			label: 'music',
+		});
 	}
 
 	if (!transcriptText) {
@@ -95,7 +97,9 @@ async function generateLyricsWithTranscript(
 		const aiLyrics = await generateContent(prompt);
 		return aiLyrics;
 	} catch (e) {
-		logger.error(`Error when generating lyrics with AI: ${e.stack}`);
+		logger.error(`Error when generating lyrics with AI: ${e.stack}`, {
+			label: 'music',
+		});
 		return null;
 	}
 }

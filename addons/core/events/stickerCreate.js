@@ -97,7 +97,9 @@ module.exports = async (bot, sticker) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'stickerCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'stickerCreate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

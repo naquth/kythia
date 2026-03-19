@@ -288,7 +288,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`setup command failed: ${error}`, { label: 'modmail' });
+			logger.error(`setup command failed: ${error.message || error}`, {
+				label: 'modmail',
+			});
 			const desc = await t(interaction, 'modmail.errors.generic');
 			return interaction.editReply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

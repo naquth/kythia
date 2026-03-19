@@ -96,8 +96,8 @@ module.exports = async (bot, oldState, newState) => {
 			});
 		} catch (error) {
 			logger.error(
-				`[TempVoice] Failed to create channel for ${member.user.tag}:`,
-				error,
+				`Failed to create channel for ${member.user.tag}: ${error.message || error}`,
+				{ label: 'tempvoice' },
 			);
 		}
 	}
@@ -196,6 +196,7 @@ module.exports = async (bot, oldState, newState) => {
 			if (channel && channel.members.size === 0) {
 				logger.info(
 					`[TempVoice] Main channel ${oldChannelId} is now empty, deleting...`,
+					{ label: 'tempvoice' },
 				);
 				await channel.delete('Temp channel empty.');
 

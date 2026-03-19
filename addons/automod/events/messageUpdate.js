@@ -27,8 +27,11 @@ module.exports = async (bot, _oldMessage, newMessage) => {
 	try {
 		await automodSystem(newMessage, client);
 	} catch (error) {
-		container.logger.error(`Error in messageUpdate handler:${error}`, {
-			label: 'Automod',
-		});
+		container.logger.error(
+			`Error in messageUpdate handler:${error.message || error}`,
+			{
+				label: 'Automod',
+			},
+		);
 	}
 };

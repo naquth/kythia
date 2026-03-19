@@ -64,7 +64,7 @@ module.exports = {
 
 			await interaction.showModal(modal);
 		} catch (error) {
-			logger.error(error, {
+			logger.error(`Error: ${error.message || error}`, {
 				label: 'reaction-role:rr-panel-add-emoji-show',
 			});
 			if (!interaction.replied && !interaction.deferred) {

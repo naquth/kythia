@@ -69,7 +69,9 @@ module.exports = {
 			// Relay as a named (non-anonymous) reply
 			return relayStaffReply(interaction, snippets[name], false, container);
 		} catch (error) {
-			logger.error(`snippet use failed: ${error}`, { label: 'modmail' });
+			logger.error(`snippet use failed: ${error.message || error}`, {
+				label: 'modmail',
+			});
 			const desc = await t(interaction, 'modmail.errors.generic');
 			return interaction.reply({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

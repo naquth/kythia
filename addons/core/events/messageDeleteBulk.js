@@ -95,7 +95,9 @@ module.exports = async (bot, messages, channel) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'messageDeleteBulk' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'messageDeleteBulk',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

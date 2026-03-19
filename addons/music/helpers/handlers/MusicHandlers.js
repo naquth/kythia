@@ -129,7 +129,9 @@ class MusicHandlers {
 		try {
 			res = await client.poru.resolve({ query, requester: interaction.user });
 		} catch (e) {
-			this.logger.error('Poru resolve error:', e);
+			this.logger.error(`Poru resolve error: ${e.message || e}`, {
+				label: 'music',
+			});
 			const components = await this.simpleContainer(
 				interaction,
 				await this.t(interaction, 'music.helpers.handlers.music.failed', {
@@ -1328,7 +1330,9 @@ class MusicHandlers {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error: ${error}`, { label: 'handleback' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'handleback',
+			});
 
 			try {
 				if (!interaction.deferred && !interaction.replied) {
@@ -1893,7 +1897,9 @@ class MusicHandlers {
 				}
 			}
 		} catch (e) {
-			this.logger.error(`LRCLIB API request failed: ${e.stack}`);
+			this.logger.error(`LRCLIB API request failed: ${e.stack}`, {
+				label: 'music',
+			});
 		}
 
 		if (
@@ -1910,7 +1916,9 @@ class MusicHandlers {
 				);
 				usedAI = !!lyrics;
 			} catch (e) {
-				this.logger.error(`Gemini AI lyrics generation failed: ${e.stack}`);
+				this.logger.error(`Gemini AI lyrics generation failed: ${e.stack}`, {
+					label: 'music',
+				});
 			}
 		}
 
@@ -2889,7 +2897,9 @@ class MusicHandlers {
 				),
 			});
 		} catch (e) {
-			this.logger.error('Error adding track to playlist:', e);
+			this.logger.error(`Error adding track to playlist: ${e.message || e}`, {
+				label: 'music',
+			});
 			await interaction.editReply({
 				content: await this.t(
 					interaction,
@@ -3052,7 +3062,12 @@ class MusicHandlers {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			this.logger.error('Playlist import from code failed:', error);
+			this.logger.error(
+				`Playlist import from code failed: ${error.message || error}`,
+				{
+					label: 'music',
+				},
+			);
 			const components = await this.simpleContainer(
 				interaction,
 				`${await this.t(interaction, 'music.helpers.handlers.playlist.import.error.title')}\n${await this.t(interaction, 'music.helpers.handlers.playlist.import.error.desc')}`,
@@ -3753,7 +3768,10 @@ class MusicHandlers {
 				});
 				msg = await this.t(interaction, 'music.helpers.handlers.247.enabled');
 			} catch (dbErr) {
-				this.logger.error('Failed to save 24/7 to DB:', dbErr);
+				this.logger.error(
+					`Failed to save 24/7 to DB: ${dbErr.message || dbErr}`,
+					{ label: 'music' },
+				);
 				msg = await this.t(interaction, 'music.helpers.handlers.247.db_error');
 			}
 		} else {
@@ -3761,7 +3779,10 @@ class MusicHandlers {
 				await this.Music247.destroy({ where: { guildId: guild.id } });
 				msg = await this.t(interaction, 'music.helpers.handlers.247.disabled');
 			} catch (dbErr) {
-				this.logger.error('Failed to remove 24/7 from DB:', dbErr);
+				this.logger.error(
+					`Failed to remove 24/7 from DB: ${dbErr.message || dbErr}`,
+					{ label: 'music' },
+				);
 				msg = await this.t(interaction, 'music.helpers.handlers.247.db_error');
 			}
 		}
@@ -4023,7 +4044,9 @@ class MusicHandlers {
 				}
 			});
 		} catch (error) {
-			this.logger.error('Radio Handler Error:', error);
+			this.logger.error(`Radio Handler Error: ${error.message || error}`, {
+				label: 'music',
+			});
 			const errContainer = new ContainerBuilder()
 				.setAccentColor(
 					this.convertColor('Red', { from: 'discord', to: 'decimal' }),
@@ -4201,7 +4224,9 @@ class MusicHandlers {
 
 			fs.unlinkSync(filePath);
 		} catch (error) {
-			this.logger.error('Download Error:', error);
+			this.logger.error(`Download Error: ${error.message || error}`, {
+				label: 'music',
+			});
 			if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
 			return interaction.editReply({

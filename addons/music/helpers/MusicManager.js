@@ -67,10 +67,12 @@ class MusicManager {
 	}
 
 	init() {
-		this.logger.info('🎵 Initializing Music Manager Service...');
+		this.logger.info(`🎵 Initializing Music Manager Service...`, {
+			label: 'music',
+		});
 		// Config Check
 		if (!this.config.addons.music.lavalink.hosts) {
-			this.logger.warn('Lavalink config missing.', { label: 'music manager' });
+			this.logger.warn(`Lavalink config missing.`, { label: 'music manager' });
 			return;
 		}
 
@@ -126,6 +128,7 @@ class MusicManager {
 			this.client.poru.init(this.client);
 			this.logger.info(
 				`🎵 Music UI Ticker started (${this.TICKER_INTERVAL}ms)`,
+				{ label: 'music' },
 			);
 			this.startUiTicker();
 		});
@@ -155,7 +158,7 @@ class MusicManager {
 		});
 
 		poru.on('nodeConnect', (node) =>
-			this.logger.info(`🎚️  Node "${node.name}" connected.`),
+			this.logger.info(`🎚️  Node "${node.name}" connected.`, { label: 'music' }),
 		);
 
 		poru.on('nodeError', (node, error) => {
@@ -164,9 +167,12 @@ class MusicManager {
 			if (error?.message && poruLavalinkPatternNode.test(error.message)) {
 				this.logger.warn(
 					`‼️ Lavalink node connection warning: ${error.message}`,
+					{ label: 'music' },
 				);
 			} else {
-				this.logger.info(`❌ Node "${node.name}" error: ${error.message}`);
+				this.logger.info(`❌ Node "${node.name}" error: ${error.message}`, {
+					label: 'music',
+				});
 			}
 		});
 
@@ -196,8 +202,8 @@ class MusicManager {
 				}
 			} catch (err) {
 				this.logger.error(
-					'❌ Error checking voice channel members (on trackStart):',
-					err,
+					`❌ Error checking voice channel members (on trackStart): ${err.message || err}`,
+					{ label: 'music' },
 				);
 			}
 
@@ -253,7 +259,10 @@ class MusicManager {
 						.slice(0, this.config.addons.music.suggestionLimit || 5);
 				}
 			} catch (e) {
-				this.logger.error('Failed to fetch recommendations for dropdown:', e);
+				this.logger.error(
+					`Failed to fetch recommendations for dropdown: ${e.message || e}`,
+					{ label: 'music' },
+				);
 			}
 
 			player.playedTrackIdentifiers.add(track.info.identifier);
@@ -490,6 +499,7 @@ class MusicManager {
 			if (player._247) {
 				this.logger.info(
 					`🎵 [24/7] Queue ended for ${player.guildId}, staying idle.`,
+					{ label: 'music' },
 				);
 				if (player.updateInterval) clearInterval(player.updateInterval);
 
@@ -711,8 +721,8 @@ class MusicManager {
 				await this.updateNowPlayingUI(player);
 			} catch (e) {
 				this.logger.warn(
-					`[Ticker] Failed to update UI for player: ${player.guildId}`,
-					e.message,
+					`Ticker failed to update UI for player ${player.guildId}: ${e.message || e}`,
+					{ label: 'music' },
 				);
 			}
 		}

@@ -201,7 +201,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(error);
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'core',
+			});
 
 			const errorMsg = `## 💥 CRITICAL FAILURE\n\n${logs.join('\n')}\n\n**ERROR at Step ${step}:**\n\`\`\`js\n${error.message}\n\`\`\``;
 			const components = await simpleContainer(interaction, errorMsg);

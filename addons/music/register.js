@@ -27,7 +27,9 @@ module.exports = {
 		summary.push('   ╰┈➤ 🎵 Initialize Music Manager');
 
 		bot.addClientReadyHook(async (client) => {
-			logger.info('🎵 [24/7 Resurrector] Checking persistent 24/7 sessions...');
+			logger.info(`Checking persistent 24/7 sessions...`, {
+				label: '24 7 resurrector',
+			});
 
 			const Music247 = container.models.Music247;
 			if (!Music247) {
@@ -39,7 +41,7 @@ module.exports = {
 
 			const sessions = await Music247.findAll();
 			if (sessions.length === 0) {
-				logger.info('🎵 [24/7 Resurrector] No active sessions found.');
+				logger.info(`No active sessions found.`, { label: '24 7 resurrector' });
 				return;
 			}
 
@@ -78,6 +80,7 @@ module.exports = {
 			}
 			logger.info(
 				`🎵 [24/7 Resurrector] Successfully restored ${restoredCount}/${sessions.length} sessions.`,
+				{ label: 'music' },
 			);
 		});
 

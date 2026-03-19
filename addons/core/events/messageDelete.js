@@ -177,7 +177,9 @@ module.exports = async (bot, message) => {
 		// Ignore permission errors
 		if (err.code === 50013 || err.code === 50001) return;
 
-		logger.error(err, { label: 'messageDelete' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'messageDelete',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

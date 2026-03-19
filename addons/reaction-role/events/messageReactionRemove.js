@@ -19,7 +19,9 @@ module.exports = async (bot, reaction, user) => {
 			try {
 				await reaction.fetch();
 			} catch (error) {
-				logger.error(error, { label: 'reactionRole:fetchMessage' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'reactionRole:fetchMessage',
+				});
 				return;
 			}
 		}
@@ -28,7 +30,9 @@ module.exports = async (bot, reaction, user) => {
 			try {
 				await reaction.message.fetch();
 			} catch (error) {
-				logger.error(error, { label: 'reactionRole:fetchMessagePartial' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'reactionRole:fetchMessagePartial',
+				});
 				return;
 			}
 		}
@@ -58,6 +62,8 @@ module.exports = async (bot, reaction, user) => {
 			}
 		}
 	} catch (err) {
-		logger.error(err, { label: 'reactionRole:messageReactionRemove' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'reactionRole:messageReactionRemove',
+		});
 	}
 };

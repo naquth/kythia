@@ -32,8 +32,8 @@ module.exports = {
 			mainChannel = await client.channels.fetch(mainChannelId, { force: true });
 		} catch (error) {
 			logger.error(
-				`[TempVoice] CRITICAL: Failed to fetch channel ${mainChannelId} for rename. Error:`,
-				error,
+				`CRITICAL: Failed to fetch channel ${mainChannelId} for rename. Error: ${error.message || error}`,
+				{ label: 'tempvoice' },
 			);
 
 			return interaction.reply({

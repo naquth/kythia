@@ -80,7 +80,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:list' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:list',
+			});
 			return interaction.editReply({
 				content: await t(interaction, 'common.error.generic'),
 			});

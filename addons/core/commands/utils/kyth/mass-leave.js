@@ -196,9 +196,12 @@ module.exports = {
 					leftNames.push(`${guild.name} (${guild.memberCount})`);
 					await new Promise((r) => setTimeout(r, 1000));
 				} catch (e) {
-					logger.error(`Failed to cleanup guild ${guild.name}: ${e}`, {
-						label: 'leave-guild',
-					});
+					logger.error(
+						`Failed to cleanup guild ${guild.name}: ${e.message || e}`,
+						{
+							label: 'leave-guild',
+						},
+					);
 					errorCount++;
 				}
 			}

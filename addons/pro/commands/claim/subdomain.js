@@ -148,8 +148,8 @@ module.exports = {
 				});
 			}
 			logger.error(
-				`[pro/claim] Gagal klaim subdomain untuk user ${interaction.user.id}:`,
-				error,
+				`Gagal klaim subdomain untuk user ${interaction.user.id}: ${error.message || error}`,
+				{ label: 'pro' },
 			);
 
 			const desc = await t(interaction, 'pro.claim.subdomain.error_technical');

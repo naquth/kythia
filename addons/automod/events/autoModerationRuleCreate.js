@@ -99,7 +99,9 @@ module.exports = async (bot, autoModerationRule) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'autoModerationRuleCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'autoModerationRuleCreate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

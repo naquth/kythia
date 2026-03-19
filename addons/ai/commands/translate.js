@@ -60,7 +60,9 @@ module.exports = {
 		let lastError = null;
 
 		for (let attempt = 0; attempt < totalTokens; attempt++) {
-			logger.debug(`🧠 AI translate attempt ${attempt + 1}/${totalTokens}...`);
+			logger.debug(`🧠 AI translate attempt ${attempt + 1}/${totalTokens}...`, {
+				label: 'ai',
+			});
 
 			const tokenIdx = await getAndUseNextAvailableToken();
 			if (tokenIdx === -1) {
@@ -77,7 +79,9 @@ module.exports = {
 			const GEMINI_API_KEY =
 				kythiaConfig.addons.ai.geminiApiKeys.split(',')[tokenIdx];
 			if (!GEMINI_API_KEY) {
-				logger.warn(`Token index ${tokenIdx} is invalid. Skipping.`);
+				logger.warn(`Token index ${tokenIdx} is invalid. Skipping.`, {
+					label: 'ai',
+				});
 				continue;
 			}
 
@@ -97,6 +101,7 @@ module.exports = {
 				success = true;
 				logger.debug(
 					`✅ AI translate request successful on attempt ${attempt + 1}`,
+					{ label: 'ai' },
 				);
 				break;
 			} catch (error) {
@@ -108,11 +113,15 @@ module.exports = {
 				) {
 					logger.warn(
 						`Token index ${tokenIdx} hit 429 limit. Retrying with next token...`,
+						{ label: 'ai' },
 					);
 				} else {
-					logger.error(`Error in /translate (non-429): ${error.message}`, {
-						label: 'translate',
-					});
+					logger.error(
+						`Error in /translate (non-429): ${error.message || error}`,
+						{
+							label: 'translate',
+						},
+					);
 					break;
 				}
 			}
@@ -134,7 +143,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} else {
-			logger.error('Error in /translate:', lastError);
+			logger.error(`Error in /translate: ${lastError.message || lastError}`, {
+				label: 'ai',
+			});
 			const msg = await t(interaction, 'ai.translate.error');
 			const components = await simpleContainer(interaction, msg, {
 				color: 'Red',

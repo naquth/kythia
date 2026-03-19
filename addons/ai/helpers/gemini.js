@@ -42,6 +42,7 @@ function init({ logger, config }) {
 	_PER_MINUTE_AI_LIMIT = _aiConfig.perMinuteAiLimit || 60;
 	_logger.info(
 		`✅ Gemini helper initialized with ${_GEMINI_TOKEN_COUNT} API keys.`,
+		{ label: 'ai' },
 	);
 }
 
@@ -102,7 +103,7 @@ async function saveUsageData(data) {
 	try {
 		await fs.writeFile(aiUsageFilePath, JSON.stringify(data, null, 2));
 	} catch (err) {
-		_logger.error(`Failed to save AI usage data: ${err.message}`, {
+		_logger.error(`Failed to save AI usage data: ${err.message || err}`, {
 			label: 'gemini',
 		});
 	}
@@ -147,7 +148,7 @@ async function setUsageMeta(file, meta) {
 	try {
 		await fs.writeFile(metaPath, JSON.stringify(meta, null, 2));
 	} catch (err) {
-		_logger.error(`Failed to save meta file ${file}: ${err.message}`, {
+		_logger.error(`Failed to save meta file ${file}: ${err.message || err}`, {
 			label: 'gemini',
 		});
 	}
@@ -163,7 +164,7 @@ async function getAndUseNextAvailableToken() {
 	try {
 		const usageData = await loadUsageData();
 		if (_GEMINI_TOKEN_COUNT === 0) {
-			_logger.warn('No Gemini API keys configured.', { label: 'gemini' });
+			_logger.warn(`No Gemini API keys configured.`, { label: 'gemini' });
 			return -1;
 		}
 		const meta = await getUsageMeta('ai_usage_meta.json', 'lastIndex');
@@ -180,11 +181,11 @@ async function getAndUseNextAvailableToken() {
 				await saveUsageData(usageData);
 				meta.lastIndex = (idx + 1) % _GEMINI_TOKEN_COUNT;
 				await setUsageMeta('ai_usage_meta.json', meta);
-				_logger.debug(`🎉 AI Token ${idx} selected.`);
+				_logger.debug(`🎉 AI Token ${idx} selected.`, { label: 'ai' });
 				return idx;
 			}
 		}
-		_logger.warn('All Gemini tokens are currently rate-limited.', {
+		_logger.warn(`All Gemini tokens are currently rate-limited.`, {
 			label: 'gemini',
 		});
 		return -1;
@@ -202,7 +203,7 @@ async function getAndUseNextAvailableToken() {
 async function generateContent(promptOrContents) {
 	const tokenIdx = await getAndUseNextAvailableToken();
 	if (tokenIdx === -1) {
-		_logger.error('Cannot generate content: All AI tokens are rate-limited.', {
+		_logger.error(`Cannot generate content: All AI tokens are rate-limited.`, {
 			label: 'gemini',
 		});
 		return null;

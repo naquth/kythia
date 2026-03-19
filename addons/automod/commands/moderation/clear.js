@@ -213,7 +213,9 @@ async function handleNuke(interaction, t, container) {
 		);
 		await newChannel.send({ components: successReply });
 	} catch (err) {
-		logger.error('Nuke error:', err);
+		logger.error(`Nuke error: ${err.message || err}`, {
+			label: 'automod',
+		});
 		const reply = await simpleContainer(
 			interaction,
 			await t(interaction, 'core.moderation.clear.failed', {
@@ -268,7 +270,9 @@ async function handleBulkDelete(interaction, t, container) {
 			flags: MessageFlags.IsComponentsV2,
 		});
 	} catch (err) {
-		logger.error('Bulk delete all error:', err);
+		logger.error(`Bulk delete all error: ${err.message || err}`, {
+			label: 'automod',
+		});
 		const reply = await simpleContainer(
 			interaction,
 			await t(interaction, 'core.moderation.clear.error'),

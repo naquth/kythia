@@ -95,7 +95,9 @@ app.post('/topgg', async (c) => {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (err) {
-			logger.warn(`Failed DM to ${userId}\n${err.message}`);
+			logger.warn(`Failed DM to ${userId}\n${err.message || err}`, {
+				label: 'api',
+			});
 		}
 
 		const accentColor = convertColor(config.bot.color, {
@@ -190,7 +192,7 @@ app.post('/topgg', async (c) => {
 
 		return c.json({ success: true });
 	} catch (e) {
-		logger.error(e);
+		logger.error(`Error: ${e.message || e}`, { label: 'api' });
 		return c.json({ error: 'Internal Error' }, 500);
 	}
 });
@@ -231,10 +233,14 @@ app.post('/license-created', async (c) => {
 			flags: MessageFlags.IsComponentsV2,
 		});
 
-		logger.info(`License key sent to ${user.tag} (${userId})`);
+		logger.info(`License key sent to ${user.tag} (${userId})`, {
+			label: 'api',
+		});
 		return c.json({ success: true });
 	} catch (err) {
-		logger.error(`Failed to send license to ${userId}: ${err.message}`);
+		logger.error(`Failed to send license to ${userId}: ${err.message || err}`, {
+			label: 'api',
+		});
 		return c.json({ error: 'Failed to DM User', details: err.message }, 500);
 	}
 });

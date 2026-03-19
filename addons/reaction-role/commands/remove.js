@@ -92,7 +92,9 @@ module.exports = {
 					}
 				}
 			} catch (err) {
-				logger.warn(err, { label: 'reaction-role:remove_reaction' });
+				logger.warn(`Error: ${err.message || err}`, {
+					label: 'reaction-role:remove_reaction',
+				});
 				// Continue even if we can't remove the reaction
 			}
 
@@ -111,7 +113,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:remove' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:remove',
+			});
 			return interaction.editReply({
 				content: await t(interaction, 'common.error.generic'),
 			});

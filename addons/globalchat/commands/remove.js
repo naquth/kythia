@@ -77,7 +77,10 @@ module.exports = {
 				});
 			}
 		} catch (error) {
-			logger.error('Failed to remove guild from global chat via API:', error);
+			logger.error(
+				`Failed to remove guild from global chat via API: ${error.message || error}`,
+				{ label: 'globalchat' },
+			);
 			const components = await simpleContainer(
 				interaction,
 				await t(interaction, 'globalchat.remove.error'),

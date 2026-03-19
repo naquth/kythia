@@ -137,9 +137,12 @@ module.exports = {
 				components: successContainer,
 			});
 		} catch (error) {
-			logger.error(`Error in tkt-type-step2-submit (Final) handler: ${error}`, {
-				label: 'core:modals:tkt-type-step2-submit',
-			});
+			logger.error(
+				`Error in tkt-type-step2-submit (Final) handler: ${error.message || error}`,
+				{
+					label: 'core:modals:tkt-type-step2-submit',
+				},
+			);
 			const errDesc = await t(interaction, 'ticket.errors.generic');
 			await interaction.followUp({
 				components: await simpleContainer(interaction, errDesc, {

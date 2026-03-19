@@ -105,7 +105,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:panel:list' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:panel:list',
+			});
 			return interaction.editReply({
 				content: 'An error occurred while listing panels.',
 			});

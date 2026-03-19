@@ -417,14 +417,18 @@ module.exports = {
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} catch (error) {
-				logger.error('Error in shop interaction:', error);
+				logger.error(`Error in shop interaction: ${error.message || error}`, {
+					label: 'adventure',
+				});
 				try {
 					await i.followUp({
 						content: await t(interaction, 'common.error.generic'),
 						flags: MessageFlags.Ephemeral,
 					});
 				} catch (e) {
-					logger.error('Failed to send error followUp:', e);
+					logger.error(`Failed to send error followUp: ${e.message || e}`, {
+						label: 'adventure',
+					});
 				}
 			}
 		});
@@ -443,9 +447,11 @@ module.exports = {
 				return newRow;
 			});
 
-			replyMessage
-				.edit({ components: disabledComponents })
-				.catch((err) => logger.error(err));
+			replyMessage.edit({ components: disabledComponents }).catch((err) =>
+				logger.error(`Error: ${err.message || err}`, {
+					label: 'adventure',
+				}),
+			);
 		});
 	},
 };

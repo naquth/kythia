@@ -40,8 +40,8 @@ module.exports = {
 			channel = await client.channels.fetch(channelId, { force: true });
 		} catch (error) {
 			logger.error(
-				`[TempVoice] CRITICAL: Failed to fetch channel ${channelId} for rename. Error:`,
-				error,
+				`CRITICAL: Failed to fetch channel ${channelId} for rename. Error: ${error.message || error}`,
+				{ label: 'tempvoice' },
 			);
 
 			return interaction.reply({
@@ -81,7 +81,7 @@ module.exports = {
 			});
 			inviteUrl = invite.url;
 		} catch (err) {
-			logger.error(`Gagal bikin invite: ${err.message}`, {
+			logger.error(`Gagal bikin invite: ${err.message || err}`, {
 				label: 'tempvoice',
 			});
 			return interaction.update({

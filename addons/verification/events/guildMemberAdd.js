@@ -40,6 +40,8 @@ module.exports = async (bot, member) => {
 		// Otherwise, DM them automatically
 		await sendCaptcha(member, config);
 	} catch (err) {
-		logger.error(`guildMemberAdd error: ${err}`, { label: 'verification' });
+		logger.error(`guildMemberAdd error: ${err.message || err}`, {
+			label: 'verification',
+		});
 	}
 };

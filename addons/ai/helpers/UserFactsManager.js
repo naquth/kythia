@@ -166,7 +166,9 @@ class UserFactsManager {
 
 			return created ? 'added' : 'duplicate';
 		} catch (error) {
-			this.logger.error('Error in appendFact:', error);
+			this.logger.error(`Error in appendFact: ${error.message || error}`, {
+				label: 'ai',
+			});
 			return 'error';
 		}
 	}
@@ -209,13 +211,16 @@ class UserFactsManager {
 	async summarizeAndStoreFacts(userId, conversationHistory) {
 		if (conversationHistory.length < 4) return;
 
-		this.logger.info(`🧠 Starting summarization for user ${userId}...`);
+		this.logger.info(`🧠 Starting summarization for user ${userId}...`, {
+			label: 'ai',
+		});
 
 		try {
 			const tokenIdx = await getAndUseNextAvailableToken();
 			if (tokenIdx === -1) {
 				this.logger.info(
 					`🧠 No AI tokens available for summarization. Skipping.`,
+					{ label: 'ai' },
 				);
 				return;
 			}
@@ -266,8 +271,8 @@ If there are no new important facts to learn from this conversation, respond wit
 
 				if (newFacts.length > 0) {
 					this.logger.info(
-						`🧠 Found ${newFacts.length} new facts for user ${userId}:`,
-						newFacts,
+						`🧠 Found ${newFacts.length} new facts for user ${userId}: ${newFacts.join(', ')}`,
+						{ label: 'ai' },
 					);
 					for (const fact of newFacts) {
 						await this.appendFact(userId, fact);
@@ -276,12 +281,14 @@ If there are no new important facts to learn from this conversation, respond wit
 			} else {
 				this.logger.info(
 					`🧠 No new significant facts found for user ${userId}.`,
+					{ label: 'ai' },
 				);
 			}
 		} catch (error) {
 			this.logger.error(
 				`❌ Error during summarization for user ${userId}:`,
 				error.message,
+				{ label: 'ai' },
 			);
 		}
 	}

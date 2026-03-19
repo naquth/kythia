@@ -110,6 +110,8 @@ module.exports = async (bot, _oldChannel, newChannel) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'channelUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'channelUpdate',
+		});
 	}
 };

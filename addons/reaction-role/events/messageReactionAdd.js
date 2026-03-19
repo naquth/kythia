@@ -20,7 +20,9 @@ module.exports = async (bot, reaction, user) => {
 			try {
 				await reaction.fetch();
 			} catch (error) {
-				logger.error(error, { label: 'reactionRole:fetchMessage' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'reactionRole:fetchMessage',
+				});
 				return;
 			}
 		}
@@ -29,7 +31,9 @@ module.exports = async (bot, reaction, user) => {
 			try {
 				await reaction.message.fetch();
 			} catch (error) {
-				logger.error(error, { label: 'reactionRole:fetchMessagePartial' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'reactionRole:fetchMessagePartial',
+				});
 				return;
 			}
 		}
@@ -88,7 +92,9 @@ module.exports = async (bot, reaction, user) => {
 						}
 					}
 				} catch (err) {
-					logger.warn(err, { label: 'reactionRole:panelCheck' });
+					logger.warn(`Error: ${err.message || err}`, {
+						label: 'reactionRole:panelCheck',
+					});
 					// Non-blocking — fall through and assign role anyway
 				}
 			}
@@ -101,6 +107,8 @@ module.exports = async (bot, reaction, user) => {
 			});
 		}
 	} catch (err) {
-		logger.error(err, { label: 'reactionRole:messageReactionAdd' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'reactionRole:messageReactionAdd',
+		});
 	}
 };

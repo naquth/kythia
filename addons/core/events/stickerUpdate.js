@@ -110,7 +110,9 @@ module.exports = async (bot, _oldSticker, newSticker) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'stickerUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'stickerUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

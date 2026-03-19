@@ -31,12 +31,14 @@ const initialize = (bot) => {
 	} else {
 		logger.info(
 			`🚫 Core background tasks (Top.gg) disabled on Shard ${client.shard.ids[0]}`,
+			{ label: 'core' },
 		);
 	}
 
 	bot.addClientReadyHook(() => {
 		logger.info(
 			`🔠 Total Fonts Loaded: ${loadFonts(path.join(__dirname, 'assets', 'fonts'))}`,
+			{ label: 'core' },
 		);
 	});
 	return summary;

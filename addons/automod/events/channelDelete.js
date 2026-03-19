@@ -31,8 +31,11 @@ module.exports = async (bot, channel) => {
 			detail: `Deleted channel: ${channel.name}`,
 		});
 	} catch (err) {
-		bot.client.container.logger.error(`channelDelete error: ${err}`, {
-			label: 'antinuke',
-		});
+		bot.client.container.logger.error(
+			`channelDelete error: ${err.message || err}`,
+			{
+				label: 'antinuke',
+			},
+		);
 	}
 };

@@ -139,7 +139,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error during market sell: ${error}`, {
+			logger.error(`Error during market sell: ${error.message || error}`, {
 				label: 'economy:market:sell',
 			});
 			const msg = `## ${await t(interaction, 'economy.market.sell.error.title')}\n${await t(interaction, 'economy.market.sell.error.desc')}`;

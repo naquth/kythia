@@ -32,8 +32,11 @@ module.exports = async (bot, channel) => {
 			detail: `Created webhook in <#${channel.id}>: ${entry.target?.name || 'unknown'}`,
 		});
 	} catch (err) {
-		bot.client.container.logger.error(`webhooksUpdate error: ${err}`, {
-			label: 'antinuke',
-		});
+		bot.client.container.logger.error(
+			`webhooksUpdate error: ${err.message || err}`,
+			{
+				label: 'antinuke',
+			},
+		);
 	}
 };

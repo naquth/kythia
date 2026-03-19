@@ -110,7 +110,9 @@ module.exports = {
 
 				await interaction.message.edit({ components: uiComponents });
 			} catch (e) {
-				logger.warn(`Failed to update UI for ${messageId}: ${e.message}`);
+				logger.warn(`Failed to update UI for ${messageId}: ${e.message}`, {
+					label: 'giveaway',
+				});
 			}
 
 			// 6. Respon ke User (Simple Container)
@@ -122,7 +124,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Fatal Error: ${error}`, { label: 'giveawayjoin' });
+			logger.error(`Fatal Error: ${error.message || error}`, {
+				label: 'giveawayjoin',
+			});
 			const msg = await t(interaction, 'giveaway.error.fatal.join');
 			const err = await simpleContainer(interaction, msg, {
 				color: 'Red',

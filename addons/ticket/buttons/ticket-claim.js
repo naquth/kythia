@@ -177,7 +177,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error claiming ticket: ${error}`, { label: 'ticket' });
+			logger.error(`Error claiming ticket: ${error.message || error}`, {
+				label: 'ticket',
+			});
 			const descError = await t(interaction, 'ticket.errors.generic');
 			await interaction.followUp({
 				components: await simpleContainer(interaction, descError, {

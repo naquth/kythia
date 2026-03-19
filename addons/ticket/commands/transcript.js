@@ -159,7 +159,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error(`Failed to create transcript: ${error}`, {
+			logger.error(`Failed to create transcript: ${error.message || error}`, {
 				label: 'ticket',
 			});
 			const desc = await t(interaction, 'ticket.errors.transcript_failed');

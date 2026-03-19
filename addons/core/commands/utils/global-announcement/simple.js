@@ -79,7 +79,10 @@ module.exports = {
 			})
 			.catch(() => null);
 
-		if (!modalSubmit) return logger.warn('Embed announcement modal timed out.');
+		if (!modalSubmit)
+			return logger.warn(`Embed announcement modal timed out.`, {
+				label: 'core',
+			});
 
 		await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
 

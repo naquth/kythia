@@ -122,7 +122,9 @@ module.exports = async (bot, thread) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'threadDelete' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'threadDelete',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

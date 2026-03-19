@@ -76,9 +76,12 @@ module.exports = async (bot, guild) => {
 				body: JSON.stringify(payload),
 			});
 		} catch (err) {
-			logger.error(`Failed to send guild delete webhook: ${err.message}`, {
-				label: 'guildDelete:webhook',
-			});
+			logger.error(
+				`Failed to send guild delete webhook: ${err.message || err}`,
+				{
+					label: 'guildDelete:webhook',
+				},
+			);
 			if (bot.config?.sentry?.dsn) {
 				Sentry.captureException(err);
 			}

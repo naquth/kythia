@@ -180,7 +180,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 			moreBackgroundBlur: false,
 		});
 	} catch (err) {
-		logger.error(`Failed to generate level up image: ${err}`, {
+		logger.error(`Failed to generate level up image: ${err.message || err}`, {
 			label: 'leveling:helpers',
 		});
 		buffer = null;

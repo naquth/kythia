@@ -105,7 +105,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (err) {
-			logger.error(`Error in remove command: ${err}`, {
+			logger.error(`Error in remove command: ${err.message || err}`, {
 				label: 'social-alerts',
 			});
 			return interaction.editReply({

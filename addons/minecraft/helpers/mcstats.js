@@ -36,9 +36,12 @@ async function safeRename(channel, newName, logger) {
 	try {
 		await channel.setName(trimmed, 'Minecraft Stats Update');
 	} catch (err) {
-		logger.warn(`Failed to rename channel ${channel.id}: ${err.message}`, {
-			label: 'mc stats',
-		});
+		logger.warn(
+			`Failed to rename channel ${channel.id}: ${err.message || err}`,
+			{
+				label: 'mc stats',
+			},
+		);
 	}
 }
 
@@ -52,7 +55,9 @@ async function runMinecraftStatsUpdater(client, settingsOverride = null) {
 	const { models, logger } = client.container;
 	const { ServerSetting } = models;
 
-	logger.info('⛏️  Starting Minecraft stats update cycle...');
+	logger.info(`⛏️  Starting Minecraft stats update cycle...`, {
+		label: 'minecraft',
+	});
 
 	try {
 		const guildsCache = client.guilds.cache;
@@ -60,6 +65,7 @@ async function runMinecraftStatsUpdater(client, settingsOverride = null) {
 		if (!guildsCache) {
 			logger.error(
 				'❌ client.guilds.cache unavailable during Minecraft stats update.',
+				{ label: 'minecraft' },
 			);
 			return;
 		}
@@ -86,13 +92,15 @@ async function runMinecraftStatsUpdater(client, settingsOverride = null) {
 
 		if (activeSettings.length === 0) {
 			logger.info(
-				'⛏️  No guilds with active Minecraft stats. Skipping update cycle.',
+				`⛏️  No guilds with active Minecraft stats. Skipping update cycle.`,
+				{ label: 'minecraft' },
 			);
 			return;
 		}
 
 		logger.info(
 			`⛏️  Found ${activeSettings.length} guild(s) to update Minecraft stats for.`,
+			{ label: 'minecraft' },
 		);
 
 		for (const setting of activeSettings) {
@@ -150,6 +158,7 @@ async function runMinecraftStatsUpdater(client, settingsOverride = null) {
 				await Promise.allSettled(channelUpdates);
 				logger.info(
 					`⛏️  Updated Minecraft channels for guild: ${guild.name} (${host}:${port} | online: ${isOnline})`,
+					{ label: 'minecraft' },
 				);
 			} catch (err) {
 				logger.error(
@@ -160,11 +169,13 @@ async function runMinecraftStatsUpdater(client, settingsOverride = null) {
 			}
 		}
 
-		logger.info('⛏️  Minecraft stats update cycle finished.');
+		logger.info(`⛏️  Minecraft stats update cycle finished.`, {
+			label: 'minecraft',
+		});
 	} catch (err) {
 		logger.error(
-			'❌ A critical error occurred in runMinecraftStatsUpdater:',
-			err,
+			`❌ A critical error occurred in runMinecraftStatsUpdater: ${err.message || err}`,
+			{ label: 'minecraft' },
 		);
 		Sentry.captureException(err);
 	}

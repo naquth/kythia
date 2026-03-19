@@ -248,9 +248,12 @@ async function checkThreshold({ bot, guild, executor, moduleName, detail }) {
 			});
 		}
 	} catch (err) {
-		logger.error(`Error in checkThreshold (${moduleName}): ${err}`, {
-			label: 'antinuke',
-		});
+		logger.error(
+			`Error in checkThreshold (${moduleName}): ${err.message || err}`,
+			{
+				label: 'antinuke',
+			},
+		);
 	}
 }
 
@@ -290,9 +293,12 @@ async function checkInstant({ bot, guild, executor, moduleName, detail }) {
 			});
 		}
 	} catch (err) {
-		logger.error(`Error in checkInstant (${moduleName}): ${err}`, {
-			label: 'antinuke',
-		});
+		logger.error(
+			`Error in checkInstant (${moduleName}): ${err.message || err}`,
+			{
+				label: 'antinuke',
+			},
+		);
 	}
 }
 

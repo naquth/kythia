@@ -84,6 +84,8 @@ module.exports = async (bot, message) => {
 			});
 		}
 	} catch (err) {
-		logger.error(`messageCreate error: ${err}`, { label: 'verification' });
+		logger.error(`messageCreate error: ${err.message || err}`, {
+			label: 'verification',
+		});
 	}
 };

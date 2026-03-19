@@ -92,9 +92,12 @@ module.exports = {
 				components: components,
 			});
 		} catch (error) {
-			logger.error(`Error in tkt-type-step1-submit handler: ${error}`, {
-				label: 'core:modals:tkt-type-step1-submit',
-			});
+			logger.error(
+				`Error in tkt-type-step1-submit handler: ${error.message || error}`,
+				{
+					label: 'core:modals:tkt-type-step1-submit',
+				},
+			);
 			const desc = await t(interaction, 'ticket.errors.generic');
 			await interaction.followUp({
 				components: await simpleContainer(interaction, desc, { color: 'Red' }),

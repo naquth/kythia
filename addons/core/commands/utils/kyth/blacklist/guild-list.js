@@ -77,9 +77,16 @@ module.exports = {
 				components,
 				flags: MessageFlags.IsComponentsV2,
 			});
-			logger.info(`Guild blacklist viewed by ${interaction.user.tag}`);
+			logger.info(`Guild blacklist viewed by ${interaction.user.tag}`, {
+				label: 'core',
+			});
 		} catch (error) {
-			logger.error('Failed to list blacklisted guilds:', error);
+			logger.error(
+				`Failed to list blacklisted guilds: ${error.message || error}`,
+				{
+					label: 'core',
+				},
+			);
 			const components = await createContainer(interaction, {
 				description: await t(
 					interaction,

@@ -20,7 +20,9 @@ function setupTopGGPoster(bot) {
 	const logger = bot.container.logger;
 
 	if (!topGGToken) {
-		logger.warn('TOPGG_API_KEY is not set. Top.gg auto-posting is disabled.');
+		logger.warn(`TOPGG_API_KEY is not set. Top.gg auto-posting is disabled.`, {
+			label: 'core',
+		});
 		return null;
 	}
 
@@ -32,16 +34,22 @@ function setupTopGGPoster(bot) {
 		poster.on('posted', (stats) => {
 			logger.info(
 				`✅ Successfully posted stats to Top.gg | Servers: ${stats.serverCount} | Shards: ${stats.shardCount || 1}`,
+				{ label: 'core' },
 			);
 		});
 
 		poster.on('error', (error) => {
-			logger.error(`Failed to post stats to Top.gg: ${error.message}`, {
-				label: 'topgg',
-			});
+			logger.error(
+				`Failed to post stats to Top.gg: ${error.message || error}`,
+				{
+					label: 'topgg',
+				},
+			);
 		});
 
-		logger.info('Top.gg auto-poster initialized successfully');
+		logger.info(`Top.gg auto-poster initialized successfully`, {
+			label: 'core',
+		});
 
 		return {
 			poster,
@@ -51,7 +59,12 @@ function setupTopGGPoster(bot) {
 			},
 		};
 	} catch (error) {
-		logger.error('Failed to initialize Top.gg auto-poster:', error);
+		logger.error(
+			`Failed to initialize Top.gg auto-poster: ${error.message || error}`,
+			{
+				label: 'core',
+			},
+		);
 		return null;
 	}
 }

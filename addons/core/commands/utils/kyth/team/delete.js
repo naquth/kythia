@@ -71,9 +71,12 @@ module.exports = {
 			});
 			logger.info(
 				`Removed ${user.tag} (${user.id}) from Kythia Team by ${interaction.user.tag}`,
+				{ label: 'core' },
 			);
 		} catch (error) {
-			logger.error('Failed to remove team member:', error);
+			logger.error(`Failed to remove team member: ${error.message || error}`, {
+				label: 'core',
+			});
 			const components = await createContainer(interaction, {
 				description: await t(interaction, 'core.utils.kyth.team.delete.error', {
 					error: error.message,

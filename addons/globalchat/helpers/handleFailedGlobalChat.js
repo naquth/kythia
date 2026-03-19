@@ -26,11 +26,14 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 
 	logger.info(
 		`🌏 [GlobalChat] Starting webhook fix process for ${failedGuilds.length} failed guild(s)...`,
+		{ label: 'globalchat' },
 	);
 
 	let allGuildsData;
 	try {
-		logger.info('🌏 [GlobalChat] Fetching master guild list from API...');
+		logger.info(`Fetching master guild list from API...`, {
+			label: 'globalchat',
+		});
 		const listResponse = await fetch(`${apiUrl}/list`, {
 			headers: {
 				'Content-Type': 'application/json',
@@ -51,6 +54,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 		logger.error(
 			`❌ [GlobalChat] Error fetching master /list. Aborting fix process.`,
 			listError.message,
+			{ label: 'globalchat' },
 		);
 		return;
 	}
@@ -64,6 +68,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 		try {
 			logger.info(
 				`🌏 [GlobalChat] Attempting to fix webhook for guild ${failedGuild.guildName || failedGuild.guildId}`,
+				{ label: 'globalchat' },
 			);
 
 			const guildInfo = allGuildsData.find((g) => g.id === failedGuild.guildId);
@@ -121,6 +126,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				logger.error(
 					`❌ [GlobalChat] Error accessing channel/permissions for ${guildInfo.globalChannelId} in guild ${failedGuild.guildId}:`,
 					channelError,
+					{ label: 'globalchat' },
 				);
 				continue;
 			}
@@ -129,6 +135,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 			try {
 				logger.info(
 					`🧹 [GlobalChat] Checking for old webhooks in #${channel.name}...`,
+					{ label: 'globalchat' },
 				);
 				const webhooks = await channel.fetchWebhooks();
 
@@ -139,6 +146,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				if (kythWebhooks.size > 0) {
 					logger.info(
 						`🧹 [GlobalChat] Found ${kythWebhooks.size} old webhook(s) owned by me. Deleting...`,
+						{ label: 'globalchat' },
 					);
 
 					for (const [_id, webhook] of kythWebhooks) {
@@ -147,17 +155,20 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 							.then(() =>
 								logger.debug(
 									`🗑️ [GlobalChat] Deleted old webhook: ${webhook.name} (${webhook.id})`,
+									{ label: 'globalchat' },
 								),
 							)
 							.catch((err) =>
 								logger.warn(
-									`⚠️ [GlobalChat] Failed to delete old webhook ${webhook.id}:`,
-									err,
+									`⚠️ [GlobalChat] Failed to delete old webhook ${webhook.id}: ${err.message || err}`,
+									{ label: 'globalchat' },
 								),
 							);
 					}
 				} else {
-					logger.debug(`✨ [GlobalChat] No old webhooks found to clean.`);
+					logger.debug(`✨ [GlobalChat] No old webhooks found to clean.`, {
+						label: 'globalchat',
+					});
 				}
 
 				remainingWebhooksCount = webhooks.size - kythWebhooks.size;
@@ -165,6 +176,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				logger.warn(
 					`⚠️ [GlobalChat] Error during webhook cleanup (ignoring to proceed):`,
 					cleanupError,
+					{ label: 'globalchat' },
 				);
 			}
 
@@ -180,17 +192,21 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 			try {
 				logger.info(
 					`🌏 [GlobalChat] Creating new webhook in #${channel.name} (${channel.id})...`,
+					{ label: 'globalchat' },
 				);
 				newWebhook = await channel.createWebhook({
 					name: webhookName,
 					avatar: client.user.displayAvatarURL(),
 					reason: 'Automatic webhook recreation for Kythia Global Chat',
 				});
-				logger.info(`🌏 [GlobalChat] New webhook created: ${newWebhook.id}`);
+				logger.info(`New webhook created: ${newWebhook.id}`, {
+					label: 'globalchat',
+				});
 			} catch (webhookError) {
 				logger.error(
 					`❌ [GlobalChat] Failed to create webhook in channel ${channel.id} for guild ${failedGuild.guildId}:`,
 					webhookError,
+					{ label: 'globalchat' },
 				);
 				continue;
 			}
@@ -199,6 +215,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 			try {
 				logger.info(
 					`🌏 [GlobalChat] Updating API with new webhook info for guild ${failedGuild.guildId}...`,
+					{ label: 'globalchat' },
 				);
 				const updateResponse = await fetch(`${apiUrl}/add`, {
 					method: 'POST',
@@ -220,12 +237,14 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				if (updateResult.status === 'ok') {
 					logger.info(
 						`✅ [GlobalChat] Successfully fixed and updated webhook for guild ${failedGuild.guildName || failedGuild.guildId}`,
+						{ label: 'globalchat' },
 					);
 					webhookUpdateSuccess = true;
 				} else {
 					logger.error(
 						`❌ [GlobalChat] Failed to update guild ${failedGuild.guildName || failedGuild.guildId} in API after creating webhook:`,
 						updateResult.message || updateResult.error || updateResult,
+						{ label: 'globalchat' },
 					);
 					await newWebhook
 						.delete('Failed to update Global Chat API')
@@ -233,6 +252,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 							logger.warn(
 								`⚠️ [GlobalChat] Failed to delete orphaned webhook ${newWebhook.id}:`,
 								delErr,
+								{ label: 'globalchat' },
 							),
 						);
 				}
@@ -240,6 +260,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 				logger.error(
 					`[GlobalChat] ❌ Error calling API /add to update webhook for guild ${failedGuild.guildId}:`,
 					updateError,
+					{ label: 'globalchat' },
 				);
 
 				await newWebhook
@@ -248,6 +269,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 						logger.warn(
 							`⚠️ [GlobalChat] Failed to delete orphaned webhook ${newWebhook.id}:`,
 							delErr,
+							{ label: 'globalchat' },
 						),
 					);
 			}
@@ -258,6 +280,7 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 					// Try to find and update existing entry, or fallback to upsert/create
 					logger.info(
 						`🌏 [GlobalChat] Updating local database with new webhook for guild ${failedGuild.guildId}...`,
+						{ label: 'globalchat' },
 					);
 					const updateResult = await GlobalChat.update(
 						{
@@ -283,22 +306,23 @@ async function handleFailedGlobalChat(failedGuilds, container) {
 					}
 					logger.info(
 						`✅ [GlobalChat] Local DB updated for guild ${failedGuild.guildId}.`,
+						{ label: 'globalchat' },
 					);
 				} catch (dbErr) {
 					logger.error(
-						`❌ [GlobalChat] Failed to update local DB for guild ${failedGuild.guildId}:`,
-						dbErr,
+						`❌ [GlobalChat] Failed to update local DB for guild ${failedGuild.guildId}: ${dbErr.message || dbErr}`,
+						{ label: 'globalchat' },
 					);
 				}
 			}
 		} catch (error) {
 			logger.error(
-				`❌ [GlobalChat] Unexpected error during webhook fix for guild ${failedGuild.guildId}:`,
-				error,
+				`❌ [GlobalChat] Unexpected error during webhook fix for guild ${failedGuild.guildId}: ${error.message || error}`,
+				{ label: 'globalchat' },
 			);
 		}
 	}
-	logger.info(`🌏 [GlobalChat] Webhook fix process finished.`);
+	logger.info(`Webhook fix process finished.`, { label: 'globalchat' });
 }
 
 module.exports = { handleFailedGlobalChat };

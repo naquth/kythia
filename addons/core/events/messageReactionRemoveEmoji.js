@@ -88,7 +88,9 @@ module.exports = async (bot, reaction) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'messageReactionRemoveEmoji' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'messageReactionRemoveEmoji',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

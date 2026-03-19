@@ -74,7 +74,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error setting activity: ${error}`, {
+			logger.error(`Error setting activity: ${error.message || error}`, {
 				label: 'presence',
 			});
 			const components = await simpleContainer(

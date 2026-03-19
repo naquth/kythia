@@ -136,7 +136,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(`Error during market buy: ${error}`, {
+			logger.error(`Error during market buy: ${error.message || error}`, {
 				label: 'core:commands:economy:market:buy',
 			});
 			const msg = `## ${await t(interaction, 'economy.market.buy.error.title')}\n${await t(interaction, 'economy.market.buy.error.desc')}`;

@@ -24,6 +24,7 @@ class CloudflareApi {
 		if (!this.apiToken || !this.zoneId || !this.domainName) {
 			this.logger.error(
 				'CloudflareApi: Missing API Token, Zone ID, or Domain Name in kythiaConfig!',
+				{ label: 'pro' },
 			);
 			throw new Error(
 				'CloudflareService failed to initialize: Missing kythiaConfig.',
@@ -31,7 +32,9 @@ class CloudflareApi {
 		}
 
 		this.baseUrl = `https://api.cloudflare.com/client/v4/zones/${this.zoneId}`;
-		this.logger.info('Cloudflare Service: Initialized and ready.');
+		this.logger.info(`Cloudflare Service: Initialized and ready.`, {
+			label: 'pro',
+		});
 	}
 
 	/**
@@ -61,8 +64,7 @@ class CloudflareApi {
 
 			if (!data.success) {
 				this.logger.warn(`Cloudflare API Error: ${data.errors[0]?.message}`, {
-					endpoint,
-					errors: data.errors,
+					label: 'pro',
 				});
 				return { success: false, errors: data.errors };
 			}
@@ -70,8 +72,8 @@ class CloudflareApi {
 			return { success: true, result: data.result };
 		} catch (error) {
 			this.logger.error(
-				`Cloudflare #request failed: ${method} ${endpoint}`,
-				error,
+				`Cloudflare #request failed: ${method} ${endpoint}: ${error.message || error}`,
+				{ label: 'pro' },
 			);
 			return { success: false, errors: [{ message: error.message }] };
 		}
@@ -112,6 +114,7 @@ class CloudflareApi {
 
 		this.logger.info(
 			`[CF] Attempting CREATE: ${type} ${cloudflareName} -> ${value}`,
+			{ label: 'pro' },
 		);
 		const apiResponse = await this._request('/dns_records', 'POST', apiBody);
 
@@ -133,6 +136,7 @@ class CloudflareApi {
 			this.logger.error(
 				`[CF] API call succeeded but DB save FAILED for subdomain ${subdomainId}.`,
 				dbError,
+				{ label: 'pro' },
 			);
 			this.logger.warn(
 				`Rolling back Cloudflare record ${apiResponse.result.id}...`,
@@ -159,7 +163,9 @@ class CloudflareApi {
 			return { success: false, error: 'Record not found in local database.' };
 		}
 
-		this.logger.info(`[CF] Attempting DELETE: ID ${record.cloudflareId}`);
+		this.logger.info(`Attempting DELETE: ID ${record.cloudflareId}`, {
+			label: 'cf',
+		});
 		const apiResponse = await this._request(
 			`/dns_records/${record.cloudflareId}`,
 			'DELETE',
@@ -184,7 +190,9 @@ class CloudflareApi {
 	 * (Internal helper) Deletes a record from CF, used for rollback.
 	 */
 	async deleteRecordByCloudflareId(cloudflareId) {
-		this.logger.info(`[CF] Internal Rollback: Deleting ${cloudflareId}`);
+		this.logger.info(`Internal Rollback: Deleting ${cloudflareId}`, {
+			label: 'cf',
+		});
 		await this._request(`/dns_records/${cloudflareId}`, 'DELETE');
 	}
 
@@ -228,6 +236,7 @@ class CloudflareApi {
 
 		this.logger.info(
 			`[CF] Attempting UPDATE: ID ${existingRecord.cloudflareId} -> ${value}`,
+			{ label: 'pro' },
 		);
 		const apiResponse = await this._request(
 			`/dns_records/${existingRecord.cloudflareId}`,
@@ -248,6 +257,7 @@ class CloudflareApi {
 			this.logger.error(
 				`[CF] API update succeeded but DB save FAILED for record ${existingRecord.id}.`,
 				dbError,
+				{ label: 'pro' },
 			);
 			return {
 				success: false,

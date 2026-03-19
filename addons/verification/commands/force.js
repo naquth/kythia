@@ -7,7 +7,7 @@
  */
 
 const { SlashCommandSubcommandBuilder, MessageFlags } = require('discord.js');
-const { clearSession } = require('../../../helpers/session');
+const { clearSession } = require('../helpers/session');
 
 module.exports = {
 	slashCommand: new SlashCommandSubcommandBuilder()

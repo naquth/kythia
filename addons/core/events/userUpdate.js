@@ -126,7 +126,9 @@ module.exports = async (bot, oldUser, newUser) => {
 			}
 		}
 	} catch (err) {
-		logger.error(err, { label: 'userUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'userUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

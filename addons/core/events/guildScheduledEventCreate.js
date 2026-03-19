@@ -98,7 +98,9 @@ module.exports = async (bot, scheduledEvent) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'guildScheduledEventCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'guildScheduledEventCreate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

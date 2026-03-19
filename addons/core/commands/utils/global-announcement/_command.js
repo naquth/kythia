@@ -95,6 +95,7 @@ module.exports = {
 			} catch (err) {
 				logger.warn(
 					`Failed to send announcement to guild: ${guild.name}. Reason: ${err.message}`,
+					{ label: 'core' },
 				);
 				failCount++;
 				failedServers.push(`${guild.name}`);

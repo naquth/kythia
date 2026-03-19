@@ -53,9 +53,12 @@ module.exports = {
 			}
 			apiGuilds = apiData.data.guilds;
 		} catch (apiErr) {
-			logger.error(`Failed to fetch /list from API: ${apiErr}`, {
-				label: 'global chat',
-			});
+			logger.error(
+				`Failed to fetch /list from API: ${apiErr.message || apiErr}`,
+				{
+					label: 'global chat',
+				},
+			);
 			return;
 		}
 
@@ -64,9 +67,12 @@ module.exports = {
 		try {
 			dbGuilds = await GlobalChat.getAllCache();
 		} catch (err) {
-			logger.error(`Failed to fetch guild list from local DB: ${err}`, {
-				label: 'global chat',
-			});
+			logger.error(
+				`Failed to fetch guild list from local DB: ${err.message || err}`,
+				{
+					label: 'global chat',
+				},
+			);
 			return;
 		}
 
@@ -102,7 +108,7 @@ module.exports = {
 					);
 				} catch (err) {
 					logger.error(
-						`Failed to update DB from API for guild ${apiGuild.id}: ${err}`,
+						`Failed to update DB from API for guild ${apiGuild.id}: ${err.message || err}`,
 						{ label: 'global chat' },
 					);
 				}
@@ -149,7 +155,7 @@ module.exports = {
 						error: 'Proactive check failed: 404 Not Found',
 					};
 					handleFailedGlobalChat([failedGuild], container).catch((err) => {
-						logger.error(`Self-heal attempt failed: ${err}`, {
+						logger.error(`Self-heal attempt failed: ${err.message || err}`, {
 							label: 'global chat',
 						});
 					});
@@ -161,7 +167,7 @@ module.exports = {
 				}
 			} catch (fetchErr) {
 				logger.error(
-					`Error fetching webhook for guild ${guildInfo.guildId}: ${fetchErr}`,
+					`Error fetching webhook for guild ${guildInfo.guildId}: ${fetchErr.message || fetchErr}`,
 					{ label: 'global chat' },
 				);
 			}

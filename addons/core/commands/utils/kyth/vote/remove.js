@@ -68,9 +68,10 @@ module.exports = {
 
 			await interaction.editReply({ components });
 		} catch (error) {
-			container.logger.error(error.message || String(error), {
-				label: 'kythia-vote',
-			});
+			container.logger.error(
+				`[kythia-vote] Error: ${error.message || String(error)}`,
+				{ label: 'kythia-vote' },
+			);
 			const components = await simpleContainer(
 				interaction,
 				await t(interaction, 'common.error'),

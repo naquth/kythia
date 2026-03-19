@@ -76,9 +76,12 @@ module.exports = {
 			});
 			logger.info(
 				`Added ${user.tag} (${user.id}) to Kythia Team by ${interaction.user.tag}`,
+				{ label: 'core' },
 			);
 		} catch (error) {
-			logger.error('Failed to add team member:', error);
+			logger.error(`Failed to add team member: ${error.message || error}`, {
+				label: 'core',
+			});
 			const components = await createContainer(interaction, {
 				description: await t(interaction, 'core.utils.kyth.team.add.error', {
 					error: error.message,

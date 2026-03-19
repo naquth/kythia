@@ -99,7 +99,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:panel:delete' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:panel:delete',
+			});
 			return interaction.editReply({
 				content: 'An error occurred while deleting the panel.',
 			});

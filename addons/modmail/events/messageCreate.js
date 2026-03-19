@@ -106,7 +106,9 @@ async function handleGuildMessage(message, container, client) {
 
 		await relayGuildReply(message, modmail, false, content, container, client);
 	} catch (error) {
-		logger.error(`handleGuildMessage failed: ${error}`, { label: 'modmail' });
+		logger.error(`handleGuildMessage failed: ${error.message || error}`, {
+			label: 'modmail',
+		});
 	}
 }
 
@@ -302,7 +304,7 @@ async function handleUserDM(
 		);
 	} catch (error) {
 		pendingCreations.delete(message.author.id);
-		logger.error(`messageCreate DM handler failed: ${error}`, {
+		logger.error(`messageCreate DM handler failed: ${error.message || error}`, {
 			label: 'modmail',
 		});
 	}

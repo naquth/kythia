@@ -82,7 +82,9 @@ module.exports = async (bot, guildScheduledEvent, user) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'guildScheduledEventUserRemove' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'guildScheduledEventUserRemove',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

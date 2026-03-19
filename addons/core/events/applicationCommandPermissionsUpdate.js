@@ -100,7 +100,9 @@ module.exports = async (bot, data) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'applicationCommandPermissionsUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'applicationCommandPermissionsUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

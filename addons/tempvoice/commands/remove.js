@@ -91,10 +91,12 @@ module.exports = {
 						shouldDeleteCategory = true;
 						logger.info(
 							`[TempVoice] Category will be deleted (no foreign channels found).`,
+							{ label: 'tempvoice' },
 						);
 					} else {
 						logger.info(
 							`[TempVoice] Category NOT deleted: ${nonTempvoiceChannels.length} foreign channel(s) found.`,
+							{ label: 'tempvoice' },
 						);
 					}
 				}
@@ -115,6 +117,7 @@ module.exports = {
 					.catch((e) =>
 						logger.warn(
 							`[TempVoice] Failed to delete temp channel: ${e.message}`,
+							{ label: 'tempvoice' },
 						),
 					);
 			await ac.destroy();
@@ -134,6 +137,7 @@ module.exports = {
 						.catch((e) =>
 							logger.warn(
 								`[TempVoice] Failed to delete control panel: ${e.message}`,
+								{ label: 'tempvoice' },
 							),
 						);
 				}
@@ -149,21 +153,21 @@ module.exports = {
 					!shouldDeleteCategory ||
 					(category && triggerChannel.parentId !== category.id)
 				) {
-					await triggerChannel
-						.delete(deleteReasonTrigger)
-						.catch((e) =>
-							logger.warn(`[TempVoice] Failed to delete trigger: ${e.message}`),
-						);
+					await triggerChannel.delete(deleteReasonTrigger).catch((e) =>
+						logger.warn(`Failed to delete trigger: ${e.message}`, {
+							label: 'tempvoice',
+						}),
+					);
 				}
 			}
 		}
 
 		if (category && shouldDeleteCategory) {
-			await category
-				.delete(deleteReasonCategory)
-				.catch((e) =>
-					logger.warn(`[TempVoice] Failed to delete category: ${e.message}`),
-				);
+			await category.delete(deleteReasonCategory).catch((e) =>
+				logger.warn(`Failed to delete category: ${e.message}`, {
+					label: 'tempvoice',
+				}),
+			);
 		}
 
 		await config.destroy();

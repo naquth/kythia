@@ -158,7 +158,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:rr-panel-add-emoji' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:rr-panel-add-emoji',
+			});
 			await interaction.followUp({
 				components: await simpleContainer(
 					interaction,

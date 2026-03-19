@@ -544,6 +544,7 @@ module.exports = {
 			if (!client.poru || typeof client.poru.resolve !== 'function') {
 				logger.error(
 					'Autocomplete search failed: client.poru or client.poru.resolve is undefined',
+					{ label: 'music' },
 				);
 				return interaction.respond([]);
 			}
@@ -572,7 +573,9 @@ module.exports = {
 				searchCache.set(focusedValue, choices);
 				return interaction.respond(choices);
 			} catch (e) {
-				logger.error('Autocomplete search failed:', e?.stack ? e.stack : e);
+				logger.error(`Autocomplete search failed: ${e.message || e}`, {
+					label: 'music',
+				});
 				return interaction.respond([]);
 			}
 		}
@@ -593,7 +596,9 @@ module.exports = {
 					.map((name) => ({ name: `🎵 ${name}`, value: name }));
 				return interaction.respond(filteredChoices.slice(0, 25));
 			} catch (error) {
-				logger.error('Playlist autocomplete error:', error);
+				logger.error(`Playlist autocomplete error: ${error.message || error}`, {
+					label: 'music',
+				});
 				return interaction.respond([]);
 			}
 		}
@@ -617,7 +622,9 @@ module.exports = {
 					}));
 				return interaction.respond(filteredChoices.slice(0, 25));
 			} catch (error) {
-				logger.error('Favorite autocomplete error:', error);
+				logger.error(`Favorite autocomplete error: ${error.message || error}`, {
+					label: 'music',
+				});
 				return interaction.respond([]);
 			}
 		}

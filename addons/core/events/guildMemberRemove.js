@@ -147,7 +147,9 @@ module.exports = async (bot, member) => {
 				allowedMentions: { parse: [] },
 			});
 		} catch (err) {
-			logger.error(err, { label: 'guildMemberRemove' });
+			logger.error(`Error: ${err.message || err}`, {
+				label: 'guildMemberRemove',
+			});
 			if (bot.config?.sentry?.dsn) {
 				Sentry.captureException(err);
 			}

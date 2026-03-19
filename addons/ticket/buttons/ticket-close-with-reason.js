@@ -39,9 +39,12 @@ module.exports = {
 				);
 			await interaction.showModal(modal);
 		} catch (error) {
-			logger.error(`Error showing close w/ reason modal: ${error}`, {
-				label: 'ticket',
-			});
+			logger.error(
+				`Error showing close w/ reason modal: ${error.message || error}`,
+				{
+					label: 'ticket',
+				},
+			);
 			const desc = await t(interaction, 'ticket.errors.modal_show_failed');
 			if (!interaction.replied && !interaction.deferred) {
 				await interaction.reply({

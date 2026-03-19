@@ -206,7 +206,7 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (e) {
-			logger.error(e, { label: 'adventure' });
+			logger.error(`Error: ${e.message || e}`, { label: 'adventure' });
 		}
 	},
 };

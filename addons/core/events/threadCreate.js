@@ -124,7 +124,9 @@ module.exports = async (bot, thread) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'threadCreate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'threadCreate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

@@ -81,7 +81,9 @@ module.exports = {
 			try {
 				await message.react(emojiInput);
 			} catch (error) {
-				logger.error(error, { label: 'reaction-role:react' });
+				logger.error(`Error: ${error.message || error}`, {
+					label: 'reaction-role:react',
+				});
 				return interaction.editReply({
 					content: await t(interaction, 'reaction-role.invalid_emoji'),
 				});
@@ -129,7 +131,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (error) {
-			logger.error(error, { label: 'reaction-role:add' });
+			logger.error(`Error: ${error.message || error}`, {
+				label: 'reaction-role:add',
+			});
 			return interaction.editReply({
 				content: await t(interaction, 'common.error.generic'),
 			});

@@ -96,7 +96,9 @@ module.exports = async (bot, guild) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'guildIntegrationsUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'guildIntegrationsUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

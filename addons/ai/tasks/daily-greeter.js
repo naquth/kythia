@@ -88,7 +88,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			logger.error(`Failed to run daily greeter task: ${err.message}`, {
+			logger.error(`Failed to run daily greeter task: ${err.message || err}`, {
 				label: 'daily-greeter',
 			});
 		}

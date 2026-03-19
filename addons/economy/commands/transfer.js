@@ -211,9 +211,12 @@ module.exports = {
 				}
 			});
 		} catch (error) {
-			logger.error(`Error during transfer command execution: ${error}`, {
-				label: 'economy:transfer',
-			});
+			logger.error(
+				`Error during transfer command execution: ${error.message || error}`,
+				{
+					label: 'economy:transfer',
+				},
+			);
 			const msg = await t(interaction, 'economy.transfer.transfer.error');
 			const components = await simpleContainer(interaction, msg, {
 				color: kythiaConfig.bot.color,

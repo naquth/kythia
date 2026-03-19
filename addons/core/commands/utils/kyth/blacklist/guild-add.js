@@ -76,6 +76,7 @@ module.exports = {
 				} catch (leaveErr) {
 					logger.warn(
 						`Failed to leave blacklisted guild ${guildId}: ${leaveErr.message}`,
+						{ label: 'core' },
 					);
 				}
 			}
@@ -106,9 +107,12 @@ module.exports = {
 			});
 			logger.info(
 				`Guild ${guildId} blacklisted by ${interaction.user.tag} | Reason: ${reason ?? 'none'} | Left: ${left}`,
+				{ label: 'core' },
 			);
 		} catch (error) {
-			logger.error('Failed to blacklist guild:', error);
+			logger.error(`Failed to blacklist guild: ${error.message || error}`, {
+				label: 'core',
+			});
 			const components = await createContainer(interaction, {
 				description: await t(
 					interaction,

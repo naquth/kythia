@@ -124,7 +124,9 @@ module.exports = async (bot, channel) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'webhooksUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'webhooksUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

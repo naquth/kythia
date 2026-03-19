@@ -107,7 +107,9 @@ module.exports = async (bot, oldRule, newRule) => {
 			},
 		});
 	} catch (err) {
-		logger.error(err, { label: 'autoModerationRuleUpdate' });
+		logger.error(`Error: ${err.message || err}`, {
+			label: 'autoModerationRuleUpdate',
+		});
 		if (bot.config?.sentry?.dsn) {
 			Sentry.captureException(err);
 		}

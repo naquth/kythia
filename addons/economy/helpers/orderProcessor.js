@@ -106,7 +106,9 @@ async function processOrders(bot) {
 			}
 		}
 	} catch (error) {
-		logger.error('Error processing market orders:', error);
+		logger.error(`Error processing market orders: ${error.message || error}`, {
+			label: 'economy',
+		});
 	}
 }
 

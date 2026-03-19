@@ -36,21 +36,21 @@ module.exports = {
 	async execute(interaction, container) {
 		const { t, models, helpers, kythiaConfig } = container;
 		const { simpleContainer } = helpers.discord;
-		const { User, ServerSetting } = models;
+		const { User, LevelingSetting } = models;
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-		const serverSetting = await ServerSetting.getCache({
+		const levelingSetting = await LevelingSetting.getCache({
 			guildId: interaction.guild.id,
 		});
-		const curve = serverSetting?.levelingCurve || 'linear';
+		const curve = levelingSetting?.levelingCurve || 'linear';
 		const multiplier =
-			typeof serverSetting?.levelingMultiplier === 'number'
-				? serverSetting.levelingMultiplier
+			typeof levelingSetting?.levelingMultiplier === 'number'
+				? levelingSetting.levelingMultiplier
 				: 1.0;
 		const maxLevel =
-			typeof serverSetting?.levelingMaxLevel === 'number'
-				? serverSetting.levelingMaxLevel
+			typeof levelingSetting?.levelingMaxLevel === 'number'
+				? levelingSetting.levelingMaxLevel
 				: null;
 
 		const targetUser = interaction.options.getUser('user');

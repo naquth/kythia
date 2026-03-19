@@ -74,33 +74,47 @@ const calculateLevelAndXp = (
 const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 	const { container } = message.client;
 	const { helpers, t, models, kythiaConfig, logger } = container;
-	const { ServerSetting, User } = models;
+	const { LevelingSetting, User } = models;
 	const { getTextChannelSafe } = helpers.discord;
 	const { convertColor } = helpers.color;
 
-	const serverSetting = await ServerSetting.getCache({
-		guildId: message.guild.id,
-	});
+	// Load per-guild leveling settings from the dedicated table
+	const levelingSetting = await LevelingSetting.getCache({ guildId });
 
-	const curve = serverSetting?.levelingCurve || 'linear';
+	const curve = levelingSetting?.levelingCurve || 'linear';
 	const multiplier =
-		typeof serverSetting?.levelingMultiplier === 'number'
-			? serverSetting.levelingMultiplier
+		typeof levelingSetting?.levelingMultiplier === 'number'
+			? levelingSetting.levelingMultiplier
 			: 1.0;
 	const maxLevel =
-		typeof serverSetting?.levelingMaxLevel === 'number'
-			? serverSetting.levelingMaxLevel
+		typeof levelingSetting?.levelingMaxLevel === 'number'
+			? levelingSetting.levelingMaxLevel
 			: null;
 
+	// Resolve notification channel from leveling_settings, then fall back to message channel
 	if (!channel) {
-		if (serverSetting?.levelingChannelId) {
+		if (levelingSetting?.levelingChannelId) {
 			channel =
 				(await getTextChannelSafe(
 					message.guild,
-					serverSetting.levelingChannelId,
+					levelingSetting.levelingChannelId,
 				)) || null;
 		}
 	}
+
+	// ---------- visual config with per-guild overrides --------------------------
+	const botColor = kythiaConfig.bot.color || '#5865F2';
+
+	const backgroundUrl =
+		levelingSetting?.levelingBackgroundUrl ??
+		kythiaConfig.addons?.leveling?.backgroundUrl ??
+		null;
+	const borderColor = levelingSetting?.levelingBorderColor || botColor;
+	const barColor = levelingSetting?.levelingBarColor || botColor;
+	const usernameColor = levelingSetting?.levelingUsernameColor || '#FFFFFF';
+	const tagColor = levelingSetting?.levelingTagColor || botColor;
+	const accentColorHex = levelingSetting?.levelingAccentColor || botColor;
+	// ----------------------------------------------------------------------------
 
 	let user = await User.getCache({ userId: userId, guildId: guildId });
 
@@ -135,8 +149,8 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 
 	let rewardRoleName = null;
 	let rewardLevel = null;
-	if (serverSetting && Array.isArray(serverSetting.roleRewards)) {
-		const rewards = serverSetting.roleRewards.filter(
+	if (levelingSetting && Array.isArray(levelingSetting.roleRewards)) {
+		const rewards = levelingSetting.roleRewards.filter(
 			(r) => r.level > levelBefore && r.level <= user.level,
 		);
 
@@ -160,17 +174,17 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 			botToken: kythiaConfig.bot.token,
 			customTag: `Level Up!`,
 			customSubtitle: `New Level: ${user.level}`,
-			customBackground: kythiaConfig.addons.leveling.backgroundUrl || null,
+			customBackground: backgroundUrl,
 			font: 'NOTO_SANS',
-			usernameColor: '#FFFFFF',
-			tagColor: kythiaConfig.bot.color || '#5865F2',
-			borderColor: kythiaConfig.bot.color || '#5865F2',
+			usernameColor,
+			tagColor,
+			borderColor,
 			rankData: {
 				currentXp: user.xp,
 				requiredXp: levelUpXp(user.level, curve, multiplier),
 				level: user.level,
-				barColor: kythiaConfig.bot.color || '#5865F2',
-				levelColor: kythiaConfig.bot.color || '#5865F2',
+				barColor,
+				levelColor: tagColor,
 			},
 			customFont: 'BagelFatOne-Regular',
 			fontWeight: 'normal',
@@ -186,7 +200,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		buffer = null;
 	}
 
-	const accentColor = convertColor(kythiaConfig.bot.color, {
+	const accentColor = convertColor(accentColorHex, {
 		from: 'hex',
 		to: 'decimal',
 	});

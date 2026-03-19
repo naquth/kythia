@@ -80,6 +80,7 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [Facts (`/api/ai/facts/:userId`)](#facts-apiaifactsuserid)
   - [Personality (`/api/ai/personality/:userId`)](#personality-apiaipersonalityuserid)
 - [Leveling API (`/api/leveling`)](#leveling-api-apileveling)
+  - [Get / Update Settings](#get-apilevelingguildidsettings)
   - [Leaderboard](#get-apilevelingguildid)
   - [Single User Profile](#get-apilevelingguildididuserid)
   - [Create User Entry](#post-apilevelingguildididuserid)
@@ -4775,11 +4776,170 @@ Deletes a sticky message record from the database. This fires the model's `indiv
 
 ## Leveling API (`/api/leveling`)
 
-Full CRUD for the per-guild, per-user leveling system. All XP/level calculations are performed server-side using the guild's configured leveling curve, multiplier, and max level (from **Server Settings**).
+Full CRUD for the per-guild, per-user leveling system. XP/level calculations use the guild's configured curve, multiplier, and max level. All leveling configuration — XP gain, curves, visual customization, role rewards, channel settings — is stored in the dedicated **`leveling_settings`** table and managed via `/api/leveling/:guildId/settings`.
 
 > **Addon Guard:** Automatically protected by `addonGuard('leveling')` — the `leveling` addon must be enabled.
 
 **Leveling curves:** `linear` (default), `exponential`, `constant`
+
+---
+
+### `GET /api/leveling/:guildId/settings`
+
+Fetch all leveling settings for a guild: XP rates, curve, role rewards, visual customization, and more.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "guildId": "987654321098765432",
+    "levelingCurve": "linear",
+    "levelingMultiplier": 1.0,
+    "levelingMaxLevel": null,
+    "messageXpEnabled": true,
+    "messageXpMin": 15,
+    "messageXpMax": 25,
+    "messageXpCooldown": 60,
+    "voiceXpEnabled": true,
+    "levelingChannelId": "123456789012345678",
+    "levelingImageEnabled": true,
+    "roleRewards": [],
+    "levelingBackgroundUrl": null,
+    "levelingBorderColor": null,
+    "levelingBarColor": null,
+    "levelingUsernameColor": null,
+    "levelingTagColor": null,
+    "levelingAccentColor": null
+  }
+}
+```
+
+> If no settings row exists for the guild, returns `{}` as `data`. All values fall back to bot-wide defaults at runtime.
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `PATCH /api/leveling/:guildId/settings`
+
+Create or update the `leveling_settings` row for a guild. Performs an upsert — if no row exists it is created automatically.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | Discord guild snowflake ID |
+
+**Request Body** *(all fields optional):*
+
+#### XP Gain
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `messageXpEnabled` | `boolean` | `true` | Enable XP from messages |
+| `messageXpMode` | `string` | `"random"` | `"random"`, `"per_word"`, or `"fixed"` |
+| `messageXpMin` | `number` | `15` | Min XP per message |
+| `messageXpMax` | `number` | `25` | Max XP per message |
+| `messageXpCooldown` | `number` | `60` | Cooldown in seconds between message XP awards |
+| `voiceXpEnabled` | `boolean` | `true` | Enable XP from voice activity |
+| `voiceXpMin` | `number` | `15` | Min XP per voice tick |
+| `voiceXpMax` | `number` | `40` | Max XP per voice tick |
+| `voiceXpCooldown` | `number` | `180` | Cooldown in seconds between voice XP ticks |
+| `voiceMinMembers` | `number` | `2` | Minimum non-bot members in VC to earn XP |
+| `voiceAntiAfk` | `boolean` | `true` | Skip XP for deafened users |
+| `reactionXpEnabled` | `boolean` | `false` | Enable XP from reactions |
+| `reactionXpAward` | `string` | `"both"` | `"none"`, `"both"`, `"author"`, or `"reactor"` |
+| `reactionXpMin` | `number` | `1` | Min XP per reaction |
+| `reactionXpMax` | `number` | `5` | Max XP per reaction |
+| `reactionXpCooldown` | `number` | `10` | Reaction XP cooldown in seconds |
+| `threadXpEnabled` | `boolean` | `true` | Award XP in threads |
+| `forumXpEnabled` | `boolean` | `true` | Award XP in forum posts |
+| `textInVoiceXpEnabled` | `boolean` | `true` | Award XP for text in voice channels |
+| `slashCommandXpEnabled` | `boolean` | `true` | Award XP when using slash commands |
+
+#### Curve & Level Cap
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `levelingCurve` | `string` | `"linear"` | `"linear"`, `"exponential"`, or `"constant"` |
+| `levelingMultiplier` | `number` | `1.0` | Global XP multiplier |
+| `levelingMaxLevel` | `number\|null` | `null` | Max level cap (`null` = unlimited) |
+
+#### Boosters & Restrictions
+| Field | Type | Description |
+|---|---|---|
+| `xpBoosters` | `array` | XP booster role/user configs |
+| `channelBoosters` | `array` | Channel-specific XP multipliers |
+| `stackBoosters` | `boolean` | Stack multiple boosters |
+| `noXpChannels` | `array` | Channel IDs where XP is disabled |
+| `noXpRoles` | `array` | Role IDs that block XP gain |
+| `autoResetXp` | `boolean` | Auto-reset XP periodically |
+
+#### Role Rewards
+| Field | Type | Description |
+|---|---|---|
+| `roleRewards` | `array` | `[{ level: number, role: string }]` role reward entries |
+| `roleRewardStack` | `boolean` | Keep previous role rewards on level-up |
+
+#### Level-Up Notification
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `levelingChannelId` | `string\|null` | `null` | Channel to send level-up notifications (null = same channel) |
+| `levelingMessage` | `string` | `"GG {user.mention}..."` | Custom level-up message template |
+| `levelingImageEnabled` | `boolean` | `true` | Include profile image in level-up notification |
+
+#### Visual Customization (Profile Card & Notification Image)
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `levelingBackgroundUrl` | `string\|null` | `null` | Custom background image URL (null = bot default) |
+| `levelingBorderColor` | `string\|null` | `null` | Hex color for avatar border (null = `kythiaConfig.bot.color`) |
+| `levelingBarColor` | `string\|null` | `null` | Hex color for XP progress bar |
+| `levelingUsernameColor` | `string\|null` | `null` | Hex color for username text (null = `#FFFFFF`) |
+| `levelingTagColor` | `string\|null` | `null` | Hex color for level tag/label |
+| `levelingAccentColor` | `string\|null` | `null` | Hex color for the Discord container accent stripe |
+
+**Request Body Example:**
+```json
+{
+  "levelingCurve": "exponential",
+  "levelingMultiplier": 1.5,
+  "levelingMaxLevel": 100,
+  "levelingChannelId": "123456789012345678",
+  "levelingBackgroundUrl": "https://example.com/guild-bg.png",
+  "levelingBorderColor": "#ff6b6b",
+  "levelingBarColor": "#ff6b6b",
+  "levelingAccentColor": "#ff6b6b",
+  "roleRewards": [
+    { "level": 5, "role": "111111111111111111" },
+    { "level": 10, "role": "222222222222222222" }
+  ]
+}
+```
+
+**Response:**
+```json
+{ "success": true, "data": { /* full updated settings object */ } }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "success": false, "error": "Invalid JSON body" }` | Malformed request |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
 
 ---
 

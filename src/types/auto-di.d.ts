@@ -30,6 +30,7 @@ declare global {
 				KythiaTeam: typeof import('@addons/core/database/models/KythiaTeam');
 				KythiaUser: typeof import('@addons/core/database/models/KythiaUser');
 				KythiaVoter: typeof import('@addons/core/database/models/KythiaVoter');
+				LevelingSetting: typeof import('@addons/leveling/database/models/LevelingSetting');
 				MarketOrder: typeof import('@addons/economy/database/models/MarketOrder');
 				MarketPortfolio: typeof import('@addons/economy/database/models/MarketPortfolio');
 				MarketTransaction: typeof import('@addons/economy/database/models/MarketTransaction');

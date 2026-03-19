@@ -15,26 +15,30 @@ const cooldown = new Map();
  * @param {import('discord.js').Message} message - The message object.
  */
 module.exports = async (bot, message) => {
-	const { ServerSetting } = bot.client.container.models;
+	const { ServerSetting, LevelingSetting } = bot.client.container.models;
 	if (message.author.bot || !message.guild) return;
 	const guildId = message.guild.id;
 	const userId = message.author.id;
 	const { helpers } = bot.client.container;
 	const { getChannelSafe } = helpers.discord;
 
-	const setting = await ServerSetting.getCache({ guildId });
-	if (!setting || !setting.levelingOn) return;
+	// Feature flag lives in ServerSetting
+	const serverSetting = await ServerSetting.getCache({ guildId });
+	if (!serverSetting || !serverSetting.levelingOn) return;
+
+	// XP-specific settings are in LevelingSetting (falls back gracefully if row missing)
+	const setting = await LevelingSetting.getCache({ guildId });
 
 	// Check if message XP is enabled for this guild
-	if (setting.messageXpEnabled === false) return;
+	if (setting?.messageXpEnabled === false) return;
 
 	// Respect noXpChannels and noXpRoles
 	if (
-		Array.isArray(setting.noXpChannels) &&
+		Array.isArray(setting?.noXpChannels) &&
 		setting.noXpChannels.includes(message.channel.id)
 	)
 		return;
-	if (Array.isArray(setting.noXpRoles)) {
+	if (Array.isArray(setting?.noXpRoles)) {
 		const member =
 			message.member ||
 			(await message.guild.members.fetch(userId).catch(() => null));
@@ -47,9 +51,9 @@ module.exports = async (bot, message) => {
 
 	// Determine XP to award (random between min and max)
 	const xpMin =
-		typeof setting.messageXpMin === 'number' ? setting.messageXpMin : 15;
+		typeof setting?.messageXpMin === 'number' ? setting.messageXpMin : 15;
 	const xpMax =
-		typeof setting.messageXpMax === 'number' ? setting.messageXpMax : 25;
+		typeof setting?.messageXpMax === 'number' ? setting.messageXpMax : 25;
 	const xpToAdd =
 		xpMin === xpMax
 			? xpMin
@@ -57,7 +61,7 @@ module.exports = async (bot, message) => {
 
 	// Cooldown in seconds (DB stores seconds), convert to ms
 	const cooldownSeconds =
-		typeof setting.messageXpCooldown === 'number'
+		typeof setting?.messageXpCooldown === 'number'
 			? setting.messageXpCooldown
 			: 60;
 	const cooldownTime = cooldownSeconds * 1000;
@@ -67,7 +71,7 @@ module.exports = async (bot, message) => {
 
 	if (now - (cooldown.get(key) || 0) >= cooldownTime) {
 		const channel =
-			(await getChannelSafe(message.guild, setting.levelingChannelId)) ||
+			(await getChannelSafe(message.guild, setting?.levelingChannelId)) ||
 			message.channel;
 		await addXp(guildId, userId, xpToAdd, message, channel);
 		cooldown.set(key, now);

@@ -32,20 +32,23 @@ const startTick = (botClient) => {
 
 			try {
 				const { models, helpers } = botClient.container;
-				const { ServerSetting } = models;
+				const { ServerSetting, LevelingSetting } = models;
 
-				const setting = await ServerSetting.getCache({ guildId });
-				if (
-					!setting ||
-					!setting.levelingOn ||
-					setting.voiceXpEnabled === false
-				) {
+				// Feature flag from ServerSetting
+				const serverSetting = await ServerSetting.getCache({ guildId });
+				if (!serverSetting || !serverSetting.levelingOn) {
+					continue;
+				}
+
+				// XP settings from LevelingSetting
+				const setting = await LevelingSetting.getCache({ guildId });
+				if (setting?.voiceXpEnabled === false) {
 					continue;
 				}
 
 				// Cooldown in seconds from DB
 				const cooldownSeconds =
-					typeof setting.voiceXpCooldown === 'number'
+					typeof setting?.voiceXpCooldown === 'number'
 						? setting.voiceXpCooldown
 						: 180;
 				const cooldownMs = cooldownSeconds * 1000;
@@ -67,13 +70,13 @@ const startTick = (botClient) => {
 				}
 
 				// Anti-AFK: skip if user is self-deafened or server-deafened
-				if (setting.voiceAntiAfk) {
+				if (setting?.voiceAntiAfk !== false) {
 					if (voiceState.selfDeaf || voiceState.serverDeaf) continue;
 				}
 
 				// noXpChannels check
 				if (
-					Array.isArray(setting.noXpChannels) &&
+					Array.isArray(setting?.noXpChannels) &&
 					setting.noXpChannels.includes(voiceState.channelId)
 				) {
 					continue;
@@ -81,7 +84,7 @@ const startTick = (botClient) => {
 
 				// noXpRoles check
 				if (
-					Array.isArray(setting.noXpRoles) &&
+					Array.isArray(setting?.noXpRoles) &&
 					setting.noXpRoles.some((roleId) => member.roles.cache.has(roleId))
 				) {
 					continue;
@@ -90,7 +93,7 @@ const startTick = (botClient) => {
 				// Minimum members check
 				const voiceChannel = guild.channels.cache.get(voiceState.channelId);
 				const minMembers =
-					typeof setting.voiceMinMembers === 'number'
+					typeof setting?.voiceMinMembers === 'number'
 						? setting.voiceMinMembers
 						: 2;
 				if (
@@ -102,9 +105,9 @@ const startTick = (botClient) => {
 
 				// Calculate random XP
 				const xpMin =
-					typeof setting.voiceXpMin === 'number' ? setting.voiceXpMin : 15;
+					typeof setting?.voiceXpMin === 'number' ? setting.voiceXpMin : 15;
 				const xpMax =
-					typeof setting.voiceXpMax === 'number' ? setting.voiceXpMax : 40;
+					typeof setting?.voiceXpMax === 'number' ? setting.voiceXpMax : 40;
 				const xpToAdd =
 					xpMin === xpMax
 						? xpMin
@@ -124,7 +127,7 @@ const startTick = (botClient) => {
 					channel: null,
 				};
 
-				const levelingChannel = setting.levelingChannelId
+				const levelingChannel = setting?.levelingChannelId
 					? await helpers.discord
 							.getTextChannelSafe(guild, setting.levelingChannelId)
 							.catch(() => null)

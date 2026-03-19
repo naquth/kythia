@@ -37,31 +37,47 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
-		const { User, ServerSetting } = models;
+		const { User, LevelingSetting } = models;
 		const { convertColor } = helpers.color;
 
 		await interaction.deferReply();
 
-		const serverSetting = await ServerSetting.getCache({
-			guildId: interaction.guild.id,
-		});
-		const curve = serverSetting?.levelingCurve || 'linear';
+		const guildId = interaction.guild.id;
+
+		// Load per-guild leveling settings (null = table row does not exist yet)
+		const levelingSetting = await LevelingSetting.getCache({ guildId });
+
+		const curve = levelingSetting?.levelingCurve || 'linear';
 		const multiplier =
-			typeof serverSetting?.levelingMultiplier === 'number'
-				? serverSetting.levelingMultiplier
+			typeof levelingSetting?.levelingMultiplier === 'number'
+				? levelingSetting.levelingMultiplier
 				: 1.0;
+
+		// ---------- visual config with per-guild overrides --------------------------
+		const botColor = kythiaConfig.bot.color || '#5865F2';
+
+		const backgroundUrl =
+			levelingSetting?.levelingBackgroundUrl ??
+			kythiaConfig.addons?.leveling?.backgroundUrl ??
+			null;
+		const borderColor = levelingSetting?.levelingBorderColor || botColor;
+		const barColor = levelingSetting?.levelingBarColor || botColor;
+		const usernameColor = levelingSetting?.levelingUsernameColor || '#FFFFFF';
+		const tagColor = levelingSetting?.levelingTagColor || botColor;
+		const accentColorHex = levelingSetting?.levelingAccentColor || botColor;
+		// ----------------------------------------------------------------------------
 
 		const targetUser = interaction.options.getUser('user') || interaction.user;
 
 		let user = await User.getCache({
 			userId: targetUser.id,
-			guildId: interaction.guild.id,
+			guildId,
 		});
 
 		if (!user) {
 			user = await User.create({
 				userId: targetUser.id,
-				guildId: interaction.guild.id,
+				guildId,
 				xp: 0,
 				level: 1,
 			});
@@ -114,18 +130,18 @@ module.exports = {
 			customTag: `Level ${user.level}`,
 			customSubtitle: `XP Progress`,
 
-			customBackground: kythiaConfig.addons.leveling.backgroundUrl || null,
+			customBackground: backgroundUrl,
 
-			usernameColor: '#FFFFFF',
-			tagColor: kythiaConfig.bot.color || '#5865F2',
-			borderColor: kythiaConfig.bot.color || '#5865F2',
+			usernameColor,
+			tagColor,
+			borderColor,
 
 			rankData: {
 				currentXp: user.xp,
 				requiredXp: levelUpXp(user.level, curve, multiplier),
 				level: user.level,
-				barColor: kythiaConfig.bot.color || '#5865F2',
-				levelColor: kythiaConfig.bot.color || '#5865F2',
+				barColor,
+				levelColor: tagColor,
 			},
 
 			customFont: 'BagelFatOne-Regular',
@@ -138,7 +154,7 @@ module.exports = {
 			moreBackgroundBlur: false,
 		});
 
-		const botColor = convertColor(kythiaConfig.bot.color, {
+		const accentColorDecimal = convertColor(accentColorHex, {
 			from: 'hex',
 			to: 'decimal',
 		});
@@ -160,7 +176,7 @@ module.exports = {
 		});
 
 		const profileContainer = new ContainerBuilder()
-			.setAccentColor(botColor)
+			.setAccentColor(accentColorDecimal)
 
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(titleText))
 			.addSeparatorComponents(

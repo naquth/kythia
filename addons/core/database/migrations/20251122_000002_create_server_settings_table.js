@@ -47,62 +47,6 @@ module.exports = {
 
 			boostLogOn: { type: DataTypes.BOOLEAN, defaultValue: false },
 
-			levelingCurve: {
-				type: DataTypes.ENUM('linear', 'exponential', 'constant'),
-				defaultValue: 'linear',
-			},
-			levelingMultiplier: { type: DataTypes.FLOAT, defaultValue: 1.0 },
-			levelingMaxLevel: { type: DataTypes.INTEGER, allowNull: true },
-
-			messageXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-			messageXpMode: {
-				type: DataTypes.ENUM('random', 'per_word', 'fixed'),
-				defaultValue: 'random',
-			},
-			messageXpMin: { type: DataTypes.INTEGER, defaultValue: 15 },
-			messageXpMax: { type: DataTypes.INTEGER, defaultValue: 25 },
-			messageXpCooldown: { type: DataTypes.INTEGER, defaultValue: 60 },
-
-			voiceXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-			voiceXpMin: { type: DataTypes.INTEGER, defaultValue: 15 },
-			voiceXpMax: { type: DataTypes.INTEGER, defaultValue: 40 },
-			voiceXpCooldown: { type: DataTypes.INTEGER, defaultValue: 180 },
-			voiceMinMembers: { type: DataTypes.INTEGER, defaultValue: 2 },
-			voiceAntiAfk: { type: DataTypes.BOOLEAN, defaultValue: true },
-
-			reactionXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: false },
-			reactionXpAward: {
-				type: DataTypes.ENUM('none', 'both', 'author', 'reactor'),
-				defaultValue: 'both',
-			},
-			reactionXpMin: { type: DataTypes.INTEGER, defaultValue: 1 },
-			reactionXpMax: { type: DataTypes.INTEGER, defaultValue: 5 },
-			reactionXpCooldown: { type: DataTypes.INTEGER, defaultValue: 10 },
-
-			levelingChannelId: { type: DataTypes.STRING, allowNull: true },
-			levelingMessage: {
-				type: DataTypes.TEXT,
-				defaultValue: 'GG {user.mention}, you reached level **{user.level}**!',
-			},
-			levelingImageEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-
-			roleRewards: { type: DataTypes.JSON, defaultValue: [] },
-			roleRewardStack: { type: DataTypes.BOOLEAN, defaultValue: false },
-
-			xpBoosters: { type: DataTypes.JSON, defaultValue: [] },
-			channelBoosters: { type: DataTypes.JSON, defaultValue: [] },
-			stackBoosters: { type: DataTypes.BOOLEAN, defaultValue: true },
-
-			noXpChannels: { type: DataTypes.JSON, defaultValue: [] },
-			noXpRoles: { type: DataTypes.JSON, defaultValue: [] },
-
-			threadXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-			forumXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-			textInVoiceXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-			slashCommandXpEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
-
-			autoResetXp: { type: DataTypes.BOOLEAN, defaultValue: false },
-
 			minecraftIp: { type: DataTypes.STRING, allowNull: true },
 			minecraftPort: { type: DataTypes.INTEGER, allowNull: true },
 

@@ -22,11 +22,11 @@ const getModels = (c) => c.get('client').container.models;
 const getLogger = (c) => c.get('client').container.logger;
 
 /**
- * Get the leveling curve settings for a guild from ServerSetting.
+ * Get the leveling curve settings for a guild from LevelingSetting.
  */
 async function getGuildLevelingConfig(guildId, models) {
-	const { ServerSetting } = models;
-	const setting = await ServerSetting.getCache({ guildId });
+	const { LevelingSetting } = models;
+	const setting = await LevelingSetting.getCache({ guildId });
 	return {
 		curve: setting?.levelingCurve || 'linear',
 		multiplier:
@@ -50,6 +50,158 @@ function getTotalXp(user, curve, multiplier) {
 	}
 	return totalXp;
 }
+
+// ---------------------------------------------------------------------------
+// GET /api/leveling/:guildId/settings
+// Fetch the leveling settings for a guild
+// ---------------------------------------------------------------------------
+app.get('/:guildId/settings', async (c) => {
+	const models = getModels(c);
+	const { LevelingSetting } = models;
+	const { guildId } = c.req.param();
+
+	try {
+		let setting = await LevelingSetting.findOne({ where: { guildId } });
+		if (!setting) setting = {};
+
+		return c.json({ success: true, data: setting });
+	} catch (error) {
+		getLogger(c).error(
+			`GET /api/leveling/:guildId/settings error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
+		return c.json({ success: false, error: error.message }, 500);
+	}
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /api/leveling/:guildId/settings
+// Update leveling settings for a guild (upsert)
+// ---------------------------------------------------------------------------
+app.patch('/:guildId/settings', async (c) => {
+	const models = getModels(c);
+	const { LevelingSetting } = models;
+	const { guildId } = c.req.param();
+
+	let body;
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ success: false, error: 'Invalid JSON body' }, 400);
+	}
+
+	try {
+		let setting = await LevelingSetting.findOne({ where: { guildId } });
+		if (!setting) {
+			setting = await LevelingSetting.create({ guildId });
+		}
+
+		// Allowed writable fields (excludes guildId, timestamps)
+		const ALLOWED = new Set([
+			// XP gain
+			'messageXpEnabled',
+			'messageXpMode',
+			'messageXpMin',
+			'messageXpMax',
+			'messageXpCooldown',
+			'voiceXpEnabled',
+			'voiceXpMin',
+			'voiceXpMax',
+			'voiceXpCooldown',
+			'voiceMinMembers',
+			'voiceAntiAfk',
+			'reactionXpEnabled',
+			'reactionXpAward',
+			'reactionXpMin',
+			'reactionXpMax',
+			'reactionXpCooldown',
+			'threadXpEnabled',
+			'forumXpEnabled',
+			'textInVoiceXpEnabled',
+			'slashCommandXpEnabled',
+			// Curve & level cap
+			'levelingCurve',
+			'levelingMultiplier',
+			'levelingMaxLevel',
+			// Boosters & restrictions
+			'xpBoosters',
+			'channelBoosters',
+			'stackBoosters',
+			'noXpChannels',
+			'noXpRoles',
+			'autoResetXp',
+			// Role rewards
+			'roleRewards',
+			'roleRewardStack',
+			// Level-up notification
+			'levelingChannelId',
+			'levelingMessage',
+			'levelingImageEnabled',
+			// Visual customization
+			'levelingBackgroundUrl',
+			'levelingBorderColor',
+			'levelingBarColor',
+			'levelingUsernameColor',
+			'levelingTagColor',
+			'levelingAccentColor',
+		]);
+
+		const attributes = LevelingSetting.getAttributes();
+
+		for (const key of Object.keys(body)) {
+			if (!ALLOWED.has(key)) continue;
+			if (!attributes[key]) continue;
+
+			const fieldDef = attributes[key];
+			const type = fieldDef.type.key;
+			const value = body[key];
+
+			switch (type) {
+				case 'BOOLEAN':
+					setting[key] = String(value) === 'true' || value === true;
+					break;
+				case 'INTEGER':
+				case 'BIGINT': {
+					const parsed = parseInt(value, 10);
+					setting[key] = Number.isNaN(parsed) ? null : parsed;
+					break;
+				}
+				case 'FLOAT':
+				case 'DOUBLE': {
+					const parsed = parseFloat(value);
+					setting[key] = Number.isNaN(parsed) ? null : parsed;
+					break;
+				}
+				case 'JSON':
+				case 'JSONB':
+					setting[key] = typeof value === 'object' ? value : [];
+					break;
+				default:
+					if (value === null || value === undefined) {
+						setting[key] = null;
+					} else {
+						const str = String(value).trim();
+						setting[key] = str === '' ? null : str;
+					}
+					break;
+			}
+		}
+
+		await setting.save();
+
+		return c.json({ success: true, data: setting });
+	} catch (error) {
+		getLogger(c).error(
+			`PATCH /api/leveling/:guildId/settings error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
+		return c.json({ success: false, error: error.message }, 500);
+	}
+});
 
 // ---------------------------------------------------------------------------
 // GET /api/leveling/:guildId
@@ -96,7 +248,12 @@ app.get('/:guildId', async (c) => {
 			data,
 		});
 	} catch (error) {
-		getLogger(c).error('GET /api/leveling/:guildId error:', error);
+		getLogger(c).error(
+			`GET /api/leveling/:guildId error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
 		return c.json({ success: false, error: error.message }, 500);
 	}
 });
@@ -154,7 +311,12 @@ app.get('/:guildId/:userId', async (c) => {
 			},
 		});
 	} catch (error) {
-		getLogger(c).error('GET /api/leveling/:guildId/:userId error:', error);
+		getLogger(c).error(
+			`GET /api/leveling/:guildId/:userId error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
 		return c.json({ success: false, error: error.message }, 500);
 	}
 });
@@ -211,7 +373,12 @@ app.post('/:guildId/:userId', async (c) => {
 			201,
 		);
 	} catch (error) {
-		getLogger(c).error('POST /api/leveling/:guildId/:userId error:', error);
+		getLogger(c).error(
+			`POST /api/leveling/:guildId/:userId error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
 		return c.json({ success: false, error: error.message }, 500);
 	}
 });
@@ -345,7 +512,12 @@ app.patch('/:guildId/:userId', async (c) => {
 			},
 		});
 	} catch (error) {
-		getLogger(c).error('PATCH /api/leveling/:guildId/:userId error:', error);
+		getLogger(c).error(
+			`PATCH /api/leveling/:guildId/:userId error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
 		return c.json({ success: false, error: error.message }, 500);
 	}
 });
@@ -374,7 +546,12 @@ app.delete('/:guildId/:userId', async (c) => {
 			message: `Leveling data deleted for user ${userId} in guild ${guildId}`,
 		});
 	} catch (error) {
-		getLogger(c).error('DELETE /api/leveling/:guildId/:userId error:', error);
+		getLogger(c).error(
+			`DELETE /api/leveling/:guildId/:userId error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
 		return c.json({ success: false, error: error.message }, 500);
 	}
 });
@@ -396,7 +573,12 @@ app.delete('/:guildId', async (c) => {
 			deleted,
 		});
 	} catch (error) {
-		getLogger(c).error('DELETE /api/leveling/:guildId error:', error);
+		getLogger(c).error(
+			`DELETE /api/leveling/:guildId error: ${error.message || error}`,
+			{
+				label: 'api:leveling',
+			},
+		);
 		return c.json({ success: false, error: error.message }, 500);
 	}
 });

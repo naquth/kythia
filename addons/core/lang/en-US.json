@@ -516,7 +516,13 @@
 					"title": "🌐 Bot Servers",
 					"empty": "The bot is not in any servers.",
 					"entry": "**{rank}.** {name} ({id}",
-					"footer": "Page {page} of {totalPages} | Total Servers: {totalServers}"
+					"footer": "-# Page {page} of {totalPages} | Total Servers: {totalServers}"
+				},
+				"shards": {
+					"title": "🧩 Bot Shards",
+					"empty": "No shards found.",
+					"entry": "## Shard #{id}\n- Uptime: {uptime}\n- Users: **{users}** | Guilds: **{guilds}**",
+					"footer": "-# Page {page} of {totalPages} | Total Shards: {totalShards}"
 				},
 				"chat": {
 					"success": {

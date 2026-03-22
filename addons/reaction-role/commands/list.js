@@ -60,7 +60,7 @@ module.exports = {
 				const jumpLink = `https://discord.com/channels/${interaction.guildId}/${group.channelId}/${group.messageId}`;
 				description += `**Message:** [Link](${jumpLink}) in <#${group.channelId}>\n`;
 				for (const rr of group.roles) {
-					description += `• ${rr.emoji} ➡️ <@&${rr.roleId}>\n`;
+					description += `• ${rr.emoji} <@&${rr.roleId}>\n`;
 				}
 				description += '\n';
 			}

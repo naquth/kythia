@@ -7,7 +7,7 @@
  */
 
 const { Hono } = require('hono');
-const { ChannelType } = require('discord.js');
+const { ChannelType, MessageFlags } = require('discord.js');
 const { parseDiscordMarkdown } = require('../helpers/parser');
 const app = new Hono();
 
@@ -95,7 +95,15 @@ app.post('/messages/:channelId', async (c) => {
 
 	try {
 		const channel = await client.channels.fetch(channelId);
-		await channel.send(message);
+		const { simpleContainer } = client.container.helpers.discord;
+		const components = await simpleContainer(
+			{ client },
+			typeof message === 'string' ? message.trim() : JSON.stringify(message),
+		);
+		await channel.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 		return c.json({ success: true });
 	} catch (_e) {
 		return c.json({ error: 'Failed to send' }, 500);

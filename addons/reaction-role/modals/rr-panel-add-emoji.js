@@ -148,7 +148,7 @@ module.exports = {
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
 						`✅ **Emoji binding ${created ? 'added' : 'updated'}!**\n\n` +
-							`${emojiInput} ➡️ <@&${role.id}>\n\n` +
+							`${emojiInput} → <@&${role.id}>\n\n` +
 							`The panel embed has been updated. You can add more emojis using the **Add Emoji → Role** button.`,
 					),
 				);

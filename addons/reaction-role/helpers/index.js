@@ -172,7 +172,7 @@ function buildLayoutContainer(layout, bindings, container, panelData = {}) {
 		);
 		let bindingLines = '';
 		for (const rr of bindings) {
-			bindingLines += `${rr.emoji} ➡️ <@&${rr.roleId}>\n`;
+			bindingLines += `${rr.emoji} <@&${rr.roleId}>\n`;
 		}
 		builder.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(bindingLines.trimEnd()),
@@ -234,8 +234,8 @@ function buildLayoutContainer(layout, bindings, container, panelData = {}) {
 		);
 	}
 
-	// --- Add Emoji button (if panel ID known) ---
-	if (panelData.id) {
+	// --- Add Emoji button (if panel ID known and no bindings exist) ---
+	if (panelData.id && (!bindings || bindings.length === 0)) {
 		builder.addSeparatorComponents(
 			new SeparatorBuilder()
 				.setSpacing(SeparatorSpacingSize.Small)
@@ -330,7 +330,7 @@ function buildPanelEmbed(panelData, reactionRoles, container) {
 	} else {
 		let lines = '';
 		for (const rr of reactionRoles) {
-			lines += `${rr.emoji} ➡️ <@&${rr.roleId}>\n`;
+			lines += `${rr.emoji} <@&${rr.roleId}>\n`;
 		}
 		builder.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(lines.trimEnd()),
@@ -360,8 +360,8 @@ function buildPanelEmbed(panelData, reactionRoles, container) {
 		);
 	}
 
-	// Add Emoji button (only shown if panelId is present on the data object)
-	if (panelData.id) {
+	// Add Emoji button (only shown if panelId is present and no roles exist)
+	if (panelData.id && (!reactionRoles || reactionRoles.length === 0)) {
 		builder.addSeparatorComponents(
 			new SeparatorBuilder()
 				.setSpacing(SeparatorSpacingSize.Small)
@@ -424,6 +424,8 @@ async function refreshPanelMessage(panelId, container) {
 
 	const panel = await ReactionRolePanel.findByPk(panelId);
 	if (!panel || !panel.messageId) return;
+
+	if (panel.mode === 'use_message') return;
 
 	const reactionRoles = await ReactionRole.findAll({
 		where: { panelId: panel.id },

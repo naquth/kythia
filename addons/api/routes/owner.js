@@ -7,7 +7,7 @@
  */
 
 const { Hono } = require('hono');
-const { ActivityType } = require('discord.js');
+const { ActivityType, MessageFlags } = require('discord.js');
 const { Op } = require('sequelize');
 const ownerGuard = require('../helpers/owner-guard');
 
@@ -1264,7 +1264,14 @@ app.post('/chat', async (c) => {
 			);
 		}
 
-		await user.send({ content: message.trim() });
+		const { helpers } = getContainer(c);
+		const { simpleContainer } = helpers.discord;
+
+		const components = await simpleContainer({ client }, message.trim());
+		await user.send({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
 
 		getLogger(c).info(`DM sent to ${user.tag} (${userId}) via API.`, {
 			label: 'api',

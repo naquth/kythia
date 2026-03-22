@@ -15,6 +15,7 @@ const path = require('node:path');
 const { Server } = require('socket.io');
 const addonGuard = require('./helpers/addon-guard');
 // const { rateLimit } = require('./helpers/rateLimit');
+const { broadcastGetMeta } = require('./helpers/shard');
 
 module.exports = (bot) => {
 	const client = bot.client;
@@ -94,12 +95,17 @@ module.exports = (bot) => {
 		await next();
 	});
 
-	app.get('/', (c) =>
-		c.json({
+	app.get('/', async (c) => {
+		const client = c.get('client');
+		const { totalServers, totalMembers } = await broadcastGetMeta(client);
+
+		return c.json({
 			message: 'Kythia API is running! 🚀',
 			runtime: typeof globalThis.Bun !== 'undefined' ? 'Bun' : 'Node.js',
-		}),
-	);
+			servers: totalServers,
+			users: totalMembers,
+		});
+	});
 
 	const routesDir = path.join(__dirname, 'routes');
 

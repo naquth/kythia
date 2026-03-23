@@ -66,20 +66,21 @@ module.exports = {
 				const embedData = record.data || {};
 				const embed = new EmbedBuilder();
 
-				if (embedData.title) embed.setTitle(embedData.title);
-				if (embedData.description) embed.setDescription(embedData.description);
+				if (embedData.title) embed.setTitle(embedData.title.slice(0, 256));
+				if (embedData.description)
+					embed.setDescription(embedData.description.slice(0, 4000));
 				if (embedData.color) embed.setColor(embedData.color);
 				if (embedData.image?.url) embed.setImage(embedData.image.url);
 				if (embedData.thumbnail?.url)
 					embed.setThumbnail(embedData.thumbnail.url);
 				if (embedData.footer?.text)
 					embed.setFooter({
-						text: embedData.footer.text,
+						text: embedData.footer.text.slice(0, 2048),
 						iconURL: embedData.footer.icon_url,
 					});
 				if (embedData.author?.name)
 					embed.setAuthor({
-						name: embedData.author.name,
+						name: embedData.author.name.slice(0, 256),
 						iconURL: embedData.author.icon_url,
 						url: embedData.author.url,
 					});

@@ -28,8 +28,8 @@ const getModels = (c) => getContainer(c).models;
  */
 function sendClassicEmbed(channel, data) {
 	const embed = new EmbedBuilder();
-	if (data.title) embed.setTitle(data.title);
-	if (data.description) embed.setDescription(data.description);
+	if (data.title) embed.setTitle(data.title.slice(0, 256));
+	if (data.description) embed.setDescription(data.description.slice(0, 4000));
 	if (data.color != null) embed.setColor(data.color);
 	if (data.url) embed.setURL(data.url);
 	if (data.timestamp)
@@ -67,8 +67,8 @@ async function editDiscordMessage(channel, messageId, record) {
 	if (record.mode === 'embed') {
 		const embed = new EmbedBuilder();
 		const data = record.data || {};
-		if (data.title) embed.setTitle(data.title);
-		if (data.description) embed.setDescription(data.description);
+		if (data.title) embed.setTitle(data.title.slice(0, 256));
+		if (data.description) embed.setDescription(data.description.slice(0, 4000));
 		if (data.color != null) embed.setColor(data.color);
 		if (data.url) embed.setURL(data.url);
 		if (data.timestamp)

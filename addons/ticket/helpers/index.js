@@ -133,13 +133,13 @@ async function refreshTicketPanel(panelMessageId, container) {
 				actionRow = new ActionRowBuilder().addComponents(
 					new ButtonBuilder()
 						.setCustomId(`ticket-create:${type.id}`)
-						.setLabel(type.typeName)
+						.setLabel(type.typeName.slice(0, 80))
 						.setStyle(ButtonStyle.Secondary)
 						.setEmoji(safeEmoji),
 				);
 			} else {
 				const options = allTypes.map((type) => ({
-					label: type.typeName,
+					label: type.typeName.slice(0, 100),
 					value: type.id.toString(),
 					emoji: getSafeEmoji(type.typeEmoji),
 				}));
@@ -147,7 +147,7 @@ async function refreshTicketPanel(panelMessageId, container) {
 				actionRow = new ActionRowBuilder().addComponents(
 					new StringSelectMenuBuilder()
 						.setCustomId('ticket-select')
-						.setPlaceholder(placeholder)
+						.setPlaceholder(placeholder.slice(0, 150))
 						.setOptions(options),
 				);
 			}

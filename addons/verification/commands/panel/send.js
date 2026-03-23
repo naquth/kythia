@@ -104,7 +104,7 @@ module.exports = {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder()
 						.setCustomId('verify_panel_btn')
-						.setLabel(buttonText)
+						.setLabel(buttonText.slice(0, 80))
 						.setStyle(ButtonStyle.Success)
 						.setEmoji('🛡️'),
 				),

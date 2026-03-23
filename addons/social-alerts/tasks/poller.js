@@ -222,11 +222,11 @@ module.exports = {
 						new ActionRowBuilder().addComponents(
 							new ButtonBuilder()
 								.setStyle(ButtonStyle.Link)
-								.setLabel(watchLabel)
+								.setLabel(watchLabel.slice(0, 80))
 								.setURL(latest.url),
 							new ButtonBuilder()
 								.setStyle(ButtonStyle.Link)
-								.setLabel(channelLabel)
+								.setLabel(channelLabel.slice(0, 80))
 								.setURL(channelLink),
 						),
 					)

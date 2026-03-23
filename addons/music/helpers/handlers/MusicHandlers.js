@@ -1390,7 +1390,7 @@ class MusicHandlers {
 			const filter = filterList[i];
 			const btn = new ButtonBuilder()
 				.setCustomId(`filter_${filter.id}`)
-				.setLabel(filter.label)
+				.setLabel(filter.label.slice(0, 80))
 
 				.setStyle(ButtonStyle.Secondary);
 			if (i < 5) rows[0].addComponents(btn);

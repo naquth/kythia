@@ -51,7 +51,7 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { t, models, helpers, logger } = container;
-		const { ReactionRole } = models;
+		const { ReactionRole, ReactionRolePanel } = models;
 		const { convertColor } = helpers.color;
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -77,9 +77,18 @@ module.exports = {
 				});
 			}
 
+			const panel = await ReactionRolePanel.findOne({
+				where: { guildId: interaction.guildId, messageId },
+			});
+
 			// Validate emoji by trying to react
 			try {
-				await message.react(emojiInput);
+				const reaction = await message.react(emojiInput);
+				if (panel && panel.panelType === 'dropdown') {
+					try {
+						await reaction.users.remove(interaction.client.user.id);
+					} catch (_) {}
+				}
 			} catch (error) {
 				logger.error(`Error: ${error.message || error}`, {
 					label: 'reaction-role:react',
@@ -101,6 +110,7 @@ module.exports = {
 			if (existing) {
 				existing.roleId = role.id;
 				existing.channelId = channel.id; // Update channel just in case
+				if (panel) existing.panelId = panel.id;
 				await existing.save();
 			} else {
 				await ReactionRole.create({
@@ -109,7 +119,13 @@ module.exports = {
 					messageId,
 					emoji: emojiInput,
 					roleId: role.id,
+					panelId: panel ? panel.id : null,
 				});
+			}
+
+			// Refresh panel if it exists
+			if (panel) {
+				await helpers.reactionRole.refreshPanelMessage(panel.id, container);
 			}
 
 			const successContainer = new ContainerBuilder()

@@ -339,7 +339,6 @@ app.post('/:id/reply', async (c) => {
 app.post('/:id/note', async (c) => {
 	const client = getBot(c);
 	const { Modmail } = getModels(c);
-	const { kythiaConfig } = getContainer(c);
 	const id = c.req.param('id');
 	const body = await c.req.json();
 	const { staffId, content } = body;
@@ -390,17 +389,7 @@ app.post('/:id/note', async (c) => {
 					.setSpacing(SeparatorSpacingSize.Small)
 					.setDivider(true),
 			)
-			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(
-					`-# © ${kythiaConfig.bot.name} by kenndeclouv`,
-				),
-			);
+			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
 
 		await thread.send({
 			components: [noteCard],

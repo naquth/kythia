@@ -15,9 +15,33 @@ const {
 	MediaGalleryItemBuilder,
 	SeparatorBuilder,
 	SeparatorSpacingSize,
+	StringSelectMenuBuilder,
 	TextDisplayBuilder,
 	MessageFlags,
 } = require('discord.js');
+
+// =============================================================================
+// getSafeEmoji — validate emoji string before passing to select menu options
+// =============================================================================
+
+function getSafeEmoji(emoji, fallback = '🎭') {
+	if (!emoji || typeof emoji !== 'string') return fallback;
+	const clean = emoji.trim();
+	if (clean.length === 0) return fallback;
+	// Custom emoji: <:name:id> or <a:name:id>
+	if (/^<a?:.+?:\d{17,20}>$/.test(clean)) return clean;
+	try {
+		if (/\p{Extended_Pictographic}/u.test(clean)) return clean;
+	} catch (_) {
+		if (
+			/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/.test(
+				clean,
+			)
+		)
+			return clean;
+	}
+	return fallback;
+}
 
 // =============================================================================
 // buildLayoutContainer — embed-builder JSON → Components V2
@@ -164,19 +188,50 @@ function buildLayoutContainer(layout, bindings, container, panelData = {}) {
 	}
 
 	// --- Emoji bindings ---
-	if (bindings && bindings.length > 0) {
-		builder.addSeparatorComponents(
-			new SeparatorBuilder()
-				.setSpacing(SeparatorSpacingSize.Small)
-				.setDivider(true),
-		);
-		let bindingLines = '';
-		for (const rr of bindings) {
-			bindingLines += `${rr.emoji} <@&${rr.roleId}>\n`;
+	const isDropdown = panelData.panelType === 'dropdown';
+
+	if (isDropdown) {
+		if (bindings && bindings.length > 0) {
+			builder.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			);
+			const guild = container.client.guilds.cache.get(panelData.guildId);
+			const options = bindings.map((rr) => {
+				const roleName = guild?.roles.cache.get(rr.roleId)?.name;
+				return {
+					label: rr.label || roleName || `Role ${rr.roleId}`,
+					value: rr.roleId,
+					emoji: getSafeEmoji(rr.emoji),
+				};
+			});
+			builder.addActionRowComponents(
+				new ActionRowBuilder().addComponents(
+					new StringSelectMenuBuilder()
+						.setCustomId(`rr-dropdown-select:${panelData.id}`)
+						.setPlaceholder('Select a role…')
+						.setMinValues(1)
+						.setMaxValues(1)
+						.setOptions(options),
+				),
+			);
 		}
-		builder.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(bindingLines.trimEnd()),
-		);
+	} else {
+		if (bindings && bindings.length > 0) {
+			builder.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			);
+			let bindingLines = '';
+			for (const rr of bindings) {
+				bindingLines += `${rr.emoji} <@&${rr.roleId}>\n`;
+			}
+			builder.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(bindingLines.trimEnd()),
+			);
+		}
 	}
 
 	// --- Large image (bottom, before footer) ---
@@ -320,21 +375,54 @@ function buildPanelEmbed(panelData, reactionRoles, container) {
 		);
 	}
 
-	// Emoji bindings
-	if (!reactionRoles || reactionRoles.length === 0) {
-		builder.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
-				'> *No reaction roles added yet. Use the buttons below to add some!*',
-			),
-		);
-	} else {
-		let lines = '';
-		for (const rr of reactionRoles) {
-			lines += `${rr.emoji} <@&${rr.roleId}>\n`;
+	const isDropdown = panelData.panelType === 'dropdown';
+
+	if (isDropdown) {
+		// ── Dropdown mode: render a StringSelectMenu ──────────────────────────
+		if (!reactionRoles || reactionRoles.length === 0) {
+			builder.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					'> *No roles added yet. Use the button below to add some!*',
+				),
+			);
+		} else {
+			const guild = container.client.guilds.cache.get(panelData.guildId);
+			const options = reactionRoles.map((rr) => {
+				const roleName = guild?.roles.cache.get(rr.roleId)?.name;
+				return {
+					label: rr.label || roleName || `Role ${rr.roleId}`,
+					value: rr.roleId,
+					emoji: getSafeEmoji(rr.emoji),
+				};
+			});
+			builder.addActionRowComponents(
+				new ActionRowBuilder().addComponents(
+					new StringSelectMenuBuilder()
+						.setCustomId(`rr-dropdown-select:${panelData.id}`)
+						.setPlaceholder('Select a role…')
+						.setMinValues(1)
+						.setMaxValues(1)
+						.setOptions(options),
+				),
+			);
 		}
-		builder.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(lines.trimEnd()),
-		);
+	} else {
+		// ── Reaction mode: list emoji → role lines ────────────────────────────
+		if (!reactionRoles || reactionRoles.length === 0) {
+			builder.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					'> *No reaction roles added yet. Use the buttons below to add some!*',
+				),
+			);
+		} else {
+			let lines = '';
+			for (const rr of reactionRoles) {
+				lines += `${rr.emoji} <@&${rr.roleId}>\n`;
+			}
+			builder.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(lines.trimEnd()),
+			);
+		}
 	}
 
 	// Whitelist / blacklist footer
@@ -425,7 +513,13 @@ async function refreshPanelMessage(panelId, container) {
 	const panel = await ReactionRolePanel.findByPk(panelId);
 	if (!panel || !panel.messageId) return;
 
-	if (panel.mode === 'use_message') return;
+	// For dropdown panels we always need to refresh (the select menu lives in the embed)
+	// For reaction type + use_message, the reactions are on the user's message — skip rebuild
+	if (
+		panel.mode === 'use_message' &&
+		(panel.panelType || 'reaction') === 'reaction'
+	)
+		return;
 
 	const reactionRoles = await ReactionRole.findAll({
 		where: { panelId: panel.id },

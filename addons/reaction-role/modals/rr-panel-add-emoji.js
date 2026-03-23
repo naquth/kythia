@@ -54,6 +54,14 @@ module.exports = {
 
 			const emojiInput = interaction.fields.getTextInputValue('emoji').trim();
 			const roleId = interaction.fields.getTextInputValue('roleId').trim();
+			// label is only present in dropdown-type panel modals
+			const labelInput = (() => {
+				try {
+					return interaction.fields.getTextInputValue('label')?.trim() || null;
+				} catch (_) {
+					return null;
+				}
+			})();
 
 			// Validate role exists
 			const role = await interaction.guild.roles
@@ -103,7 +111,13 @@ module.exports = {
 
 			// Validate emoji by actually reacting
 			try {
-				await message.react(emojiInput);
+				const reaction = await message.react(emojiInput);
+				// If dropdown panel, we only reacted to validate it — remove it immediately
+				if (panel.panelType === 'dropdown') {
+					try {
+						await reaction.users.remove(interaction.client.user.id);
+					} catch (_) {}
+				}
 			} catch (_) {
 				return interaction.followUp({
 					components: await simpleContainer(
@@ -128,12 +142,14 @@ module.exports = {
 					messageId: panel.messageId,
 					emoji: emojiInput,
 					roleId: role.id,
+					label: labelInput,
 					panelId: panel.id,
 				},
 			});
 
 			if (!created) {
 				rr.roleId = role.id;
+				if (labelInput !== null) rr.label = labelInput;
 				await rr.save();
 			}
 
@@ -141,15 +157,16 @@ module.exports = {
 			await refreshPanelMessage(panel.id, container);
 
 			// Reply with success
+			const isDropdown = panel.panelType === 'dropdown';
 			const successContainer = new ContainerBuilder()
 				.setAccentColor(
 					convertColor('Green', { from: 'discord', to: 'decimal' }),
 				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(
-						`✅ **Emoji binding ${created ? 'added' : 'updated'}!**\n\n` +
-							`${emojiInput} → <@&${role.id}>\n\n` +
-							`The panel embed has been updated. You can add more emojis using the **Add Emoji → Role** button.`,
+						`✅ **${isDropdown ? 'Option' : 'Emoji'} binding ${created ? 'added' : 'updated'}!**\n\n` +
+							`${emojiInput}${labelInput ? ` **${labelInput}**` : ''} → <@&${role.id}>\n\n` +
+							`The panel has been updated.`,
 					),
 				);
 

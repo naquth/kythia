@@ -2387,6 +2387,7 @@ List all reaction role panels for a guild, with a computed emoji binding count.
     "channelId": "111111111111111111",
     "messageId": "222222222222222222",
     "mode": "post_embed",
+    "panelType": "reaction",
     "title": "🎭 Pick Your Roles",
     "description": "React below to pick up a role.",
     "whitelistRoles": [],
@@ -2403,6 +2404,7 @@ List all reaction role panels for a guild, with a computed emoji binding count.
 | Field | Type | Description |
 |---|---|---|
 | `mode` | `string` | `"post_embed"` — bot-posted embed, or `"use_message"` — attached to existing message |
+| `panelType` | `string` | `"reaction"` — emoji reactions, or `"dropdown"` — string select menu |
 | `whitelistRoles` | `string[]` | Role IDs — if set, only members with at least one of these roles can use the panel |
 | `blacklistRoles` | `string[]` | Role IDs — members with any of these roles are blocked from the panel |
 | `emojiCount` | `number` | Computed count of emoji bindings for this panel |
@@ -2425,13 +2427,14 @@ Get a single panel by ID, including all its emoji→role bindings.
   "channelId": "...",
   "messageId": "...",
   "mode": "post_embed",
+  "panelType": "reaction",
   "title": "🎭 Pick Your Roles",
   "description": null,
   "whitelistRoles": [],
   "blacklistRoles": [],
   "bindings": [
-    { "id": 1, "emoji": "🎮", "roleId": "333333333333333333", "panelId": 1 },
-    { "id": 2, "emoji": "🎵", "roleId": "444444444444444444", "panelId": 1 }
+    { "id": 1, "emoji": "🎮", "roleId": "333333333333333333", "label": "Gamer", "panelId": 1 },
+    { "id": 2, "emoji": "🎵", "roleId": "444444444444444444", "label": "Musician", "panelId": 1 }
   ]
 }
 }
@@ -2454,6 +2457,7 @@ Create a new panel.
 "guildId": "123456789012345678",
 "channelId": "111111111111111111",
 "mode": "post_embed",
+"panelType": "reaction",
 "title": "🎭 Pick Your Roles",
 "description": "React below to pick up a role.",
 "whitelistRoles": [],
@@ -2467,6 +2471,7 @@ Create a new panel.
 | `guildId` | `string` | ✅ | Discord guild ID |
 | `channelId` | `string` | ✅ | Channel to post/attach the panel to |
 | `mode` | `string` | No | `"post_embed"` (default) or `"use_message"` |
+| `panelType` | `string` | No | `"reaction"` (default) or `"dropdown"` |
 | `messageId` | `string` | ✅ if `use_message` | Existing Discord message ID to attach to |
 | `title` | `string` | No | Panel title — used as fallback when no `layout.title` set |
 | `description` | `string` | No | Panel description — used as fallback when no `layout.description` set |
@@ -2506,6 +2511,7 @@ Full panel update. Handles both metadata and structural changes.
 "messageType": "normal",
 "channelId": "999999999999999999",
 "mode": "use_message",
+"panelType": "dropdown",
 "messageId": "888888888888888888"
 }
 ```
@@ -2520,6 +2526,7 @@ Full panel update. Handles both metadata and structural changes.
 | `layout` | `object\|null` | Replace [layout config](#layout-object). Pass `null` to revert to default rendering |
 | `channelId` | `string` | **Migrate** panel to new channel (posts new embed in `post_embed` mode, deletes old message) |
 | `mode` | `string` | Switch between `post_embed` and `use_message` |
+| `panelType` | `string` | Switch between `"reaction"` and `"dropdown"` |
 | `messageId` | `string` | Required when switching to `use_message` — target message to attach to |
 
 > [!IMPORTANT]
@@ -2549,13 +2556,14 @@ Add an emoji→role binding to a panel. Validates the emoji by reacting on the l
 
 **Request Body:**
 ```json
-{ "emoji": "🎮", "roleId": "333333333333333333" }
+{ "emoji": "🎮", "roleId": "333333333333333333", "label": "Gamer" }
 ```
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `emoji` | `string` | ✅ | Unicode emoji or custom `<:name:id>` emoji string |
 | `roleId` | `string` | ✅ | Discord role ID to assign on reaction |
+| `label` | `string` | No | Text label for the option (used in `dropdown` panels) |
 
 **Response:**
 ```json
@@ -2586,13 +2594,14 @@ Edit an existing emoji→role binding. Handles emoji replacement (swaps bot reac
 
 **Request Body (all optional):**
 ```json
-{ "emoji": "🚀", "roleId": "555555555555555555" }
+{ "emoji": "🚀", "roleId": "555555555555555555", "label": "Rocket User" }
 ```
 
 | Field | Type | Description |
 |---|---|---|
 | `emoji` | `string` | New emoji (removes old bot reaction, adds new one) |
 | `roleId` | `string` | New role to assign |
+| `label` | `string` | Text label for the option (used in `dropdown` panels) |
 
 **Response:** `{ "success": true, "data": { ... } }`
 
@@ -2626,9 +2635,9 @@ Ideal for the dashboard's **drag-and-drop reorder** or full binding replacement 
 ```json
 {
 "bindings": [
-  { "emoji": "🎮", "roleId": "111111111111111111" },
-  { "emoji": "🎵", "roleId": "222222222222222222" },
-  { "emoji": "🏆", "roleId": "333333333333333333" }
+  { "emoji": "🎮", "roleId": "111111111111111111", "label": "Gamer" },
+  { "emoji": "🎵", "roleId": "222222222222222222", "label": "Musician" },
+  { "emoji": "🏆", "roleId": "333333333333333333", "label": "Champion" }
 ]
 }
 ```

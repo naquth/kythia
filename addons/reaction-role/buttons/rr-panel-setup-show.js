@@ -26,7 +26,7 @@ module.exports = {
 				.setCustomId(`rr-panel-create:${originalMessageId}`)
 				.setTitle('Create Reaction Role Panel')
 				.addLabelComponents(
-					// Mode selection (text input since Discord modals don't support string selects)
+					// Mode selection
 					new LabelBuilder()
 						.setLabel('Mode')
 						.setDescription(
@@ -38,6 +38,21 @@ module.exports = {
 								.setStyle(TextInputStyle.Short)
 								.setPlaceholder('post_embed')
 								.setValue('post_embed')
+								.setRequired(true),
+						),
+
+					// Panel type — reaction or dropdown
+					new LabelBuilder()
+						.setLabel('Panel Type')
+						.setDescription(
+							'"reaction" — users react with emoji | "dropdown" — users pick from a select menu',
+						)
+						.setTextInputComponent(
+							new TextInputBuilder()
+								.setCustomId('panelType')
+								.setStyle(TextInputStyle.Short)
+								.setPlaceholder('reaction')
+								.setValue('reaction')
 								.setRequired(true),
 						),
 

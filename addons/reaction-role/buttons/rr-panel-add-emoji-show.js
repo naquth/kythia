@@ -15,7 +15,8 @@ const {
 
 module.exports = {
 	execute: async (interaction, container) => {
-		const { helpers, logger } = container;
+		const { models, helpers, logger } = container;
+		const { ReactionRolePanel } = models;
 		const { simpleContainer } = helpers.discord;
 
 		// customId format: rr-panel-add-emoji-show:<panelId>
@@ -33,9 +34,18 @@ module.exports = {
 				});
 			}
 
+			// Fetch panel to know the type
+			const panel = await ReactionRolePanel.findOne({
+				where: { id: panelId, guildId: interaction.guildId },
+			});
+
+			const isDropdown = panel?.panelType === 'dropdown';
+
 			const modal = new ModalBuilder()
 				.setCustomId(`rr-panel-add-emoji:${panelId}`)
-				.setTitle('Add Emoji → Role Binding')
+				.setTitle(
+					isDropdown ? 'Add Option → Role Binding' : 'Add Emoji → Role Binding',
+				)
 				.addLabelComponents(
 					new LabelBuilder()
 						.setLabel('Emoji')
@@ -51,15 +61,38 @@ module.exports = {
 						),
 
 					new LabelBuilder()
-						.setLabel('Role ID')
-						.setDescription('Paste the Discord role ID to assign.')
+						.setLabel(
+							isDropdown ? 'Option Label (shown in dropdown)' : 'Role ID',
+						)
+						.setDescription(
+							isDropdown
+								? 'Text displayed in the select menu for this option.'
+								: 'Paste the Discord role ID to assign.',
+						)
 						.setTextInputComponent(
 							new TextInputBuilder()
-								.setCustomId('roleId')
+								.setCustomId(isDropdown ? 'label' : 'roleId')
 								.setStyle(TextInputStyle.Short)
-								.setPlaceholder('123456789012345678')
+								.setPlaceholder(
+									isDropdown ? 'e.g. Gamer Role' : '123456789012345678',
+								)
 								.setRequired(true),
 						),
+
+					...(isDropdown
+						? [
+								new LabelBuilder()
+									.setLabel('Role ID')
+									.setDescription('Paste the Discord role ID to assign.')
+									.setTextInputComponent(
+										new TextInputBuilder()
+											.setCustomId('roleId')
+											.setStyle(TextInputStyle.Short)
+											.setPlaceholder('123456789012345678')
+											.setRequired(true),
+									),
+							]
+						: []),
 				);
 
 			await interaction.showModal(modal);

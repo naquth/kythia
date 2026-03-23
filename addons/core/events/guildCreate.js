@@ -185,16 +185,6 @@ module.exports = async (bot, guild) => {
 							},
 						),
 					),
-				)
-				.addSeparatorComponents(
-					new SeparatorBuilder()
-						.setSpacing(SeparatorSpacingSize.Small)
-						.setDivider(true),
-				)
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						`-# © ${bot.client.user.username} by kenndeclouv`,
-					),
 				);
 
 			const url = new URL(webhookUrl);

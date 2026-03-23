@@ -74,12 +74,14 @@ module.exports = {
 			for (const panel of panels) {
 				const emojiCount = countMap[panel.id] || 0;
 				const modeLabel =
-					panel.mode === 'post_embed' ? '📨 Post Embed' : '🔗 Message ID';
+					panel.mode === 'post_embed' ? '📨 Embed' : '🔗 Message';
+				const typeLabel =
+					panel.panelType === 'dropdown' ? '🔽 Dropdown' : '😀 Reaction';
 				const messageLink = panel.messageId
 					? ` • [Jump](https://discord.com/channels/${panel.guildId}/${panel.channelId}/${panel.messageId})`
 					: '';
 
-				description += `**[ID: ${panel.id}]** ${panel.title || '*(untitled)*'}\n${modeLabel} • <#${panel.channelId}>${messageLink} • ${emojiCount} emoji(s)\n\n`;
+				description += `**[ID: ${panel.id}]** ${panel.title || '*(untitled)*'}\n${modeLabel} • ${typeLabel} • <#${panel.channelId}>${messageLink} • ${emojiCount} option(s)\n\n`;
 			}
 
 			const listContainer = new ContainerBuilder()

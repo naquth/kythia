@@ -100,6 +100,11 @@ module.exports = {
 				});
 			}
 
+			let panel = null;
+			if (rr.panelId) {
+				panel = await models.ReactionRolePanel.findByPk(rr.panelId);
+			}
+
 			// Fetch the Discord message so we can swap reactions
 			const message = await channel.messages.fetch(messageId).catch(() => null);
 
@@ -114,7 +119,12 @@ module.exports = {
 			if (emojiChanged) {
 				// Validate the new emoji by reacting
 				try {
-					await message.react(newEmoji);
+					const reaction = await message.react(newEmoji);
+					if (panel && panel.panelType === 'dropdown') {
+						try {
+							await reaction.users.remove(interaction.client.user.id);
+						} catch (_) {}
+					}
 				} catch (error) {
 					logger.error(`Error: ${error.message || error}`, {
 						label: 'reaction-role:edit:react',

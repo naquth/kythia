@@ -57,9 +57,14 @@ module.exports = {
 
 		if (record.mode === 'embed') {
 			// Open a Discord modal for classic embed fields
+			let modalTitle = `Edit: ${record.name}`;
+			if (modalTitle.length > 45) {
+				modalTitle = `${modalTitle.substring(0, 42)}...`;
+			}
+
 			const modal = new ModalBuilder()
 				.setCustomId(`eb-edit|${record.id}`)
-				.setTitle(`Edit: ${record.name}`);
+				.setTitle(modalTitle);
 
 			modal.addComponents(
 				new ActionRowBuilder().addComponents(

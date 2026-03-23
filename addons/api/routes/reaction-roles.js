@@ -308,6 +308,7 @@ app.post('/panels', async (c) => {
 		guildId,
 		channelId,
 		mode = 'post_embed',
+		panelType = 'reaction',
 		title,
 		description,
 		messageId: bodyMessageId,
@@ -374,6 +375,7 @@ app.post('/panels', async (c) => {
 			channelId,
 			messageId: panelMessageId,
 			mode,
+			panelType,
 			title: title || null,
 			description: description || null,
 			whitelistRoles: body.whitelistRoles || [],
@@ -414,7 +416,10 @@ app.patch('/panels/:id', async (c) => {
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
 		// --- Simple metadata fields ---
+		const oldPanelType = panel.panelType || 'reaction';
+
 		const metadataFields = [
+			'panelType',
 			'title',
 			'description',
 			'whitelistRoles',
@@ -424,6 +429,42 @@ app.patch('/panels/:id', async (c) => {
 		];
 		for (const key of metadataFields) {
 			if (body[key] !== undefined) panel[key] = body[key];
+		}
+
+		const newPanelType = panel.panelType || 'reaction';
+
+		// If switching panel types, add or remove the bot's emoji reactions on the active message
+		if (oldPanelType !== newPanelType && panel.messageId) {
+			try {
+				const channel = await client.channels
+					.fetch(panel.channelId)
+					.catch(() => null);
+				if (channel) {
+					const message = await channel.messages
+						.fetch(panel.messageId)
+						.catch(() => null);
+					if (message) {
+						const bindings = await ReactionRole.findAll({
+							where: { panelId: panel.id },
+						});
+						for (const rr of bindings) {
+							if (newPanelType === 'dropdown') {
+								// Remove reaction
+								const reaction = message.reactions.cache.find(
+									(r) =>
+										(r.emoji.id || r.emoji.name) === rr.emoji ||
+										`<:${r.emoji.name}:${r.emoji.id}>` === rr.emoji,
+								);
+								if (reaction)
+									await reaction.users.remove(client.user.id).catch(() => {});
+							} else if (newPanelType === 'reaction') {
+								// Add reaction
+								await message.react(rr.emoji).catch(() => {});
+							}
+						}
+					}
+				}
+			} catch (_) {}
 		}
 
 		// --- Channel / mode migration ---
@@ -635,7 +676,7 @@ app.post('/panels/:id/emoji', async (c) => {
 	const { ReactionRolePanel, ReactionRole } = getModels(c);
 	const id = c.req.param('id');
 	const body = await c.req.json();
-	const { emoji, roleId } = body;
+	const { emoji, roleId, label } = body;
 
 	if (!emoji || !roleId)
 		return c.json(
@@ -662,7 +703,12 @@ app.post('/panels/:id/emoji', async (c) => {
 
 		// Validate emoji
 		try {
-			await message.react(emoji);
+			const reaction = await message.react(emoji);
+			if (panel.panelType === 'dropdown') {
+				try {
+					await reaction.users.remove(client.user.id);
+				} catch (_) {}
+			}
 		} catch (_) {
 			return c.json({ success: false, error: `Invalid emoji: ${emoji}` }, 400);
 		}
@@ -675,12 +721,14 @@ app.post('/panels/:id/emoji', async (c) => {
 				messageId: panel.messageId,
 				emoji,
 				roleId,
+				label: label || null,
 				panelId: panel.id,
 			},
 		});
 
 		if (!created) {
 			rr.roleId = roleId;
+			if (label !== undefined) rr.label = label || null;
 			await rr.save();
 		}
 
@@ -782,6 +830,7 @@ app.patch('/panels/:id/emoji/:rrId', async (c) => {
 
 		const newEmoji = body.emoji ?? rr.emoji;
 		const newRoleId = body.roleId ?? rr.roleId;
+		const newLabel = body.label !== undefined ? body.label : rr.label;
 		const emojiChanged = newEmoji !== rr.emoji;
 
 		if (emojiChanged) {
@@ -817,7 +866,7 @@ app.patch('/panels/:id/emoji/:rrId', async (c) => {
 			}
 		}
 
-		await rr.update({ emoji: newEmoji, roleId: newRoleId });
+		await rr.update({ emoji: newEmoji, roleId: newRoleId, label: newLabel });
 
 		if (rr.panelId) await rrHelpers.refreshPanelMessage(rr.panelId, container);
 
@@ -895,11 +944,11 @@ app.put('/panels/:id/emoji', async (c) => {
 
 		// Create new bindings and react
 		const created = [];
-		for (const { emoji, roleId } of bindings) {
+		for (const { emoji, roleId, label } of bindings) {
 			if (!emoji || !roleId) continue;
 
 			// React to validate + establish the reaction
-			if (message) {
+			if (message && panel.panelType !== 'dropdown') {
 				try {
 					await message.react(emoji);
 				} catch (_) {
@@ -913,6 +962,7 @@ app.put('/panels/:id/emoji', async (c) => {
 				messageId: panel.messageId,
 				emoji,
 				roleId,
+				label: label || null,
 				panelId: panel.id,
 			});
 			created.push(rr);
@@ -1052,6 +1102,7 @@ app.post('/panels/:id/duplicate', async (c) => {
 			channelId: targetChannelId,
 			messageId: sent.id,
 			mode: 'post_embed',
+			panelType: sourcePanel.panelType,
 			title: newTitle,
 			description: sourcePanel.description,
 			whitelistRoles: sourcePanel.whitelistRoles || [],
@@ -1066,13 +1117,14 @@ app.post('/panels/:id/duplicate', async (c) => {
 		const newBindings = [];
 		for (const rr of sourceBindings) {
 			try {
-				await sent.react(rr.emoji);
+				if (sourcePanel.panelType !== 'dropdown') await sent.react(rr.emoji);
 				const newRr = await ReactionRole.create({
 					guildId: newPanel.guildId,
 					channelId: newPanel.channelId,
 					messageId: newPanel.messageId,
 					emoji: rr.emoji,
 					roleId: rr.roleId,
+					label: rr.label,
 					panelId: newPanel.id,
 				});
 				newBindings.push(newRr);

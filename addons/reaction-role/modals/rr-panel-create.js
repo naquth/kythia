@@ -38,6 +38,12 @@ module.exports = {
 				.toLowerCase();
 			const mode = modeRaw === 'use_message' ? 'use_message' : 'post_embed';
 
+			const panelTypeRaw = interaction.fields
+				.getTextInputValue('panelType')
+				.trim()
+				.toLowerCase();
+			const panelType = panelTypeRaw === 'dropdown' ? 'dropdown' : 'reaction';
+
 			const channelId = interaction.fields
 				.getSelectedChannels('channelId')
 				.first()?.id;
@@ -139,6 +145,7 @@ module.exports = {
 				channelId,
 				messageId: panelMessageId,
 				mode,
+				panelType,
 				title: title || (mode === 'post_embed' ? '🎭 Reaction Roles' : null),
 				description,
 				whitelistRoles: [],
@@ -149,11 +156,15 @@ module.exports = {
 			// ----- Build success confirmation -----
 			const modeLabel =
 				mode === 'post_embed' ? '📨 Post Embed' : '🔗 Use Message ID';
+			const typeLabel =
+				panelType === 'dropdown' ? '🔽 Dropdown Select' : '⚡ Reaction';
 			const jumpLink = `https://discord.com/channels/${interaction.guildId}/${channelId}/${panelMessageId}`;
 
 			const addEmojiButton = new ButtonBuilder()
 				.setCustomId(`rr-panel-add-emoji-show:${panel.id}`)
-				.setLabel('Add Emoji → Role')
+				.setLabel(
+					panelType === 'dropdown' ? 'Add Option → Role' : 'Add Emoji → Role',
+				)
 				.setStyle(ButtonStyle.Success)
 				.setEmoji('➕');
 
@@ -166,9 +177,10 @@ module.exports = {
 						`✅ **Panel Created!**\n\n` +
 							`**Panel ID:** \`${panel.id}\`\n` +
 							`**Mode:** ${modeLabel}\n` +
+							`**Type:** ${typeLabel}\n` +
 							`**Channel:** <#${channelId}>\n` +
 							`**Message:** [Jump to Panel](${jumpLink})\n\n` +
-							`Now click **Add Emoji → Role** to add emoji bindings to this panel.`,
+							`Now click **${panelType === 'dropdown' ? 'Add Option → Role' : 'Add Emoji → Role'}** to add bindings to this panel.`,
 					),
 				)
 				.addSeparatorComponents(

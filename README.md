@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://kythia.xyz">
-    <img src="https://files.catbox.moe/alnl1h.png" alt="Kythia Logo" height="150" style="border-radius: 10px;">
+    <img src="https://cdn.kythia.my.id/kythia_logo_rounded.png" alt="Kythia Logo" height="150" style="border-radius: 10px;">
   </a>
 </p>
 
@@ -62,7 +62,7 @@ Here's a glimpse of what Kythia has to offer:
 *   **Social Alerts (`social-alerts`):** Get notified for new content from YouTube and TikTok.
 *   **Temporary Voice (`tempvoice`):** Allow users to create and manage their own temporary voice channels.
 *   **Giveaways (`giveaway`):** Host and manage giveaways easily.
-*   **Reaction Roles (`reaction-role`):** Allow members to self-assign roles using emojis.
+*   **Reaction Roles (`reaction-role`):** Allow members to self-assign roles using interactive emoji buttons or sleek Discord **Dropdown Menus** with custom labels.
 
 ### ✨ And Many More Addons!
 Kythia comes with a huge collection of modular addons, including:
@@ -86,6 +86,7 @@ There are many Discord bots out there, but Kythia stands out from the crowd. Her
 *   **🤖 Modular by Design:** Kythia is built on a powerful addon system, allowing you to enable only the features you need. This keeps the bot lightweight and efficient.
 *   **✨ Feature-Rich:** With a massive collection of addons, Kythia offers a huge range of features, from advanced moderation to fun games and a full-fledged economy system.
 *   **🔧 Fully Customizable:** Almost every aspect of Kythia can be configured to your liking. From custom welcome messages to fine-tuned automod settings, you're in control.
+*   **🛡️ Rock-Solid Stability:** Built completely around Discord's modern Components V2 architecture with rigorous dynamic input validation and safe length truncation so the bot never crashes on your community.
 *   **🚀 Actively Developed:** Kythia is constantly being improved with new features, bug fixes, and performance enhancements.
 
 ---

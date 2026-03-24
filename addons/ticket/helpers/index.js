@@ -277,10 +277,14 @@ async function createTicketChannel(
 						id: interaction.user.id,
 						allow: [PermissionsBitField.Flags.ViewChannel],
 					},
-					{
-						id: ticketConfig.staffRoleId,
-						allow: [PermissionsBitField.Flags.ViewChannel],
-					},
+					...(ticketConfig.staffRoleId
+						? [
+								{
+									id: ticketConfig.staffRoleId,
+									allow: [PermissionsBitField.Flags.ViewChannel],
+								},
+							]
+						: []),
 				],
 			});
 		}
@@ -297,7 +301,10 @@ async function createTicketChannel(
 		const openMessageRaw = ticketConfig.ticketOpenMessage || defaultMessage;
 		const openMessage = openMessageRaw
 			.replace('{user}', interaction.user.toString())
-			.replace('{staffRole}', `<@&${ticketConfig.staffRoleId}>`);
+			.replace(
+				'{staffRole}',
+				ticketConfig.staffRoleId ? `<@&${ticketConfig.staffRoleId}>` : '',
+			);
 
 		const accentColor = convertColor(kythiaConfig.bot.color, {
 			from: 'hex',

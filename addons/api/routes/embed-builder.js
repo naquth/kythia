@@ -21,12 +21,36 @@ const getModels = (c) => getContainer(c).models;
 // =============================================================================
 
 /**
+ * Validate and normalise an allowedMentions value coming from the API body.
+ * Accepts the full Discord AllowedMentionsOptions object or one of the
+ * shorthand strings: "everyone" | "roles" | "users" | "none".
+ * Returns a valid AllowedMentionsOptions, defaulting to full parse when absent.
+ * @param {string|object|undefined} raw
+ * @returns {{ parse: string[] }}
+ */
+function resolveAllowedMentions(raw) {
+	const SHORTHANDS = {
+		everyone: { parse: ['everyone', 'roles', 'users'] },
+		roles: { parse: ['roles'] },
+		users: { parse: ['users'] },
+		none: { parse: [] },
+	};
+	if (!raw) return { parse: ['everyone', 'roles', 'users'] };
+	if (typeof raw === 'string')
+		return SHORTHANDS[raw] ?? { parse: ['everyone', 'roles', 'users'] };
+	// Accept a raw object (e.g. { parse: ['roles'] } passed directly)
+	if (typeof raw === 'object' && Array.isArray(raw.parse)) return raw;
+	return { parse: ['everyone', 'roles', 'users'] };
+}
+
+/**
  * Send a classic embed from stored data JSON to a Discord channel.
  * @param {import('discord.js').TextChannel} channel
  * @param {object} data  Raw embed data object stored in DB
+ * @param {{ parse: string[] }} [allowedMentions]
  * @returns {Promise<import('discord.js').Message>}
  */
-function sendClassicEmbed(channel, data) {
+function sendClassicEmbed(channel, data, allowedMentions) {
 	const embed = new EmbedBuilder();
 	if (data.title) embed.setTitle(data.title.slice(0, 256));
 	if (data.description) embed.setDescription(data.description.slice(0, 4000));
@@ -51,7 +75,7 @@ function sendClassicEmbed(channel, data) {
 		});
 	if (Array.isArray(data.fields)) embed.addFields(data.fields);
 
-	return channel.send({ embeds: [embed] });
+	return channel.send({ embeds: [embed], allowedMentions });
 }
 
 /**
@@ -239,7 +263,7 @@ app.patch('/:id', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 	const body = await c.req.json();
 
-	const ALLOWED = ['name', 'mode', 'data'];
+	const ALLOWED = ['name', 'mode', 'data', 'allowedMentions'];
 
 	try {
 		const record = await EmbedModel.findByPk(id);
@@ -305,16 +329,16 @@ app.delete('/:id', async (c) => {
 
 // =============================================================================
 // POST /api/embed-builder/:id/send — send to a Discord channel
-// Body: { channelId }
+// Body: { channelId, allowedMentions? }
 // =============================================================================
 
 /**
  * POST /api/embed-builder/:id/send
  *
  * Posts the saved embed/components to a Discord channel.
- * On success, updates messageId + channelId in the DB.
+ * On success, updates messageId + channelId + allowedMentions in the DB.
  *
- * Body: { channelId }
+ * Body: { channelId, allowedMentions? }
  */
 app.post('/:id/send', async (c) => {
 	const client = getBot(c);
@@ -346,9 +370,18 @@ app.post('/:id/send', async (c) => {
 			);
 		}
 
+		// Resolve allowedMentions: body value takes priority over stored value
+		const allowedMentions = resolveAllowedMentions(
+			body.allowedMentions ?? record.allowedMentions,
+		);
+
 		let message;
 		if (record.mode === 'embed') {
-			message = await sendClassicEmbed(channel, record.data || {});
+			message = await sendClassicEmbed(
+				channel,
+				record.data || {},
+				allowedMentions,
+			);
 		} else {
 			const components = record.data?.components ?? [];
 			if (components.length === 0) {
@@ -363,12 +396,14 @@ app.post('/:id/send', async (c) => {
 			message = await channel.send({
 				components,
 				flags: MessageFlags.IsComponentsV2,
+				allowedMentions,
 			});
 		}
 
 		await record.update({
 			messageId: message.id,
 			channelId: channel.id,
+			allowedMentions,
 		});
 
 		return c.json(

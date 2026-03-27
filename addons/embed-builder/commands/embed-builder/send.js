@@ -28,6 +28,21 @@ module.exports = {
 				.setName('channel')
 				.setDescription('Target channel (defaults to current channel)')
 				.setRequired(false),
+		)
+		.addStringOption((o) =>
+			o
+				.setName('allowed_mentions')
+				.setDescription('Who can be mentioned in the embed (default: everyone)')
+				.setRequired(false)
+				.addChoices(
+					{
+						name: '🌐 Everyone (@everyone, @here, roles & users)',
+						value: 'everyone',
+					},
+					{ name: '👥 Roles only', value: 'roles' },
+					{ name: '👤 Users only', value: 'users' },
+					{ name: '🔕 No mentions', value: 'none' },
+				),
 		),
 
 	/**
@@ -43,6 +58,19 @@ module.exports = {
 		const embedId = parseInt(interaction.options.getString('id'), 10);
 		const targetChannel =
 			interaction.options.getChannel('channel') ?? interaction.channel;
+
+		// Resolve allowed_mentions option → Discord allowedMentions object
+		const mentionChoice =
+			interaction.options.getString('allowed_mentions') ?? 'everyone';
+		const allowedMentionsMap = {
+			everyone: { parse: ['everyone', 'roles', 'users'] },
+			roles: { parse: ['roles'] },
+			users: { parse: ['users'] },
+			none: { parse: [] },
+		};
+		const allowedMentions = allowedMentionsMap[mentionChoice] ?? {
+			parse: ['everyone', 'roles', 'users'],
+		};
 
 		const record = await EmbedModel.findOne({
 			where: { id: embedId, guildId: interaction.guild.id },
@@ -95,7 +123,10 @@ module.exports = {
 					embed.addFields(embedData.fields);
 				}
 
-				message = await targetChannel.send({ embeds: [embed] });
+				message = await targetChannel.send({
+					embeds: [embed],
+					allowedMentions,
+				});
 			} else {
 				// Components V2 — data.components is the raw components array
 				const componentsData = record.data?.components ?? [];
@@ -116,13 +147,15 @@ module.exports = {
 				message = await targetChannel.send({
 					components: componentsData,
 					flags: MessageFlags.IsComponentsV2,
+					allowedMentions,
 				});
 			}
 
-			// Save messageId and channelId to DB
+			// Save messageId, channelId, and allowedMentions preference to DB
 			await record.update({
 				messageId: message.id,
 				channelId: targetChannel.id,
+				allowedMentions,
 			});
 
 			return interaction.editReply({

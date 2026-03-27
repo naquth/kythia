@@ -61,7 +61,7 @@
 		"winston": "^3.17.0",
 		"winston-daily-rotate-file": "^5.0.0",
 		"ws": "^8.18.3",
-		"youtube-transcript": "^1.2.1"
+		"youtube-transcript": "1.2.1"
 	},
 	"devDependencies": {
 		"@babel/parser": "^7.28.5",

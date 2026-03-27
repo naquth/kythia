@@ -1,0 +1,23 @@
+/**
+ * @namespace: addons/booster/commands/_command.js
+ * @type: Command Group Definition
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const {
+	InteractionContextType,
+	PermissionFlagsBits,
+	SlashCommandBuilder,
+} = require('discord.js');
+
+module.exports = {
+	slashCommand: new SlashCommandBuilder()
+		.setName('booster')
+		.setDescription('🚀 Configure the server booster system')
+		.setContexts(InteractionContextType.Guild)
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+	guildOnly: true,
+	permissions: [PermissionFlagsBits.ManageGuild],
+};

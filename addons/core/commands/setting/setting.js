@@ -97,6 +97,129 @@ const command = new SlashCommandBuilder()
 	.setDescription('⚙️ Settings bot configuration')
 	.setContexts(InteractionContextType.Guild)
 	.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+
+	// language
+	.addSubcommandGroup((group) =>
+		group
+			.setName('language')
+			.setDescription('🌐 Language settings')
+			.addSubcommand((sub) =>
+				sub
+					.setName('set')
+					.setDescription('🌐 Set bot language')
+					.addStringOption((opt) =>
+						Array.isArray(availableLanguages) && availableLanguages.length > 0
+							? opt
+									.setName('lang')
+									.setDescription('Choose language')
+									.setRequired(true)
+									.addChoices(...availableLanguages)
+							: opt
+									.setName('lang')
+									.setDescription('Choose language')
+									.setRequired(true),
+					),
+			),
+	)
+
+	// server admin
+	// .addSubcommandGroup((group) =>
+	// 	group
+	// 		.setName('admin')
+	// 		.setDescription('🔒 Server admin settings')
+	// 		.addSubcommand((sub) =>
+	// 			sub
+	// 				.setName('edit')
+	// 				.setDescription('🔒 Add or remove admin')
+	// 				.addStringOption((opt) =>
+	// 					opt
+	// 						.setName('action')
+	// 						.setDescription('Add or remove')
+	// 						.setRequired(true)
+	// 						.addChoices(
+	// 							{ name: 'Add', value: 'add' },
+	// 							{ name: 'Remove', value: 'remove' },
+	// 						),
+	// 				)
+	// 				.addMentionableOption((opt) =>
+	// 					opt
+	// 						.setName('target')
+	// 						.setDescription('User or role admin')
+	// 						.setRequired(true),
+	// 				),
+	// 		)
+	// 		.addSubcommand((sub) =>
+	// 			sub.setName('admin-list').setDescription('View admin list'),
+	// 		),
+	// )
+
+	// raw
+	.addSubcommandGroup((group) =>
+		group
+			.setName('raw')
+			.setDescription('🧰 Advanced: set any ServerSetting field')
+			.addSubcommand((sub) =>
+				sub
+					.setName('set')
+					.setDescription('🧰 Set any field (admin only)')
+					.addStringOption((opt) =>
+						opt.setName('field').setDescription('Field name').setRequired(true),
+					)
+					.addStringOption((opt) =>
+						opt.setName('value').setDescription('Value').setRequired(true),
+					),
+			),
+	)
+
+	// view
+	.addSubcommand((sub) =>
+		sub.setName('view').setDescription('🔍 View all bot settings'),
+	)
+
+	// features
+	.addSubcommandGroup((group) => {
+		group
+			.setName('features')
+			.setDescription('🔄 Enable or disable a specific feature');
+
+		for (const [subcommandName, [, featureDisplayName]] of Object.entries(
+			featureMap,
+		)) {
+			group.addSubcommand((sub) =>
+				sub
+					.setName(subcommandName)
+					.setDescription(`Enable or disable the ${featureDisplayName} feature`)
+					.addStringOption(createToggleOption()),
+			);
+		}
+
+		return group;
+	})
+
+	// channels
+	.addSubcommandGroup((group) =>
+		group
+			.setName('channels')
+			.setDescription('📢 Misc channels settings')
+			.addSubcommand((sub) =>
+				sub
+					.setName('announcement')
+					.setDescription('📢 Set announcement channel')
+					.addChannelOption((opt) =>
+						opt.setName('channel').setDescription('Channel').setRequired(true),
+					),
+			)
+			.addSubcommand((sub) =>
+				sub
+					.setName('invite')
+					.setDescription('📢 Set invite log channel')
+					.addChannelOption((opt) =>
+						opt.setName('channel').setDescription('Channel').setRequired(true),
+					),
+			),
+	)
+
+	// stats
 	.addSubcommandGroup((group) =>
 		group
 			.setName('stats')
@@ -193,36 +316,7 @@ const command = new SlashCommandBuilder()
 			),
 	)
 
-	.addSubcommandGroup((group) =>
-		group
-			.setName('admin')
-			.setDescription('🔒 Bot admin settings')
-			.addSubcommand((sub) =>
-				sub
-					.setName('edit')
-					.setDescription('🔒 Add or remove admin')
-					.addStringOption((opt) =>
-						opt
-							.setName('action')
-							.setDescription('Add or remove')
-							.setRequired(true)
-							.addChoices(
-								{ name: 'Add', value: 'add' },
-								{ name: 'Remove', value: 'remove' },
-							),
-					)
-					.addMentionableOption((opt) =>
-						opt
-							.setName('target')
-							.setDescription('User or role admin')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub.setName('admin-list').setDescription('View admin list'),
-			),
-	)
-
+	// leveling
 	.addSubcommandGroup((group) =>
 		group
 			.setName('leveling')
@@ -289,176 +383,78 @@ const command = new SlashCommandBuilder()
 			),
 	)
 
-	.addSubcommandGroup((group) =>
-		group
-			.setName('language')
-			.setDescription('🌐 Language settings')
-			.addSubcommand((sub) =>
-				sub
-					.setName('set')
-					.setDescription('🌐 Set bot language')
-					.addStringOption((opt) =>
-						Array.isArray(availableLanguages) && availableLanguages.length > 0
-							? opt
-									.setName('lang')
-									.setDescription('Choose language')
-									.setRequired(true)
-									.addChoices(...availableLanguages)
-							: opt
-									.setName('lang')
-									.setDescription('Choose language')
-									.setRequired(true),
-					),
-			),
-	)
+	// testimony
+	// .addSubcommandGroup((group) =>
+	// 	group
+	// 		.setName('testimony')
+	// 		.setDescription('💬 Testimony system settings')
+	// 		.addSubcommand((sub) =>
+	// 			sub
+	// 				.setName('testimony-channel')
+	// 				.setDescription('💬 Set channel to send testimonies')
+	// 				.addChannelOption((opt) =>
+	// 					opt
+	// 						.setName('channel')
+	// 						.setDescription('Testimony channel')
+	// 						.setRequired(true),
+	// 				),
+	// 		)
+	// 		.addSubcommand((sub) =>
+	// 			sub
+	// 				.setName('feedback-channel')
+	// 				.setDescription('💬 Set channel for testimony feedback')
+	// 				.addChannelOption((opt) =>
+	// 					opt
+	// 						.setName('channel')
+	// 						.setDescription('Testimony feedback channel')
+	// 						.setRequired(true),
+	// 				),
+	// 		)
+	// 		.addSubcommand((sub) =>
+	// 			sub
+	// 				.setName('count-channel')
+	// 				.setDescription(
+	// 					'💬 Set channel to display testimony count (name will be changed automatically)',
+	// 				)
+	// 				.addChannelOption((opt) =>
+	// 					opt
+	// 						.setName('channel')
+	// 						.setDescription('Testimony counter channel')
+	// 						.setRequired(true),
+	// 				),
+	// 		)
+	// 		.addSubcommand((sub) =>
+	// 			sub
+	// 				.setName('count-format')
+	// 				.setDescription('💬 Set channel name format for testimony counter')
+	// 				.addStringOption((opt) =>
+	// 					opt
+	// 						.setName('format')
+	// 						.setDescription(
+	// 							'Channel name format, use {count} for the number. Example: testimony-{count}',
+	// 						)
+	// 						.setRequired(true),
+	// 				),
+	// 		)
+	// 		.addSubcommand((sub) =>
+	// 			sub
+	// 				.setName('reset-count')
+	// 				.setDescription('💬 Reset testimony count to 0'),
+	// 		)
+	// 		.addSubcommand((sub) =>
+	// 			sub
+	// 				.setName('count')
+	// 				.setDescription('💬 Change testimony count')
+	// 				.addIntegerOption((opt) =>
+	// 					opt
+	// 						.setName('count')
+	// 						.setDescription('New testimony count')
+	// 						.setRequired(true),
+	// 				),
+	// 		),
+	// )
 
-	.addSubcommandGroup((group) =>
-		group
-			.setName('testimony')
-			.setDescription('💬 Testimony system settings')
-			.addSubcommand((sub) =>
-				sub
-					.setName('testimony-channel')
-					.setDescription('💬 Set channel to send testimonies')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Testimony channel')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('feedback-channel')
-					.setDescription('💬 Set channel for testimony feedback')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Testimony feedback channel')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('count-channel')
-					.setDescription(
-						'💬 Set channel to display testimony count (name will be changed automatically)',
-					)
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Testimony counter channel')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('count-format')
-					.setDescription('💬 Set channel name format for testimony counter')
-					.addStringOption((opt) =>
-						opt
-							.setName('format')
-							.setDescription(
-								'Channel name format, use {count} for the number. Example: testimony-{count}',
-							)
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('reset-count')
-					.setDescription('💬 Reset testimony count to 0'),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('count')
-					.setDescription('💬 Change testimony count')
-					.addIntegerOption((opt) =>
-						opt
-							.setName('count')
-							.setDescription('New testimony count')
-							.setRequired(true),
-					),
-			),
-	)
-
-	.addSubcommandGroup((group) =>
-		group
-			.setName('ai')
-			.setDescription('🤖 AI settings')
-			.addSubcommand((sub) =>
-				sub
-					.setName('add-channel')
-					.setDescription('🤖 Allow a channel to use AI')
-					.addChannelOption((opt) =>
-						opt.setName('channel').setDescription('Channel').setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('remove-channel')
-					.setDescription('🤖 Disallow a channel from using AI')
-					.addChannelOption((opt) =>
-						opt.setName('channel').setDescription('Channel').setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub.setName('list').setDescription('🤖 List AI-enabled channels'),
-			),
-	)
-
-	.addSubcommandGroup((group) =>
-		group
-			.setName('channels')
-			.setDescription('📢 Misc channels settings')
-			.addSubcommand((sub) =>
-				sub
-					.setName('announcement')
-					.setDescription('📢 Set announcement channel')
-					.addChannelOption((opt) =>
-						opt.setName('channel').setDescription('Channel').setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('invite')
-					.setDescription('📢 Set invite log channel')
-					.addChannelOption((opt) =>
-						opt.setName('channel').setDescription('Channel').setRequired(true),
-					),
-			),
-	)
-
-	.addSubcommandGroup((group) =>
-		group
-			.setName('booster')
-			.setDescription('🚀 Booster log settings')
-			.addSubcommand((sub) =>
-				sub
-					.setName('channel')
-					.setDescription('🚀 Set boost log channel')
-					.addChannelOption((opt) =>
-						opt
-							.setName('channel')
-							.setDescription('Channel for boost logs')
-							.setRequired(true),
-					),
-			)
-			.addSubcommand((sub) =>
-				sub
-					.setName('message')
-					.setDescription('🚀 Set boost log message')
-					.addStringOption((opt) =>
-						opt
-							.setName('message')
-							.setDescription(
-								'Custom message for boost logs (use placeholders like {username}, {displayName})',
-							)
-							.setRequired(true),
-					),
-			),
-	)
-
+	// streak settings
 	.addSubcommandGroup((group) =>
 		group
 			.setName('streak-settings')
@@ -490,23 +486,7 @@ const command = new SlashCommandBuilder()
 			),
 	)
 
-	.addSubcommandGroup((group) =>
-		group
-			.setName('raw')
-			.setDescription('🧰 Advanced: set any ServerSetting field')
-			.addSubcommand((sub) =>
-				sub
-					.setName('set')
-					.setDescription('🧰 Set any field (admin only)')
-					.addStringOption((opt) =>
-						opt.setName('field').setDescription('Field name').setRequired(true),
-					)
-					.addStringOption((opt) =>
-						opt.setName('value').setDescription('Value').setRequired(true),
-					),
-			),
-	)
-
+	// streak
 	.addSubcommandGroup((group) =>
 		group
 			.setName('streak')
@@ -538,30 +518,8 @@ const command = new SlashCommandBuilder()
 							.setRequired(true),
 					),
 			),
-	)
+	);
 
-	.addSubcommand((sub) =>
-		sub.setName('view').setDescription('🔍 View all bot settings'),
-	)
-
-	.addSubcommandGroup((group) => {
-		group
-			.setName('features')
-			.setDescription('🔄 Enable or disable a specific feature');
-
-		for (const [subcommandName, [, featureDisplayName]] of Object.entries(
-			featureMap,
-		)) {
-			group.addSubcommand((sub) =>
-				sub
-					.setName(subcommandName)
-					.setDescription(`Enable or disable the ${featureDisplayName} feature`)
-					.addStringOption(createToggleOption()),
-			);
-		}
-
-		return group;
-	});
 module.exports = {
 	slashCommand: command,
 	permissions: PermissionFlagsBits.ManageGuild,
@@ -592,6 +550,11 @@ module.exports = {
 
 		await interaction.respond(filtered.slice(0, 25));
 	},
+
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, kythiaConfig, helpers, models, logger } = container;
 		const { getChannelSafe, simpleContainer } = helpers.discord;
@@ -1725,104 +1688,6 @@ module.exports = {
 				}
 				break;
 			}
-			case 'booster': {
-				switch (sub) {
-					case 'channel': {
-						serverSetting.boostLogChannelId = channel.id;
-						await serverSetting.save();
-						const components = await simpleContainer(
-							interaction,
-							`✅ Boost log channel has been set to <#${channel.id}>`,
-							{ color: 'Green' },
-						);
-						return interaction.editReply({
-							components,
-							flags: MessageFlags.IsComponentsV2,
-						});
-					}
-					case 'message': {
-						const message = interaction.options.getString('message');
-						serverSetting.boostLogMessage = message;
-						await serverSetting.save();
-						const components = await simpleContainer(
-							interaction,
-							`✅ Boost log message has been updated!\n\n**Preview:**\n${message}`,
-							{ color: 'Green' },
-						);
-						return interaction.editReply({
-							components,
-							flags: MessageFlags.IsComponentsV2,
-						});
-					}
-				}
-				break;
-			}
-			case 'ai': {
-				if (sub === 'add-channel') {
-					const aiChannelIds = ensureArray(serverSetting.aiChannelIds);
-					if (!aiChannelIds.includes(channel.id)) aiChannelIds.push(channel.id);
-					serverSetting.aiChannelIds = aiChannelIds;
-					serverSetting.changed('aiChannelIds', true);
-					await serverSetting.save();
-					const components = await simpleContainer(
-						interaction,
-						await t(interaction, 'core.setting.setting.ai.channel.add', {
-							channel: `<#${channel.id}>`,
-						}),
-						{ color: 'Green' },
-					);
-					return interaction.editReply({
-						components,
-						flags: MessageFlags.IsComponentsV2,
-					});
-				}
-				if (sub === 'remove-channel') {
-					let aiChannelIds = ensureArray(serverSetting.aiChannelIds);
-					aiChannelIds = aiChannelIds.filter((id) => id !== channel.id);
-					serverSetting.aiChannelIds = aiChannelIds;
-					serverSetting.changed('aiChannelIds', true);
-					await serverSetting.save();
-					const components = await simpleContainer(
-						interaction,
-						await t(interaction, 'core.setting.setting.ai.channel.remove', {
-							channel: `<#${channel.id}>`,
-						}),
-						{ color: 'Green' },
-					);
-					return interaction.editReply({
-						components,
-						flags: MessageFlags.IsComponentsV2,
-					});
-				}
-				if (sub === 'list') {
-					const aiChannelIds = ensureArray(serverSetting.aiChannelIds);
-					if (aiChannelIds.length === 0) {
-						const components = await simpleContainer(
-							interaction,
-							await t(interaction, 'core.setting.setting.ai.channel.empty'),
-							{ color: 'Yellow' },
-						);
-						return interaction.editReply({
-							components,
-							flags: MessageFlags.IsComponentsV2,
-						});
-					}
-					const list = aiChannelIds.map((id) => `<#${id}>`).join('\n');
-					const components = await simpleContainer(
-						interaction,
-						await t(interaction, 'core.setting.setting.ai.channel.list', {
-							list,
-						}),
-						{ color: kythiaConfig.bot.color },
-					);
-					return interaction.editReply({
-						components,
-						flags: MessageFlags.IsComponentsV2,
-					});
-				}
-				break;
-			}
-
 			case 'raw': {
 				if (sub === 'set') {
 					const field = interaction.options.getString('field');

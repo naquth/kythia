@@ -1,0 +1,8 @@
+{
+	"name": "Booster",
+	"featureName": "Booster",
+	"featureFlag": "boosterOn",
+	"version": "1.0.0",
+	"description": "Server boost messages with visually customized banner cards.",
+	"author": "kenndeclouv"
+}

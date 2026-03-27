@@ -4365,6 +4365,7 @@ All endpoints require a bearer token.
 | `name` | `string` | Human-readable label (unique per guild) |
 | `mode` | `string` | `"embed"` or `"components_v2"` |
 | `data` | `object` | Full embed payload (see below) |
+| `allowedMentions` | `object \| null` | Stored `allowedMentions` object (e.g. `{ "parse": [] }`). `null` = default (everyone) |
 | `messageId` | `string \| null` | Discord message ID — set after `/send` |
 | `channelId` | `string \| null` | Discord channel ID — set after `/send` |
 | `createdAt` | `string` | ISO 8601 creation timestamp |
@@ -4474,6 +4475,7 @@ Update a saved embed's `name`, `mode`, and/or `data`. After saving, if the embed
 | `name` | `string` | New human label |
 | `mode` | `string` | New mode: `"embed"` or `"components_v2"` |
 | `data` | `object` | Full replacement embed/components JSON |
+| `allowedMentions` | `string \| object` | Shorthand (`"everyone"`, `"roles"`, `"users"`, `"none"`) or a raw Discord [`AllowedMentionsOptions`](https://discord.com/developers/docs/resources/message#allowed-mentions-object) object (e.g. `{ "parse": ["roles"] }`) |
 
 **Response:**
 ```json
@@ -4520,6 +4522,15 @@ Posts the saved embed to a Discord channel. On success, saves `messageId` and `c
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `channelId` | `string` | ✅ | Target Discord channel ID |
+| `allowedMentions` | `string \| object` | ❌ | Who can be pinged. Shorthand: `"everyone"` (default), `"roles"`, `"users"`, `"none"`. Or a raw [`AllowedMentionsOptions`](https://discord.com/developers/docs/resources/message#allowed-mentions-object) object. If omitted, falls back to the stored value on the record, then defaults to `everyone`. |
+
+> **Mention shorthands:**
+> | Value | Equivalent `parse` array |
+> |---|---|
+> | `"everyone"` | `["everyone", "roles", "users"]` |
+> | `"roles"` | `["roles"]` |
+> | `"users"` | `["users"]` |
+> | `"none"` | `[]` (no pings) |
 
 **Response (201):**
 ```json
@@ -4579,10 +4590,10 @@ curl -X PATCH http://localhost:3000/api/embed-builder/1 \
   -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
   -d '{"data":{"title":"Welcome!","description":"Glad to be here.","color":5765006}}'
 
-# 3. Send to Discord for the first time — stores messageId + channelId
+# 3. Send to Discord — allowedMentions defaults to "everyone" if not supplied
 curl -X POST http://localhost:3000/api/embed-builder/1/send \
   -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
-  -d '{"channelId":"789"}'
+  -d '{"channelId":"789","allowedMentions":"none"}'
 # → { "success": true, "messageId": "...", "messageUrl": "https://discord.com/channels/..." }
 
 # 4. User updates the design → PATCH then resend (edits the existing message in-place)

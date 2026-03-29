@@ -893,6 +893,21 @@ class MusicHandlers {
 	 * @returns {import('discord.js').InteractionReplyOptions}
 	 */
 	async _createQueueEmbed(player, page = 1, interaction) {
+		const nowPlaying = player.currentTrack;
+
+		if (!nowPlaying) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.helpers.handlers.music.empty'),
+				{ color: this.config.bot.color },
+			);
+			return {
+				components,
+				flags: MessageFlags.IsComponentsV2,
+				fetchReply: true,
+			};
+		}
+
 		const itemsPerPage = 10;
 		const totalPages = Math.ceil(player.queue.length / itemsPerPage) || 1;
 		page = Math.max(1, Math.min(page, totalPages));
@@ -912,8 +927,6 @@ class MusicHandlers {
 					}) \`${formatTrackDuration(track.info.length)}\``,
 			)
 			.join('\n');
-
-		const nowPlaying = player.currentTrack;
 
 		const buttons = new ActionRowBuilder().addComponents(
 			new ButtonBuilder()

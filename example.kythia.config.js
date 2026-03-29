@@ -277,6 +277,9 @@ function loadKythiaConfig() {
 			birthday: {
 				active: true,
 			},
+			booster: {
+				active: true,
+			},
 			checklist: {
 				active: true,
 			},
@@ -477,20 +480,11 @@ function loadKythiaConfig() {
 				tiktokClientKey: process.env.TIKTOK_CLIENT_KEY,
 				tiktokClientSecret: process.env.TIKTOK_CLIENT_SECRET,
 			},
-			store: {
-				active: false,
-			},
 			streak: {
-				active: true,
-			},
-			suggestion: {
 				active: true,
 			},
 			tempvoice: {
 				active: true,
-			},
-			testimony: {
-				active: false,
 			},
 			ticket: {
 				active: true,

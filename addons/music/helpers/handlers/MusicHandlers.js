@@ -679,6 +679,12 @@ class MusicHandlers {
 	 * @param {Map} guildStates - The guild states map.
 	 */
 	async handleHistory(interaction, _player, guildStates) {
+		try {
+			if (!interaction.deferred && !interaction.replied) {
+				await interaction.deferReply().catch(() => {});
+			}
+		} catch (e) {}
+
 		const guildId = interaction.guildId;
 		const guildState = guildStates.get(guildId);
 
@@ -692,10 +698,12 @@ class MusicHandlers {
 				await this.t(interaction, 'music.helpers.handlers.music.history.empty'),
 				{ color: 'Red' },
 			);
-			return interaction.reply({
-				components,
-				flags: MessageFlags.IsComponentsV2,
-			});
+			return interaction
+				.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				})
+				.catch(() => {});
 		}
 
 		const history = guildState.previousTracks;
@@ -706,7 +714,10 @@ class MusicHandlers {
 			interaction,
 		);
 
-		const message = await interaction.reply(historyMessageOptions);
+		const message = await interaction
+			.editReply(historyMessageOptions)
+			.catch(() => null);
+		if (!message) return;
 
 		const collector = message.createMessageComponentCollector({
 			filter: (i) => i.user.id === interaction.user.id,
@@ -731,11 +742,11 @@ class MusicHandlers {
 				interaction,
 			);
 
-			await buttonInteraction.update(updatedMessageOptions);
+			await buttonInteraction.update(updatedMessageOptions).catch(() => {});
 		});
 
 		collector.on('end', async () => {
-			if (message.editable) {
+			if (message && message.editable) {
 				const finalState = await this._createHistoryEmbed(
 					history,
 					1,
@@ -995,6 +1006,12 @@ class MusicHandlers {
 	 * 📜 Handles the 'queue' subcommand and its button interactions.
 	 */
 	async handleQueue(interaction, player) {
+		try {
+			if (!interaction.deferred && !interaction.replied) {
+				await interaction.deferReply().catch(() => {});
+			}
+		} catch (e) {}
+
 		const nowPlaying = player.currentTrack;
 
 		if (!nowPlaying) {
@@ -1003,14 +1020,16 @@ class MusicHandlers {
 				await this.t(interaction, 'music.helpers.handlers.music.empty'),
 				{ color: this.config.bot.color },
 			);
-			return interaction.reply({
-				components,
-				flags: MessageFlags.IsComponentsV2,
-			});
+			return interaction
+				.editReply({
+					components,
+					flags: MessageFlags.IsComponentsV2,
+				})
+				.catch(() => {});
 		}
 
 		let initialPage;
-		if (interaction.isChatInputCommand()) {
+		if (interaction.isChatInputCommand && interaction.isChatInputCommand()) {
 			initialPage = interaction.options.getInteger('page') || 1;
 		} else {
 			initialPage = 1;
@@ -1021,7 +1040,10 @@ class MusicHandlers {
 			interaction,
 		);
 
-		const message = await interaction.reply(queueMessageOptions);
+		const message = await interaction
+			.editReply(queueMessageOptions)
+			.catch(() => null);
+		if (!message) return;
 
 		const collector = message.createMessageComponentCollector({
 			filter: (i) => i.user.id === interaction.user.id,
@@ -1046,11 +1068,11 @@ class MusicHandlers {
 				interaction,
 			);
 
-			await buttonInteraction.update(updatedMessageOptions);
+			await buttonInteraction.update(updatedMessageOptions).catch(() => {});
 		});
 
 		collector.on('end', async () => {
-			if (message.editable) {
+			if (message && message.editable) {
 				const finalState = await this._createQueueEmbed(player, 1, interaction);
 				finalState.components = [];
 				await message.edit(finalState).catch(() => {});

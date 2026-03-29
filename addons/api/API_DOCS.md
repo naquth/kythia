@@ -54,6 +54,7 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [Birthday API (`/api/birthday`)](#birthday-api-apibirthday)
 - [Tempvoice API (`/api/tempvoice`)](#tempvoice-api-apitempvoice)
 - [Image API (`/api/image`)](#image-api-apiimage)
+- [Booster API (`/api/booster`)](#booster-api-apibooster)
 - [Welcomer API (`/api/welcome`)](#welcomer-api-apiwelcome)
 - [POST /api/webhooks/topgg](#post-apiwebhookstopgg)
 - [POST /api/webhooks/license-created](#post-apiwebhookslicense-created)
@@ -1836,6 +1837,86 @@ Remove a milestone by its invite count threshold.
 **Error (404):** `{ "success": false, "error": "No milestone found at that invite count" }`
 
 
+
+---
+
+## Booster API (`/api/booster`)
+
+Manages server boosting message settings for a guild. All settings are stored in the dedicated `BoosterSetting` model (`booster_settings` table).
+
+**Authentication:** Bearer token required for all routes.
+
+---
+
+### `GET /api/booster/:guildId`
+
+Returns all booster-related settings for the specified guild.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "boosterOn": false,
+    "boosterChannelId": null,
+    "boosterEmbedText": null,
+    "boosterEmbedColor": null,
+    "boosterBannerWidth": null,
+    "boosterBannerHeight": null,
+    "boosterBackgroundUrl": null,
+    "boosterForegroundUrl": null,
+    "boosterOverlayColor": null,
+    "boosterAvatarEnabled": true,
+    "boosterAvatarSize": null,
+    "boosterAvatarShape": null,
+    "boosterAvatarYOffset": null,
+    "boosterAvatarBorderWidth": null,
+    "boosterAvatarBorderColor": null,
+    "boosterMainTextContent": null,
+    "boosterMainTextFontFamily": null,
+    "boosterMainTextFontWeight": null,
+    "boosterMainTextColor": null,
+    "boosterMainTextYOffset": null,
+    "boosterSubTextContent": null,
+    "boosterSubTextColor": null,
+    "boosterSubTextYOffset": null,
+    "boosterBorderColor": null,
+    "boosterBorderWidth": null,
+    "boosterShadowColor": null,
+    "boosterLayout": null
+  }
+}
+```
+
+---
+
+### `PATCH /api/booster/:guildId`
+
+Partially updates booster settings for a guild.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Request Body:**
+
+A JSON object containing any of the fields listed above (e.g., `boosterOn`, `boosterChannelId`). All fields are optional.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { /* updated settings object */ }
+}
+```
 
 ---
 

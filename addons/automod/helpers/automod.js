@@ -200,7 +200,7 @@ async function checkSpam(message, setting) {
 		for (const msg of messagesToDelete) {
 			if (canDeleteMessage(msg)) {
 				msg.delete().catch((err) => {
-					if (err.code !== 50013) {
+					if (err.code !== 50013 && err.code !== 10008) {
 						logger.error(
 							`Failed to delete spam message: ${err.message || err}`,
 							{
@@ -269,7 +269,7 @@ async function checkAllCaps(message, setting) {
 		sendLogsWarning(message, reason, message.content, setting);
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
-				if (err.code !== 50013)
+				if (err.code !== 50013 && err.code !== 10008)
 					logger.error(
 						`Failed to delete ALL CAPS message: ${err.message || err}`,
 						{
@@ -313,7 +313,7 @@ async function checkEmojiSpam(message, setting) {
 
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
-				if (err.code !== 50013)
+				if (err.code !== 50013 && err.code !== 10008)
 					logger.error(
 						`Failed to delete emoji spam message: ${err.message || err}`,
 						{
@@ -351,7 +351,7 @@ async function checkZalgo(message, setting) {
 
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
-				if (err.code !== 50013)
+				if (err.code !== 50013 && err.code !== 10008)
 					logger.error(
 						`Failed to delete zalgo message: ${err.message || err}`,
 						{
@@ -448,7 +448,7 @@ async function checkMentions(message, setting) {
 		sendLogsWarning(message, reason, message.content, setting);
 		if (canDeleteMessage(message)) {
 			message.delete().catch((err) => {
-				if (err.code !== 50013) {
+				if (err.code !== 50013 && err.code !== 10008) {
 					logger.error(
 						`Failed to delete mention spam message: ${err.message || err}`,
 						{
@@ -673,7 +673,7 @@ async function checkLinks(message, setting) {
 		await sendLogsWarning(message, reason, message.content, setting);
 		if (canDeleteMessage(message)) {
 			return message.delete().catch((err) => {
-				if (err.code !== 50013) {
+				if (err.code !== 50013 && err.code !== 10008) {
 					logger.error(
 						`Failed to delete invite message: ${err.message || err}`,
 						{
@@ -700,7 +700,7 @@ async function checkLinks(message, setting) {
 		await sendLogsWarning(message, reason, message.content, setting);
 		if (canDeleteMessage(message)) {
 			return message.delete().catch((err) => {
-				if (err.code !== 50013) {
+				if (err.code !== 50013 && err.code !== 10008) {
 					logger.error(`Failed to delete link message: ${err.message || err}`, {
 						label: 'automod',
 					});

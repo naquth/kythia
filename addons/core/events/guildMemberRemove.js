@@ -151,6 +151,7 @@ module.exports = async (bot, member) => {
 				allowedMentions: { parse: [] },
 			});
 		} catch (err) {
+			if (err.code === 50001 || err.code === 50013) return;
 			logger.error(`Error: ${err.message || err}`, {
 				label: 'guildMemberRemove',
 			});

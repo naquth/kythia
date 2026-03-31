@@ -33,9 +33,10 @@ module.exports = {
 	 * @param {KythiaDI.Container} container
 	 */
 	async execute(interaction, container) {
-		const { t, helpers, kythiaConfig } = container;
+		const { t, helpers, models, kythiaConfig } = container;
 		const { createContainer, simpleContainer, getTextChannelSafe } =
 			helpers.discord;
+		const { ServerSetting } = models;
 
 		await interaction.deferReply();
 
@@ -56,7 +57,10 @@ module.exports = {
 				thumbnail: user.displayAvatarURL(),
 			});
 
-			const modLogChannelId = await kythiaConfig.channels.modlog;
+			const setting = await ServerSetting.getCache({
+				guildId: interaction.guild.id,
+			});
+			const modLogChannelId = setting.modLogChannelId;
 			const modLogChannel = await getTextChannelSafe(
 				interaction.guild,
 				modLogChannelId,

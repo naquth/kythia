@@ -36,7 +36,7 @@ module.exports = {
 		const { t, helpers, models, kythiaConfig } = container;
 		const { createContainer, simpleContainer, getTextChannelSafe } =
 			helpers.discord;
-		const { User } = models;
+		const { User, ServerSetting } = models;
 
 		await interaction.deferReply();
 
@@ -85,7 +85,10 @@ module.exports = {
 				await targetUser.send({ components: dmReply });
 			} catch (_) {}
 
-			const modLogChannelId = await kythiaConfig.channels.modlog;
+			const setting = await ServerSetting.getCache({
+				guildId: interaction.guild.id,
+			});
+			const modLogChannelId = setting.modLogChannelId;
 			const modLogChannel = await getTextChannelSafe(
 				interaction.guild,
 				modLogChannelId,

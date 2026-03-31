@@ -132,7 +132,7 @@ function loadKythiaConfig() {
 			globalCommandCooldown: 5,
 
 			// minimum members required to stay in a server (0 = disabled)
-			minMembers: 10,
+			minMembers: 0,
 
 			// Bot language
 			language: 'en',

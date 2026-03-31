@@ -427,6 +427,98 @@ async function createMockEventArgs(eventName, interaction, type = 'default') {
 			return [auditLog, guild];
 		}
 
+		// Entitlements
+		case Events.EntitlementCreate:
+		case Events.EntitlementDelete:
+		case Events.EntitlementUpdate: {
+			const entitlement = {
+				id: '123456789',
+				guildId: guild.id,
+				userId: user.id,
+			};
+			return eventName === Events.EntitlementUpdate
+				? [entitlement, entitlement]
+				: [entitlement];
+		}
+
+		// Soundboard
+		case Events.GuildSoundboardSoundCreate:
+		case Events.GuildSoundboardSoundDelete:
+		case Events.GuildSoundboardSoundUpdate: {
+			const sound = { id: '123456789', name: 'Test Sound', guildId: guild.id };
+			return eventName === Events.GuildSoundboardSoundUpdate
+				? [sound, sound]
+				: [sound];
+		}
+		case Events.GuildSoundboardSoundsUpdate:
+		case Events.SoundboardSounds:
+			return [new Collection(), guild];
+
+		// Poll Votes
+		case Events.MessagePollVoteAdd:
+		case Events.MessagePollVoteRemove: {
+			const pollAnswer = { id: 1, text: 'Option 1' };
+			return [pollAnswer, user.id];
+		}
+
+		// Shard Events
+		case Events.ShardDisconnect:
+			return [{ code: 1000, reason: 'Normal' }, 0];
+		case Events.ShardError:
+			return [new Error('Shard Error'), 0];
+		case Events.ShardReady:
+			return [0, new Set()];
+		case Events.ShardReconnecting:
+			return [0];
+		case Events.ShardResume:
+			return [0, 10];
+		case Events.CacheSweep:
+			return ['Swept cache for testing'];
+
+		// Subscriptions
+		case Events.SubscriptionCreate:
+		case Events.SubscriptionDelete:
+		case Events.SubscriptionUpdate: {
+			const subscription = {
+				id: '123456789',
+				userId: user.id,
+				skuId: '987654321',
+			};
+			return eventName === Events.SubscriptionUpdate
+				? [subscription, subscription]
+				: [subscription];
+		}
+
+		// Voice
+		case Events.VoiceChannelEffectSend:
+			return [
+				{
+					channelId: channel.id,
+					guildId: guild.id,
+					emoji: { name: '🎉' },
+					userId: user.id,
+				},
+			];
+		case Events.VoiceServerUpdate:
+			return [
+				{
+					token: 'test_token',
+					guildId: guild.id,
+					endpoint: 'test.endpoint.discord.gg',
+				},
+			];
+
+		// Other App / Integrations
+		case Events.ApplicationCommandPermissionsUpdate:
+			return [
+				{
+					id: '123456789',
+					applicationId: client.user.id,
+					guildId: guild.id,
+					permissions: [],
+				},
+			];
+
 		// Fallback for unsupported events
 		default:
 			logger.warn(

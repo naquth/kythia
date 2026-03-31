@@ -23,60 +23,61 @@ module.exports = {
 				.setName('event')
 				.setDescription('The event to trigger')
 				.setRequired(true)
-				.addChoices(
-					{ name: 'GuildMemberAdd', value: Events.GuildMemberAdd },
-					{ name: 'GuildMemberRemove', value: Events.GuildMemberRemove },
-					{ name: 'GuildMemberUpdate', value: Events.GuildMemberUpdate },
-					{ name: 'MessageCreate', value: Events.MessageCreate },
-					{ name: 'MessageDelete', value: Events.MessageDelete },
-					{ name: 'MessageUpdate', value: Events.MessageUpdate },
-					{ name: 'ChannelCreate', value: Events.ChannelCreate },
-					{ name: 'ChannelDelete', value: Events.ChannelDelete },
-					{ name: 'ChannelUpdate', value: Events.ChannelUpdate },
-					{ name: 'GuildBanAdd', value: Events.GuildBanAdd },
-					{ name: 'GuildBanRemove', value: Events.GuildBanRemove },
-					{ name: 'GuildUpdate', value: Events.GuildUpdate },
-					{ name: 'RoleCreate', value: Events.GuildRoleCreate },
-					{ name: 'RoleDelete', value: Events.GuildRoleDelete },
-					{ name: 'RoleUpdate', value: Events.GuildRoleUpdate },
-					{ name: 'VoiceStateUpdate', value: Events.VoiceStateUpdate },
-					{ name: 'PresenceUpdate', value: Events.PresenceUpdate },
-					{ name: 'InviteCreate', value: Events.InviteCreate },
-					{ name: 'InviteDelete', value: Events.InviteDelete },
-					{ name: 'EmojiCreate', value: Events.GuildEmojiCreate },
-					{ name: 'EmojiUpdate', value: Events.GuildEmojiUpdate },
-					{ name: 'StickerCreate', value: Events.GuildStickerCreate },
-					{ name: 'WebhooksUpdate', value: Events.WebhooksUpdate },
-				),
+				.setAutocomplete(true),
 		)
 		.addStringOption((option) =>
 			option
 				.setName('type')
 				.setDescription('The specific scenario to test')
 				.setRequired(false)
-				.addChoices(
-					{ name: 'Default', value: 'default' },
-					{ name: 'Boost', value: 'boost' },
-					{ name: 'Unboost', value: 'unboost' },
-					{ name: 'Nickname Change', value: 'nickname' },
-					{ name: 'Role Change', value: 'role-change' },
-					{ name: 'Name Change', value: 'name-change' },
-					{ name: 'Topic Change', value: 'topic-change' },
-					{ name: 'NSFW Toggle', value: 'nsfw-toggle' },
-					{ name: 'Voice Join', value: 'join' },
-					{ name: 'Voice Leave', value: 'leave' },
-					{ name: 'Voice Mute', value: 'mute' },
-					{ name: 'Voice Unmute', value: 'unmute' },
-					{ name: 'Status: Online', value: 'online' },
-					{ name: 'Status: Idle', value: 'idle' },
-					{ name: 'Status: DND', value: 'dnd' },
-					{ name: 'Status: Offline', value: 'offline' },
-				),
+				.setAutocomplete(true),
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
 		.setContexts(InteractionContextType.Guild),
 	ownerOnly: true,
 	mainGuildOnly: true,
+
+	/**
+	 * @param {import('discord.js').AutocompleteInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
+	async autocomplete(interaction, container) {
+		try {
+			const focused = interaction.options.getFocused(true);
+
+			if (focused.name === 'event') {
+				const choices = Object.entries(Events).map(([key, value]) => ({
+					name: key,
+					value: value,
+				}));
+				const filtered = choices
+					.filter(
+						(choice) =>
+							choice.name.toLowerCase().includes(focused.value.toLowerCase()) ||
+							choice.value.toLowerCase().includes(focused.value.toLowerCase()),
+					)
+					.slice(0, 25);
+				await interaction.respond(filtered);
+			} else if (focused.name === 'type') {
+				const eventName = interaction.options.getString('event') || '';
+				const { getEventScenarios } = require('../../helpers/events');
+				const scenarios = getEventScenarios(eventName);
+				const filtered = scenarios
+					.filter((choice) =>
+						choice.toLowerCase().includes(focused.value.toLowerCase()),
+					)
+					.slice(0, 25);
+				await interaction.respond(
+					filtered.map((choice) => ({ name: choice, value: choice })),
+				);
+			}
+		} catch (err) {
+			container.logger.warn(
+				`Autocomplete error in testevent: ${err.message || err}`,
+				{ label: 'core:testevent:autocomplete' },
+			);
+		}
+	},
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

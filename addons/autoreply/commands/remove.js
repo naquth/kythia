@@ -43,7 +43,10 @@ module.exports = {
 
 		await interaction.respond(
 			choices.map((choice) => ({
-				name: choice.trigger,
+				name:
+					choice.trigger.length > 100
+						? choice.trigger.slice(0, 100)
+						: choice.trigger,
 				value: `id:${choice.id}`,
 			})),
 		);

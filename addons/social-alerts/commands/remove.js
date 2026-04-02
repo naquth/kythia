@@ -41,10 +41,13 @@ module.exports = {
 			const platformEmoji = (platform) => (platform === 'tiktok' ? '🎵' : '📺');
 
 			await interaction.respond(
-				filtered.slice(0, 25).map((s) => ({
-					name: `${platformEmoji(s.platform)} ${s.youtubeChannelName}`,
-					value: s.id.toString(),
-				})),
+				filtered.slice(0, 25).map((s) => {
+					const name = `${platformEmoji(s.platform)} ${s.youtubeChannelName}`;
+					return {
+						name: name.length > 100 ? name.slice(0, 100) : name,
+						value: s.id.toString(),
+					};
+				}),
 			);
 		} catch {
 			await interaction.respond([]);

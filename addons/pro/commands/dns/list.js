@@ -49,8 +49,14 @@ module.exports = {
 
 		await interaction.respond(
 			filtered.map((subdomain) => ({
-				name: subdomain.name,
-				value: subdomain.name,
+				name:
+					subdomain.name.length > 100
+						? subdomain.name.slice(0, 100)
+						: subdomain.name,
+				value:
+					subdomain.name.length > 100
+						? subdomain.name.slice(0, 100)
+						: subdomain.name,
 			})),
 		);
 	},

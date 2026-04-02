@@ -42,10 +42,15 @@ module.exports = {
 			interaction.options.getFocused(true)?.name === 'template'
 		) {
 			const embeddedTemplates = Object.entries(EMBEDDED)
-				.map(([key, tpl]) => ({
-					name: tpl?.meta?.display ? `${tpl.meta.display} (${key})` : key,
-					value: key,
-				}))
+				.map(([key, tpl]) => {
+					const name = tpl?.meta?.display
+						? `${tpl.meta.display} (${key})`
+						: key;
+					return {
+						name: name.slice(0, 100),
+						value: key.slice(0, 100),
+					};
+				})
 				.filter(
 					(tpl) =>
 						tpl.name.toLowerCase().includes(focused.toLowerCase()) ||

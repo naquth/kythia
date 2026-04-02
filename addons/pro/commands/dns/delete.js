@@ -77,8 +77,12 @@ module.exports = {
 							? `${record.value.substring(0, 30)}...`
 							: record.value;
 
+					const finalChoiceName = `[${record.type}] ${recordName} -> ${truncatedValue}`;
 					return {
-						name: `[${record.type}] ${recordName} -> ${truncatedValue}`,
+						name:
+							finalChoiceName.length > 100
+								? finalChoiceName.slice(0, 100)
+								: finalChoiceName,
 						value: record.id.toString(),
 					};
 				}),

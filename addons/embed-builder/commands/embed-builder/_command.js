@@ -44,10 +44,13 @@ module.exports = {
 				.slice(0, 25);
 
 			await interaction.respond(
-				filtered.map((e) => ({
-					name: `${e.mode === 'components_v2' ? '🧩' : '📋'} ${e.name} (#${e.id})`,
-					value: String(e.id),
-				})),
+				filtered.map((e) => {
+					const name = `${e.mode === 'components_v2' ? '🧩' : '📋'} ${e.name} (#${e.id})`;
+					return {
+						name: name.length > 100 ? name.slice(0, 100) : name,
+						value: String(e.id),
+					};
+				}),
 			);
 		} catch {
 			await interaction.respond([]);

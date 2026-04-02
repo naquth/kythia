@@ -39,9 +39,10 @@ module.exports = {
 		);
 
 		await interaction.respond(
-			filtered
-				.slice(0, 25)
-				.map((t) => ({ name: t.typeName, value: t.id.toString() })),
+			filtered.slice(0, 25).map((t) => ({
+				name: t.typeName.length > 100 ? t.typeName.slice(0, 100) : t.typeName,
+				value: t.id.toString(),
+			})),
 		);
 	},
 

@@ -43,7 +43,10 @@ module.exports = {
 			font.toLowerCase().includes(focusedValue.toLowerCase()),
 		);
 		await interaction.respond(
-			filteredFonts.slice(0, 25).map((font) => ({ name: font, value: font })),
+			filteredFonts.slice(0, 25).map((font) => ({
+				name: font.length > 100 ? font.slice(0, 100) : font,
+				value: font.length > 100 ? font.slice(0, 100) : font,
+			})),
 		);
 	},
 

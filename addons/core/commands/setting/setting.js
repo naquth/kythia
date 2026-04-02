@@ -535,20 +535,27 @@ module.exports = {
 		});
 		const stats = settings?.serverStats ?? [];
 
-		const filtered = stats
-			.filter(async (stat) => {
-				const channel = await getChannelSafe(interaction.guild, stat.channelId);
-				return channel?.name.toLowerCase().includes(focused.toLowerCase());
-			})
-			.map(async (stat) => {
-				const channel = await getChannelSafe(interaction.guild, stat.channelId);
-				return {
-					name: `${channel.name} (${stat.enabled ? await t(interaction, 'core.setting.setting.stats.enabled.text') : await t(interaction, 'core.setting.setting.stats.disabled.text')})`,
-					value: channel.id,
-				};
-			});
+		const choices = [];
+		for (const stat of stats) {
+			const channel = await getChannelSafe(interaction.guild, stat.channelId);
+			if (!channel) continue;
 
-		await interaction.respond(filtered.slice(0, 25));
+			const channelName = channel.name || 'Unknown Channel';
+			if (channelName.toLowerCase().includes(focused.toLowerCase())) {
+				const statusText = stat.enabled
+					? await t(interaction, 'core.setting.setting.stats.enabled.text')
+					: await t(interaction, 'core.setting.setting.stats.disabled.text');
+
+				const finalName = `${channelName} (${statusText})`;
+				choices.push({
+					name: finalName.length > 100 ? finalName.slice(0, 100) : finalName,
+					value: channel.id,
+				});
+			}
+			if (choices.length >= 25) break;
+		}
+
+		await interaction.respond(choices);
 	},
 
 	/**

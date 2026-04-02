@@ -57,7 +57,18 @@ module.exports = {
 							choice.value.toLowerCase().includes(focused.value.toLowerCase()),
 					)
 					.slice(0, 25);
-				await interaction.respond(filtered);
+				await interaction.respond(
+					filtered.map((choice) => ({
+						name:
+							choice.name.length > 100
+								? choice.name.slice(0, 100)
+								: choice.name,
+						value:
+							choice.value.length > 100
+								? choice.value.slice(0, 100)
+								: choice.value,
+					})),
+				);
 			} else if (focused.name === 'type') {
 				const eventName = interaction.options.getString('event') || '';
 				const { getEventScenarios } = require('../../helpers/events');
@@ -68,7 +79,10 @@ module.exports = {
 					)
 					.slice(0, 25);
 				await interaction.respond(
-					filtered.map((choice) => ({ name: choice, value: choice })),
+					filtered.map((choice) => ({
+						name: choice.length > 100 ? choice.slice(0, 100) : choice,
+						value: choice.length > 100 ? choice.slice(0, 100) : choice,
+					})),
 				);
 			}
 		} catch (err) {

@@ -124,10 +124,14 @@ module.exports = {
 									: user.followerCount >= 1_000
 										? `${(user.followerCount / 1_000).toFixed(1)}K followers`
 										: `${user.followerCount} followers`;
+							const finalName = `🎵 ${user.displayName} (${user.username}) · ${followerStr}`;
 							return interaction.respond([
 								{
-									name: `🎵 ${user.displayName} (${user.username}) · ${followerStr}`,
-									value: user.username,
+									name:
+										finalName.length > 100
+											? finalName.slice(0, 100)
+											: finalName,
+									value: user.username.slice(0, 100),
 								},
 							]);
 						}
@@ -146,10 +150,12 @@ module.exports = {
 				if (oEmbedRes.ok) {
 					const oembed = await oEmbedRes.json();
 					const displayName = oembed.author_name || hintUsername;
+					const finalName = `🎵 ${displayName} (${hintUsername})`;
 					return interaction.respond([
 						{
-							name: `🎵 ${displayName} (${hintUsername})`,
-							value: hintUsername,
+							name:
+								finalName.length > 100 ? finalName.slice(0, 100) : finalName,
+							value: hintUsername.slice(0, 100),
 						},
 					]);
 				}
@@ -198,10 +204,12 @@ module.exports = {
 			try {
 				const userInfo = await validateInstagramUser(cleanInput, rsshubUrl);
 				if (userInfo) {
+					const finalName = `📸 ${userInfo.displayName} (${hintUsername})`;
 					return interaction.respond([
 						{
-							name: `📸 ${userInfo.displayName} (${hintUsername})`,
-							value: hintUsername,
+							name:
+								finalName.length > 100 ? finalName.slice(0, 100) : finalName,
+							value: hintUsername.slice(0, 100),
 						},
 					]);
 				}
@@ -241,7 +249,10 @@ module.exports = {
 		try {
 			const results = await searchYouTubeChannels(focused, apiKey);
 			await interaction.respond(
-				results.map((ch) => ({ name: ch.name, value: ch.id })),
+				results.map((ch) => ({
+					name: ch.name.length > 100 ? ch.name.slice(0, 100) : ch.name,
+					value: ch.id.length > 100 ? ch.id.slice(0, 100) : ch.id,
+				})),
 			);
 		} catch (err) {
 			logger.warn(`Autocomplete error: ${err.message || err}`, {

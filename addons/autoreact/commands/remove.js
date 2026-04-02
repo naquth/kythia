@@ -47,8 +47,9 @@ module.exports = {
 						: `Deleted Channel (${choice.trigger})`;
 				}
 
+				const finalName = `${choice.emoji} ${display} (${choice.type})`;
 				return {
-					name: `${choice.emoji} ${display} (${choice.type})`,
+					name: finalName.length > 100 ? finalName.slice(0, 100) : finalName,
 					value: `id:${choice.id}`,
 				};
 			}),

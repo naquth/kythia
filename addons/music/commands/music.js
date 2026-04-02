@@ -7,10 +7,10 @@
  */
 const {
 	GuildMember,
+	MessageFlags,
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	InteractionContextType,
-	MessageFlags,
 } = require('discord.js');
 const { formatTrackDuration, hasControlPermission } = require('../helpers');
 
@@ -498,7 +498,10 @@ module.exports = {
 				return interaction.respond([
 					{
 						name: `🎵 Play Spotify: ${truncatedUrl}`,
-						value: focusedValue,
+						value:
+							focusedValue.length > 100
+								? focusedValue.slice(0, 100)
+								: focusedValue,
 					},
 				]);
 			} else if (focusedValue.toLowerCase().includes('youtube')) {
@@ -509,7 +512,10 @@ module.exports = {
 				return interaction.respond([
 					{
 						name: `🎵 Play Youtube: ${truncatedUrl}`,
-						value: focusedValue,
+						value:
+							focusedValue.length > 100
+								? focusedValue.slice(0, 100)
+								: focusedValue,
 					},
 				]);
 			} else if (/^https?:\/\//.test(focusedValue)) {
@@ -520,7 +526,10 @@ module.exports = {
 				return interaction.respond([
 					{
 						name: `🎵 Play from URL: ${truncatedUrl}`,
-						value: focusedValue,
+						value:
+							focusedValue.length > 100
+								? focusedValue.slice(0, 100)
+								: focusedValue,
 					},
 				]);
 			}
@@ -566,9 +575,12 @@ module.exports = {
 				}
 				const choices = res.tracks
 					.slice(0, kythiaConfig.addons.music.autocompleteLimit)
-					.map((choice) => ({
-						name: `🎵 ${choice.info.title.length > 80 ? `${choice.info.title.slice(0, 77)}…` : choice.info.title} [${formatTrackDuration(choice.info.length)}]`,
-						value: choice.info.uri,
+					.map((track) => ({
+						name: `🎵 ${track.info.title.length > 80 ? `${track.info.title.slice(0, 77)}…` : track.info.title} [${formatTrackDuration(track.info.length)}]`,
+						value:
+							(track.info.uri || '').length > 100
+								? track.info.uri.slice(0, 100)
+								: track.info.uri || '',
 					}));
 				searchCache.set(focusedValue, choices);
 				return interaction.respond(choices);
@@ -593,7 +605,10 @@ module.exports = {
 					.filter((name) =>
 						name.toLowerCase().includes(focusedValue.toLowerCase()),
 					)
-					.map((name) => ({ name: `🎵 ${name}`, value: name }));
+					.map((name) => ({
+						name: `🎵 ${name.length > 95 ? `${name.slice(0, 92)}...` : name}`,
+						value: name.length > 100 ? name.slice(0, 100) : name,
+					}));
 				return interaction.respond(filteredChoices.slice(0, 25));
 			} catch (error) {
 				logger.error(`Playlist autocomplete error: ${error.message || error}`, {
@@ -617,7 +632,7 @@ module.exports = {
 						name.toLowerCase().includes(focusedValue.toLowerCase()),
 					)
 					.map((name) => ({
-						name: `🎵 ${name}`,
+						name: `🎵 ${String(name).length > 95 ? `${String(name).slice(0, 92)}...` : name}`,
 						value: String(name).slice(0, 100),
 					}));
 				return interaction.respond(filteredChoices.slice(0, 25));
@@ -660,9 +675,13 @@ module.exports = {
 					const country = station.countrycode || '🌐';
 					const bitrate = station.bitrate || 0;
 
+					const finalName = `📻 ${name} [${country}|${bitrate} k]`;
 					return {
-						name: `📻 ${name} [${country}|${bitrate}k]`,
-						value: station.stationuuid,
+						name:
+							finalName.length > 100
+								? `${finalName.slice(0, 97)}...`
+								: finalName,
+						value: String(station.stationuuid).slice(0, 100),
 					};
 				});
 

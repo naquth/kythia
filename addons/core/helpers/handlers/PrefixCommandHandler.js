@@ -71,25 +71,46 @@ class PrefixCommandHandler {
 			if (_replied) {
 				// Already replied — edit the existing reply message
 				const payload = typeof opts === 'string' ? { content: opts } : opts;
+
+				// Strip interaction-only flags for prefix commands
+				if (payload.flags) {
+					payload.flags &= ~MessageFlags.Ephemeral;
+					payload.flags &= ~MessageFlags.IsComponentsV2;
+				}
+
 				if (_replyMessage) {
-					_replyMessage = await _replyMessage.edit(payload).catch(() => null);
+					_replyMessage = await _replyMessage.edit(payload);
 				} else {
-					_replyMessage = await message.reply(payload).catch(() => null);
+					_replyMessage = await message.reply(payload);
 				}
 				return _replyMessage;
 			}
 			_replied = true;
 			const payload = typeof opts === 'string' ? { content: opts } : opts;
-			_replyMessage = await message.reply(payload).catch(() => null);
+
+			// Strip interaction-only flags for prefix commands
+			if (payload.flags) {
+				payload.flags &= ~MessageFlags.Ephemeral;
+				payload.flags &= ~MessageFlags.IsComponentsV2;
+			}
+
+			_replyMessage = await message.reply(payload);
 			return _replyMessage;
 		};
 
 		fakeInteraction.editReply = async (opts) => {
 			const payload = typeof opts === 'string' ? { content: opts } : opts;
+
+			// Strip interaction-only flags for prefix commands
+			if (payload.flags) {
+				payload.flags &= ~MessageFlags.Ephemeral;
+				payload.flags &= ~MessageFlags.IsComponentsV2;
+			}
+
 			if (_replyMessage) {
-				_replyMessage = await _replyMessage.edit(payload).catch(() => null);
+				_replyMessage = await _replyMessage.edit(payload);
 			} else {
-				_replyMessage = await message.reply(payload).catch(() => null);
+				_replyMessage = await message.reply(payload);
 			}
 			_replied = true;
 			return _replyMessage;

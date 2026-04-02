@@ -24,6 +24,7 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
 - [GET /api/meta/commands](#get-apimetacommands)
 - [GET /api/meta/changelog](#get-apimetachangelog)
 - [GET /api/meta/shards](#get-apimetashards)
+- [GET /api/meta/locales](#get-apimetalocales)
 - [GET /api/chat/:guildId/channels](#get-apichatguildidchannels)
 - [GET /api/chat/messages/:channelId](#get-apichatmessageschannelid)
 - [POST /api/chat/messages/:channelId](#post-apichatmessageschannelidest)
@@ -520,6 +521,35 @@ Returns detailed statistics and information about each individual shard.
 | `shards[].uptime` | `number` | Uptime of the shard process in milliseconds |
 | `shards[].ram_usage` | `number` | Current RSS memory usage in bytes |
 | `totalShards` | `number` | Total number of shards |
+
+---
+
+### `GET /api/meta/locales`
+
+Returns an array of objects containing all loaded Discord locales with their keys and human-readable names.
+
+**Authentication:** Bearer token required.
+
+**Response:**
+```json
+{
+"success": true,
+"count": 1,
+"locales": [
+  {
+    "locale": "en-US",
+    "name": "EnglishUS"
+  }
+]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | Always `true` on success |
+| `count` | `number` | Total number of returned locales |
+| `locales[].locale` | `string` | The Discord locale identifier key (e.g., `"en-US"`) |
+| `locales[].name` | `string` | Human-readable name (e.g., `"EnglishUS"`) |
 
 ---
 

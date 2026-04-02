@@ -101,7 +101,7 @@ module.exports = async (bot, member) => {
 					},
 				);
 				const typeMsg = wasFake ? '(Fake)' : '(Real)';
-				logMessage = `## 📤 ${title}\n${leftMsg} ${typeMsg}`;
+				logMessage = `## ${title}\n${leftMsg} ${typeMsg}`;
 			}
 		}
 	} else {
@@ -135,7 +135,7 @@ module.exports = async (bot, member) => {
 					username: member?.user?.username,
 				},
 			);
-			logMessage = `## 📤 ${title}\n${leftUnknown}`;
+			logMessage = `## ${title}\n${leftUnknown}`;
 		}
 	}
 
@@ -148,7 +148,11 @@ module.exports = async (bot, member) => {
 				const components = await simpleContainer(member, logMessage, {
 					color: 'Red',
 				});
-				await channel.send({ components, flags: MessageFlags.IsComponentsV2 });
+				await channel.send({
+					components,
+					allowedMentions: { parse: [] },
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} catch (error) {
 				logger.error(
 					`Error sending invite log to channel ${inviteChannelId} in ${guild?.name}: ${error.message || error}`,

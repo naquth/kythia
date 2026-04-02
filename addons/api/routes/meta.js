@@ -6,6 +6,7 @@
  * @version 1.0.0-rc
  */
 
+const { Locale } = require('discord.js');
 const { Hono } = require('hono');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -62,6 +63,38 @@ app.get('/changelog', (c) => {
 		return c.json(parsed);
 	} catch (error) {
 		return c.json({ error: `Changelog not found: ${error}` }, 404);
+	}
+});
+
+app.get('/locales', (c) => {
+	const client = c.get('client');
+	try {
+		const localeMap = Object.entries(Locale).reduce((acc, [name, key]) => {
+			acc[key] = name;
+			return acc;
+		}, {});
+
+		const loadedKeys = Array.from(
+			client.container.translator.getLocales().keys(),
+		);
+		const locales = loadedKeys.map((key) => {
+			const rawName = localeMap[key] || 'Unknown';
+			return {
+				locale: key,
+				name: rawName.replace(/([a-z])([A-Z])/g, '$1 $2'),
+			};
+		});
+
+		return c.json({
+			success: true,
+			count: locales.length,
+			locales,
+		});
+	} catch (error) {
+		return c.json(
+			{ success: false, error: `Failed to fetch locales: ${error}` },
+			500,
+		);
 	}
 });
 

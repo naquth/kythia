@@ -256,6 +256,9 @@ module.exports = async (bot, member) => {
 
 				channel.send({
 					components: components,
+					allowedMentions: {
+						parse: [],
+					},
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} else {

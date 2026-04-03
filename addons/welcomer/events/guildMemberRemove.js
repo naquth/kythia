@@ -10,8 +10,8 @@ const {
 	MessageFlags,
 	ContainerBuilder,
 	SeparatorBuilder,
-	SeparatorSpacingSize,
 	MediaGalleryBuilder,
+	SeparatorSpacingSize,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
 
@@ -26,7 +26,7 @@ module.exports = async (bot, member) => {
 	const container = bot.client.container;
 	const { models, helpers, kythiaConfig, logger } = container;
 	const { WelcomeSetting } = models;
-	const { embedFooter, getTextChannelSafe, chunkTextDisplay } = helpers.discord;
+	const { getTextChannelSafe, chunkTextDisplay } = helpers.discord;
 	const { convertColor } = helpers.color;
 
 	const setting = await WelcomeSetting.getCache({ guildId: member.guild.id });
@@ -176,9 +176,6 @@ module.exports = async (bot, member) => {
 			{ from: 'hex', to: 'decimal' },
 		);
 
-		const footerObj = await embedFooter(member);
-		const footerContent = footerObj?.text || '';
-
 		let embedImageUrl = goodbyeImage;
 		const files = [];
 		if (Buffer.isBuffer(goodbyeImage)) {
@@ -192,29 +189,20 @@ module.exports = async (bot, member) => {
 
 		const goodbyeContainer = new ContainerBuilder()
 			.setAccentColor(accentColor)
-			.addTextDisplayComponents(...chunkTextDisplay(safeGoodbyeText))
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			);
+			.addTextDisplayComponents(...chunkTextDisplay(safeGoodbyeText));
 
 		if (embedImageUrl) {
-			goodbyeContainer.addMediaGalleryComponents(
-				new MediaGalleryBuilder().addItems([
-					new MediaGalleryItemBuilder().setURL(embedImageUrl),
-				]),
-			);
 			goodbyeContainer.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setSpacing(SeparatorSpacingSize.Small)
 					.setDivider(true),
 			);
+			goodbyeContainer.addMediaGalleryComponents(
+				new MediaGalleryBuilder().addItems([
+					new MediaGalleryItemBuilder().setURL(embedImageUrl),
+				]),
+			);
 		}
-
-		goodbyeContainer.addTextDisplayComponents(
-			...chunkTextDisplay(footerContent),
-		);
 
 		await outChannel
 			.send({

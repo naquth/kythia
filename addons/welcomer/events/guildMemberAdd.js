@@ -25,7 +25,7 @@ module.exports = async (bot, member) => {
 	const container = bot.client.container;
 	const { models, helpers, kythiaConfig, logger } = container;
 	const { WelcomeSetting } = models;
-	const { embedFooter, getTextChannelSafe, chunkTextDisplay } = helpers.discord;
+	const { getTextChannelSafe, chunkTextDisplay } = helpers.discord;
 	const { convertColor } = helpers.color;
 
 	const guild = member.guild;
@@ -203,9 +203,6 @@ module.exports = async (bot, member) => {
 			embedImageUrl = 'attachment://welcome.png';
 		}
 
-		const footerObj = await embedFooter(member);
-		const footerContent = footerObj?.text || '';
-
 		const accentColor = convertColor(
 			setting.welcomeInEmbedColor || kythiaConfig.bot.color,
 			{ from: 'hex', to: 'decimal' },
@@ -213,29 +210,20 @@ module.exports = async (bot, member) => {
 
 		const welcomeContainer = new ContainerBuilder()
 			.setAccentColor(accentColor)
-			.addTextDisplayComponents(...chunkTextDisplay(safeWelcomeText))
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			);
+			.addTextDisplayComponents(...chunkTextDisplay(safeWelcomeText));
 
 		if (embedImageUrl) {
-			welcomeContainer.addMediaGalleryComponents(
-				new MediaGalleryBuilder().addItems([
-					new MediaGalleryItemBuilder().setURL(embedImageUrl),
-				]),
-			);
 			welcomeContainer.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setSpacing(SeparatorSpacingSize.Small)
 					.setDivider(true),
 			);
+			welcomeContainer.addMediaGalleryComponents(
+				new MediaGalleryBuilder().addItems([
+					new MediaGalleryItemBuilder().setURL(embedImageUrl),
+				]),
+			);
 		}
-
-		welcomeContainer.addTextDisplayComponents(
-			...chunkTextDisplay(footerContent),
-		);
 
 		channel
 			.send({

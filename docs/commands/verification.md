@@ -6,37 +6,83 @@
 
 ### 💻 Usage
 
-`/verify setup role <role>`
-`/verify setup unverified-role <role>`
-`/verify setup channel [channel]`
-`/verify setup type <type>`
-`/verify setup timeout <seconds>`
+`/verify force <member>`
+`/verify panel button <label>`
+`/verify panel color <hex>`
+`/verify panel send`
+`/verify panel text <title> <description>`
+`/verify reset <member>`
+`/verify revoke <member>`
 `/verify setup attempts <count>`
+`/verify setup channel [channel]`
 `/verify setup kick-on-fail <enabled>`
 `/verify setup kick-on-timeout <enabled>`
 `/verify setup log-channel <channel>`
+`/verify setup role <role>`
+`/verify setup timeout <seconds>`
+`/verify setup type <type>`
+`/verify setup unverified-role <role>`
 `/verify setup welcome-message <message>`
 `/verify status`
-`/verify reset <member>`
-`/verify force <member>`
-`/verify revoke <member>`
 
 ### 🔧 Subcommands
 
-**`/verify setup role <role>`**
-> Set the role given to verified members
+**`/verify force <member>`**
+> Manually verify a member (skip captcha)
 
 **Options for this subcommand:**
-- **`role*`**
-  - **Description:** Verified role
-  - **Type:** Role
-**`/verify setup unverified-role <role>`**
-> Role assigned on join (restricts unverified members)
+- **`member*`**
+  - **Description:** Target member
+  - **Type:** User
+**`/verify panel button <label>`**
+> Set the text on the verification panel button
 
 **Options for this subcommand:**
-- **`role*`**
-  - **Description:** Unverified role
-  - **Type:** Role
+- **`label*`**
+  - **Description:** Button text (e.g. Verify Me)
+  - **Type:** Text
+**`/verify panel color <hex>`**
+> Set the color of the verification panel
+
+**Options for this subcommand:**
+- **`hex*`**
+  - **Description:** HEX color code (e.g. #ff0000)
+  - **Type:** Text
+**`/verify panel send`**
+> Send the interactive verification panel to the configured channel
+
+
+**`/verify panel text <title> <description>`**
+> Set the title and description for the verification panel
+
+**Options for this subcommand:**
+- **`title*`**
+  - **Description:** Panel title
+  - **Type:** Text
+- **`description*`**
+  - **Description:** Panel description
+  - **Type:** Text
+**`/verify reset <member>`**
+> Re-send captcha to a member
+
+**Options for this subcommand:**
+- **`member*`**
+  - **Description:** Target member
+  - **Type:** User
+**`/verify revoke <member>`**
+> Remove verified role from a member
+
+**Options for this subcommand:**
+- **`member*`**
+  - **Description:** Target member
+  - **Type:** User
+**`/verify setup attempts <count>`**
+> Max wrong attempts before failing
+
+**Options for this subcommand:**
+- **`count*`**
+  - **Description:** Max attempts (1-10)
+  - **Type:** Integer
 **`/verify setup channel [<channel>]`**
 > Channel where captcha is sent (leave blank for DM only)
 
@@ -44,28 +90,6 @@
 - **`channel`**
   - **Description:** Verification channel
   - **Type:** Channel
-**`/verify setup type <type>`**
-> Captcha challenge type
-
-**Options for this subcommand:**
-- **`type*`**
-  - **Description:** Type of captcha
-  - **Type:** Text
-  - **Choices:** `Math (multiple choice buttons)` (`math`), `Emoji click (buttons)` (`emoji`), `Image text (type the code)` (`image`)
-**`/verify setup timeout <seconds>`**
-> How long members have to complete the captcha (seconds)
-
-**Options for this subcommand:**
-- **`seconds*`**
-  - **Description:** Timeout in seconds (30–600)
-  - **Type:** Integer
-**`/verify setup attempts <count>`**
-> Max wrong attempts before failing
-
-**Options for this subcommand:**
-- **`count*`**
-  - **Description:** Max attempts (1–10)
-  - **Type:** Integer
 **`/verify setup kick-on-fail <enabled>`**
 > Kick member if they exceed max attempts
 
@@ -87,6 +111,35 @@
 - **`channel*`**
   - **Description:** Log channel
   - **Type:** Channel
+**`/verify setup role <role>`**
+> Set the role given to verified members
+
+**Options for this subcommand:**
+- **`role*`**
+  - **Description:** Verified role
+  - **Type:** Role
+**`/verify setup timeout <seconds>`**
+> How long members have to complete the captcha (seconds)
+
+**Options for this subcommand:**
+- **`seconds*`**
+  - **Description:** Timeout in seconds (30-600)
+  - **Type:** Integer
+**`/verify setup type <type>`**
+> Captcha challenge type
+
+**Options for this subcommand:**
+- **`type*`**
+  - **Description:** Type of captcha
+  - **Type:** Text
+  - **Choices:** `Math (multiple choice buttons)` (`math`), `Emoji click (buttons)` (`emoji`), `Image text (type the code)` (`image`)
+**`/verify setup unverified-role <role>`**
+> Role assigned on join (restricts unverified members)
+
+**Options for this subcommand:**
+- **`role*`**
+  - **Description:** Unverified role
+  - **Type:** Role
 **`/verify setup welcome-message <message>`**
 > DM sent to members after they verify
 
@@ -98,26 +151,5 @@
 > View current verification config
 
 
-**`/verify reset <member>`**
-> Re-send captcha to a member
-
-**Options for this subcommand:**
-- **`member*`**
-  - **Description:** Target member
-  - **Type:** User
-**`/verify force <member>`**
-> Manually verify a member (skip captcha)
-
-**Options for this subcommand:**
-- **`member*`**
-  - **Description:** Target member
-  - **Type:** User
-**`/verify revoke <member>`**
-> Remove verified role from a member
-
-**Options for this subcommand:**
-- **`member*`**
-  - **Description:** Target member
-  - **Type:** User
 
 

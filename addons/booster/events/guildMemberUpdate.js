@@ -27,7 +27,7 @@ module.exports = async (bot, oldMember, newMember) => {
 		return;
 
 	const container = bot.client.container;
-	const { models, helpers, kythiaConfig, logger } = container;
+	const { models, helpers, logger } = container;
 	const { BoosterSetting } = models;
 	const { embedFooter, getTextChannelSafe, chunkTextDisplay } = helpers.discord;
 	const { convertColor } = helpers.color;

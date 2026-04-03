@@ -148,7 +148,7 @@ function chunkTextDisplay(content, limit = 3999) {
 async function simpleContainer(interaction, content, options = {}) {
 	const { kythiaConfig, helpers, t, logger } = interaction.client.container;
 	const { convertColor } = helpers.color;
-	const { color } = options;
+	const { color, withFooter = false } = options;
 
 	const defaultAccent = convertColor(kythiaConfig.bot.color, {
 		from: 'hex',
@@ -176,19 +176,23 @@ async function simpleContainer(interaction, content, options = {}) {
 
 	const replyContainer = new ContainerBuilder()
 		.setAccentColor(accentColor)
-		.addTextDisplayComponents(...chunkTextDisplay(content))
-		.addSeparatorComponents(
-			new SeparatorBuilder()
-				.setSpacing(SeparatorSpacingSize.Small)
-				.setDivider(true),
-		)
-		.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
-				await t(interaction, 'common.container.footer', {
-					username: interaction.client.user.username,
-				}),
-			),
-		);
+		.addTextDisplayComponents(...chunkTextDisplay(content));
+
+	if (withFooter) {
+		replyContainer
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setSpacing(SeparatorSpacingSize.Small)
+					.setDivider(true),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					await t(interaction, 'common.container.footer', {
+						username: interaction.client.user.username,
+					}),
+				),
+			);
+	}
 
 	return [replyContainer];
 }

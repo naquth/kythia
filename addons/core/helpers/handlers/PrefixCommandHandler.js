@@ -75,7 +75,6 @@ class PrefixCommandHandler {
 				// Strip interaction-only flags for prefix commands
 				if (payload.flags) {
 					payload.flags &= ~MessageFlags.Ephemeral;
-					payload.flags &= ~MessageFlags.IsComponentsV2;
 				}
 
 				if (_replyMessage) {
@@ -91,7 +90,6 @@ class PrefixCommandHandler {
 			// Strip interaction-only flags for prefix commands
 			if (payload.flags) {
 				payload.flags &= ~MessageFlags.Ephemeral;
-				payload.flags &= ~MessageFlags.IsComponentsV2;
 			}
 
 			_replyMessage = await message.reply(payload);
@@ -104,7 +102,6 @@ class PrefixCommandHandler {
 			// Strip interaction-only flags for prefix commands
 			if (payload.flags) {
 				payload.flags &= ~MessageFlags.Ephemeral;
-				payload.flags &= ~MessageFlags.IsComponentsV2;
 			}
 
 			if (_replyMessage) {

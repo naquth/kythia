@@ -7,15 +7,15 @@
  */
 
 const {
+	ButtonStyle,
 	MessageFlags,
+	ButtonBuilder,
+	WebhookClient,
+	ActionRowBuilder,
+	SeparatorBuilder,
 	ContainerBuilder,
 	TextDisplayBuilder,
-	SeparatorBuilder,
 	SeparatorSpacingSize,
-	ActionRowBuilder,
-	ButtonBuilder,
-	ButtonStyle,
-	WebhookClient,
 } = require('discord.js');
 const Sentry = require('@sentry/node');
 
@@ -46,11 +46,7 @@ class ErrorHandler {
 	}
 
 	sendToSentry(error, message, kythiaConfig) {
-		if (
-			kythiaConfig.sentry?.dsn &&
-			typeof Sentry !== 'undefined' &&
-			Sentry.withScope
-		) {
+		if (kythiaConfig.sentry?.dsn && Sentry?.withScope) {
 			try {
 				Sentry.withScope((scope) => {
 					if (message.author) {

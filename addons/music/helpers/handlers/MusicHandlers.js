@@ -683,7 +683,7 @@ class MusicHandlers {
 			if (!interaction.deferred && !interaction.replied) {
 				await interaction.deferReply().catch(() => {});
 			}
-		} catch (e) {}
+		} catch (_e) {}
 
 		const guildId = interaction.guildId;
 		const guildState = guildStates.get(guildId);
@@ -746,7 +746,7 @@ class MusicHandlers {
 		});
 
 		collector.on('end', async () => {
-			if (message && message.editable) {
+			if (message?.editable) {
 				const finalState = await this._createHistoryEmbed(
 					history,
 					1,
@@ -1010,7 +1010,7 @@ class MusicHandlers {
 			if (!interaction.deferred && !interaction.replied) {
 				await interaction.deferReply().catch(() => {});
 			}
-		} catch (e) {}
+		} catch (_e) {}
 
 		const nowPlaying = player.currentTrack;
 
@@ -1029,7 +1029,7 @@ class MusicHandlers {
 		}
 
 		let initialPage;
-		if (interaction.isChatInputCommand && interaction.isChatInputCommand()) {
+		if (interaction.isChatInputCommand?.()) {
 			initialPage = interaction.options.getInteger('page') || 1;
 		} else {
 			initialPage = 1;
@@ -1072,7 +1072,7 @@ class MusicHandlers {
 		});
 
 		collector.on('end', async () => {
-			if (message && message.editable) {
+			if (message?.editable) {
 				const finalState = await this._createQueueEmbed(player, 1, interaction);
 				finalState.components = [];
 				await message.edit(finalState).catch(() => {});

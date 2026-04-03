@@ -10,8 +10,6 @@ const {
 	MessageFlags,
 	ContainerBuilder,
 	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 } = require('discord.js');
 
 class StickyMessageHandler {
@@ -21,7 +19,7 @@ class StickyMessageHandler {
 	 * @param {Object} container - Kythia container
 	 */
 	async handle(message, container) {
-		const { models, t, kythiaConfig, logger, helpers } = container;
+		const { models, kythiaConfig, logger, helpers } = container;
 		const { StickyMessage } = models;
 		const { convertColor } = helpers.color;
 
@@ -49,18 +47,6 @@ class StickyMessageHandler {
 				)
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(sticky.message),
-				)
-				.addSeparatorComponents(
-					new SeparatorBuilder()
-						.setSpacing(SeparatorSpacingSize.Small)
-						.setDivider(true),
-				)
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						await t(message, 'common.container.footer', {
-							username: message.client.user.username,
-						}),
-					),
 				);
 
 			const sent = await message.channel.send({

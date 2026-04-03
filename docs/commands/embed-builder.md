@@ -10,7 +10,7 @@
 `/embed-builder delete <id> [delete_message]`
 `/embed-builder edit <id>`
 `/embed-builder list`
-`/embed-builder send <id> [channel]`
+`/embed-builder send <id> [channel] [allowed_mentions]`
 
 ### 🔧 Subcommands
 
@@ -46,7 +46,7 @@
 > 📋 List all saved embeds for this server
 
 
-**`/embed-builder send <id> [<channel>]`**
+**`/embed-builder send <id> [<channel>] [<allowed_mentions>]`**
 > 📤 Send a saved embed to a channel
 
 **Options for this subcommand:**
@@ -56,5 +56,9 @@
 - **`channel`**
   - **Description:** Target channel (defaults to current channel)
   - **Type:** Channel
+- **`allowed_mentions`**
+  - **Description:** Who can be mentioned in the embed (default: everyone)
+  - **Type:** Text
+  - **Choices:** `🌐 Everyone (@everyone, @here, roles & users)` (`everyone`), `👥 Roles only` (`roles`), `👤 Users only` (`users`), `🔕 No mentions` (`none`)
 
 

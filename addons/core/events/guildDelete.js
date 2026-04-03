@@ -10,8 +10,6 @@ const {
 	MessageFlags,
 	ContainerBuilder,
 	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 } = require('discord.js');
 const Sentry = require('@sentry/node');
 

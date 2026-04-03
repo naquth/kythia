@@ -9,6 +9,7 @@
 const rolePrefix = require('./role-prefix');
 const roleUnprefix = require('./role-unprefix');
 const figletFonts = require('./figlet-fonts');
+const helpUtils = require('./helpUtils');
 const {
 	EVENT_SCENARIOS,
 	createMockEventArgs,
@@ -27,4 +28,5 @@ module.exports = {
 	formatDuration,
 	parseDuration,
 	figletFonts,
+	helpUtils,
 };

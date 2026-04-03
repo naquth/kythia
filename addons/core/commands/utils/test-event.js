@@ -47,7 +47,7 @@ module.exports = {
 
 			if (focused.name === 'event') {
 				const choices = Object.entries(Events).map(([key, value]) => ({
-					name: key,
+					name: key.replace(/([A-Z])/g, ' $1').trim(),
 					value: value,
 				}));
 				const filtered = choices

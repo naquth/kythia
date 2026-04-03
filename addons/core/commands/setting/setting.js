@@ -53,20 +53,20 @@ try {
  * @param {*} dbField - Field dari model Sequelize.
  * @returns {Array} - Field yang sudah dijamin berupa array.
  */
-function ensureArray(dbField) {
-	if (Array.isArray(dbField)) {
-		return dbField;
-	}
-	if (typeof dbField === 'string') {
-		try {
-			const parsed = JSON.parse(dbField);
-			return Array.isArray(parsed) ? parsed : [];
-		} catch {
-			return [];
-		}
-	}
-	return [];
-}
+// function ensureArray(dbField) {
+// 	if (Array.isArray(dbField)) {
+// 		return dbField;
+// 	}
+// 	if (typeof dbField === 'string') {
+// 		try {
+// 			const parsed = JSON.parse(dbField);
+// 			return Array.isArray(parsed) ? parsed : [];
+// 		} catch {
+// 			return [];
+// 		}
+// 	}
+// 	return [];
+// }
 
 const createToggleOption = () => {
 	return (opt) =>

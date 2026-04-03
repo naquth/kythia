@@ -99,8 +99,7 @@ async function getCommandsData(client) {
 			slashData &&
 			typeof slashData.name === 'string' &&
 			slashData.name.toLowerCase() !== 'data' &&
-			slashData.description &&
-			slashData.description.trim() &&
+			slashData.description?.trim() &&
 			!/^no description( provided)?\.?$/i.test(slashData.description.trim())
 		) {
 			const commandJSON =
@@ -254,8 +253,7 @@ async function getCommandsData(client) {
 				} else if (
 					command.slashCommand &&
 					typeof command.slashCommand.description === 'string' &&
-					command.slashCommand.description &&
-					command.slashCommand.description.trim() &&
+					command.slashCommand.description?.trim() &&
 					!/^no description( provided)?\.?$/i.test(
 						command.slashCommand.description.trim(),
 					)

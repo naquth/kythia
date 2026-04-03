@@ -58,6 +58,35 @@ async function getInviteLink(guild) {
 	return null;
 }
 
+function getWelcomeChannel(guild) {
+	const canSend = (ch) => {
+		if (!ch) return false;
+		const perms = ch.permissionsFor(guild.members.me);
+		return (
+			perms?.has(PermissionsBitField.Flags.ViewChannel) &&
+			perms?.has(PermissionsBitField.Flags.SendMessages)
+		);
+	};
+
+	let channel = guild.channels.cache.find(
+		(ch) =>
+			ch.type === 0 &&
+			typeof ch.name === 'string' &&
+			ch.name.toLowerCase() === 'general' &&
+			canSend(ch),
+	);
+
+	if (!channel && canSend(guild.systemChannel)) {
+		channel = guild.systemChannel;
+	}
+
+	if (!channel) {
+		channel = guild.channels.cache.find((ch) => ch.type === 0 && canSend(ch));
+	}
+
+	return channel;
+}
+
 module.exports = async (bot, guild) => {
 	const container = bot.client.container;
 	const { t, models, helpers, kythiaConfig, logger } = container;
@@ -102,15 +131,7 @@ module.exports = async (bot, guild) => {
 		);
 
 		const { simpleContainer } = helpers.discord;
-		let channel = guild.systemChannel;
-		if (!channel) {
-			channel = guild.channels.cache.find(
-				(ch) =>
-					ch.type === 0 &&
-					typeof ch.name === 'string' &&
-					ch.name.toLowerCase() === 'general',
-			);
-		}
+		const channel = getWelcomeChannel(guild);
 
 		if (channel) {
 			try {
@@ -130,6 +151,9 @@ module.exports = async (bot, guild) => {
 				await channel.send({
 					components,
 					flags: MessageFlags.IsComponentsV2,
+					allowedMentions: {
+						parse: [],
+					},
 				});
 			} catch (_e) {}
 		}
@@ -194,6 +218,9 @@ module.exports = async (bot, guild) => {
 			const payload = {
 				flags: MessageFlags.IsComponentsV2,
 				components: [inviteContainer.toJSON()],
+				allowedMentions: {
+					parse: [],
+				},
 			};
 
 			await fetch(url.href, {
@@ -214,16 +241,7 @@ module.exports = async (bot, guild) => {
 		}
 	}
 
-	let channel = guild.systemChannel;
-
-	if (!channel) {
-		channel = guild.channels.cache.find(
-			(ch) =>
-				ch.type === 0 &&
-				typeof ch.name === 'string' &&
-				ch.name.toLowerCase() === 'general',
-		);
-	}
+	const channel = getWelcomeChannel(guild);
 	if (channel) {
 		try {
 			const fakeInteraction = {
@@ -305,6 +323,9 @@ module.exports = async (bot, guild) => {
 			await channel.send({
 				components: [welcomeContainer],
 				flags: MessageFlags.IsComponentsV2,
+				allowedMentions: {
+					parse: [],
+				},
 			});
 		} catch (_e) {
 			try {

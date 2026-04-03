@@ -18,6 +18,11 @@ module.exports = async (bot, guild) => {
 	const { t, kythiaConfig, helpers, logger } = container;
 	const { convertColor } = helpers.color;
 
+	const minMembers = kythiaConfig.bot.minMembers ?? 0;
+	if (minMembers > 0 && (guild.memberCount ?? 0) < minMembers) {
+		return;
+	}
+
 	const webhookUrl = kythiaConfig.api.webhookGuildInviteLeave;
 	if (webhookUrl) {
 		try {
@@ -56,6 +61,9 @@ module.exports = async (bot, guild) => {
 			const payload = {
 				flags: MessageFlags.IsComponentsV2,
 				components: [leaveContainer.toJSON()],
+				allowedMentions: {
+					parse: [],
+				},
 			};
 
 			await fetch(url.href, {

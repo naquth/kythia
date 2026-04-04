@@ -24,7 +24,7 @@ const {
 const fs = require('node:fs');
 const path = require('node:path');
 
-const EXCLUDED_ADDONS = ['api'];
+const EXCLUDED_ADDONS = ['api', 'license'];
 const EXCLUDED_CORE_CATEGORIES = ['premium']; // has no public commands
 const CATEGORIES_PER_PAGE = 25;
 

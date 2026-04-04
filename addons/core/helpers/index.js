@@ -9,7 +9,7 @@
 const rolePrefix = require('./role-prefix');
 const roleUnprefix = require('./role-unprefix');
 const figletFonts = require('./figlet-fonts');
-const helpUtils = require('./helpUtils');
+const helpUtils = require('./help-utils');
 const {
 	EVENT_SCENARIOS,
 	createMockEventArgs,

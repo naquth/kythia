@@ -84,7 +84,7 @@ const {
 	formatDuration,
 } = require('@coreHelpers/time');
 
-const { getHelpData, buildHelpReply } = require('@coreHelpers/helpUtils');
+const { getHelpData, buildHelpReply } = require('@coreHelpers/help-utils');
 
 // ===== 3. Load Additional Utilities =====
 const { convertColor } = require('kythia-core').utils;

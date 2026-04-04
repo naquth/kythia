@@ -15,6 +15,7 @@ const {
 	SeparatorSpacingSize,
 	MediaGalleryBuilder,
 	MediaGalleryItemBuilder,
+	MessageFlags,
 } = require('discord.js');
 
 /**
@@ -92,13 +93,14 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 			: null;
 
 	// Resolve notification channel from leveling_settings, then fall back to message channel
-	if (!channel) {
-		if (levelingSetting?.levelingChannelId) {
-			channel =
-				(await getTextChannelSafe(
-					message.guild,
-					levelingSetting.levelingChannelId,
-				)) || null;
+	let notifyChannel = channel || message.channel;
+	if (levelingSetting?.levelingChannelId) {
+		const configuredChannel = await getTextChannelSafe(
+			message.guild,
+			levelingSetting.levelingChannelId,
+		).catch(() => null);
+		if (configuredChannel) {
+			notifyChannel = configuredChannel;
 		}
 	}
 
@@ -167,37 +169,43 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		}
 	}
 
-	let buffer;
+	let buffer = null;
 	const imageName = 'level-up.png';
-	try {
-		buffer = await profileImage(userId, {
-			botToken: kythiaConfig.bot.token,
-			customTag: `Level Up!`,
-			customSubtitle: `New Level: ${user.level}`,
-			customBackground: backgroundUrl,
-			font: 'NOTO_SANS',
-			usernameColor,
-			tagColor,
-			borderColor,
-			rankData: {
-				currentXp: user.xp,
-				requiredXp: levelUpXp(user.level, curve, multiplier),
-				level: user.level,
-				barColor,
-				levelColor: tagColor,
-			},
-			customFont: 'BagelFatOne-Regular',
-			fontWeight: 'normal',
-			badgesFrame: false,
-			disabledBadges: false,
-			squareAvatar: false,
-			moreBackgroundBlur: false,
-		});
-	} catch (err) {
-		logger.error(`Failed to generate level up image: ${err.message || err}`, {
-			label: 'leveling:helpers',
-		});
-		buffer = null;
+	const isImageEnabled = levelingSetting?.levelingImageEnabled !== false;
+
+	if (isImageEnabled) {
+		try {
+			buffer = await profileImage(userId, {
+				botToken: kythiaConfig.bot.token,
+				customTag: `Level Up!`,
+				customSubtitle: `New Level: ${user.level}`,
+				customWidth: 1024,
+				customHeight: 450,
+				customBackground: backgroundUrl,
+				font: 'NOTO_SANS',
+				usernameColor,
+				tagColor,
+				borderColor,
+				rankData: {
+					currentXp: user.xp,
+					requiredXp: levelUpXp(user.level, curve, multiplier),
+					level: user.level,
+					barColor,
+					levelColor: tagColor,
+				},
+				customFont: 'BagelFatOne-Regular',
+				fontWeight: 'normal',
+				badgesFrame: false,
+				disabledBadges: false,
+				squareAvatar: false,
+				moreBackgroundBlur: false,
+			});
+		} catch (err) {
+			logger.error(`Failed to generate level up image: ${err.message || err}`, {
+				label: 'leveling:helpers',
+			});
+			buffer = null;
+		}
 	}
 
 	const accentColor = convertColor(accentColorHex, {
@@ -205,18 +213,15 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		to: 'decimal',
 	});
 
-	const titleText = `## ${await t(message, 'leveling.helpers.index.leveling.profile.up.title')}`;
-	const descText = await t(
-		message,
-		'leveling.helpers.index.leveling.profile.up.desc',
-		{
-			username: message.author.username,
-			mention: message.author.toString(),
-			level: user.level || 0,
-			xp: user.xp || 0,
-			nextLevelXp: levelUpXp(user.level, curve, multiplier),
-		},
-	);
+	const titleText = `${await t(message, 'leveling.helpers.index.leveling.profile.up.title')}`;
+
+	const defaultMsg = 'GG {user.mention}, you reached level **{user.level}**!';
+	const rawMessage = levelingSetting?.levelingMessage || defaultMsg;
+	const descText = rawMessage
+		.replace(/{user\.mention}/g, message.author.toString())
+		.replace(/{user\.level}/g, user.level.toString())
+		.replace(/{user\.xp}/g, user.xp.toString())
+		.replace(/{user\.name}/g, message.author.username);
 
 	const containerBuilder = new ContainerBuilder()
 		.setAccentColor(accentColor)
@@ -274,17 +279,22 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 		)
 		.addTextDisplayComponents(new TextDisplayBuilder().setContent(footerText));
 
-	if (channel) {
+	if (notifyChannel?.send) {
 		const payload = {
-			content: message.author.toString(),
+			// content: message.author.toString(),
 			components: [containerBuilder],
+			flags: MessageFlags.IsComponentsV2,
 		};
 
 		if (buffer && (Buffer.isBuffer(buffer) || typeof buffer === 'string')) {
 			payload.files = [{ attachment: buffer, name: imageName }];
 		}
 
-		await channel.send(payload).catch(() => {});
+		await notifyChannel.send(payload).catch((err) => {
+			logger.error(`Leveling Announce send failed: ${err.message || err}`, {
+				label: 'leveling:helpers',
+			});
+		});
 	}
 };
 

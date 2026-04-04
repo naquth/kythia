@@ -7,6 +7,7 @@
  */
 
 const { addXp } = require('../helpers');
+const { ChannelType } = require('discord.js');
 const cooldown = new Map();
 
 /**
@@ -31,6 +32,22 @@ module.exports = async (bot, message) => {
 
 	// Check if message XP is enabled for this guild
 	if (setting?.messageXpEnabled === false) return;
+
+	if (message.channel) {
+		if (message.channel.isThread()) {
+			if (setting?.threadXpEnabled === false) return;
+			if (
+				setting?.forumXpEnabled === false &&
+				message.channel.parent?.type === ChannelType.GuildForum
+			)
+				return;
+		}
+		if (
+			message.channel.isVoiceBased() &&
+			setting?.textInVoiceXpEnabled === false
+		)
+			return;
+	}
 
 	// Respect noXpChannels and noXpRoles
 	if (

@@ -11,6 +11,7 @@ const app = new Hono();
 
 const getClient = (c) => c.get('client');
 const getModels = (c) => getClient(c).container.models;
+const getHelpers = (c) => getClient(c).container.helpers;
 
 // =============================================================================
 // INVITE SETTINGS (/api/invite/settings/:guildId)
@@ -110,6 +111,7 @@ app.patch('/settings/:guildId', async (c) => {
 // Query: sort=total|real|fake|bonus|rejoin (default: total), page=1, limit=20
 app.get('/:guildId', async (c) => {
 	const { Invite } = getModels(c);
+	const { getMemberSafe } = getHelpers(c).discord;
 	const guildId = c.req.param('guildId');
 	const sort = c.req.query('sort') || 'total';
 	const page = Math.max(1, parseInt(c.req.query('page') || '1', 10));
@@ -136,16 +138,37 @@ app.get('/:guildId', async (c) => {
 			offset,
 		});
 
-		const data = rows.map((row, i) => ({
-			rank: offset + i + 1,
-			userId: row.userId,
-			invites: row.invites || 0,
-			bonus: row.bonus || 0,
-			fake: row.fake || 0,
-			leaves: row.leaves || 0,
-			rejoins: row.rejoins || 0,
-			total: (row.invites || 0) + (row.bonus || 0),
-		}));
+		const client = getClient(c);
+		const guildObj = client.guilds.cache.get(guildId);
+
+		const data = await Promise.all(
+			rows.map(async (row, i) => {
+				let username = null;
+				let avatar = null;
+				if (guildObj) {
+					const member = await getMemberSafe(guildObj, row.userId);
+					const userObj = member?.user ?? null;
+					if (userObj) {
+						username = userObj.username;
+						avatar = userObj.displayAvatarURL
+							? userObj.displayAvatarURL({ size: 64 })
+							: null;
+					}
+				}
+				return {
+					rank: offset + i + 1,
+					userId: row.userId,
+					username,
+					avatar,
+					invites: row.invites || 0,
+					bonus: row.bonus || 0,
+					fake: row.fake || 0,
+					leaves: row.leaves || 0,
+					rejoins: row.rejoins || 0,
+					total: (row.invites || 0) + (row.bonus || 0),
+				};
+			}),
+		);
 
 		return c.json({
 			success: true,
@@ -162,6 +185,7 @@ app.get('/:guildId', async (c) => {
 // GET /api/invite/:guildId/user/:userId — Get stats for a specific user
 app.get('/:guildId/user/:userId', async (c) => {
 	const { Invite, InviteHistory } = getModels(c);
+	const { getMemberSafe } = getHelpers(c).discord;
 	const guildId = c.req.param('guildId');
 	const userId = c.req.param('userId');
 
@@ -184,12 +208,29 @@ app.get('/:guildId/user/:userId', async (c) => {
 			order: [['createdAt', 'DESC']],
 		});
 
+		const client = getClient(c);
+		const guildObj = client.guilds.cache.get(guildId);
+		let username = null;
+		let avatar = null;
+		if (guildObj) {
+			const member = await getMemberSafe(guildObj, userId);
+			const userObj = member?.user ?? null;
+			if (userObj) {
+				username = userObj.username;
+				avatar = userObj.displayAvatarURL
+					? userObj.displayAvatarURL({ size: 64 })
+					: null;
+			}
+		}
+
 		const userTotal = (row?.invites || 0) + (row?.bonus || 0);
 
 		return c.json({
 			success: true,
 			data: {
 				userId,
+				username,
+				avatar,
 				invites: row?.invites || 0,
 				bonus: row?.bonus || 0,
 				fake: row?.fake || 0,

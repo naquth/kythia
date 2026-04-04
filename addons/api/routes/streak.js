@@ -16,6 +16,7 @@ const app = new Hono();
 
 const getModels = (c) => c.get('client').container.models;
 const getLogger = (c) => c.get('client').container.logger;
+const getHelpers = (c) => c.get('client').container.helpers;
 
 function getTodayDateString() {
 	return new Date().toISOString().slice(0, 10);
@@ -96,6 +97,7 @@ function formatStreak(s, rank = null) {
 // ---------------------------------------------------------------------------
 app.get('/:guildId', async (c) => {
 	const { Streak } = getModels(c);
+	const { getMemberSafe } = getHelpers(c).discord;
 	const { guildId } = c.req.param();
 	const { page = '1', limit = '50', sort = 'current' } = c.req.query();
 
@@ -123,18 +125,39 @@ app.get('/:guildId', async (c) => {
 			offset,
 		});
 
+		const client = c.get('client');
+		const guildObj = client.guilds.cache.get(guildId);
 		const today = getTodayDateString();
-		const data = rows.map((s, i) => ({
-			rank: offset + i + 1,
-			userId: s.userId,
-			currentStreak: s.currentStreak ?? 0,
-			highestStreak: s.highestStreak ?? 0,
-			streakFreezes: s.streakFreezes ?? 0,
-			claimedToday: s.lastClaimTimestamp
-				? s.lastClaimTimestamp.toISOString().slice(0, 10) === today
-				: false,
-			lastClaimTimestamp: s.lastClaimTimestamp,
-		}));
+
+		const data = await Promise.all(
+			rows.map(async (s, i) => {
+				let username = null;
+				let avatar = null;
+				if (guildObj) {
+					const member = await getMemberSafe(guildObj, s.userId);
+					const userObj = member?.user ?? null;
+					if (userObj) {
+						username = userObj.username;
+						avatar = userObj.displayAvatarURL
+							? userObj.displayAvatarURL({ size: 64 })
+							: null;
+					}
+				}
+				return {
+					rank: offset + i + 1,
+					userId: s.userId,
+					username,
+					avatar,
+					currentStreak: s.currentStreak ?? 0,
+					highestStreak: s.highestStreak ?? 0,
+					streakFreezes: s.streakFreezes ?? 0,
+					claimedToday: s.lastClaimTimestamp
+						? s.lastClaimTimestamp.toISOString().slice(0, 10) === today
+						: false,
+					lastClaimTimestamp: s.lastClaimTimestamp,
+				};
+			}),
+		);
 
 		return c.json({
 			success: true,
@@ -156,6 +179,7 @@ app.get('/:guildId', async (c) => {
 // ---------------------------------------------------------------------------
 app.get('/:guildId/:userId', async (c) => {
 	const { Streak } = getModels(c);
+	const { getMemberSafe } = getHelpers(c).discord;
 	const { guildId, userId } = c.req.param();
 	const { Op } = require('sequelize');
 
@@ -185,9 +209,25 @@ app.get('/:guildId/:userId', async (c) => {
 		});
 		const totalMembers = await Streak.count({ where: { guildId } });
 
+		const client = c.get('client');
+		const guildObj = client.guilds.cache.get(guildId);
+		let username = null;
+		let avatar = null;
+		if (guildObj) {
+			const member = await getMemberSafe(guildObj, userId);
+			const userObj = member?.user ?? null;
+			if (userObj) {
+				username = userObj.username;
+				avatar = userObj.displayAvatarURL
+					? userObj.displayAvatarURL({ size: 64 })
+					: null;
+			}
+		}
+
+		const formatted = formatStreak(streak, aboveCount + 1);
 		return c.json({
 			success: true,
-			data: formatStreak(streak, aboveCount + 1),
+			data: { ...formatted, username, avatar },
 			totalMembers,
 		});
 	} catch (error) {

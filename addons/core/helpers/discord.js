@@ -207,7 +207,7 @@ async function createContainer(interaction, options = {}) {
 		description,
 		media,
 		components,
-		footer = true,
+		footer = false,
 	} = options;
 
 	const defaultAccent = convertColor(kythiaConfig.bot.color, {

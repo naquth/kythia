@@ -171,9 +171,7 @@ module.exports = {
 			},
 		);
 
-		const footerText = await t(interaction, 'common.container.footer', {
-			username: interaction.client.user.username,
-		});
+		// const footerText = ;
 
 		const profileContainer = new ContainerBuilder()
 			.setAccentColor(accentColorDecimal)
@@ -191,16 +189,18 @@ module.exports = {
 				new MediaGalleryBuilder().addItems([
 					new MediaGalleryItemBuilder().setURL(`attachment://${imageName}`),
 				]),
-			)
-
-			.addSeparatorComponents(
-				new SeparatorBuilder()
-					.setSpacing(SeparatorSpacingSize.Small)
-					.setDivider(true),
-			)
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(footerText),
 			);
+
+		// .addSeparatorComponents(
+		// 	new SeparatorBuilder()
+		// 		.setSpacing(SeparatorSpacingSize.Small)
+		// 		.setDivider(true),
+		// )
+		// .addTextDisplayComponents(
+		// 	new TextDisplayBuilder().setContent(await t(interaction, 'common.container.footer', {
+		// 		username: interaction.client.user.username,
+		// 	})),
+		// );
 
 		await interaction.editReply({
 			components: [profileContainer],

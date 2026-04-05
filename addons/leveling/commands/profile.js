@@ -130,6 +130,8 @@ module.exports = {
 			customTag: `Level ${user.level}`,
 			customSubtitle: `XP Progress`,
 
+			// customDate: new Date().toISOString(),
+
 			customBackground: backgroundUrl,
 
 			usernameColor,

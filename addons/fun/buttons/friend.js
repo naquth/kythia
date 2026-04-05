@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/fun/buttons/marry.js
+ * @namespace: addons/fun/buttons/friend.js
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
@@ -12,21 +12,21 @@ const {
 	SeparatorBuilder,
 	MessageFlags,
 } = require('discord.js');
-const Marriage = require('../database/models/Marriage');
+const Friend = require('../database/models/Friend');
 const { convertColor } = require('kythia-core').utils;
 
 module.exports = {
 	execute: async (interaction) => {
 		const container = interaction.client.container;
 		const { t, kythiaConfig } = container;
-		const [prefix, actionType, marriageId] = interaction.customId.split(':');
-		if (prefix !== 'marry' || !actionType || !marriageId) return;
+		const [prefix, actionType, friendReqId] = interaction.customId.split(':');
+		if (prefix !== 'friend' || !actionType || !friendReqId) return;
 
-		const marriage = await Marriage.getCache({ id: marriageId });
+		const friendReq = await Friend.getCache({ id: friendReqId });
 
 		if (actionType === 'accept') {
-			if (!marriage || marriage.status !== 'pending') {
-				const container = new ContainerBuilder()
+			if (!friendReq || friendReq.status !== 'pending') {
+				const cont = new ContainerBuilder()
 					.setAccentColor(
 						convertColor(kythiaConfig.bot.color, {
 							from: 'hex',
@@ -35,7 +35,7 @@ module.exports = {
 					)
 					.addTextDisplayComponents(
 						new TextDisplayBuilder().setContent(
-							await t(interaction, 'fun.marry.proposal.expired'),
+							await t(interaction, 'fun.friend.request.expired'),
 						),
 					)
 					.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
@@ -47,37 +47,35 @@ module.exports = {
 						),
 					);
 				return interaction.update({
-					components: [container],
+					components: [cont],
 				});
 			}
 
-			if (interaction.user.id !== marriage.user2Id) {
+			if (interaction.user.id !== friendReq.user2Id) {
 				return interaction.reply({
-					content: await t(interaction, 'fun.marry.not.your.proposal'),
+					content: await t(interaction, 'fun.friend.not.found'), // re-use or standard unauthorized error
 					flags: MessageFlags.Ephemeral,
 				});
 			}
 
-			await marriage.update({
-				status: 'married',
-				marriedAt: new Date(),
-				loveScore: 0,
+			await friendReq.update({
+				status: 'accepted',
 			});
 
 			let user1Display, user2Display;
 
 			try {
-				const user1 = await interaction.client.users.fetch(marriage.user1Id);
+				const user1 = await interaction.client.users.fetch(friendReq.user1Id);
 				user1Display = user1 ? user1.toString() : 'Unknown';
 			} catch {
 				user1Display = 'Unknown';
 			}
 			user2Display = interaction.user.toString();
 
-			const congratsTitle = `## ${await t(interaction, 'fun.marry.congrats.title')}`;
+			const congratsTitle = `## ${await t(interaction, 'fun.friend.congrats.title')}`;
 			const congratsDesc = await t(
 				interaction,
-				'fun.marry.congrats.description',
+				'fun.friend.congrats.description',
 				{
 					user1: user1Display,
 					user2: user2Display,
@@ -87,7 +85,7 @@ module.exports = {
 				username: interaction.client.user.username,
 			});
 
-			const container = new ContainerBuilder()
+			const cont = new ContainerBuilder()
 				.setAccentColor(
 					convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 				)
@@ -102,11 +100,11 @@ module.exports = {
 				.addTextDisplayComponents(new TextDisplayBuilder().setContent(footer));
 
 			await interaction.update({
-				components: [container],
+				components: [cont],
 			});
 		} else if (actionType === 'reject') {
-			if (!marriage || marriage.status !== 'pending') {
-				const container = new ContainerBuilder()
+			if (!friendReq || friendReq.status !== 'pending') {
+				const cont = new ContainerBuilder()
 					.setAccentColor(
 						convertColor(kythiaConfig.bot.color, {
 							from: 'hex',
@@ -115,7 +113,7 @@ module.exports = {
 					)
 					.addTextDisplayComponents(
 						new TextDisplayBuilder().setContent(
-							await t(interaction, 'fun.marry.proposal.expired'),
+							await t(interaction, 'fun.friend.request.expired'),
 						),
 					)
 					.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
@@ -127,28 +125,28 @@ module.exports = {
 						),
 					);
 				return interaction.update({
-					components: [container],
+					components: [cont],
 				});
 			}
 
-			if (interaction.user.id !== marriage.user2Id) {
+			if (interaction.user.id !== friendReq.user2Id) {
 				return interaction.reply({
-					content: await t(interaction, 'fun.marry.not.your.proposal'),
+					content: await t(interaction, 'fun.friend.not.found'),
 					flags: MessageFlags.Ephemeral,
 				});
 			}
 
-			await marriage.update({ status: 'rejected' });
+			await friendReq.update({ status: 'rejected' });
 
-			const rejectedText = await t(interaction, 'fun.marry.proposal.rejected', {
-				user1: `<@${marriage.user1Id}>`,
-				user2: `<@${marriage.user2Id}>`,
+			const rejectedText = await t(interaction, 'fun.friend.request.rejected', {
+				user1: `<@${friendReq.user1Id}>`,
+				user2: `<@${friendReq.user2Id}>`,
 			});
 			const footer = await t(interaction, 'common.container.footer', {
 				username: interaction.client.user.username,
 			});
 
-			const container = new ContainerBuilder()
+			const cont = new ContainerBuilder()
 				.setAccentColor(convertColor('Red', { from: 'discord', to: 'decimal' }))
 				.addTextDisplayComponents(
 					new TextDisplayBuilder().setContent(rejectedText),
@@ -157,7 +155,7 @@ module.exports = {
 				.addTextDisplayComponents(new TextDisplayBuilder().setContent(footer));
 
 			await interaction.update({
-				components: [container],
+				components: [cont],
 			});
 		}
 	},

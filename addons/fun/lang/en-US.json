@@ -359,6 +359,60 @@
 				"empty": "No scores yet! Be the first to play with `/math`.",
 				"entry": "{rank}. **{user}** — `{score}` pts"
 			}
+		},
+		"friend": {
+			"yourself": {
+				"error": "❌ You can't add yourself as a friend!"
+			},
+			"bot": {
+				"error": "❌ Bots cannot be friends!"
+			},
+			"already": {
+				"friends": "❌ You are already friends or have a pending friend request with this user!"
+			},
+			"not": {
+				"friends": "❌ You are not friends with this user!",
+				"found": "❌ Friend request not found or already processed."
+			},
+			"request": {
+				"title": "🤝 Friend Request",
+				"description": "{proposer} wants to be friends with {target}! Will you accept?",
+				"expired": "This friend request has expired or been cancelled.",
+				"rejected": "❌ The friend request from {user1} to {user2} was rejected."
+			},
+			"accept": {
+				"button": "Accept Friend"
+			},
+			"reject": {
+				"button": "Reject"
+			},
+			"congrats": {
+				"title": "🎉 New Friendship!",
+				"description": "{user1} and {user2} are now friends!"
+			},
+			"removed": {
+				"title": "💔 Friend Removed",
+				"description": "You are no longer friends with {user}."
+			},
+			"list": {
+				"title": "## 🤝 Your Friends",
+				"empty": "You don't have any friends yet! Use `/friend add` to add someone.",
+				"format": "• {user}"
+			}
+		},
+		"summon": {
+			"not": {
+				"friend": "❌ You can only summon your friends! Use `/friend add @user` to add them first."
+			},
+			"dm": {
+				"failed": "❌ I couldn't DM {user}. Their DMs might be closed.",
+				"title": "🔔 You have been summoned!",
+				"description": "You were summoned by **{author}** in the server **{server}**!\nClick the button below to jump to the channel."
+			},
+			"success": "✅ Successfully summoned {user} via DM!",
+			"button": {
+				"jump": "Jump to Channel"
+			}
 		}
 	}
 }

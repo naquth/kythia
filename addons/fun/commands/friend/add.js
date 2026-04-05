@@ -1,5 +1,5 @@
 /**
- * @namespace: addons/fun/commands/marry/propose.js
+ * @namespace: addons/fun/commands/friend/add.js
  * @type: Command
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
@@ -22,22 +22,18 @@ const { Op } = require('sequelize');
 module.exports = {
 	slashCommand: (subcommand) =>
 		subcommand
-			.setName('propose')
-			.setDescription('💍 Propose to another user')
+			.setName('add')
+			.setDescription('🤝 Add someone as a friend')
 			.addUserOption((option) =>
 				option
 					.setName('user')
-					.setDescription('The user you want to propose to')
+					.setDescription('The user you want to add as a friend')
 					.setRequired(true),
 			),
 
-	/**
-	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
-	 * @param {KythiaDI.Container} container
-	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
-		const { Marriage } = models;
+		const { Friend } = models;
 		const { convertColor } = helpers.color;
 
 		const targetUser = interaction.options.getUser('user');
@@ -45,45 +41,49 @@ module.exports = {
 		const proposerId = proposer.id;
 		const targetId = targetUser.id;
 
-		const existingMarriages = await Marriage.getAllCache({
-			where: {
-				[Op.or]: [
-					{ user1Id: proposerId, status: { [Op.in]: ['pending', 'married'] } },
-					{ user2Id: proposerId, status: { [Op.in]: ['pending', 'married'] } },
-					{ user1Id: targetId, status: { [Op.in]: ['pending', 'married'] } },
-					{ user2Id: targetId, status: { [Op.in]: ['pending', 'married'] } },
-				],
-			},
-			limit: 1,
-		});
-
-		const existingMarriage =
-			existingMarriages && existingMarriages.length > 0
-				? existingMarriages[0]
-				: null;
-
-		if (existingMarriage) {
-			return interaction.reply({
-				content: await t(interaction, 'fun.marry.already.married'),
-				flags: MessageFlags.Ephemeral,
-			});
-		}
-
 		if (targetUser.bot) {
 			return interaction.reply({
-				content: await t(interaction, 'fun.marry.bot.error'),
+				content: await t(interaction, 'fun.friend.bot.error'),
 				flags: MessageFlags.Ephemeral,
 			});
 		}
 
 		if (targetId === proposerId) {
 			return interaction.reply({
-				content: await t(interaction, 'fun.marry.yourself.error'),
+				content: await t(interaction, 'fun.friend.yourself.error'),
 				flags: MessageFlags.Ephemeral,
 			});
 		}
 
-		const marriage = await Marriage.create({
+		const existingFriendships = await Friend.getAllCache({
+			where: {
+				[Op.or]: [
+					{ user1Id: proposerId, user2Id: targetId },
+					{ user1Id: targetId, user2Id: proposerId },
+				],
+			},
+			limit: 1,
+		});
+
+		const existingFriendship =
+			existingFriendships && existingFriendships.length > 0
+				? existingFriendships[0]
+				: null;
+
+		if (
+			existingFriendship &&
+			['pending', 'accepted'].includes(existingFriendship.status)
+		) {
+			return interaction.reply({
+				content: await t(interaction, 'fun.friend.already.friends'),
+				flags: MessageFlags.Ephemeral,
+			});
+		}
+
+		// If there is an existing rejected request, we can just update it or create a new one.
+		// For simplicity, we just create a new one.
+
+		const friendReq = await Friend.create({
 			user1Id: proposerId,
 			user2Id: targetId,
 			status: 'pending',
@@ -96,27 +96,23 @@ module.exports = {
 			? targetUser.displayAvatarURL({ extension: 'png', size: 256 })
 			: 'https://cdn.discordapp.com/embed/avatars/0.png';
 
-		const proposalTitle = `## ${await t(interaction, 'fun.marry.proposal.title')}`;
+		const requestTitle = `## ${await t(interaction, 'fun.friend.request.title')}`;
 		const proposerBlock = `## ${proposer.username}\n-# ${proposerId}`;
 		const targetBlock = `## ${targetUser.username}\n-# ${targetId}`;
-		const proposalText = await t(
-			interaction,
-			'fun.marry.proposal.description',
-			{
-				proposer: proposer.toString(),
-				target: targetUser.toString(),
-			},
-		);
+		const requestText = await t(interaction, 'fun.friend.request.description', {
+			proposer: proposer.toString(),
+			target: targetUser.toString(),
+		});
 
-		const acceptBtnLabel = await t(interaction, 'fun.marry.accept.button');
-		const rejectBtnLabel = await t(interaction, 'fun.marry.reject.button');
+		const acceptBtnLabel = await t(interaction, 'fun.friend.accept.button');
+		const rejectBtnLabel = await t(interaction, 'fun.friend.reject.button');
 
-		const proposeContainer = new ContainerBuilder()
+		const addContainer = new ContainerBuilder()
 			.setAccentColor(
 				convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 			)
 			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(proposalTitle),
+				new TextDisplayBuilder().setContent(requestTitle),
 			)
 			.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
 			.addSectionComponents(
@@ -134,7 +130,7 @@ module.exports = {
 			)
 			.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
 			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(proposalText),
+				new TextDisplayBuilder().setContent(requestText),
 			)
 			.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
 			.addSectionComponents(
@@ -154,12 +150,12 @@ module.exports = {
 			.addActionRowComponents(
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder()
-						.setCustomId(`marry:accept:${marriage.id}`)
+						.setCustomId(`friend:accept:${friendReq.id}`)
 						.setLabel(acceptBtnLabel)
-						.setEmoji('❤️')
+						.setEmoji('🤝')
 						.setStyle(ButtonStyle.Success),
 					new ButtonBuilder()
-						.setCustomId(`marry:reject:${marriage.id}`)
+						.setCustomId(`friend:reject:${friendReq.id}`)
 						.setLabel(rejectBtnLabel)
 						.setEmoji('❌')
 						.setStyle(ButtonStyle.Danger),
@@ -176,7 +172,7 @@ module.exports = {
 
 		await interaction.reply({
 			flags: MessageFlags.IsComponentsV2,
-			components: [proposeContainer],
+			components: [addContainer],
 		});
 	},
 };

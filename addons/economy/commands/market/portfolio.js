@@ -28,10 +28,15 @@ module.exports = {
 			.setName('portfolio')
 			.setDescription('💼 View your personal asset portfolio.'),
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { t, models, kythiaConfig, helpers } = container;
 		const { KythiaUser, MarketPortfolio } = models;
-		const { simpleContainer, convertColor } = helpers.discord;
+		const { simpleContainer } = helpers.discord;
+		const { convertColor } = helpers.color;
 
 		await interaction.deferReply();
 

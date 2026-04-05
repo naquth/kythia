@@ -93,6 +93,9 @@ app.post('/topgg', async (c) => {
 			await discordUser.send({
 				components,
 				flags: MessageFlags.IsComponentsV2,
+				allowedMentions: {
+					parse: [],
+				},
 			});
 		} catch (err) {
 			logger.warn(`Failed DM to ${userId}\n${err.message || err}`, {
@@ -131,7 +134,7 @@ app.post('/topgg', async (c) => {
 						new SectionBuilder()
 							.addTextDisplayComponents(
 								new TextDisplayBuilder().setContent(
-									`## 🌸 New Vote!\n<@${userId}> (${user.username})\njust gave their love and support to **${config.bot.name}** on Top.gg!\n\nYou're very cool >,<! thank youu very muchh, Dont forget **${config.bot.name}** tomorrow!\n-# psttt look at my dm!`,
+									`## New Vote!\n<@${userId}> (${user.username})\njust gave their love and support to **${config.bot.name}** on Top.gg!\n\nYou're very cool >,<! thank youu very muchh, Dont forget **${config.bot.name}** tomorrow!\n-# psttt look at my dm!`,
 								),
 							)
 							.setThumbnailAccessory(
@@ -167,6 +170,9 @@ app.post('/topgg', async (c) => {
 				const payload = {
 					flags: MessageFlags.IsComponentsV2,
 					components: [voteContainer.toJSON()],
+					allowedMentions: {
+						parse: [],
+					},
 				};
 
 				const response = await fetch(webhookUrl.href, {

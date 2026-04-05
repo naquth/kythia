@@ -5,13 +5,13 @@
 				"leveling": {
 					"profile": {
 						"up": {
-							"title": "## 🏅 Level Up!",
+							"title": "## Level Up!",
 							"desc": "{mention} ({username}) has reached level **{level}**! Keep up your good work! 🎉\n-# next level exp: {nextLevelXp}"
 						}
 					},
 					"role": {
 						"reward": {
-							"title": "## 🏅 Role Awarded",
+							"title": "## Role Awarded",
 							"desc": "{mention} get role **{role}** for reaching level **{level}**.\nKeep up the good work! 🎉"
 						}
 					}

@@ -9,13 +9,13 @@
 const { profileImage } = require('kythia-arts');
 
 const {
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
-	MediaGalleryBuilder,
-	MediaGalleryItemBuilder,
 	MessageFlags,
+	ContainerBuilder,
+	SeparatorBuilder,
+	TextDisplayBuilder,
+	MediaGalleryBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryItemBuilder,
 } = require('discord.js');
 
 /**
@@ -181,6 +181,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 				customSubtitle: `New Level: ${user.level}`,
 				customWidth: 1024,
 				customHeight: 450,
+				customDate: new Date().toISOString(),
 				customBackground: backgroundUrl,
 				font: 'NOTO_SANS',
 				usernameColor,

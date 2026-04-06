@@ -22,6 +22,7 @@ const manager = new ShardingManager({
 	scriptPath: path.join(__dirname, 'index.js'),
 	token: kythiaConfig.bot.token,
 	totalShards: kythiaConfig.bot.totalShards,
+	maxOldSpaceSizeMb: 2048,
 });
 
 manager.spawn().catch((err) => {

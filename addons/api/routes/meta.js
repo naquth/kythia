@@ -22,14 +22,15 @@ const app = new Hono();
 app.get('/stats', async (c) => {
 	const client = c.get('client');
 
-	const { totalServers, totalMembers } = await broadcastGetMeta(client);
+	const { totalServers, totalMembers, totalMemory } =
+		await broadcastGetMeta(client);
 
 	return c.json({
 		totalServers,
 		totalMembers,
 		uptime: client.container.shutdownManager.getMasterUptime(),
 		ping: client.ws.ping,
-		ram_usage: `${(process.memoryUsage().rss / 1024 / 1024).toFixed(2)} MB`,
+		ram_usage: `${(totalMemory / 1024 / 1024).toFixed(2)} MB`,
 	});
 });
 

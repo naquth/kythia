@@ -7,10 +7,10 @@
  */
 
 const {
+	MessageFlags,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	InteractionContextType,
-	MessageFlags,
 } = require('discord.js');
 const { reloadLavalinkNodes } = require('../helpers/reload-node');
 

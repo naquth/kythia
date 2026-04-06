@@ -7,21 +7,22 @@
  */
 
 const {
-	ActionRowBuilder,
-	ButtonBuilder,
 	ButtonStyle,
-	StringSelectMenuBuilder,
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
 	MessageFlags,
+	ButtonBuilder,
 	ComponentType,
 	SectionBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
 	ThumbnailBuilder,
+	ActionRowBuilder,
+	TextDisplayBuilder,
 	MediaGalleryBuilder,
+	SeparatorSpacingSize,
+	StringSelectMenuBuilder,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
+
 const { createProgressBar, hasControlPermission } = require('.');
 const { Spotify } = require('poru-spotify');
 const { Poru } = require('poru');
@@ -119,6 +120,26 @@ class MusicManager {
 			defaultPlatform: this.config.addons.music.defaultPlatform || 'ytsearch',
 			plugins: plugins,
 		});
+
+		const originalPacketUpdate = this.client.poru.packetUpdate.bind(
+			this.client.poru,
+		);
+		this.client.poru.packetUpdate = async (packet) => {
+			try {
+				await originalPacketUpdate(packet);
+			} catch (e) {
+				if (e.message?.includes('No Session id found')) {
+					this.logger.warn(`Poru bypassed ignored error: ${e.message}`, {
+						label: 'music',
+					});
+				} else {
+					this.logger.error(
+						`Poru packetUpdate error: ${e.stack || e.message}`,
+						{ label: 'music' },
+					);
+				}
+			}
+		};
 
 		// Register Poru Events & Listeners
 		this.registerPoruEvents();

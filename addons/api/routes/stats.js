@@ -14,14 +14,14 @@ const app = new Hono();
 app.get('/', async (c) => {
 	const client = c.get('client');
 
-	const { guilds, users } = await broadcastGetStats(client);
+	const { guilds, users, totalMemory } = await broadcastGetStats(client);
 
 	return c.json({
 		ping: client.ws.ping,
 		uptime: client.container.shutdownManager.getMasterUptime(),
 		guilds,
 		users,
-		ram_usage: `${(process.memoryUsage().rss / 1024 / 1024).toFixed(2)} MB`,
+		ram_usage: `${(totalMemory / 1024 / 1024).toFixed(2)} MB`,
 	});
 });
 

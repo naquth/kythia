@@ -466,7 +466,7 @@ module.exports = {
 		PermissionFlagsBits.Connect,
 		PermissionFlagsBits.SendMessages,
 	],
-	aliases: ['music', 'm', '🎵'],
+	aliases: ['music', 'm'],
 	defaultArgument: 'search',
 
 	/**

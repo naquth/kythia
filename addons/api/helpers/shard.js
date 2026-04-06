@@ -118,17 +118,20 @@ async function broadcastGetStats(client) {
 		return {
 			guilds: client.guilds.cache.size,
 			users: client.users.cache.size,
+			totalMemory: process.memoryUsage().rss,
 		};
 	}
 
-	const [guildCounts, userCounts] = await Promise.all([
+	const [guildCounts, userCounts, memoryUsages] = await Promise.all([
 		client.shard.fetchClientValues('guilds.cache.size'),
 		client.shard.fetchClientValues('users.cache.size'),
+		client.shard.broadcastEval(() => process.memoryUsage().rss),
 	]);
 
 	return {
 		guilds: guildCounts.reduce((acc, n) => acc + n, 0),
 		users: userCounts.reduce((acc, n) => acc + n, 0),
+		totalMemory: memoryUsages.reduce((acc, n) => acc + n, 0),
 	};
 }
 
@@ -185,17 +188,20 @@ async function broadcastGetMeta(client) {
 				(acc, g) => acc + (g.memberCount || 0),
 				0,
 			),
+			totalMemory: process.memoryUsage().rss,
 		};
 	}
 
 	const results = await client.shard.broadcastEval((c) => ({
 		servers: c.guilds.cache.size,
 		members: c.guilds.cache.reduce((acc, g) => acc + (g.memberCount || 0), 0),
+		totalMemory: process.memoryUsage().rss,
 	}));
 
 	return {
 		totalServers: results.reduce((acc, r) => acc + r.servers, 0),
 		totalMembers: results.reduce((acc, r) => acc + r.members, 0),
+		totalMemory: results.reduce((acc, r) => acc + r.totalMemory, 0),
 	};
 }
 

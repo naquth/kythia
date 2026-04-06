@@ -6,28 +6,32 @@
  * @version 1.0.0-rc
  */
 
-const { generateLyricsWithTranscript, formatTrackDuration } = require('..');
+const {
+	generateLyricsWithTranscript,
+	formatTrackDuration,
+} = require('../index');
 
 const {
-	ContainerBuilder,
-	TextDisplayBuilder,
-	SeparatorBuilder,
-	SeparatorSpacingSize,
-	ActionRowBuilder,
-	ButtonBuilder,
 	ButtonStyle,
+	FileBuilder,
 	MessageFlags,
+	ButtonBuilder,
 	ComponentType,
-	MediaGalleryItemBuilder,
-	MediaGalleryBuilder,
-	StringSelectMenuBuilder,
 	SectionBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	ActionRowBuilder,
 	ThumbnailBuilder,
 	AttachmentBuilder,
-	FileBuilder,
+	TextDisplayBuilder,
+	MediaGalleryBuilder,
+	SeparatorSpacingSize,
+	MediaGalleryItemBuilder,
+	StringSelectMenuBuilder,
 } = require('discord.js');
 
 const { customFilter } = require('poru');
+
 let ytDlp = null;
 try {
 	ytDlp = require('yt-dlp-exec');

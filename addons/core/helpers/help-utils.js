@@ -236,7 +236,7 @@ module.exports = {
 				category_count: allCategories.length,
 				command_count: totalCommands,
 				supportServer: kythiaConfig.settings.supportServer,
-				botWebsite: kythiaConfig.settings.kythiaWebsite,
+				botWebsite: kythiaConfig.settings.kythiaWeb,
 			});
 
 			if (kythiaConfig?.settings?.helpBannerImage) {

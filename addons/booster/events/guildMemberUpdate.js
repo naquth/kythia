@@ -22,8 +22,10 @@ const {
 } = require('discord.js');
 
 module.exports = async (bot, oldMember, newMember) => {
-	// Check if this was a boost (premiumSince changed from null to a date)
-	if (oldMember.premiumSinceTimestamp || !newMember.premiumSinceTimestamp)
+	if (
+		oldMember.premiumSinceTimestamp !== null ||
+		!newMember.premiumSinceTimestamp
+	)
 		return;
 
 	const container = bot.client.container;

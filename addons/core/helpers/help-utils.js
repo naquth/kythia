@@ -235,6 +235,8 @@ module.exports = {
 				username: interaction.client.user.username,
 				category_count: allCategories.length,
 				command_count: totalCommands,
+				supportServer: kythiaConfig.settings.supportServer,
+				botWebsite: kythiaConfig.settings.kythiaWebsite,
 			});
 
 			if (kythiaConfig?.settings?.helpBannerImage) {

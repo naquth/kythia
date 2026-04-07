@@ -58,7 +58,7 @@
 				},
 				"main": {
 					"embed": {
-						"desc": "## {username} help you\n👋 **Welcome to the bot help center!**\n\n### 🔎 Quick Tips:\n• Select a category below to see the command list and explanations.\n• Click a command name for more details (if available).\n• Use / in chat to auto-complete commands.\n\n### 📊 **Statistics:**\n• Total categories: **{category_count}**\n• Total commands: **{command_count}**\n\n### 🆘 Need more help?\n• Join the support server: [Click here](https://dsc.gg/kythia)\n• Kythia's Website: [Click here](https://kythia.my.id)\n\n-# ✨ **Select a category below to see the help!**"
+						"desc": "## {username} help you\n**Welcome to the bot help center!**\n\n### Quick Tips:\n• Select a category below to see the command list and explanations.\n• Click a command name for more details (if available).\n• Use / in chat to auto-complete commands.\n\n### **Statistics:**\n• Total categories: **{category_count}**\n• Total commands: **{command_count}**\n\n### **Need more help?**\n• Join the support server: [Click here]({supportServer})\n• Kythia's Website: [Click here]({botWebsite})\n\n-# **Select a category below to see the help!**"
 					}
 				},
 				"select": {
@@ -68,7 +68,7 @@
 				},
 				"button": {
 					"go": {
-						"home": "🏠 Home"
+						"home": "Home"
 					},
 					"cat": {
 						"prev": "« Categories",

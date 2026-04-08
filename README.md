@@ -271,7 +271,7 @@ Need help or want to connect with other Kythia users? Join our community!
 * **Contributors**
    - [idMJA](https://github.com/idMJA)
 * **Testers**
-   - [Naqent](https://github.com/naqent)
+   - [Naquth](https://github.com/naquth)
    - [Razaeldotexe](https://github.com/razaeldotexe)
    - [Aryandita](https://github.com/Aryandita)
 * **Special Mention**

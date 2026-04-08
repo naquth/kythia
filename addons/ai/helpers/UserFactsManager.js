@@ -247,10 +247,17 @@ If there are no new important facts to learn from this conversation, respond wit
 				model: GEMINI_MODEL,
 				contents: [
 					{ role: 'model', parts: [{ text: summarizationInstruction }] },
-					...conversationHistory.map((msg) => ({
-						role: msg.role,
-						parts: [{ text: msg.content }],
-					})),
+					...conversationHistory.map((msg) => {
+						let textContent =
+							typeof msg.content === 'string' ? msg.content : '';
+						if (textContent.length > 80000) {
+							textContent = `${textContent.substring(0, 80000)}... [TRUNCATED]`;
+						}
+						return {
+							role: msg.role,
+							parts: [{ text: textContent }],
+						};
+					}),
 				],
 			});
 

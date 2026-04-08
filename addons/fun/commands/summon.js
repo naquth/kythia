@@ -111,7 +111,6 @@ module.exports = {
 			await targetUser.send({
 				components: [dmContainer],
 				flags: MessageFlags.IsComponentsV2,
-				content: `<@${targetUser.id}>`, // ping the user in DM for notification
 			});
 
 			await interaction.editReply({
@@ -119,7 +118,7 @@ module.exports = {
 					user: targetUser.toString(),
 				}),
 			});
-		} catch (error) {
+		} catch (_e) {
 			await interaction.editReply({
 				content: await t(interaction, 'fun.summon.dm.failed', {
 					user: targetUser.toString(),

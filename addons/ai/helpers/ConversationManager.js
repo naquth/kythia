@@ -53,9 +53,11 @@ class ConversationManager {
 		const conversation = this.getConversation(userId);
 		const lastMessage = conversation.history[conversation.history.length - 1];
 
-		// If last message is same role and is user, append to it
 		if (lastMessage && lastMessage.role === role && role === 'user') {
 			lastMessage.content += `\n${content}`;
+			if (lastMessage.content.length > 80000) {
+				lastMessage.content = lastMessage.content.slice(-80000);
+			}
 		} else {
 			conversation.history.push({ role, content });
 		}
@@ -75,10 +77,16 @@ class ConversationManager {
 	 */
 	buildContentsArray(userId) {
 		const conversation = this.getConversation(userId);
-		return conversation.history.map((msg) => ({
-			role: msg.role === 'model' ? 'model' : 'user',
-			parts: [{ text: typeof msg.content === 'string' ? msg.content : '' }],
-		}));
+		return conversation.history.map((msg) => {
+			let text = typeof msg.content === 'string' ? msg.content : '';
+			if (text.length > 80000) {
+				text = `${text.substring(0, 80000)}... [TRUNCATED]`;
+			}
+			return {
+				role: msg.role === 'model' ? 'model' : 'user',
+				parts: [{ text }],
+			};
+		});
 	}
 
 	/**

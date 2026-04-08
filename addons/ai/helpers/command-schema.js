@@ -76,22 +76,23 @@ function generateCommandSchema(client) {
 	const schemas = [];
 
 	client.commands.forEach((command) => {
-		// Defensive: skip if command or command.data is missing
-		if (!command || !command.data || typeof command.data !== 'object') return;
+		// Defensive: skip if command or command builder is missing
+		const commandData = command?.slashCommand || command?.data;
+		if (!commandData || typeof commandData !== 'object') return;
 
 		// Defensive: skip if .name is missing
-		const commandName = command.data.name;
+		const commandName = commandData.name;
 		if (!commandName || typeof commandName !== 'string') return;
 
 		if (!Array.isArray(safeCommands) || !safeCommands.includes(commandName))
 			return;
 
 		// Defensive: check if toJSON exists and is a function
-		if (typeof command.data.toJSON !== 'function') return;
+		if (typeof commandData.toJSON !== 'function') return;
 
 		let commandJSON;
 		try {
-			commandJSON = command.data.toJSON();
+			commandJSON = commandData.toJSON();
 		} catch (_e) {
 			// If toJSON fails, skip this command
 			return;

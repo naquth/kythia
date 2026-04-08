@@ -712,6 +712,14 @@ class AIMessageHandler {
 				client.container,
 			);
 
+			let functionResultStr = JSON.stringify({
+				success: true,
+				result: executionResult,
+			});
+			if (functionResultStr.length > 80000) {
+				functionResultStr = `${functionResultStr.substring(0, 80000)}... [TRUNCATED]`;
+			}
+
 			const genAI = new GoogleGenAI({
 				apiKey: this.aiConfig.geminiApiKeys.split(',')[0],
 			});
@@ -727,10 +735,7 @@ class AIMessageHandler {
 								functionResponse: {
 									name: fullFunctionName,
 									response: {
-										content: JSON.stringify({
-											success: true,
-											result: executionResult,
-										}),
+										content: functionResultStr,
 									},
 								},
 							},

@@ -77,13 +77,18 @@ async function broadcastFindGuild(client, guildId) {
 				guild: { id: g.id, name: g.name, icon: g.iconURL() },
 				channels: {
 					text: g.channels.cache
-						.filter((ch) => ch.type === 0)
+						.filter(
+							(ch) =>
+								ch.type === 0 &&
+								ch.viewable &&
+								ch.permissionsFor(g.members.me)?.has('SendMessages'),
+						)
 						.map((ch) => ({ id: ch.id, name: ch.name })),
 					voice: g.channels.cache
-						.filter((ch) => ch.type === 2)
+						.filter((ch) => ch.type === 2 && ch.viewable)
 						.map((ch) => ({ id: ch.id, name: ch.name })),
 					categories: g.channels.cache
-						.filter((ch) => ch.type === 4)
+						.filter((ch) => ch.type === 4 && ch.viewable)
 						.map((ch) => ({ id: ch.id, name: ch.name })),
 				},
 				roles: g.roles.cache.map((r) => ({
@@ -91,12 +96,14 @@ async function broadcastFindGuild(client, guildId) {
 					name: r.name,
 					color: r.hexColor,
 					managed: r.managed,
+					position: r.position,
 				})),
 				botUser: {
 					username: c.user.username,
 					avatar: c.user.displayAvatarURL(),
 					id: c.user.id,
 					discriminator: c.user.discriminator,
+					highestRolePosition: g.members.me?.roles.highest?.position ?? 0,
 				},
 			};
 		},
@@ -149,13 +156,18 @@ function _extractGuildData(guild, client, shardId) {
 		guild: { id: guild.id, name: guild.name, icon: guild.iconURL() },
 		channels: {
 			text: guild.channels.cache
-				.filter((ch) => ch.type === 0)
+				.filter(
+					(ch) =>
+						ch.type === 0 &&
+						ch.viewable &&
+						ch.permissionsFor(guild.members.me)?.has('SendMessages'),
+				)
 				.map((ch) => ({ id: ch.id, name: ch.name })),
 			voice: guild.channels.cache
-				.filter((ch) => ch.type === 2)
+				.filter((ch) => ch.type === 2 && ch.viewable)
 				.map((ch) => ({ id: ch.id, name: ch.name })),
 			categories: guild.channels.cache
-				.filter((ch) => ch.type === 4)
+				.filter((ch) => ch.type === 4 && ch.viewable)
 				.map((ch) => ({ id: ch.id, name: ch.name })),
 		},
 		roles: guild.roles.cache.map((r) => ({
@@ -163,12 +175,14 @@ function _extractGuildData(guild, client, shardId) {
 			name: r.name,
 			color: r.hexColor,
 			managed: r.managed,
+			position: r.position,
 		})),
 		botUser: {
 			username: client.user.username,
 			avatar: client.user.displayAvatarURL(),
 			id: client.user.id,
 			discriminator: client.user.discriminator,
+			highestRolePosition: guild.members.me?.roles.highest?.position ?? 0,
 		},
 	};
 }

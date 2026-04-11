@@ -17,6 +17,7 @@ const {
 	SeparatorSpacingSize,
 	MediaGalleryItemBuilder,
 } = require('discord.js');
+const { Op } = require('sequelize');
 
 /**
  * Calculate the XP required to level up from the given level,
@@ -175,6 +176,20 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 
 	if (isImageEnabled) {
 		try {
+			const rank =
+				(await User.countWithCache({
+					where: {
+						guildId,
+						[Op.or]: [
+							{ level: { [Op.gt]: user.level } },
+							{
+								level: user.level,
+								xp: { [Op.gt]: user.xp },
+							},
+						],
+					},
+				})) + 1;
+
 			buffer = await profileImage(userId, {
 				botToken: kythiaConfig.bot.token,
 				customTag: `Level Up!`,
@@ -193,6 +208,7 @@ const addXp = async (guildId, userId, xpToAdd, message, channel) => {
 					level: user.level,
 					barColor,
 					levelColor: tagColor,
+					rank,
 				},
 				customFont: 'BagelFatOne-Regular',
 				fontWeight: 'normal',

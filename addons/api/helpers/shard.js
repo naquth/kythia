@@ -104,6 +104,7 @@ async function broadcastFindGuild(client, guildId) {
 					id: c.user.id,
 					discriminator: c.user.discriminator,
 					highestRolePosition: g.members.me?.roles.highest?.position ?? 0,
+					permissions: g.members.me?.permissions.toArray() ?? [],
 				},
 			};
 		},
@@ -183,6 +184,7 @@ function _extractGuildData(guild, client, shardId) {
 			id: client.user.id,
 			discriminator: client.user.discriminator,
 			highestRolePosition: guild.members.me?.roles.highest?.position ?? 0,
+			permissions: guild.members.me?.permissions.toArray() ?? [],
 		},
 	};
 }

@@ -15,9 +15,10 @@ const {
 	SeparatorBuilder,
 	MessageFlags,
 } = require('discord.js');
-const { levelUpXp } = require('../helpers');
 
 const { profileImage } = require('kythia-arts');
+const { levelUpXp } = require('../helpers');
+const { Op } = require('sequelize');
 
 module.exports = {
 	subcommand: true,
@@ -122,6 +123,20 @@ module.exports = {
 
 		const imageName = 'level-profile.png';
 
+		const rank =
+			(await User.countWithCache({
+				where: {
+					guildId,
+					[Op.or]: [
+						{ level: { [Op.gt]: user.level } },
+						{
+							level: user.level,
+							xp: { [Op.gt]: user.xp },
+						},
+					],
+				},
+			})) + 1;
+
 		const buffer = await profileImage(targetUser.id, {
 			botToken: kythiaConfig.bot.token,
 
@@ -144,6 +159,7 @@ module.exports = {
 				level: user.level,
 				barColor,
 				levelColor: tagColor,
+				rank,
 			},
 
 			customFont: 'BagelFatOne-Regular',

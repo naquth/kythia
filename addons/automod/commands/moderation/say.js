@@ -30,7 +30,7 @@ module.exports = {
 		const { t, helpers } = container;
 		const { simpleContainer } = helpers.discord;
 
-		await interaction.deferReply();
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const message = interaction.options.getString('message');
 
@@ -44,7 +44,7 @@ module.exports = {
 			);
 			return interaction.editReply({
 				components: reply,
-				flags: MessageFlags.IsComponentsV2,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		} catch (error) {
 			const reply = await simpleContainer(
@@ -56,7 +56,7 @@ module.exports = {
 			);
 			return interaction.editReply({
 				components: reply,
-				flags: MessageFlags.IsComponentsV2,
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 	},

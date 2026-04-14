@@ -1,0 +1,36 @@
+{
+	"activity": {
+		"stats": {
+			"activity": {
+				"stats": {
+					"title": "Activity Stats",
+					"desc": "Here are the raw activity stats for **{username}**:\n\n📨 **Total Messages:** {messages}\n🎙️ **Total Voice Time:** {voiceTime}"
+				}
+			}
+		},
+		"leaderboard": {
+			"activity": {
+				"leaderboard": {
+					"empty": "No activity data yet. Start chatting or join a voice channel!",
+					"entry": "{medal} <@{userId}> — **{value}**",
+					"title": {
+						"messages": "Most Active — Messages",
+						"voice": "Most Active — Voice Time"
+					},
+					"footer": "-# Activity leaderboard for **{server}**",
+					"not": {
+						"your": {
+							"interaction": "This is not your leaderboard to navigate."
+						}
+					},
+					"nav": {
+						"first": "⏮ First",
+						"prev": "◀ Prev",
+						"next": "Next ▶",
+						"last": "Last ⏭"
+					}
+				}
+			}
+		}
+	}
+}

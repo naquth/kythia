@@ -196,6 +196,9 @@ function loadKythiaConfig() {
 				// turn it on or off
 				active: true,
 			},
+			activity: {
+				active: true,
+			},
 			adventure: {
 				active: true,
 			},

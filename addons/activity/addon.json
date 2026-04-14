@@ -1,0 +1,8 @@
+{
+	"name": "Activity",
+	"featureName": "Activity",
+	"featureFlag": "activityOn",
+	"version": "1.0.0-rc1",
+	"description": "Track raw activity statistics for your server members! Monitor total messages sent and total time spent in voice channels, with leaderboards to see who's most active.",
+	"author": "kenndeclouv"
+}

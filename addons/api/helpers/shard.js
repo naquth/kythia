@@ -101,6 +101,8 @@ async function broadcastFindGuild(client, guildId) {
 				botUser: {
 					username: c.user.username,
 					avatar: c.user.displayAvatarURL(),
+					banner: c.user.bannerURL() ?? null,
+					bio: c.application.description ?? null,
 					id: c.user.id,
 					discriminator: c.user.discriminator,
 					highestRolePosition: g.members.me?.roles.highest?.position ?? 0,
@@ -181,6 +183,8 @@ function _extractGuildData(guild, client, shardId) {
 		botUser: {
 			username: client.user.username,
 			avatar: client.user.displayAvatarURL(),
+			banner: client.user.bannerURL() ?? null,
+			bio: client.application.description ?? null,
 			id: client.user.id,
 			discriminator: client.user.discriminator,
 			highestRolePosition: guild.members.me?.roles.highest?.position ?? 0,
@@ -270,21 +274,20 @@ async function broadcastEditMember(client, guildId, payload) {
 	if (!client.shard) {
 		const guild = client.guilds.cache.get(guildId);
 		if (!guild) return false;
-		await guild.members.me.edit(payload);
+		await guild.members.editMe(payload);
 		return true;
 	}
 
 	const results = await client.shard.broadcastEval(
 		async (c, { id, editPayload }) => {
 			const g = c.guilds.cache.get(id);
-			if (!g) return null; // not on this shard
-			await g.members.me.edit(editPayload);
+			if (!g) return null;
+			await g.members.editMe(editPayload);
 			return true;
 		},
 		{ context: { id: guildId, editPayload: payload } },
 	);
 
-	// true if any shard actually applied the edit
 	return results.some((r) => r === true);
 }
 

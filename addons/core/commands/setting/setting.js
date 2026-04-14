@@ -81,6 +81,7 @@ const createToggleOption = () => {
 };
 
 const featureMap = {
+	activity: ['activityOn', 'Activity'],
 	'server-stats': ['serverStatsOn', 'Server Stats'],
 	leveling: ['levelingOn', 'Leveling'],
 	adventure: ['adventureOn', 'Adventure'],

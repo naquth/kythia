@@ -96,6 +96,12 @@ The **Kythia API** is an internal REST API addon that acts as the bridge between
   - [Update (claim/reset/set/freeze)](#patch-apistreakguildididuserid)
   - [Delete Streak Entry](#delete-apistreakguildididuserid)
   - [Wipe Guild Streaks](#delete-apistreakguildid)
+- [Activity API (`/api/activity`)](#activity-api-apiactivity)
+  - [Toggle Activity Tracking](#patch-apiacitivityguildidtoggle)
+  - [Leaderboard](#get-apiactivityguildid)
+  - [Single User Stats](#get-apiactivityguildididuserid)
+  - [Reset User Stats](#delete-apiactivityguildididuserid)
+  - [Reset Guild Stats](#delete-apiactivityguildid)
 - [Music API (`/api/music`)](#music-api-apimusic)
   - [Search Tracks](#get-apimusicsearch)
   - [Playlists](#playlists)
@@ -5875,6 +5881,203 @@ Wipe **all** streak records for an entire guild.
 ```json
 { "success": true, "message": "Deleted 84 streak record(s) in guild 987...", "deleted": 84 }
 ```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+## Activity API (`/api/activity`)
+
+Exposes per-guild activity statistics tracked by the **Activity addon** (`activityOn`). Tracks total messages sent and total voice time (in seconds) per member.
+
+> **Feature flag:** `activityOn` must be enabled for the guild (via `/set features activity enable` or `PATCH /api/guilds/settings/:guildId`) for data to be collected.
+
+---
+
+### `PATCH /api/activity/:guildId/toggle`
+
+Enables or disables activity tracking for a guild. Equivalent to `/set features activity enable|disable`.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Request Body:**
+```json
+{ "enabled": true }
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `enabled` | `boolean` | Yes | `true` to enable, `false` to disable |
+
+**Response (success):**
+```json
+{ "success": true, "activityOn": true }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "error": "Missing or invalid 'enabled' field" }` | Body missing or wrong type |
+| `404` | `{ "error": "Guild settings not found" }` | No settings row for guild |
+| `500` | `{ "error": "..." }` | Database error |
+
+---
+
+### `GET /api/activity/:guildId`
+
+Returns the top-10 activity leaderboard for a guild, sorted by the requested metric.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `sort` | `string` | `messages` | Sort key: `messages` or `voice` |
+| `limit` | `number` | `10` | Number of entries to return (max 25) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "guildId": "123456789012345678",
+  "sort": "messages",
+  "leaderboard": [
+    {
+      "rank": 1,
+      "userId": "111111111111111111",
+      "totalMessages": 4200,
+      "totalVoiceTime": 36000
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | Always `true` on success |
+| `guildId` | `string` | The queried guild ID |
+| `sort` | `string` | The sort key used (`messages` or `voice`) |
+| `leaderboard` | `array` | Top entries, sorted descending |
+| `leaderboard[].rank` | `number` | 1-based rank position |
+| `leaderboard[].userId` | `string` | Discord user snowflake ID |
+| `leaderboard[].totalMessages` | `number` | Cumulative messages sent |
+| `leaderboard[].totalVoiceTime` | `number` | Cumulative voice time in seconds |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `GET /api/activity/:guildId/id/:userId`
+
+Returns the activity stats for a single user in a guild.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+| `userId` | `string` | The Discord user ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "guildId": "123456789012345678",
+  "userId": "111111111111111111",
+  "totalMessages": 4200,
+  "totalVoiceTime": 36000
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | Always `true` on success |
+| `guildId` | `string` | The queried guild ID |
+| `userId` | `string` | The queried user ID |
+| `totalMessages` | `number` | Total messages sent |
+| `totalVoiceTime` | `number` | Total voice time in seconds |
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "User stats not found" }` | No record for the user/guild pair |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `DELETE /api/activity/:guildId/id/:userId`
+
+Deletes the activity stats record for a single user in a guild.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+| `userId` | `string` | The Discord user ID |
+
+**Response (success):**
+```json
+{ "success": true }
+```
+
+**Errors:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `404` | `{ "success": false, "error": "User stats not found" }` | No record exists |
+| `500` | `{ "success": false, "error": "..." }` | Database error |
+
+---
+
+### `DELETE /api/activity/:guildId`
+
+Wipes all activity stats for every member in a guild.
+
+**Authentication:** Bearer token required.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `guildId` | `string` | The Discord guild ID |
+
+**Response (success):**
+```json
+{ "success": true, "deleted": 42 }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `success` | `boolean` | Always `true` |
+| `deleted` | `number` | Number of rows deleted |
 
 **Errors:**
 

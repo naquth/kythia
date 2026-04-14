@@ -108,6 +108,18 @@
 				"success": "✅ AI personality changed to **{personality}**!\n{description}\n\nTry chatting with me now to experience the new style!",
 				"reset": "✅ AI personality reset to config default!\n\nI'll now use the default personality set by the bot administrator."
 			}
+		},
+		"imagen": {
+			"no_input": "❌ Please provide a prompt and/or an image to generate from.",
+			"invalid_attachment": "❌ The attached file must be an image.",
+			"limit": "❌ You have reached your daily limit of **{limit}** image generations. Please try again tomorrow!",
+			"loading": "🎨 Your image is generating now, please wait...",
+			"loading_transform": "🖼️ Transforming your image{prompt}...",
+			"fetch_error": "❌ Failed to fetch the source image. Please try again.",
+			"rate_limit": "❌ AI is currently rate limited. Please try again later.",
+			"result": "🎨 Generated image{prompt}",
+			"result_transform": "🖼️ Transformed image{prompt}",
+			"error": "❌ Failed to generate image: {error}"
 		}
 	}
 }

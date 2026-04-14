@@ -241,7 +241,13 @@ function loadKythiaConfig() {
 				dailyGreeterPrompt: `
                     Make a warm greeting for the members.
                 `,
+				// owner bypass filter
 				ownerBypassFilter: true,
+
+				// gemini imagen model, only can if your project is active billed
+				imagenModel: 'gemini-3.1-flash-image-preview',
+				imagenLimit: 2,
+				imagenApiKeys: process.env.GEMINI_IMAGEN_API_KEYS,
 			},
 			/** -------------------------------------------------------------------
 			 * API/DASHBOARD ADDON - Web Dashboard Interface

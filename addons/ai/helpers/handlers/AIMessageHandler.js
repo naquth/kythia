@@ -63,6 +63,23 @@ class AIMessageHandler {
 	}
 
 	/**
+	 * Safe reply helper to avoid Unknown Message errors
+	 * @param {import('discord.js').Message} message
+	 * @param {string|Object} payload
+	 */
+	async safeReply(message, payload) {
+		const options =
+			typeof payload === 'string' ? { content: payload } : { ...payload };
+		options.failIfNotExists = false;
+		return message.reply(options).catch((err) => {
+			this.logger.warn(`SafeReply fallback used due to: ${err.message}`, {
+				label: 'AIMessageHandler',
+			});
+			return message.channel.send(options).catch(() => {});
+		});
+	}
+
+	/**
 	 * Main message handler entry point
 	 * @param {Object} bot - Bot instance
 	 * @param {import('discord.js').Message} message - Discord message
@@ -134,7 +151,7 @@ class AIMessageHandler {
 				const cooldownMsg = (
 					await this.t(message, 'ai.events.messageCreate.cooldown')
 				).replace('{seconds}', seconds);
-				await message.reply(cooldownMsg).catch(() => {});
+				await this.safeReply(message, cooldownMsg).catch(() => {});
 				return;
 			}
 		}
@@ -220,16 +237,19 @@ class AIMessageHandler {
 					fact,
 				);
 				if (status === 'added') {
-					await message.reply(
+					await this.safeReply(
+						message,
 						await this.t(message, 'ai.events.messageCreate.memory.added'),
 					);
 				} else if (status === 'duplicate') {
-					await message.reply(
+					await this.safeReply(
+						message,
 						await this.t(message, 'ai.events.messageCreate.memory.duplicate'),
 					);
 				}
 			} else {
-				await message.reply(
+				await this.safeReply(
+					message,
 					await this.t(message, 'ai.events.messageCreate.memory.empty'),
 				);
 			}
@@ -275,7 +295,8 @@ class AIMessageHandler {
 
 			if (!cleanContent && mediaParts.length === 0) {
 				if (message.mentions.users.has(client.user.id)) {
-					await message.reply(
+					await this.safeReply(
+						message,
 						await this.t(message, 'ai.events.messageCreate.mention'),
 					);
 				}
@@ -346,11 +367,10 @@ class AIMessageHandler {
 					'❌ All AI tokens failed (likely 429). Informing user.',
 					{ label: 'ai' },
 				);
-				await message
-					.reply(
-						await this.t(message, 'ai.events.messageCreate.memory.token.limit'),
-					)
-					.catch(() => {});
+				await this.safeReply(
+					message,
+					await this.t(message, 'ai.events.messageCreate.memory.token.limit'),
+				).catch(() => {});
 			}
 		} catch (err) {
 			this.logger.error(`AI Pre-flight Error: ${err.message || err}`, {
@@ -656,7 +676,8 @@ class AIMessageHandler {
 			);
 
 			if (!filterResult.allowed) {
-				await message.reply(
+				await this.safeReply(
+					message,
 					await this.t(message, 'ai.events.messageCreate.filter.blocked'),
 				);
 				return;
@@ -689,7 +710,8 @@ class AIMessageHandler {
 		const command = client.commands.get(baseCommandName);
 
 		if (!command) {
-			await message.reply(
+			await this.safeReply(
+				message,
 				await this.t(message, 'ai.events.messageCreate.command.not.found'),
 			);
 			return;
@@ -774,7 +796,8 @@ class AIMessageHandler {
 			);
 
 			if (!filterResult.allowed) {
-				await message.reply(
+				await this.safeReply(
+					message,
 					await this.t(message, 'ai.events.messageCreate.filter.blocked'),
 				);
 				return;
@@ -821,7 +844,8 @@ class AIMessageHandler {
 			);
 
 			if (!filterResult.allowed) {
-				await message.reply(
+				await this.safeReply(
+					message,
 					await this.t(message, 'ai.events.messageCreate.filter.blocked'),
 				);
 				return;
@@ -839,14 +863,15 @@ class AIMessageHandler {
 					);
 
 					if (!filterResultSub.allowed) {
-						await message.reply(
+						await this.safeReply(
+							message,
 							await this.t(message, 'ai.events.messageCreate.filter.blocked'),
 						);
 						return;
 					}
 
 					if (!hasReplied) {
-						await message.reply({ content: subChunk });
+						await this.safeReply(message, { content: subChunk });
 						hasReplied = true;
 					} else {
 						await message.channel.send(subChunk);
@@ -854,7 +879,7 @@ class AIMessageHandler {
 				}
 			} else {
 				if (!hasReplied) {
-					await message.reply({ content: chunk });
+					await this.safeReply(message, { content: chunk });
 					hasReplied = true;
 				} else {
 					await message.channel.send(chunk);

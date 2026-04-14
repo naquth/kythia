@@ -553,22 +553,35 @@ class MusicManager {
 						return;
 					}
 
-					if (channel) {
-						const components = await this.simpleContainer(
-							channel,
-							await this.t(
-								channel,
-								'music.helpers.musicManager.manager.idleDisconnect',
-								{ seconds: IDLE_TIMEOUT_MS / 1000 },
-							),
-							{ color: 'Orange' },
-						);
-						await channel.send({
-							components: components,
-							flags: MessageFlags.IsComponentsV2,
-						});
+					// Re-fetch the channel at timeout time; the channel captured in the
+					// queueEnd closure may have been deleted or become unavailable by now,
+					// which would throw DiscordAPIError[10003]: Unknown Channel.
+					const timeoutChannel = this.client.channels.cache.get(
+						player.textChannel,
+					);
+					if (timeoutChannel) {
+						try {
+							const components = await this.simpleContainer(
+								timeoutChannel,
+								await this.t(
+									timeoutChannel,
+									'music.helpers.musicManager.manager.idleDisconnect',
+									{ seconds: IDLE_TIMEOUT_MS / 1000 },
+								),
+								{ color: 'Orange' },
+							);
+							await timeoutChannel.send({
+								components: components,
+								flags: MessageFlags.IsComponentsV2,
+							});
+						} catch (_e) {
+							// Channel may have been deleted between the cache check and send;
+							// silently ignore so the player is still destroyed below.
+						}
 					}
-					player.destroy();
+					if (player && !player.destroyed) {
+						player.destroy();
+					}
 				}, IDLE_TIMEOUT_MS);
 			}
 		});

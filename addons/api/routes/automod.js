@@ -77,17 +77,13 @@ app.get('/:guildId', async (c) => {
 	const { ServerSetting } = getModels(c);
 	const { guildId } = c.req.param();
 	try {
-		const setting = await ServerSetting.getCache({ guildId });
-		if (!setting) {
-			return c.json(
-				{
-					status: 'error',
-					error: 'Guild settings not found',
-					code: 'NOT_FOUND',
-				},
-				404,
-			);
-		}
+		const [setting] = await ServerSetting.findOrCreateWithCache({
+			where: { guildId },
+			defaults: {
+				guildId,
+				guildName: guildId,
+			},
+		});
 		return c.json({ status: 'ok', data: formatSettings(setting) });
 	} catch (error) {
 		getLogger(c).error('GET /api/automod/:guildId error:', error);
@@ -460,7 +456,7 @@ app.get('/:guildId/logs/:logId', async (c) => {
 	const { ModLog } = getModels(c);
 	const { guildId, logId } = c.req.param();
 	try {
-		const log = await ModLog.findOne({ where: { id: logId, guildId } });
+		const log = await ModLog.getCache({ where: { id: logId, guildId } });
 		if (!log)
 			return c.json(
 				{ status: 'error', error: 'Log entry not found', code: 'NOT_FOUND' },
@@ -482,7 +478,7 @@ app.delete('/:guildId/logs/:logId', async (c) => {
 	const { ModLog } = getModels(c);
 	const { guildId, logId } = c.req.param();
 	try {
-		const log = await ModLog.findOne({ where: { id: logId, guildId } });
+		const log = await ModLog.getCache({ where: { id: logId, guildId } });
 		if (!log)
 			return c.json(
 				{ status: 'error', error: 'Log entry not found', code: 'NOT_FOUND' },

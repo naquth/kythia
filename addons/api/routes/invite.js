@@ -24,7 +24,7 @@ app.get('/settings/:guildId', async (c) => {
 
 	try {
 		const [setting, serverSetting] = await Promise.all([
-			InviteSetting.findOne({ where: { guildId } }),
+			InviteSetting.getCache({ where: { guildId } }),
 			ServerSetting.getCache({ guildId }),
 		]);
 
@@ -193,7 +193,7 @@ app.get('/:guildId/user/:userId', async (c) => {
 		const row = await Invite.getCache({ guildId, userId });
 
 		// Compute rank by fetching all inviters sorted by total (invites DESC)
-		const allInviters = await Invite.findAll({
+		const allInviters = await Invite.getAllCache({
 			where: { guildId },
 			order: [['invites', 'DESC']],
 			attributes: ['userId', 'invites', 'bonus'],
@@ -203,7 +203,7 @@ app.get('/:guildId/user/:userId', async (c) => {
 			allInviters.length + 1;
 
 		// Who invited this user
-		const whoInvited = await InviteHistory.findOne({
+		const whoInvited = await InviteHistory.getCache({
 			where: { guildId, memberId: userId },
 			order: [['createdAt', 'DESC']],
 		});
@@ -319,7 +319,7 @@ app.delete('/:guildId/user/:userId', async (c) => {
 	const userId = c.req.param('userId');
 
 	try {
-		const row = await Invite.findOne({ where: { guildId, userId } });
+		const row = await Invite.getCache({ where: { guildId, userId } });
 		if (!row)
 			return c.json(
 				{ success: false, error: 'User invite record not found' },
@@ -413,7 +413,7 @@ app.get('/:guildId/history/:memberId', async (c) => {
 	const memberId = c.req.param('memberId');
 
 	try {
-		const rows = await InviteHistory.findAll({
+		const rows = await InviteHistory.getAllCache({
 			where: { guildId, memberId },
 			order: [['createdAt', 'DESC']],
 		});
@@ -450,7 +450,7 @@ app.delete('/:guildId/history/:id', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const record = await InviteHistory.findOne({ where: { id, guildId } });
+		const record = await InviteHistory.getCache({ where: { id, guildId } });
 		if (!record)
 			return c.json({ success: false, error: 'History record not found' }, 404);
 
@@ -471,7 +471,7 @@ app.get('/:guildId/milestones', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const setting = await InviteSetting.findOne({ where: { guildId } });
+		const setting = await InviteSetting.getCache({ where: { guildId } });
 		return c.json({
 			success: true,
 			data: {
@@ -542,7 +542,7 @@ app.delete('/:guildId/milestones/:invites', async (c) => {
 	const invites = parseInt(c.req.param('invites'), 10);
 
 	try {
-		const setting = await InviteSetting.findOne({ where: { guildId } });
+		const setting = await InviteSetting.getCache({ where: { guildId } });
 		if (!setting)
 			return c.json({ success: false, error: 'InviteSetting not found' }, 404);
 

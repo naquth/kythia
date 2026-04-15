@@ -25,7 +25,7 @@ app.get('/', async (c) => {
 	if (type) where.type = type;
 
 	try {
-		const data = await AutoReact.findAll({ where });
+		const data = await AutoReact.getAllCache({ where });
 		return c.json({ success: true, count: data.length, data });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -38,7 +38,7 @@ app.get('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const result = await AutoReact.findByPk(id);
+		const result = await AutoReact.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'AutoReact not found' }, 404);
 		return c.json({ success: true, data: result });
@@ -78,7 +78,7 @@ app.patch('/:id', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const result = await AutoReact.findByPk(id);
+		const result = await AutoReact.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'AutoReact not found' }, 404);
 
@@ -97,7 +97,7 @@ app.delete('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const result = await AutoReact.findByPk(id);
+		const result = await AutoReact.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'AutoReact not found' }, 404);
 

@@ -63,7 +63,7 @@ app.get('/:guildId/settings', async (c) => {
 	const { guildId } = c.req.param();
 
 	try {
-		let setting = await LevelingSetting.findOne({ where: { guildId } });
+		let setting = await LevelingSetting.getCache({ where: { guildId } });
 		if (!setting) setting = {};
 
 		return c.json({ success: true, data: setting });
@@ -95,7 +95,7 @@ app.patch('/:guildId/settings', async (c) => {
 	}
 
 	try {
-		let setting = await LevelingSetting.findOne({ where: { guildId } });
+		let setting = await LevelingSetting.getCache({ where: { guildId } });
 		if (!setting) {
 			setting = await LevelingSetting.create({ guildId });
 		}
@@ -298,7 +298,7 @@ app.get('/:guildId/:userId', async (c) => {
 	const { getMemberSafe } = helpers.discord;
 
 	try {
-		const user = await User.findOne({ where: { guildId, userId } });
+		const user = await User.getCache({ where: { guildId, userId } });
 		if (!user) {
 			return c.json(
 				{ success: false, error: 'User not found in this guild' },
@@ -384,7 +384,7 @@ app.post('/:guildId/:userId', async (c) => {
 	} catch {}
 
 	// Check if already exists
-	const existing = await User.findOne({ where: { guildId, userId } });
+	const existing = await User.getCache({ where: { guildId, userId } });
 	if (existing) {
 		return c.json(
 			{ success: false, error: 'User already exists in this guild' },
@@ -466,7 +466,7 @@ app.patch('/:guildId/:userId', async (c) => {
 	}
 
 	try {
-		const user = await User.findOne({ where: { guildId, userId } });
+		const user = await User.getCache({ where: { guildId, userId } });
 		if (!user) {
 			return c.json(
 				{ success: false, error: 'User not found in this guild' },
@@ -579,7 +579,7 @@ app.delete('/:guildId/:userId', async (c) => {
 	const { guildId, userId } = c.req.param();
 
 	try {
-		const user = await User.findOne({ where: { guildId, userId } });
+		const user = await User.getCache({ where: { guildId, userId } });
 		if (!user) {
 			return c.json(
 				{ success: false, error: 'User not found in this guild' },

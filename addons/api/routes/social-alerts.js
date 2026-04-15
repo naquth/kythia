@@ -21,7 +21,7 @@ app.get('/', async (c) => {
 	if (guildId) where.guildId = guildId;
 
 	try {
-		const data = await SocialAlertSubscription.findAll({ where });
+		const data = await SocialAlertSubscription.getAllCache({ where });
 		return c.json({ success: true, count: data.length, data });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -34,7 +34,7 @@ app.get('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const result = await SocialAlertSubscription.findByPk(id);
+		const result = await SocialAlertSubscription.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'Subscription not found' }, 404);
 		return c.json({ success: true, data: result });
@@ -80,7 +80,7 @@ app.patch('/:id', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const result = await SocialAlertSubscription.findByPk(id);
+		const result = await SocialAlertSubscription.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'Subscription not found' }, 404);
 
@@ -99,7 +99,7 @@ app.delete('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const result = await SocialAlertSubscription.findByPk(id);
+		const result = await SocialAlertSubscription.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'Subscription not found' }, 404);
 
@@ -119,7 +119,7 @@ app.get('/settings/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const result = await SocialAlertSetting.findOne({ where: { guildId } });
+		const result = await SocialAlertSetting.getCache({ where: { guildId } });
 		if (!result)
 			return c.json({ success: false, error: 'Setting not found' }, 404);
 		return c.json({ success: true, data: result });
@@ -135,7 +135,7 @@ app.patch('/settings/:guildId', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		let result = await SocialAlertSetting.findOne({ where: { guildId } });
+		let result = await SocialAlertSetting.getCache({ where: { guildId } });
 
 		if (!result) {
 			result = await SocialAlertSetting.create({ guildId, ...body });

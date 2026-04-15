@@ -23,7 +23,7 @@ app.get('/', async (c) => {
 	if (userId) where.userId = userId;
 
 	try {
-		const data = await AutoReply.findAll({ where });
+		const data = await AutoReply.getAllCache({ where });
 		return c.json({ success: true, count: data.length, data });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -36,7 +36,7 @@ app.get('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const result = await AutoReply.findByPk(id);
+		const result = await AutoReply.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'AutoReply not found' }, 404);
 		return c.json({ success: true, data: result });
@@ -82,7 +82,7 @@ app.patch('/:id', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const result = await AutoReply.findByPk(id);
+		const result = await AutoReply.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'AutoReply not found' }, 404);
 
@@ -101,7 +101,7 @@ app.delete('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const result = await AutoReply.findByPk(id);
+		const result = await AutoReply.getCache({ id: id });
 		if (!result)
 			return c.json({ success: false, error: 'AutoReply not found' }, 404);
 

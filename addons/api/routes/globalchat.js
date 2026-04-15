@@ -36,7 +36,9 @@ app.get('/list', async (c) => {
 	const { GlobalChat } = getModels(c);
 
 	try {
-		const guilds = await GlobalChat.findAll({ order: [['createdAt', 'DESC']] });
+		const guilds = await GlobalChat.getAllCache({
+			order: [['createdAt', 'DESC']],
+		});
 		return c.json({
 			status: 'ok',
 			message: 'Guilds retrieved successfully',
@@ -61,7 +63,7 @@ app.get('/:guildId', async (c) => {
 	const { guildId } = c.req.param();
 
 	try {
-		const guild = await GlobalChat.findOne({ where: { guildId } });
+		const guild = await GlobalChat.getCache({ where: { guildId } });
 		if (!guild) {
 			return c.json(
 				{
@@ -117,7 +119,7 @@ app.post('/add', async (c) => {
 	}
 
 	try {
-		const existing = await GlobalChat.findOne({ where: { guildId } });
+		const existing = await GlobalChat.getCache({ where: { guildId } });
 
 		let operation;
 		if (existing) {
@@ -167,7 +169,7 @@ app.delete('/remove/:guildId', async (c) => {
 	const { guildId } = c.req.param();
 
 	try {
-		const guild = await GlobalChat.findOne({ where: { guildId } });
+		const guild = await GlobalChat.getCache({ where: { guildId } });
 		if (!guild) {
 			return c.json(
 				{
@@ -227,7 +229,7 @@ app.patch('/:guildId/webhook', async (c) => {
 	}
 
 	try {
-		const guild = await GlobalChat.findOne({ where: { guildId } });
+		const guild = await GlobalChat.getCache({ where: { guildId } });
 		if (!guild) {
 			return c.json(
 				{

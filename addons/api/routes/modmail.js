@@ -48,7 +48,7 @@ app.get('/', async (c) => {
 	if (status) where.status = status;
 
 	try {
-		const modmails = await Modmail.findAll({ where });
+		const modmails = await Modmail.getAllCache({ where });
 		return c.json({ success: true, count: modmails.length, data: modmails });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -63,7 +63,7 @@ app.get('/:id', async (c) => {
 	const { Modmail } = getModels(c);
 	const id = c.req.param('id');
 	try {
-		const modmail = await Modmail.findByPk(id);
+		const modmail = await Modmail.getCache({ id: id });
 		if (!modmail)
 			return c.json({ success: false, error: 'Modmail not found' }, 404);
 		return c.json({ success: true, data: modmail });
@@ -82,7 +82,7 @@ app.patch('/:id', async (c) => {
 	const id = c.req.param('id');
 	const body = await c.req.json();
 	try {
-		const modmail = await Modmail.findByPk(id);
+		const modmail = await Modmail.getCache({ id: id });
 		if (!modmail)
 			return c.json({ success: false, error: 'Modmail not found' }, 404);
 		await modmail.update(body);
@@ -102,7 +102,7 @@ app.delete('/:id', async (c) => {
 	const { Modmail } = getModels(c);
 	const id = c.req.param('id');
 	try {
-		const modmail = await Modmail.findByPk(id);
+		const modmail = await Modmail.getCache({ id: id });
 		if (!modmail)
 			return c.json({ success: false, error: 'Modmail not found' }, 404);
 		await modmail.destroy();
@@ -215,7 +215,7 @@ app.post('/:id/close', async (c) => {
 		return c.json({ success: false, error: 'Missing required: closerId' }, 400);
 
 	try {
-		const modmail = await Modmail.findByPk(id);
+		const modmail = await Modmail.getCache({ id: id });
 		if (!modmail)
 			return c.json({ success: false, error: 'Modmail not found' }, 404);
 		if (modmail.status === 'closed')
@@ -286,7 +286,7 @@ app.post('/:id/reply', async (c) => {
 		);
 
 	try {
-		const modmail = await Modmail.findByPk(id);
+		const modmail = await Modmail.getCache({ id: id });
 		if (!modmail)
 			return c.json({ success: false, error: 'Modmail not found' }, 404);
 		if (modmail.status === 'closed')
@@ -350,7 +350,7 @@ app.post('/:id/note', async (c) => {
 		);
 
 	try {
-		const modmail = await Modmail.findByPk(id);
+		const modmail = await Modmail.getCache({ id: id });
 		if (!modmail)
 			return c.json({ success: false, error: 'Modmail not found' }, 404);
 		if (modmail.status === 'closed')

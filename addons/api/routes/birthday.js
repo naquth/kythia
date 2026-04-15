@@ -35,7 +35,7 @@ app.get('/', async (c) => {
 	if (day) where.day = parseInt(day, 10);
 
 	try {
-		const data = await UserBirthday.findAll({ where });
+		const data = await UserBirthday.getAllCache({ where });
 		return c.json({ success: true, count: data.length, data });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -48,7 +48,7 @@ app.get('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const birthday = await UserBirthday.findByPk(id);
+		const birthday = await UserBirthday.getCache({ id: id });
 		if (!birthday)
 			return c.json({ success: false, error: 'Birthday not found' }, 404);
 		return c.json({ success: true, data: birthday });
@@ -109,7 +109,7 @@ app.patch('/:id', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const birthday = await UserBirthday.findByPk(id);
+		const birthday = await UserBirthday.getCache({ id: id });
 		if (!birthday)
 			return c.json({ success: false, error: 'Birthday not found' }, 404);
 
@@ -135,7 +135,7 @@ app.delete('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const birthday = await UserBirthday.findByPk(id);
+		const birthday = await UserBirthday.getCache({ id: id });
 		if (!birthday)
 			return c.json({ success: false, error: 'Birthday not found' }, 404);
 
@@ -159,7 +159,7 @@ app.get('/settings/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const setting = await BirthdaySetting.findByPk(guildId);
+		const setting = await BirthdaySetting.getCache({ id: guildId });
 		return c.json({ success: true, data: setting ?? null });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);

@@ -36,8 +36,13 @@ app.get('/:id', async (c) => {
 		return c.json({ error: 'Bot is not in this guild' }, 404);
 	}
 
-	let settings = await ServerSetting.findOne({ where: { guildId } });
-	if (!settings) settings = {};
+	let [settings] = await ServerSetting.findOrCreateWithCache({
+		where: { guildId },
+		defaults: {
+			guildId,
+			guildName: guildId,
+		},
+	});
 
 	const { guild, channels, roles, botUser } = shardData;
 

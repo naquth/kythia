@@ -50,7 +50,7 @@ app.get('/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const setting = await BoosterSetting.findOne({ where: { guildId } });
+		const setting = await BoosterSetting.getCache({ where: { guildId } });
 
 		// Return null defaults for every field if no record exists yet — no 404
 		const data = {};

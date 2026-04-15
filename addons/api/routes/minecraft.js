@@ -51,9 +51,13 @@ app.get('/status/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const settings = await ServerSetting.getCache({ guildId });
-		if (!settings)
-			return c.json({ success: false, error: 'Guild settings not found' }, 404);
+		const [settings] = await ServerSetting.findOrCreateWithCache({
+			where: { guildId },
+			defaults: {
+				guildId,
+				guildName: guildId,
+			},
+		});
 		if (!settings.minecraftIp)
 			return c.json(
 				{
@@ -87,9 +91,13 @@ app.get('/settings/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const settings = await ServerSetting.getCache({ guildId });
-		if (!settings)
-			return c.json({ success: false, error: 'Guild settings not found' }, 404);
+		const [settings] = await ServerSetting.findOrCreateWithCache({
+			where: { guildId },
+			defaults: {
+				guildId,
+				guildName: guildId,
+			},
+		});
 
 		return c.json({
 			success: true,

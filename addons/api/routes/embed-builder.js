@@ -143,7 +143,7 @@ app.get('/', async (c) => {
 	if (createdBy) where.createdBy = createdBy;
 
 	try {
-		const data = await EmbedModel.findAll({
+		const data = await EmbedModel.getAllCache({
 			where,
 			order: [['createdAt', 'DESC']],
 		});
@@ -162,7 +162,7 @@ app.get('/:id', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 
 	try {
-		const record = await EmbedModel.findByPk(id);
+		const record = await EmbedModel.getCache({ id: id });
 		if (!record)
 			return c.json({ success: false, error: 'Embed not found' }, 404);
 		return c.json({ success: true, data: record });
@@ -202,7 +202,7 @@ app.post('/', async (c) => {
 	}
 
 	// Check duplicate name in same guild
-	const existing = await EmbedModel.findOne({ where: { guildId, name } });
+	const existing = await EmbedModel.getCache({ where: { guildId, name } });
 	if (existing) {
 		return c.json(
 			{
@@ -266,7 +266,7 @@ app.patch('/:id', async (c) => {
 	const ALLOWED = ['name', 'mode', 'data', 'allowedMentions'];
 
 	try {
-		const record = await EmbedModel.findByPk(id);
+		const record = await EmbedModel.getCache({ id: id });
 		if (!record)
 			return c.json({ success: false, error: 'Embed not found' }, 404);
 
@@ -296,7 +296,7 @@ app.delete('/:id', async (c) => {
 	const deleteMsg = c.req.query('deleteMessage') === 'true';
 
 	try {
-		const record = await EmbedModel.findByPk(id);
+		const record = await EmbedModel.getCache({ id: id });
 		if (!record)
 			return c.json({ success: false, error: 'Embed not found' }, 404);
 
@@ -355,7 +355,7 @@ app.post('/:id/send', async (c) => {
 	}
 
 	try {
-		const record = await EmbedModel.findByPk(id);
+		const record = await EmbedModel.getCache({ id: id });
 		if (!record)
 			return c.json({ success: false, error: 'Embed not found' }, 404);
 
@@ -437,7 +437,7 @@ app.post('/:id/resend', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 
 	try {
-		const record = await EmbedModel.findByPk(id);
+		const record = await EmbedModel.getCache({ id: id });
 		if (!record)
 			return c.json({ success: false, error: 'Embed not found' }, 404);
 

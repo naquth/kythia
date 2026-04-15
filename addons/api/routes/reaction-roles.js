@@ -36,7 +36,7 @@ app.get('/', async (c) => {
 	if (messageId) where.messageId = messageId;
 
 	try {
-		const data = await ReactionRole.findAll({ where });
+		const data = await ReactionRole.getAllCache({ where });
 		return c.json({ success: true, count: data.length, data });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -155,7 +155,7 @@ app.delete('/message/:messageId', async (c) => {
 	const messageId = c.req.param('messageId');
 
 	try {
-		const records = await ReactionRole.findAll({ where: { messageId } });
+		const records = await ReactionRole.getAllCache({ where: { messageId } });
 
 		if (records.length === 0) {
 			return c.json(
@@ -248,9 +248,9 @@ app.get('/panels', async (c) => {
 		return c.json({ success: false, error: 'guildId is required' }, 400);
 
 	try {
-		const panels = await ReactionRolePanel.findAll({ where: { guildId } });
+		const panels = await ReactionRolePanel.getAllCache({ where: { guildId } });
 
-		const bindings = await ReactionRole.findAll({
+		const bindings = await ReactionRole.getAllCache({
 			where: { guildId },
 			attributes: ['panelId'],
 		});
@@ -280,11 +280,11 @@ app.get('/panels/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const panel = await ReactionRolePanel.findByPk(id);
+		const panel = await ReactionRolePanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
-		const bindings = await ReactionRole.findAll({ where: { panelId: id } });
+		const bindings = await ReactionRole.getAllCache({ where: { panelId: id } });
 		return c.json({ success: true, data: { ...panel.toJSON(), bindings } });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -411,7 +411,7 @@ app.patch('/panels/:id', async (c) => {
 	const { MessageFlags } = require('discord.js');
 
 	try {
-		const panel = await ReactionRolePanel.findByPk(id);
+		const panel = await ReactionRolePanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -444,7 +444,7 @@ app.patch('/panels/:id', async (c) => {
 						.fetch(panel.messageId)
 						.catch(() => null);
 					if (message) {
-						const bindings = await ReactionRole.findAll({
+						const bindings = await ReactionRole.getAllCache({
 							where: { panelId: panel.id },
 						});
 						for (const rr of bindings) {
@@ -496,7 +496,7 @@ app.patch('/panels/:id', async (c) => {
 			}
 
 			// Fetch all bindings before migration
-			const bindings = await ReactionRole.findAll({
+			const bindings = await ReactionRole.getAllCache({
 				where: { panelId: panel.id },
 			});
 
@@ -623,7 +623,7 @@ app.delete('/panels/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const panel = await ReactionRolePanel.findByPk(id);
+		const panel = await ReactionRolePanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -637,7 +637,7 @@ app.delete('/panels/:id', async (c) => {
 					.fetch(panel.messageId)
 					.catch(() => null);
 				if (message) {
-					const bindings = await ReactionRole.findAll({
+					const bindings = await ReactionRole.getAllCache({
 						where: { panelId: panel.id },
 					});
 					for (const rr of bindings) {
@@ -685,7 +685,7 @@ app.post('/panels/:id/emoji', async (c) => {
 		);
 
 	try {
-		const panel = await ReactionRolePanel.findByPk(id);
+		const panel = await ReactionRolePanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -752,7 +752,7 @@ app.delete('/panels/:id/emoji/:rrId', async (c) => {
 	const rrId = c.req.param('rrId');
 
 	try {
-		const rr = await ReactionRole.findByPk(rrId);
+		const rr = await ReactionRole.getCache({ id: rrId });
 		if (!rr) return c.json({ success: false, error: 'Binding not found' }, 404);
 
 		// Remove bot reaction (best-effort)
@@ -825,7 +825,7 @@ app.patch('/panels/:id/emoji/:rrId', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const rr = await ReactionRole.findByPk(rrId);
+		const rr = await ReactionRole.getCache({ id: rrId });
 		if (!rr) return c.json({ success: false, error: 'Binding not found' }, 404);
 
 		const newEmoji = body.emoji ?? rr.emoji;
@@ -903,7 +903,7 @@ app.put('/panels/:id/emoji', async (c) => {
 	}
 
 	try {
-		const panel = await ReactionRolePanel.findByPk(id);
+		const panel = await ReactionRolePanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -921,7 +921,7 @@ app.put('/panels/:id/emoji', async (c) => {
 				await message.reactions.removeAll();
 			} catch (_) {
 				// Fallback: individually remove bot's reactions
-				const existing = await ReactionRole.findAll({
+				const existing = await ReactionRole.getAllCache({
 					where: { panelId: panel.id },
 				});
 				for (const rr of existing) {
@@ -995,7 +995,7 @@ app.post('/panels/:id/emoji/validate', async (c) => {
 		return c.json({ success: false, error: 'emoji is required' }, 400);
 
 	try {
-		const panel = await ReactionRolePanel.findByPk(id);
+		const panel = await ReactionRolePanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -1061,7 +1061,7 @@ app.post('/panels/:id/duplicate', async (c) => {
 	}
 
 	try {
-		const sourcePanel = await ReactionRolePanel.findByPk(id);
+		const sourcePanel = await ReactionRolePanel.getCache({ id: id });
 		if (!sourcePanel)
 			return c.json({ success: false, error: 'Source panel not found' }, 404);
 
@@ -1111,7 +1111,7 @@ app.post('/panels/:id/duplicate', async (c) => {
 		});
 
 		// Copy all emoji bindings to the new panel
-		const sourceBindings = await ReactionRole.findAll({
+		const sourceBindings = await ReactionRole.getAllCache({
 			where: { panelId: sourcePanel.id },
 		});
 		const newBindings = [];
@@ -1153,7 +1153,7 @@ app.get('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const rr = await ReactionRole.findByPk(id);
+		const rr = await ReactionRole.getCache({ id: id });
 		if (!rr)
 			return c.json({ success: false, error: 'ReactionRole not found' }, 404);
 		return c.json({ success: true, data: rr });
@@ -1178,7 +1178,7 @@ app.patch('/:id', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const rr = await ReactionRole.findByPk(id);
+		const rr = await ReactionRole.getCache({ id: id });
 		if (!rr)
 			return c.json({ success: false, error: 'ReactionRole not found' }, 404);
 
@@ -1257,7 +1257,7 @@ app.delete('/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const rr = await ReactionRole.findByPk(id);
+		const rr = await ReactionRole.getCache({ id: id });
 		if (!rr)
 			return c.json({ success: false, error: 'ReactionRole not found' }, 404);
 

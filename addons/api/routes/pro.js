@@ -78,7 +78,7 @@ app.get('/subdomains', async (c) => {
 	const userId = c.req.query('userId');
 	if (userId) where.userId = userId;
 	try {
-		const rows = await Subdomain.findAll({
+		const rows = await Subdomain.getAllCache({
 			where,
 			order: [['createdAt', 'ASC']],
 		});
@@ -97,7 +97,8 @@ app.get('/subdomains/:id', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 	if (!id) return c.json({ status: 'error', error: 'Invalid id' }, 400);
 	try {
-		const row = await Subdomain.findByPk(id, {
+		const row = await Subdomain.getCache({
+			id: id,
 			include: [{ model: DnsRecord, as: 'dnsRecords' }],
 		});
 		if (!row)
@@ -185,7 +186,7 @@ app.delete('/subdomains/:id', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 	if (!id) return c.json({ status: 'error', error: 'Invalid id' }, 400);
 	try {
-		const row = await Subdomain.findByPk(id);
+		const row = await Subdomain.getCache({ id: id });
 		if (!row)
 			return c.json(
 				{ status: 'error', error: 'Subdomain not found', code: 'NOT_FOUND' },
@@ -213,13 +214,13 @@ app.get('/subdomains/:id/dns', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 	if (!id) return c.json({ status: 'error', error: 'Invalid id' }, 400);
 	try {
-		const subdomain = await Subdomain.findByPk(id);
+		const subdomain = await Subdomain.getCache({ id: id });
 		if (!subdomain)
 			return c.json(
 				{ status: 'error', error: 'Subdomain not found', code: 'NOT_FOUND' },
 				404,
 			);
-		const records = await DnsRecord.findAll({ where: { subdomainId: id } });
+		const records = await DnsRecord.getAllCache({ where: { subdomainId: id } });
 		return c.json({
 			status: 'ok',
 			subdomain: subdomain.name,
@@ -266,7 +267,7 @@ app.post('/subdomains/:id/dns', async (c) => {
 	}
 
 	try {
-		const subdomain = await Subdomain.findByPk(subdomainId);
+		const subdomain = await Subdomain.getCache({ id: subdomainId });
 		if (!subdomain)
 			return c.json(
 				{ status: 'error', error: 'Subdomain not found', code: 'NOT_FOUND' },
@@ -314,7 +315,7 @@ app.patch('/dns/:recordId', async (c) => {
 		return c.json({ status: 'error', error: '"value" is required' }, 400);
 
 	try {
-		const record = await DnsRecord.findByPk(recordId);
+		const record = await DnsRecord.getCache({ id: recordId });
 		if (!record)
 			return c.json(
 				{ status: 'error', error: 'DNS record not found', code: 'NOT_FOUND' },
@@ -359,7 +360,7 @@ app.delete('/dns/:recordId', async (c) => {
 		return c.json({ status: 'error', error: 'Invalid recordId' }, 400);
 
 	try {
-		const record = await DnsRecord.findByPk(recordId);
+		const record = await DnsRecord.getCache({ id: recordId });
 		if (!record)
 			return c.json(
 				{ status: 'error', error: 'DNS record not found', code: 'NOT_FOUND' },
@@ -408,7 +409,7 @@ app.get('/monitors', async (c) => {
 	if (userId) where.userId = userId;
 	if (lastStatus) where.lastStatus = lastStatus.toUpperCase();
 	try {
-		const rows = await Monitor.findAll({ where });
+		const rows = await Monitor.getAllCache({ where });
 		return c.json({ status: 'ok', count: rows.length, data: rows });
 	} catch (err) {
 		return c.json({ status: 'error', error: err.message }, 500);
@@ -422,7 +423,7 @@ app.get('/monitors/:userId', async (c) => {
 	const { Monitor } = getModels(c);
 	const { userId } = c.req.param();
 	try {
-		const row = await Monitor.findByPk(userId);
+		const row = await Monitor.getCache({ id: userId });
 		if (!row)
 			return c.json(
 				{ status: 'error', error: 'Monitor not found', code: 'NOT_FOUND' },
@@ -512,7 +513,7 @@ app.patch('/monitors/:userId', async (c) => {
 		);
 	}
 	try {
-		const row = await Monitor.findByPk(userId);
+		const row = await Monitor.getCache({ id: userId });
 		if (!row)
 			return c.json(
 				{ status: 'error', error: 'Monitor not found', code: 'NOT_FOUND' },
@@ -535,7 +536,7 @@ app.delete('/monitors/:userId', async (c) => {
 	const { Monitor } = getModels(c);
 	const { userId } = c.req.param();
 	try {
-		const row = await Monitor.findByPk(userId);
+		const row = await Monitor.getCache({ id: userId });
 		if (!row)
 			return c.json(
 				{ status: 'error', error: 'Monitor not found', code: 'NOT_FOUND' },

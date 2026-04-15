@@ -39,10 +39,13 @@ app.patch('/:guildId/toggle', async (c) => {
 	}
 
 	try {
-		const setting = await ServerSetting.findOne({ where: { guildId } });
-		if (!setting) {
-			return c.json({ error: 'Guild settings not found' }, 404);
-		}
+		const [setting] = await ServerSetting.findOrCreateWithCache({
+			where: { guildId },
+			defaults: {
+				guildId,
+				guildName: guildId,
+			},
+		});
 
 		setting.activityOn = body.enabled;
 		await setting.save();
@@ -75,7 +78,7 @@ app.get('/:guildId', async (c) => {
 	const orderColumn = sortKey === 'voice' ? 'totalVoiceTime' : 'totalMessages';
 
 	try {
-		const rows = await ActivityStat.findAll({
+		const rows = await ActivityStat.getAllCache({
 			where: { guildId },
 			order: [[orderColumn, 'DESC']],
 			limit: limitNum,
@@ -113,7 +116,7 @@ app.get('/:guildId/id/:userId', async (c) => {
 	const { guildId, userId } = c.req.param();
 
 	try {
-		const stat = await ActivityStat.findOne({ where: { guildId, userId } });
+		const stat = await ActivityStat.getCache({ guildId, userId });
 		if (!stat) {
 			return c.json({ success: false, error: 'User stats not found' }, 404);
 		}
@@ -144,12 +147,13 @@ app.delete('/:guildId/id/:userId', async (c) => {
 	const { guildId, userId } = c.req.param();
 
 	try {
-		const stat = await ActivityStat.findOne({ where: { guildId, userId } });
-		if (!stat) {
+		const deleted = await ActivityStat.destroyAndClearCache({
+			where: { guildId, userId },
+		});
+		if (!deleted) {
 			return c.json({ success: false, error: 'User stats not found' }, 404);
 		}
 
-		await stat.destroy({ individualHooks: true });
 		return c.json({ success: true });
 	} catch (error) {
 		getLogger(c).error(
@@ -170,7 +174,9 @@ app.delete('/:guildId', async (c) => {
 	const { guildId } = c.req.param();
 
 	try {
-		const deleted = await ActivityStat.destroy({ where: { guildId } });
+		const deleted = await ActivityStat.destroyAndClearCache({
+			where: { guildId },
+		});
 		return c.json({ success: true, deleted });
 	} catch (error) {
 		getLogger(c).error(

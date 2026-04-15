@@ -184,7 +184,7 @@ app.get('/:guildId/:userId', async (c) => {
 	const { Op } = require('sequelize');
 
 	try {
-		const streak = await Streak.findOne({ where: { guildId, userId } });
+		const streak = await Streak.getCache({ where: { guildId, userId } });
 		if (!streak) {
 			return c.json(
 				{
@@ -250,7 +250,7 @@ app.post('/:guildId/:userId', async (c) => {
 		body = await c.req.json();
 	} catch {}
 
-	const existing = await Streak.findOne({ where: { guildId, userId } });
+	const existing = await Streak.getCache({ where: { guildId, userId } });
 	if (existing) {
 		return c.json(
 			{
@@ -320,7 +320,7 @@ app.patch('/:guildId/:userId', async (c) => {
 	}
 
 	try {
-		let streak = await Streak.findOne({ where: { guildId, userId } });
+		let streak = await Streak.getCache({ where: { guildId, userId } });
 
 		// Auto-create if not found (matches bot behavior with getOrCreateStreak)
 		if (!streak) {
@@ -436,7 +436,7 @@ app.delete('/:guildId/:userId', async (c) => {
 	const { guildId, userId } = c.req.param();
 
 	try {
-		const streak = await Streak.findOne({ where: { guildId, userId } });
+		const streak = await Streak.getCache({ where: { guildId, userId } });
 		if (!streak) {
 			return c.json(
 				{

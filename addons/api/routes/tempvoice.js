@@ -168,7 +168,7 @@ app.post('/configs/:guildId/refresh', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const config = await TempVoiceConfig.findByPk(guildId);
+		const config = await TempVoiceConfig.getCache({ id: guildId });
 		if (!config) {
 			return c.json(
 				{ success: false, error: 'TempVoiceConfig not found' },
@@ -237,7 +237,7 @@ app.get('/configs/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const config = await TempVoiceConfig.findByPk(guildId);
+		const config = await TempVoiceConfig.getCache({ id: guildId });
 		if (!config)
 			return c.json(
 				{ success: false, error: 'TempVoiceConfig not found' },
@@ -303,7 +303,7 @@ app.patch('/configs/:guildId', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const config = await TempVoiceConfig.findByPk(guildId);
+		const config = await TempVoiceConfig.getCache({ id: guildId });
 		if (!config)
 			return c.json(
 				{ success: false, error: 'TempVoiceConfig not found' },
@@ -336,7 +336,7 @@ app.delete('/configs/:guildId', async (c) => {
 	const guildId = c.req.param('guildId');
 
 	try {
-		const config = await TempVoiceConfig.findByPk(guildId);
+		const config = await TempVoiceConfig.getCache({ id: guildId });
 		if (!config)
 			return c.json(
 				{ success: false, error: 'TempVoiceConfig not found' },
@@ -368,7 +368,7 @@ app.get('/channels', async (c) => {
 	if (ownerId) where.ownerId = ownerId;
 
 	try {
-		const data = await TempVoiceChannel.findAll({ where });
+		const data = await TempVoiceChannel.getAllCache({ where });
 		return c.json({ success: true, count: data.length, data });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -381,7 +381,7 @@ app.get('/channels/:channelId', async (c) => {
 	const channelId = c.req.param('channelId');
 
 	try {
-		const channel = await TempVoiceChannel.findByPk(channelId);
+		const channel = await TempVoiceChannel.getCache({ id: channelId });
 		if (!channel)
 			return c.json(
 				{ success: false, error: 'TempVoiceChannel not found' },
@@ -400,7 +400,7 @@ app.patch('/channels/:channelId', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const channel = await TempVoiceChannel.findByPk(channelId);
+		const channel = await TempVoiceChannel.getCache({ id: channelId });
 		if (!channel)
 			return c.json(
 				{ success: false, error: 'TempVoiceChannel not found' },
@@ -432,7 +432,7 @@ app.delete('/channels/:channelId', async (c) => {
 	const channelId = c.req.param('channelId');
 
 	try {
-		const channel = await TempVoiceChannel.findByPk(channelId);
+		const channel = await TempVoiceChannel.getCache({ id: channelId });
 		if (!channel)
 			return c.json(
 				{ success: false, error: 'TempVoiceChannel not found' },

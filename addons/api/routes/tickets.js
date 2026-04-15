@@ -46,7 +46,7 @@ app.get('/', async (c) => {
 	if (status) where.status = status;
 
 	try {
-		const tickets = await Ticket.findAll({ where });
+		const tickets = await Ticket.getAllCache({ where });
 		return c.json({ success: true, count: tickets.length, data: tickets });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -58,7 +58,7 @@ app.get('/:id', async (c) => {
 	const { Ticket } = getModels(c);
 	const id = c.req.param('id');
 	try {
-		const ticket = await Ticket.findByPk(id);
+		const ticket = await Ticket.getCache({ id: id });
 		if (!ticket)
 			return c.json({ success: false, error: 'Ticket not found' }, 404);
 		return c.json({ success: true, data: ticket });
@@ -73,7 +73,7 @@ app.patch('/:id', async (c) => {
 	const id = c.req.param('id');
 	const body = await c.req.json();
 	try {
-		const ticket = await Ticket.findByPk(id);
+		const ticket = await Ticket.getCache({ id: id });
 		if (!ticket)
 			return c.json({ success: false, error: 'Ticket not found' }, 404);
 		await ticket.update(body);
@@ -89,7 +89,7 @@ app.delete('/:id', async (c) => {
 	const { Ticket } = getModels(c);
 	const id = c.req.param('id');
 	try {
-		const ticket = await Ticket.findByPk(id);
+		const ticket = await Ticket.getCache({ id: id });
 		if (!ticket)
 			return c.json({ success: false, error: 'Ticket not found' }, 404);
 		await ticket.destroy();
@@ -120,7 +120,7 @@ app.post('/open', async (c) => {
 	try {
 		const guild = await client.guilds.fetch(guildId).catch(() => null);
 		const user = await client.users.fetch(userId).catch(() => null);
-		const ticketConfig = await TicketConfig.findByPk(ticketConfigId);
+		const ticketConfig = await TicketConfig.getCache({ id: ticketConfigId });
 
 		if (!guild)
 			return c.json({ success: false, error: 'Guild not found' }, 404);
@@ -168,7 +168,7 @@ app.post('/:id/close', async (c) => {
 		);
 
 	try {
-		const ticket = await Ticket.findByPk(id);
+		const ticket = await Ticket.getCache({ id: id });
 		if (!ticket)
 			return c.json({ success: false, error: 'Ticket not found' }, 404);
 		if (ticket.status === 'closed')
@@ -214,7 +214,7 @@ app.get('/panels/:guildId', async (c) => {
 	const { TicketPanel } = getModels(c);
 	const guildId = c.req.param('guildId');
 	try {
-		const panels = await TicketPanel.findAll({ where: { guildId } });
+		const panels = await TicketPanel.getAllCache({ where: { guildId } });
 		return c.json({ success: true, count: panels.length, data: panels });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -332,7 +332,7 @@ app.patch('/panels/:id', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const panel = await TicketPanel.findByPk(id);
+		const panel = await TicketPanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -358,7 +358,7 @@ app.delete('/panels/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const panel = await TicketPanel.findByPk(id);
+		const panel = await TicketPanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -425,7 +425,7 @@ app.post('/panels/:id/resend', async (c) => {
 	} catch (_) {}
 
 	try {
-		const panel = await TicketPanel.findByPk(id);
+		const panel = await TicketPanel.getCache({ id: id });
 		if (!panel)
 			return c.json({ success: false, error: 'Panel not found' }, 404);
 
@@ -531,7 +531,7 @@ app.post('/panels/:id/resend', async (c) => {
 		// Without this, refreshTicketPanel finds no types (they still reference
 		// the old panelMessageId) and the panel renders as empty.
 		const { TicketConfig } = getModels(c);
-		const linkedTypes = await TicketConfig.findAll({
+		const linkedTypes = await TicketConfig.getAllCache({
 			where: { panelMessageId: oldMessageId },
 		});
 		for (const type of linkedTypes) {
@@ -564,7 +564,7 @@ app.get('/configs/:guildId', async (c) => {
 	const { TicketConfig } = getModels(c);
 	const guildId = c.req.param('guildId');
 	try {
-		const configs = await TicketConfig.findAll({ where: { guildId } });
+		const configs = await TicketConfig.getAllCache({ where: { guildId } });
 		return c.json({ success: true, count: configs.length, data: configs });
 	} catch (error) {
 		return c.json({ success: false, error: error.message }, 500);
@@ -576,7 +576,7 @@ app.get('/configs/id/:id', async (c) => {
 	const { TicketConfig } = getModels(c);
 	const id = c.req.param('id');
 	try {
-		const config = await TicketConfig.findByPk(id);
+		const config = await TicketConfig.getCache({ id: id });
 		if (!config)
 			return c.json({ success: false, error: 'TicketConfig not found' }, 404);
 		return c.json({ success: true, data: config });
@@ -668,7 +668,7 @@ app.patch('/configs/:id', async (c) => {
 	const body = await c.req.json();
 
 	try {
-		const config = await TicketConfig.findByPk(id);
+		const config = await TicketConfig.getCache({ id: id });
 		if (!config)
 			return c.json({ success: false, error: 'TicketConfig not found' }, 404);
 
@@ -694,7 +694,7 @@ app.delete('/configs/:id', async (c) => {
 	const id = c.req.param('id');
 
 	try {
-		const config = await TicketConfig.findByPk(id);
+		const config = await TicketConfig.getCache({ id: id });
 		if (!config)
 			return c.json({ success: false, error: 'TicketConfig not found' }, 404);
 

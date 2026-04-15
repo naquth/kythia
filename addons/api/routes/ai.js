@@ -133,7 +133,7 @@ app.delete('/facts/:userId/:factId', async (c) => {
 	const { userId, factId } = c.req.param();
 
 	try {
-		const fact = await UserFact.findOne({ where: { id: factId, userId } });
+		const fact = await UserFact.getCache({ where: { id: factId, userId } });
 		if (!fact) {
 			return c.json({ success: false, error: 'Fact not found' }, 404);
 		}
@@ -180,7 +180,7 @@ app.get('/personality/:userId', async (c) => {
 	const { userId } = c.req.param();
 
 	try {
-		const user = await KythiaUser.findOne({ where: { userId } });
+		const user = await KythiaUser.getCache({ where: { userId } });
 		const personality = user?.aiPersonality || 'default';
 
 		return c.json({
@@ -256,7 +256,7 @@ app.delete('/personality/:userId', async (c) => {
 	const { userId } = c.req.param();
 
 	try {
-		const user = await KythiaUser.findOne({ where: { userId } });
+		const user = await KythiaUser.getCache({ where: { userId } });
 		if (!user) {
 			// Nothing to reset — return success anyway
 			return c.json({

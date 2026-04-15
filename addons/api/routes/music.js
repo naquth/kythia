@@ -126,7 +126,7 @@ app.get('/playlists/:userId', async (c) => {
 	const { userId } = c.req.param();
 
 	try {
-		const playlists = await Playlist.findAll({
+		const playlists = await Playlist.getAllCache({
 			where: { userId },
 			include: [{ model: PlaylistTrack, as: 'tracks', attributes: ['id'] }],
 			order: [['updatedAt', 'DESC']],
@@ -152,7 +152,7 @@ app.get('/playlists/:userId/:playlistId', async (c) => {
 	const { userId, playlistId } = c.req.param();
 
 	try {
-		const playlist = await Playlist.findOne({
+		const playlist = await Playlist.getCache({
 			where: { id: playlistId, userId },
 			include: [{ model: PlaylistTrack, as: 'tracks' }],
 		});
@@ -235,7 +235,7 @@ app.patch('/playlists/:userId/:playlistId', async (c) => {
 	}
 
 	try {
-		const playlist = await Playlist.findOne({
+		const playlist = await Playlist.getCache({
 			where: { id: playlistId, userId },
 		});
 		if (!playlist)
@@ -262,7 +262,7 @@ app.delete('/playlists/:userId/:playlistId', async (c) => {
 	const { userId, playlistId } = c.req.param();
 
 	try {
-		const playlist = await Playlist.findOne({
+		const playlist = await Playlist.getCache({
 			where: { id: playlistId, userId },
 		});
 		if (!playlist)
@@ -304,7 +304,7 @@ app.post('/playlists/:userId/:playlistId/tracks', async (c) => {
 		return c.json({ success: false, error: 'Invalid JSON body' }, 400);
 	}
 
-	const playlist = await Playlist.findOne({
+	const playlist = await Playlist.getCache({
 		where: { id: playlistId, userId },
 	});
 	if (!playlist)
@@ -405,13 +405,13 @@ app.delete('/playlists/:userId/:playlistId/tracks/:trackId', async (c) => {
 	const { userId, playlistId, trackId } = c.req.param();
 
 	try {
-		const playlist = await Playlist.findOne({
+		const playlist = await Playlist.getCache({
 			where: { id: playlistId, userId },
 		});
 		if (!playlist)
 			return c.json({ success: false, error: 'Playlist not found' }, 404);
 
-		const track = await PlaylistTrack.findOne({
+		const track = await PlaylistTrack.getCache({
 			where: { id: trackId, playlistId: playlist.id },
 		});
 		if (!track)
@@ -440,7 +440,7 @@ app.delete('/playlists/:userId/:playlistId/tracks', async (c) => {
 	const { userId, playlistId } = c.req.param();
 
 	try {
-		const playlist = await Playlist.findOne({
+		const playlist = await Playlist.getCache({
 			where: { id: playlistId, userId },
 		});
 		if (!playlist)
@@ -579,7 +579,7 @@ app.post('/favorites/:userId', async (c) => {
 	}
 
 	// Check for duplicate (unique index on userId+identifier)
-	const existing = await Favorite.findOne({ where: { userId, identifier } });
+	const existing = await Favorite.getCache({ where: { userId, identifier } });
 	if (existing) {
 		return c.json(
 			{ success: false, error: 'This track is already in favorites' },
@@ -612,7 +612,7 @@ app.delete('/favorites/:userId/:favoriteId', async (c) => {
 	const { userId, favoriteId } = c.req.param();
 
 	try {
-		const fav = await Favorite.findOne({ where: { id: favoriteId, userId } });
+		const fav = await Favorite.getCache({ where: { id: favoriteId, userId } });
 		if (!fav)
 			return c.json({ success: false, error: 'Favorite not found' }, 404);
 
@@ -664,7 +664,7 @@ app.get('/247/:guildId', async (c) => {
 	const { guildId } = c.req.param();
 
 	try {
-		const config = await Music247.findOne({ where: { guildId } });
+		const config = await Music247.getCache({ where: { guildId } });
 		if (!config) {
 			return c.json({ success: true, data: null, enabled: false });
 		}
@@ -751,7 +751,7 @@ app.delete('/247/:guildId', async (c) => {
 	const { guildId } = c.req.param();
 
 	try {
-		const config = await Music247.findOne({ where: { guildId } });
+		const config = await Music247.getCache({ where: { guildId } });
 		if (!config) {
 			return c.json(
 				{ success: false, error: '24/7 mode is not enabled for this guild' },

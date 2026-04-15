@@ -194,7 +194,7 @@ app.post('/:messageId/end', async (c) => {
 	const messageId = c.req.param('messageId');
 
 	try {
-		const giveaway = await Giveaway.findOne({ where: { messageId } });
+		const giveaway = await Giveaway.getCache({ where: { messageId } });
 
 		if (!giveaway) {
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
@@ -237,7 +237,7 @@ app.post('/:messageId/cancel', async (c) => {
 	const messageId = c.req.param('messageId');
 
 	try {
-		const giveaway = await Giveaway.findOne({ where: { messageId } });
+		const giveaway = await Giveaway.getCache({ where: { messageId } });
 
 		if (!giveaway) {
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
@@ -294,7 +294,7 @@ app.post('/:messageId/reroll', async (c) => {
 	const messageId = c.req.param('messageId');
 
 	try {
-		const giveaway = await Giveaway.findOne({ where: { messageId } });
+		const giveaway = await Giveaway.getCache({ where: { messageId } });
 
 		if (!giveaway) {
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
@@ -360,7 +360,7 @@ app.get('/', async (c) => {
 	if (ended !== undefined && ended !== '') where.ended = ended === 'true';
 
 	try {
-		const data = await Giveaway.findAll({
+		const data = await Giveaway.getAllCache({
 			where,
 			order: [['endTime', 'DESC']],
 		});
@@ -376,7 +376,7 @@ app.get('/message/:messageId', async (c) => {
 	const messageId = c.req.param('messageId');
 
 	try {
-		const giveaway = await Giveaway.findOne({ where: { messageId } });
+		const giveaway = await Giveaway.getCache({ where: { messageId } });
 		if (!giveaway)
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
 		return c.json({ success: true, data: giveaway });
@@ -391,7 +391,7 @@ app.get('/:id', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 
 	try {
-		const giveaway = await Giveaway.findByPk(id);
+		const giveaway = await Giveaway.getCache({ id: id });
 		if (!giveaway)
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
 		return c.json({ success: true, data: giveaway });
@@ -421,7 +421,7 @@ app.patch('/:id', async (c) => {
 	];
 
 	try {
-		const giveaway = await Giveaway.findByPk(id);
+		const giveaway = await Giveaway.getCache({ id: id });
 		if (!giveaway)
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
 
@@ -443,7 +443,7 @@ app.delete('/:id', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 
 	try {
-		const giveaway = await Giveaway.findByPk(id);
+		const giveaway = await Giveaway.getCache({ id: id });
 		if (!giveaway)
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
 
@@ -467,7 +467,8 @@ app.get('/:id/participants', async (c) => {
 	const id = parseInt(c.req.param('id'), 10);
 
 	try {
-		const giveaway = await Giveaway.findByPk(id, {
+		const giveaway = await Giveaway.getCache({
+			id: id,
 			attributes: ['id', 'messageId', 'participants', 'ended'],
 		});
 		if (!giveaway)
@@ -504,7 +505,7 @@ app.post('/:id/participants', async (c) => {
 	}
 
 	try {
-		const giveaway = await Giveaway.findByPk(id);
+		const giveaway = await Giveaway.getCache({ id: id });
 		if (!giveaway)
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
 		if (giveaway.ended)
@@ -539,7 +540,7 @@ app.delete('/:id/participants/:userId', async (c) => {
 	const userId = c.req.param('userId');
 
 	try {
-		const giveaway = await Giveaway.findByPk(id);
+		const giveaway = await Giveaway.getCache({ id: id });
 		if (!giveaway)
 			return c.json({ success: false, error: 'Giveaway not found' }, 404);
 

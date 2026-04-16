@@ -18,6 +18,12 @@
 						"voice": "Most Active — Voice Time"
 					},
 					"footer": "-# Activity leaderboard for **{server}**",
+					"period": {
+						"all": "All Time",
+						"daily": "Today",
+						"weekly": "This Week",
+						"monthly": "This Month"
+					},
 					"not": {
 						"your": {
 							"interaction": "This is not your leaderboard to navigate."

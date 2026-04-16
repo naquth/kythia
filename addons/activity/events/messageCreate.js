@@ -17,7 +17,7 @@ module.exports = async (bot, message) => {
 	if (message.author.bot || !message.guild) return;
 
 	const { models } = bot.client.container;
-	const { ServerSetting, ActivityStat } = models;
+	const { ServerSetting, ActivityStat, ActivityLog } = models;
 
 	const guildId = message.guild.id;
 	const userId = message.author.id;
@@ -26,7 +26,10 @@ module.exports = async (bot, message) => {
 	const serverSetting = await ServerSetting.getCache({ guildId });
 	if (!serverSetting || !serverSetting.activityOn) return;
 
+	const today = new Date().toISOString().slice(0, 10);
+
 	try {
+		// All-time counter
 		let stat = await ActivityStat.getCache({ guildId, userId });
 
 		if (!stat) {
@@ -41,6 +44,13 @@ module.exports = async (bot, message) => {
 			stat.changed('totalMessages', true);
 			await stat.save();
 		}
+
+		// Daily bucket
+		const [log] = await ActivityLog.findOrCreate({
+			where: { guildId, userId, date: today },
+			defaults: { messages: 0, voiceTime: 0 },
+		});
+		await log.increment({ messages: 1 });
 	} catch (err) {
 		bot.client.container.logger.error(
 			`Failed to track message activity for ${userId} in ${guildId}: ${err.message}`,

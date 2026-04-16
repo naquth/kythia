@@ -15,9 +15,33 @@ const {
 	MessageFlags,
 	ButtonStyle,
 } = require('discord.js');
+const { Op, fn, col, literal } = require('sequelize');
 
 const USERS_PER_PAGE = 10;
 const MAX_USERS = 100;
+
+/**
+ * Returns the start date string (YYYY-MM-DD) for a given period.
+ * Returns null for 'all'.
+ *
+ * @param {string} period
+ * @returns {string|null}
+ */
+const getPeriodStart = (period) => {
+	const now = new Date();
+	if (period === 'daily') return now.toISOString().slice(0, 10);
+	if (period === 'weekly') {
+		const d = new Date(now);
+		d.setDate(d.getDate() - 6);
+		return d.toISOString().slice(0, 10);
+	}
+	if (period === 'monthly') {
+		const d = new Date(now);
+		d.setDate(d.getDate() - 29);
+		return d.toISOString().slice(0, 10);
+	}
+	return null;
+};
 
 /**
  * Formats a duration in seconds to a human-readable string (e.g. 2h 30m 15s).
@@ -97,6 +121,7 @@ async function generateLeaderboardContainer(
 	allStats,
 	totalUsers,
 	type,
+	periodLabel,
 	navDisabled = false,
 ) {
 	const { t, kythiaConfig, helpers } = interaction.client.container;
@@ -164,7 +189,9 @@ async function generateLeaderboardContainer(
 			convertColor(kythiaConfig.bot.color, { from: 'hex', to: 'decimal' }),
 		)
 		.addTextDisplayComponents(
-			...chunkTextDisplay(`## ${await t(interaction, titleKey)}`),
+			...chunkTextDisplay(
+				`## ${await t(interaction, titleKey)} — ${periodLabel}`,
+			),
 		)
 		.addSeparatorComponents(
 			new SeparatorBuilder()
@@ -210,6 +237,18 @@ module.exports = {
 						{ name: '📨 Messages', value: 'messages' },
 						{ name: '🎙️ Voice Time', value: 'voice' },
 					),
+			)
+			.addStringOption((option) =>
+				option
+					.setName('period')
+					.setDescription('Time period to show. Defaults to all time.')
+					.setRequired(false)
+					.addChoices(
+						{ name: '🕰️ All Time', value: 'all' },
+						{ name: '📅 Today', value: 'daily' },
+						{ name: '📆 This Week', value: 'weekly' },
+						{ name: '🗓️ This Month', value: 'monthly' },
+					),
 			),
 
 	/**
@@ -218,20 +257,42 @@ module.exports = {
 	 */
 	async execute(interaction, container) {
 		const { t, models } = container;
-		const { ActivityStat } = models;
+		const { ActivityStat, ActivityLog } = models;
 
 		const guildId = interaction.guild.id;
 		const type = interaction.options.getString('type') || 'messages';
+		const period = interaction.options.getString('period') || 'all';
 		const orderColumn = type === 'voice' ? 'totalVoiceTime' : 'totalMessages';
+
+		const periodLabel = await t(
+			interaction,
+			`activity.leaderboard.activity.leaderboard.period.${period}`,
+		);
 
 		await interaction.deferReply();
 
-		const allStats = await ActivityStat.getAllCache({
-			where: { guildId },
-			order: [[orderColumn, 'DESC']],
-			limit: MAX_USERS,
-			cacheTags: [`ActivityStat:leaderboard:${type}:${guildId}`],
-		});
+		let allStats;
+
+		if (period === 'all') {
+			allStats = await ActivityStat.getAllCache({
+				where: { guildId },
+				order: [[orderColumn, 'DESC']],
+				limit: MAX_USERS,
+				cacheTags: [`ActivityStat:leaderboard:${type}:${guildId}`],
+			});
+		} else {
+			const startDate = getPeriodStart(period);
+			const logColumn = type === 'voice' ? 'voiceTime' : 'messages';
+
+			allStats = await ActivityLog.findAll({
+				where: { guildId, date: { [Op.gte]: startDate } },
+				attributes: ['userId', [fn('SUM', col(logColumn)), orderColumn]],
+				group: ['userId'],
+				order: [[literal(orderColumn), 'DESC']],
+				limit: MAX_USERS,
+				raw: true,
+			});
+		}
 
 		const totalUsers = allStats.length;
 		let currentPage = 1;
@@ -243,6 +304,7 @@ module.exports = {
 				[],
 				0,
 				type,
+				periodLabel,
 				/*navDisabled*/ true,
 			);
 			return interaction.editReply({
@@ -259,6 +321,7 @@ module.exports = {
 				allStats,
 				totalUsers,
 				type,
+				periodLabel,
 			);
 
 		const message = await interaction.editReply({
@@ -302,6 +365,7 @@ module.exports = {
 					allStats,
 					totalUsers,
 					type,
+					periodLabel,
 				);
 
 			await i.update({
@@ -320,6 +384,7 @@ module.exports = {
 						allStats,
 						totalUsers,
 						type,
+						periodLabel,
 						true,
 					);
 

@@ -1,0 +1,22 @@
+/**
+ * @namespace: addons/activity/database/models/ActivityLog.js
+ * @type: Database Model
+ * @copyright © 2026 kenndeclouv
+ * @assistant graa & chaa
+ * @version 1.0.0-rc
+ */
+
+const { KythiaModel } = require('kythia-core');
+
+class ActivityLog extends KythiaModel {
+	static cacheKeys = [['guildId', 'userId', 'date']];
+	static guarded = [];
+
+	static get structure() {
+		return {
+			options: { timestamps: false },
+		};
+	}
+}
+
+module.exports = ActivityLog;

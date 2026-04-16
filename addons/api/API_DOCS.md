@@ -5894,7 +5894,11 @@ Wipe **all** streak records for an entire guild.
 
 Exposes per-guild activity statistics tracked by the **Activity addon** (`activityOn`). Tracks total messages sent and total voice time (in seconds) per member.
 
-> **Feature flag:** `activityOn` must be enabled for the guild (via `/set features activity enable` or `PATCH /api/guilds/settings/:guildId`) for data to be collected.
+Activity data is stored in two tables:
+- **`activity_stats`** — cumulative all-time totals per user (fast single-row lookup)
+- **`activity_logs`** — daily buckets per user, one row per `(guildId, userId, date)` (used for period-filtered queries)
+
+> **Feature flag:** `activityOn` must be enabled for the guild for data to be collected. Daily log buckets only accumulate from the point the addon is enabled — there is no retroactive historical data.
 
 ---
 
@@ -5929,14 +5933,13 @@ Enables or disables activity tracking for a guild. Equivalent to `/set features 
 | Status | Body | Condition |
 |---|---|---|
 | `400` | `{ "error": "Missing or invalid 'enabled' field" }` | Body missing or wrong type |
-| `404` | `{ "error": "Guild settings not found" }` | No settings row for guild |
 | `500` | `{ "error": "..." }` | Database error |
 
 ---
 
 ### `GET /api/activity/:guildId`
 
-Returns the top-10 activity leaderboard for a guild, sorted by the requested metric.
+Returns the top-N activity leaderboard for a guild. Supports time-period filtering via the `period` query param.
 
 **Authentication:** Bearer token required.
 
@@ -5951,7 +5954,8 @@ Returns the top-10 activity leaderboard for a guild, sorted by the requested met
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `sort` | `string` | `messages` | Sort key: `messages` or `voice` |
-| `limit` | `number` | `10` | Number of entries to return (max 25) |
+| `limit` | `number` | `10` | Number of entries to return (max `25`) |
+| `period` | `string` | `all` | Time period: `all`, `daily`, `weekly`, `monthly` |
 
 **Response:**
 ```json
@@ -5959,12 +5963,13 @@ Returns the top-10 activity leaderboard for a guild, sorted by the requested met
   "success": true,
   "guildId": "123456789012345678",
   "sort": "messages",
+  "period": "weekly",
   "leaderboard": [
     {
       "rank": 1,
       "userId": "111111111111111111",
-      "totalMessages": 4200,
-      "totalVoiceTime": 36000
+      "totalMessages": 420,
+      "totalVoiceTime": 3600
     }
   ]
 }
@@ -5975,11 +5980,12 @@ Returns the top-10 activity leaderboard for a guild, sorted by the requested met
 | `success` | `boolean` | Always `true` on success |
 | `guildId` | `string` | The queried guild ID |
 | `sort` | `string` | The sort key used (`messages` or `voice`) |
+| `period` | `string` | The period used (`all`, `daily`, `weekly`, `monthly`) |
 | `leaderboard` | `array` | Top entries, sorted descending |
 | `leaderboard[].rank` | `number` | 1-based rank position |
 | `leaderboard[].userId` | `string` | Discord user snowflake ID |
-| `leaderboard[].totalMessages` | `number` | Cumulative messages sent |
-| `leaderboard[].totalVoiceTime` | `number` | Cumulative voice time in seconds |
+| `leaderboard[].totalMessages` | `number` | Messages sent in the period |
+| `leaderboard[].totalVoiceTime` | `number` | Voice time in seconds in the period |
 
 **Errors:**
 
@@ -5991,7 +5997,7 @@ Returns the top-10 activity leaderboard for a guild, sorted by the requested met
 
 ### `GET /api/activity/:guildId/id/:userId`
 
-Returns the activity stats for a single user in a guild.
+Returns the activity stats for a single user in a guild. Supports period filtering.
 
 **Authentication:** Bearer token required.
 
@@ -6002,12 +6008,19 @@ Returns the activity stats for a single user in a guild.
 | `guildId` | `string` | The Discord guild ID |
 | `userId` | `string` | The Discord user ID |
 
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `period` | `string` | `all` | Time period: `all`, `daily`, `weekly`, `monthly` |
+
 **Response:**
 ```json
 {
   "success": true,
   "guildId": "123456789012345678",
   "userId": "111111111111111111",
+  "period": "all",
   "totalMessages": 4200,
   "totalVoiceTime": 36000
 }
@@ -6018,21 +6031,22 @@ Returns the activity stats for a single user in a guild.
 | `success` | `boolean` | Always `true` on success |
 | `guildId` | `string` | The queried guild ID |
 | `userId` | `string` | The queried user ID |
-| `totalMessages` | `number` | Total messages sent |
-| `totalVoiceTime` | `number` | Total voice time in seconds |
+| `period` | `string` | The period used |
+| `totalMessages` | `number` | Messages sent in the period |
+| `totalVoiceTime` | `number` | Voice time in seconds in the period |
 
 **Errors:**
 
 | Status | Body | Condition |
 |---|---|---|
-| `404` | `{ "success": false, "error": "User stats not found" }` | No record for the user/guild pair |
+| `404` | `{ "success": false, "error": "User stats not found" }` | No all-time record (only when `period=all`) |
 | `500` | `{ "success": false, "error": "..." }` | Database error |
 
 ---
 
 ### `DELETE /api/activity/:guildId/id/:userId`
 
-Deletes the activity stats record for a single user in a guild.
+Deletes the activity stats record for a single user in a guild. Also deletes all their daily log buckets.
 
 **Authentication:** Bearer token required.
 
@@ -6059,7 +6073,9 @@ Deletes the activity stats record for a single user in a guild.
 
 ### `DELETE /api/activity/:guildId`
 
-Wipes all activity stats for every member in a guild.
+Wipes all activity stats and daily log buckets for every member in a guild.
+
+> ⚠️ This is irreversible.
 
 **Authentication:** Bearer token required.
 
@@ -6077,7 +6093,7 @@ Wipes all activity stats for every member in a guild.
 | Field | Type | Description |
 |---|---|---|
 | `success` | `boolean` | Always `true` |
-| `deleted` | `number` | Number of rows deleted |
+| `deleted` | `number` | Number of all-time rows deleted |
 
 **Errors:**
 

@@ -28,9 +28,11 @@ const flushVoiceTime = async (bot, guildId, userId, durationSeconds) => {
 	if (durationSeconds <= 0) return;
 
 	const { models, logger } = bot.client.container;
-	const { ActivityStat } = models;
+	const { ActivityStat, ActivityLog } = models;
+	const today = new Date().toISOString().slice(0, 10);
 
 	try {
+		// All-time counter
 		let stat = await ActivityStat.getCache({ guildId, userId });
 
 		if (!stat) {
@@ -46,6 +48,13 @@ const flushVoiceTime = async (bot, guildId, userId, durationSeconds) => {
 			stat.changed('totalVoiceTime', true);
 			await stat.save();
 		}
+
+		// Daily bucket
+		const [log] = await ActivityLog.findOrCreate({
+			where: { guildId, userId, date: today },
+			defaults: { messages: 0, voiceTime: 0 },
+		});
+		await log.increment({ voiceTime: durationSeconds });
 	} catch (err) {
 		logger.error(
 			`Failed to flush voice time for ${userId} in ${guildId}: ${err.message}`,

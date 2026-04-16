@@ -7,6 +7,7 @@
  */
 
 const { Hono } = require('hono');
+const { Op, fn, col, literal } = require('sequelize');
 
 const app = new Hono();
 
@@ -16,6 +17,30 @@ const app = new Hono();
 
 const getModels = (c) => c.get('client').container.models;
 const getLogger = (c) => c.get('client').container.logger;
+const getHelpers = (c) => c.get('client').container.helpers;
+
+/**
+ * Returns the start date string (YYYY-MM-DD) for a given period.
+ * Returns null for 'all'.
+ *
+ * @param {string} period
+ * @returns {string|null}
+ */
+const getPeriodStart = (period) => {
+	const now = new Date();
+	if (period === 'daily') return now.toISOString().slice(0, 10);
+	if (period === 'weekly') {
+		const d = new Date(now);
+		d.setDate(d.getDate() - 6);
+		return d.toISOString().slice(0, 10);
+	}
+	if (period === 'monthly') {
+		const d = new Date(now);
+		d.setDate(d.getDate() - 29);
+		return d.toISOString().slice(0, 10);
+	}
+	return null;
+};
 
 // ---------------------------------------------------------------------------
 // PATCH /api/activity/:guildId/toggle
@@ -63,38 +88,86 @@ app.patch('/:guildId/toggle', async (c) => {
 // ---------------------------------------------------------------------------
 // GET /api/activity/:guildId
 // Returns the top-N activity leaderboard for a guild
-// Query: { sort?: 'messages' | 'voice', limit?: number }
+// Query: { sort?: 'messages' | 'voice', limit?: number, period?: 'all' | 'daily' | 'weekly' | 'monthly' }
 // ---------------------------------------------------------------------------
 app.get('/:guildId', async (c) => {
 	const models = getModels(c);
-	const { ActivityStat } = models;
+	const { ActivityStat, ActivityLog } = models;
 	const { guildId } = c.req.param();
 
-	const { sort = 'messages', limit = '10' } = c.req.query();
+	const { sort = 'messages', limit = '10', period = 'all' } = c.req.query();
 
 	const sortKey = sort === 'voice' ? 'voice' : 'messages';
 	const limitNum = Math.min(25, Math.max(1, parseInt(limit, 10) || 10));
-
 	const orderColumn = sortKey === 'voice' ? 'totalVoiceTime' : 'totalMessages';
 
 	try {
-		const rows = await ActivityStat.getAllCache({
-			where: { guildId },
-			order: [[orderColumn, 'DESC']],
-			limit: limitNum,
-		});
+		const { getMemberSafe } = getHelpers(c).discord;
+		const client = c.get('client');
+		const guildObj = client.guilds.cache.get(guildId);
+		let rows;
 
-		const leaderboard = rows.map((row, i) => ({
-			rank: i + 1,
-			userId: row.userId,
-			totalMessages: row.totalMessages ?? 0,
-			totalVoiceTime: row.totalVoiceTime ?? 0,
-		}));
+		if (period === 'all') {
+			rows = await ActivityStat.getAllCache({
+				where: { guildId },
+				order: [[orderColumn, 'DESC']],
+				limit: limitNum,
+			});
+		} else {
+			const startDate = getPeriodStart(period);
+			const logColumn = sortKey === 'voice' ? 'voiceTime' : 'messages';
+
+			rows = await ActivityLog.findAll({
+				where: { guildId, date: { [Op.gte]: startDate } },
+				attributes: [
+					'userId',
+					[fn('SUM', col('messages')), 'totalMessages'],
+					[fn('SUM', col('voiceTime')), 'totalVoiceTime'],
+				],
+				group: ['userId'],
+				order: [
+					[
+						literal(
+							logColumn === 'voiceTime' ? 'totalVoiceTime' : 'totalMessages',
+						),
+						'DESC',
+					],
+				],
+				limit: limitNum,
+				raw: true,
+			});
+		}
+
+		const leaderboard = await Promise.all(
+			rows.map(async (row, i) => {
+				let username = null;
+				let avatar = null;
+				if (guildObj) {
+					const member = await getMemberSafe(guildObj, row.userId);
+					const userObj = member?.user ?? null;
+					if (userObj) {
+						username = userObj.username;
+						avatar = userObj.displayAvatarURL
+							? userObj.displayAvatarURL({ size: 64 })
+							: null;
+					}
+				}
+				return {
+					rank: i + 1,
+					userId: row.userId,
+					username,
+					avatar,
+					totalMessages: row.totalMessages ?? 0,
+					totalVoiceTime: row.totalVoiceTime ?? 0,
+				};
+			}),
+		);
 
 		return c.json({
 			success: true,
 			guildId,
 			sort: sortKey,
+			period,
 			leaderboard,
 		});
 	} catch (error) {
@@ -109,24 +182,64 @@ app.get('/:guildId', async (c) => {
 // ---------------------------------------------------------------------------
 // GET /api/activity/:guildId/id/:userId
 // Returns the activity stats for a single user in a guild
+// Query: { period?: 'all' | 'daily' | 'weekly' | 'monthly' }
 // ---------------------------------------------------------------------------
 app.get('/:guildId/id/:userId', async (c) => {
 	const models = getModels(c);
-	const { ActivityStat } = models;
+	const { ActivityStat, ActivityLog } = models;
 	const { guildId, userId } = c.req.param();
+	const { period = 'all' } = c.req.query();
 
 	try {
-		const stat = await ActivityStat.getCache({ guildId, userId });
-		if (!stat) {
-			return c.json({ success: false, error: 'User stats not found' }, 404);
+		const { getMemberSafe } = getHelpers(c).discord;
+		const client = c.get('client');
+		const guildObj = client.guilds.cache.get(guildId);
+
+		let totalMessages, totalVoiceTime;
+
+		if (period === 'all') {
+			const stat = await ActivityStat.getCache({ guildId, userId });
+			if (!stat) {
+				return c.json({ success: false, error: 'User stats not found' }, 404);
+			}
+			totalMessages = stat.totalMessages ?? 0;
+			totalVoiceTime = stat.totalVoiceTime ?? 0;
+		} else {
+			const startDate = getPeriodStart(period);
+			const [row] = await ActivityLog.findAll({
+				where: { guildId, userId, date: { [Op.gte]: startDate } },
+				attributes: [
+					[fn('SUM', col('messages')), 'totalMessages'],
+					[fn('SUM', col('voiceTime')), 'totalVoiceTime'],
+				],
+				raw: true,
+			});
+			totalMessages = row?.totalMessages ?? 0;
+			totalVoiceTime = row?.totalVoiceTime ?? 0;
+		}
+
+		let username = null;
+		let avatar = null;
+		if (guildObj) {
+			const member = await getMemberSafe(guildObj, userId);
+			const userObj = member?.user ?? null;
+			if (userObj) {
+				username = userObj.username;
+				avatar = userObj.displayAvatarURL
+					? userObj.displayAvatarURL({ size: 64 })
+					: null;
+			}
 		}
 
 		return c.json({
 			success: true,
 			guildId,
 			userId,
-			totalMessages: stat.totalMessages ?? 0,
-			totalVoiceTime: stat.totalVoiceTime ?? 0,
+			username,
+			avatar,
+			period,
+			totalMessages,
+			totalVoiceTime,
 		});
 	} catch (error) {
 		getLogger(c).error(
@@ -143,13 +256,17 @@ app.get('/:guildId/id/:userId', async (c) => {
 // ---------------------------------------------------------------------------
 app.delete('/:guildId/id/:userId', async (c) => {
 	const models = getModels(c);
-	const { ActivityStat } = models;
+	const { ActivityStat, ActivityLog } = models;
 	const { guildId, userId } = c.req.param();
 
 	try {
 		const deleted = await ActivityStat.destroyAndClearCache({
 			where: { guildId, userId },
 		});
+
+		// Also wipe their daily log buckets
+		await ActivityLog.destroy({ where: { guildId, userId } });
+
 		if (!deleted) {
 			return c.json({ success: false, error: 'User stats not found' }, 404);
 		}
@@ -170,13 +287,17 @@ app.delete('/:guildId/id/:userId', async (c) => {
 // ---------------------------------------------------------------------------
 app.delete('/:guildId', async (c) => {
 	const models = getModels(c);
-	const { ActivityStat } = models;
+	const { ActivityStat, ActivityLog } = models;
 	const { guildId } = c.req.param();
 
 	try {
 		const deleted = await ActivityStat.destroyAndClearCache({
 			where: { guildId },
 		});
+
+		// Also wipe all daily log buckets for the guild
+		await ActivityLog.destroy({ where: { guildId } });
+
 		return c.json({ success: true, deleted });
 	} catch (error) {
 		getLogger(c).error(

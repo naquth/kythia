@@ -1652,7 +1652,7 @@
 					"guild": {
 						"delete": {
 							"webhook": {
-								"desc": "## **❌ {bot}** OUT FROM SERVER\n**{bot}** has left the server:\n• Server Name: **{guild}**\n• Server ID: `{guildId}`\n• Server Owner: <@{ownerId}> ({ownerId})\n• Member Count: {memberCount}\n• Server Created At: {createdAt}"
+								"desc": "## **{bot}** OUT FROM SERVER\n**{bot}** has left the server:\n• Server Name: **{guild}**\n• Server ID: `{guildId}`\n• Server Owner: <@{ownerId}> ({ownerId})\n• Member Count: {memberCount}\n• Server Created At: {createdAt}"
 							},
 							"no": {}
 						}
@@ -1664,7 +1664,7 @@
 					"guild": {
 						"create": {
 							"webhook": {
-								"desc": "## ✅ **{bot}** INVITED\nHeyy kenn! good news! **{bot}** has been invited to {guild} (ID: {guildId})\n• Server Name: **{guild}**\n• Server ID: `{guildId}`\n• Server Owner: <@{ownerId}> ({ownerId} | {ownerName})\n• Member Count: {memberCount}\n• Invite Link: {invite}\n• Server Created At: {createdAt}"
+								"desc": "## **{bot}** INVITED\nHeyy kenn! good news! **{bot}** has been invited to {guild} (ID: {guildId})\n• Server Name: **{guild}**\n• Server ID: `{guildId}`\n• Server Owner: <@{ownerId}> ({ownerId} | {ownerName})\n• Member Count: {memberCount}\n• Invite Link: {invite}\n• Server Created At: {createdAt}"
 							},
 							"no": {
 								"invite": "No Invite Link"

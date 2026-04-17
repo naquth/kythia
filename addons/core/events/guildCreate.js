@@ -109,7 +109,7 @@ module.exports = async (bot, guild) => {
 	}
 
 	const locale = guild.preferredLocale || 'en';
-	const [_setting, created] = await ServerSetting.findOrCreateWithCache({
+	const [setting] = await ServerSetting.findOrCreateWithCache({
 		where: { guildId: guild.id },
 		defaults: {
 			guildId: guild.id,
@@ -117,7 +117,8 @@ module.exports = async (bot, guild) => {
 			lang: locale,
 		},
 	});
-	if (created) {
+
+	if (setting.createdAt === setting.updatedAt) {
 		logger.info(`Default bot settings created for server: ${guild.name}`, {
 			label: 'guildCreate',
 		});
@@ -218,7 +219,7 @@ module.exports = async (bot, guild) => {
 			const payload = {
 				flags: MessageFlags.IsComponentsV2,
 				components: [inviteContainer.toJSON()],
-				allowedMentions: {
+				allowed_mentions: {
 					parse: [],
 				},
 			};
@@ -340,7 +341,7 @@ module.exports = async (bot, guild) => {
 				);
 			} catch (fallbackError) {
 				logger.error(
-					`[guildCreate] Gagal kirim welcome message & fallback: ${fallbackError.message}`,
+					`Failed to send welcome message & fallback: ${fallbackError.message}`,
 					{ label: 'guildCreate:fallback' },
 				);
 				if (bot.config?.sentry?.dsn) {

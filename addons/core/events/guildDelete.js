@@ -61,7 +61,7 @@ module.exports = async (bot, guild) => {
 			const payload = {
 				flags: MessageFlags.IsComponentsV2,
 				components: [leaveContainer.toJSON()],
-				allowedMentions: {
+				allowed_mentions: {
 					parse: [],
 				},
 			};

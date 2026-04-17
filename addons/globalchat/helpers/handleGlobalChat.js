@@ -16,24 +16,15 @@ async function handleGlobalChat(message, container) {
 	if (!message.guild) return;
 
 	try {
-		// Fetch referenced message if this is a reply
-		let referencedMessageData = null;
-		if (message.reference?.messageId) {
+		// Resolve the referenced message — Discord.js only populates message.referencedMessage
+		// when the message is in the local cache. For cache misses we fall back to fetchReference().
+		let resolvedRef = message.referencedMessage ?? null;
+		if (!resolvedRef && message.reference?.messageId) {
 			try {
-				const refMsg = await message.fetchReference();
-				referencedMessageData = {
-					id: refMsg.id,
-					content: refMsg.content,
-					author: {
-						id: refMsg.author.id,
-						username: refMsg.author.username,
-						globalName: refMsg.author.globalName || refMsg.author.username,
-						avatarURL: refMsg.author.displayAvatarURL(),
-					},
-				};
+				resolvedRef = await message.fetchReference();
 			} catch {
-				// referenced message may be deleted or inaccessible — skip gracefully
-				referencedMessageData = null;
+				// Referenced message may be deleted or inaccessible — skip gracefully.
+				resolvedRef = null;
 			}
 		}
 
@@ -43,78 +34,92 @@ async function handleGlobalChat(message, container) {
 			author: {
 				id: message.author.id,
 				username: message.author.username,
-				globalName: message.author.globalName || message.author.username,
-				avatarURL: message.author.displayAvatarURL(),
+				globalName: message.author.globalName,
+				avatarURL: message.author.avatarURL(),
 			},
+			components: message.components ?? null,
 			channelId: message.channelId,
 			guildId: message.guildId,
-			referencedMessage: referencedMessageData,
-			attachments: message.attachments.map((a) => ({
+			referencedMessage: resolvedRef
+				? {
+						id: resolvedRef.id,
+						content: resolvedRef.content,
+						components: resolvedRef.components ?? null,
+						author: {
+							id: resolvedRef.author.id,
+							username: resolvedRef.author.username,
+							globalName: resolvedRef.author.globalName,
+						},
+					}
+				: null,
+			attachments: message.attachments?.map((a) => ({
 				url: a.url,
 				contentType: a.contentType,
-
-				id: a.id,
-				filename: a.name,
-				size: a.size,
-				width: a.width,
-				height: a.height,
 			})),
-			stickerItems: message.stickers.map((s) => ({
+			stickerItems: message.stickers?.map((s) => ({
 				id: s.id,
 				name: s.name,
-				formatType: s.format,
+				formatType: s.formatType,
 			})),
 		};
 
 		const apiUrl = kythiaConfig.addons.globalchat.apiUrl;
 		const apiKey = kythiaConfig.addons.globalchat.apiKey;
 
+		const headers = {
+			'Content-Type': 'application/json',
+			...(apiKey && { Authorization: `Bearer ${apiKey}` }),
+		};
+
 		const response = await fetch(`${apiUrl}/chat`, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${apiKey}`,
-			},
+			headers,
 			body: JSON.stringify({
 				message: safeMessage,
 				guildName: message.guild.name,
+				isReply: !!resolvedRef,
 			}),
+			signal: AbortSignal.timeout(30000),
 		});
 
 		const result = await response.json();
 
 		switch (result.status) {
 			case 'ok':
-				break;
-			case 'ignored':
-				break;
-			case 'skipped':
-				break;
-			case 'partial': {
-				const stats = result.data?.deliveryStats || {};
 				logger.info(
-					`Partially delivered: ${stats.successful || 0}/${stats.total || 0}`,
+					`Message broadcasted successfully to ${result.data?.deliveryStats?.total || 0} servers`,
 					{ label: 'globalchat' },
 				);
-				if (
-					Array.isArray(result.data?.failedGuilds) &&
-					result.data.failedGuilds.length > 0
-				) {
-					const failedGuildNames = result.data.failedGuilds
-						.map((g) => g.guildName || g.guildId)
+				logger.info(
+					`Success rate: ${result.data?.deliveryStats?.successRate || 0}%`,
+					{ label: 'globalchat' },
+				);
+				break;
+
+			case 'ignored':
+				logger.info(
+					`Message ignored: ${result.data?.reason || 'Not from global chat channel'}`,
+					{ label: 'globalchat' },
+				);
+				break;
+
+			case 'skipped':
+				break;
+
+			case 'partial': {
+				logger.info(
+					`Partially delivered: ${result.data?.deliveryStats?.successful || 0}/${result.data?.deliveryStats?.total || 0}`,
+					{ label: 'globalchat' },
+				);
+				const partialFailed = result.data?.failedGuilds;
+				if (partialFailed && partialFailed.length > 0) {
+					const failedGuildNames = partialFailed
+						.map((g) => g.guildName)
 						.join(', ');
 					logger.warn(`Failed guilds: ${failedGuildNames}`, {
 						label: 'globalchat',
 					});
-
-					handleFailedGlobalChat(result.data.failedGuilds, container).catch(
-						(err) => {
-							logger.error(
-								`Error during background webhook fix attempt: ${err.message || err}`,
-								{ label: 'globalchat' },
-							);
-						},
-					);
+					await handleFailedGlobalChat(partialFailed, container);
 				}
 				break;
 			}
@@ -123,36 +128,31 @@ async function handleGlobalChat(message, container) {
 				logger.error(`All deliveries failed for message ${safeMessage.id}`, {
 					label: 'globalchat',
 				});
-
-				if (
-					Array.isArray(result.data?.failedGuilds) &&
-					result.data.failedGuilds.length > 0
-				) {
-					const failedNames = result.data.failedGuilds
-						.map((g) => g.guildName || g.guildId)
-						.join(', ');
-					logger.error(`Failed guilds: ${failedNames}`, {
+				const allFailed = result.data?.failedGuilds;
+				if (allFailed && allFailed.length > 0) {
+					const failedGuildErrors = allFailed.map((g) => g.error).join('; ');
+					logger.error(`Failed guilds: ${failedGuildErrors}`, {
 						label: 'globalchat',
 					});
-
-					handleFailedGlobalChat(result.data.failedGuilds, container).catch(
-						(err) => {
-							logger.error(
-								`Error during background webhook fix attempt: ${err.message || err}`,
-								{ label: 'globalchat' },
-							);
-						},
-					);
-				} else {
-					logger.debug(
-						"Status was 'failed' but failedGuilds array was empty or missing.",
-						{ label: 'globalchat' },
-					);
+					await handleFailedGlobalChat(allFailed, container);
 				}
 				break;
 			}
+
+			case 'error':
+				if (
+					result.error?.includes('message not from global chat channel') ||
+					result.error?.includes('is not registered in global chat')
+				) {
+					break;
+				}
+				logger.error(`API Error: ${result.error || 'Unknown error'}`, {
+					label: 'globalchat',
+				});
+				break;
+
 			default:
-				logger.warn(`Unknown API response status: ${result.status}`, {
+				logger.warn(`Unknown response status: ${result.status}`, {
 					label: 'globalchat',
 				});
 				logger.info(`Full response: ${JSON.stringify(result)}`, {
@@ -161,17 +161,17 @@ async function handleGlobalChat(message, container) {
 		}
 
 		if (result.status === 'ok' || result.status === 'partial') {
-			logger.info(
-				`Sent from: ${message.guild.name} (${message.guildId}) by ${message.author.tag}`,
-				{ label: 'globalchat' },
-			);
+			logger.info(`From guild: ${message.guild.name} (${message.guildId})`, {
+				label: 'globalchat',
+			});
 		}
 	} catch (apiError) {
+		if (apiError instanceof Error && apiError.name === 'TimeoutError') {
+			return; // Silently ignore timeouts
+		}
 		logger.error(
 			`Failed to send message to API: ${apiError.message || apiError}`,
-			{
-				label: 'globalchat',
-			},
+			{ label: 'globalchat' },
 		);
 	}
 }

@@ -187,6 +187,12 @@
 						"empty": "📜 No history found.",
 						"title": "## 📜 Music History",
 						"footer": "-# Page {page} of {totalPages} • Total {totalTracks} tracks in history"
+					},
+					"repair": {
+						"no_voice": "❌ You must be in a voice channel so I know where to reconnect!",
+						"connect_failed": "❌ Failed to reconnect to the voice channel: {error}",
+						"success": "🔧 **Repair complete!** Reconnected to {channel}. The queue was empty — use `/music play` to start fresh.",
+						"success_with_track": "🔧 **Repair complete!** Reconnected to {channel} and resumed **{title}**."
 					}
 				},
 				"filter": {

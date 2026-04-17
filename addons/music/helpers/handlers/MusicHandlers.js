@@ -476,6 +476,169 @@ class MusicHandlers {
 	}
 
 	/**
+	 * 🔧 Handles the 'repair' subcommand.
+	 * Destroys the broken/stuck player, clears all timers & collectors, reconnects
+	 * the bot back into the user's voice channel, and resumes the previously-playing
+	 * track from the beginning so the session feels completely fresh.
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {object} player - The (possibly stuck) music player instance.
+	 */
+	async handleRepair(interaction, player) {
+		const { client, member, guild, channel } = interaction;
+		await interaction.deferReply({ ephemeral: true });
+
+		const savedTrack = player?.currentTrack ?? null;
+		const savedQueue = player?.queue ? [...player.queue] : [];
+		const savedTextChannel = player?.textChannel ?? channel.id;
+		const savedVoiceChannel = member.voice.channel?.id ?? player?.voiceChannel;
+
+		// ── Step 1: tear down the existing player cleanly ──────────────────────
+		if (player) {
+			// Stop progress-bar interval
+			if (player.updateInterval) {
+				clearInterval(player.updateInterval);
+				player.updateInterval = null;
+			}
+			// Stop button/collector
+			if (player.buttonCollector) {
+				try {
+					player.buttonCollector.stop('repair');
+				} catch (_e) {}
+				player.buttonCollector = null;
+			}
+			// Stop disconnect timeout
+			if (player.disconnectTimeout) {
+				clearTimeout(player.disconnectTimeout);
+				player.disconnectTimeout = null;
+			}
+			// Delete the stale now-playing message
+			if (player.nowPlayingMessage?.deletable) {
+				try {
+					await player.nowPlayingMessage.delete();
+				} catch (_e) {}
+				player.nowPlayingMessage = null;
+			}
+			// Destroy the Lavalink player (closes the session + WS)
+			try {
+				if (!player.destroyed) player.destroy();
+			} catch (_e) {}
+		}
+
+		// ── Step 2: re-join voice channel ──────────────────────────────────────
+		if (!savedVoiceChannel) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.repair.no_voice',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		let newPlayer;
+		try {
+			newPlayer = client.poru.createConnection({
+				guildId: guild.id,
+				voiceChannel: savedVoiceChannel,
+				textChannel: savedTextChannel,
+				deaf: true,
+			});
+		} catch (err) {
+			this.logger.error(
+				`[repair] Failed to create connection: ${err.message}`,
+				{
+					label: 'music',
+				},
+			);
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.repair.connect_failed',
+					{
+						error: err.message,
+					},
+				),
+				{ color: 'Red' },
+			);
+			return interaction.editReply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		// Give the WebSocket voice state a moment to settle
+		const shard = guild.client.ws.shards.get(guild.shardId);
+		if (shard) {
+			shard.send({
+				op: 4,
+				d: {
+					guild_id: guild.id,
+					channel_id: savedVoiceChannel,
+					self_mute: true,
+					self_deaf: true,
+				},
+			});
+			await new Promise((r) => setTimeout(r, 300));
+			shard.send({
+				op: 4,
+				d: {
+					guild_id: guild.id,
+					channel_id: savedVoiceChannel,
+					self_mute: false,
+					self_deaf: true,
+				},
+			});
+		}
+
+		// ── Step 3: restore queue & resume playback ────────────────────────────
+		if (savedTrack) {
+			newPlayer.queue.add(savedTrack);
+		}
+		for (const t of savedQueue) {
+			newPlayer.queue.add(t);
+		}
+
+		if (newPlayer.queue.length > 0 && newPlayer.isConnected) {
+			newPlayer.play();
+		}
+
+		// ── Step 4: confirm to the user ────────────────────────────────────────
+		const hasQueue = savedTrack || savedQueue.length > 0;
+		const channelMention = `<#${savedVoiceChannel}>`;
+
+		const msgText = hasQueue
+			? await this.t(
+					interaction,
+					'music.helpers.handlers.music.repair.success_with_track',
+					{
+						channel: channelMention,
+						title: savedTrack?.info?.title ?? 'the queue',
+					},
+				)
+			: await this.t(
+					interaction,
+					'music.helpers.handlers.music.repair.success',
+					{
+						channel: channelMention,
+					},
+				);
+
+		const components = await this.simpleContainer(interaction, msgText, {
+			color: this.config.bot.color,
+		});
+		return interaction.editReply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	/**
 	 * 🐇 Handles the 'jump' subcommand.
 	 * Skips to a specific track in the queue.
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

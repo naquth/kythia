@@ -250,6 +250,11 @@ module.exports = {
 								)
 								.setRequired(false),
 						),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
+						.setName('repair')
+						.setDescription('🔧 Repair a stuck or broken music session'),
 				),
 		)
 
@@ -740,6 +745,7 @@ module.exports = {
 					return musicHandlers.handleHistory(i, p, music.guildStates);
 
 				if (sub === 'download') return musicHandlers.handleDownload(i, p);
+				if (sub === 'repair') return musicHandlers.handleRepair(i, p);
 			},
 		};
 
@@ -748,9 +754,15 @@ module.exports = {
 		}
 
 		if (!player) {
+			const reply = await this.simpleContainer(
+				interaction,
+				await this.t(interaction, 'music.music.player.not.found'),
+				{ color: 'Red' },
+			);
+
 			return interaction.reply({
-				content: await t(interaction, 'music.music.player.not.found'),
-				flags: MessageFlags.Ephemeral,
+				components: reply.components,
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 

@@ -48,6 +48,25 @@ module.exports = {
 						.setRequired(true),
 				),
 		)
+		.addSubcommand((sub) =>
+			sub
+				.setName('image')
+				.setDescription(
+					'grab an image from a message and turn it into a sticker',
+				)
+				.addStringOption((opt) =>
+					opt
+						.setName('message_id')
+						.setDescription('ID of the message containing the image')
+						.setRequired(true),
+				)
+				.addStringOption((opt) =>
+					opt
+						.setName('name')
+						.setDescription('Name for the new sticker (max 30 chars)')
+						.setRequired(false),
+				),
+		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions),
 
 	contextMenuCommand: new ContextMenuCommandBuilder()
@@ -186,6 +205,73 @@ module.exports = {
 				} catch (_e) {
 					return interaction.editReply({
 						content: await t(interaction, 'core.utils.grab.emoji.manual'),
+						files: [url],
+					});
+				}
+			} else if (sub === 'image') {
+				await interaction.deferReply();
+				const messageId = interaction.options.getString('message_id');
+				const stickerName = interaction.options.getString('name');
+
+				let targetMessage;
+				try {
+					targetMessage = await interaction.channel.messages.fetch(messageId);
+				} catch {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.image.message.not_found'),
+						{ color: 'Red' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
+				}
+
+				const attachment = targetMessage?.attachments?.find((a) =>
+					a.contentType?.startsWith('image/'),
+				);
+
+				if (!attachment) {
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.image.not_found'),
+						{ color: 'Red' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
+				}
+
+				const url = attachment.url;
+				const fallbackName = (
+					attachment.name?.split('.')[0] || 'grabbed_image'
+				).slice(0, 30);
+				const finalName = (stickerName || fallbackName).slice(0, 30);
+
+				try {
+					if (!interaction.guild?.stickers?.create)
+						throw new Error('No permission');
+					const created = await interaction.guild.stickers.create({
+						file: url,
+						name: finalName,
+						tags: 'grabbed',
+					});
+					const components = await simpleContainer(
+						interaction,
+						await t(interaction, 'core.utils.grab.sticker.success', {
+							name: created.name,
+						}),
+						{ color: 'Green' },
+					);
+					return interaction.editReply({
+						components,
+						flags: MessageFlags.IsComponentsV2,
+					});
+				} catch (_e) {
+					return interaction.editReply({
+						content: await t(interaction, 'core.utils.grab.sticker.manual'),
 						files: [url],
 					});
 				}

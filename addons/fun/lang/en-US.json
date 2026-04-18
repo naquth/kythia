@@ -413,6 +413,54 @@
 			"button": {
 				"jump": "Jump to Channel"
 			}
+		},
+		"meme": {
+			"title": "## 😂 {title}\n-# r/{subreddit} • ⬆️ {upvotes} • 👤 u/{author}",
+			"button": {
+				"view": "View on Reddit"
+			},
+			"error": {
+				"fetch": "❌ Couldn't fetch a meme right now. Try again in a moment!",
+				"nsfw": "❌ The fetched meme was NSFW or unavailable. Try again!"
+			}
+		},
+		"joke": {
+			"setup": "## 😂 Joke — {category}\n{setup}",
+			"punchline": "🥁 **{punchline}**",
+			"button": {
+				"reveal": "Reveal Punchline"
+			},
+			"error": {
+				"fetch": "❌ Couldn't fetch a joke right now. Try again!"
+			}
+		},
+		"roast": {
+			"title": {
+				"self": "## 🔥 Self-Roast\n{author} decided to roast themselves...",
+				"other": "## 🔥 Roasted!\n{author} is roasting {target}:"
+			},
+			"insult": "> {insult}",
+			"error": {
+				"fetch": "❌ Couldn't fetch a roast right now. Try again!"
+			}
+		},
+		"fact": {
+			"title": "## 🧠 Random Fact\n{fact}",
+			"button": {
+				"another": "Another Fact"
+			},
+			"error": {
+				"fetch": "❌ Couldn't fetch a fact right now. Try again!"
+			}
+		},
+		"quote": {
+			"title": "## ✨ Quote\n> {text}\n\n— **{author}**",
+			"button": {
+				"another": "Another Quote"
+			},
+			"error": {
+				"fetch": "❌ Couldn't fetch a quote right now. Try again!"
+			}
 		}
 	}
 }

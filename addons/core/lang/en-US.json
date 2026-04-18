@@ -387,7 +387,7 @@
 					"or": {
 						"emoji": {
 							"not": {
-								"found": "❌ There is no stiker or emoji found in this message!"
+								"found": "❌ There is no sticker, emoji, or image found in this message!"
 							}
 						}
 					}
@@ -402,6 +402,12 @@
 					"invalid": "🤔 That doesn't look like a valid custom emoji. Please provide a custom emoji from a server.",
 					"success": "✅ Got it! The emoji `{name}` has been successfully added to this server.",
 					"manual": "⚠️ I couldn't add the emoji automatically (maybe the emoji slots are full). Here is the file for you to upload manually:"
+				},
+				"image": {
+					"message": {
+						"not_found": "❌ I couldn't find that message in this channel. Make sure the message ID is correct!"
+					},
+					"not_found": "❌ That message doesn't have any image attachment to grab."
 				}
 			},
 			"convert": {
@@ -637,6 +643,12 @@
 				"embed": {
 					"desc": "[Download Avatar]({url})"
 				}
+			},
+			"banner": {
+				"embed": {
+					"desc": "[Download Banner]({url})"
+				},
+				"no_banner": "❌ **{user}** doesn't have a banner set."
 			},
 			"prefix": {
 				"add": {

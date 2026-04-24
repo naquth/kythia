@@ -213,24 +213,24 @@ Handles license verification, telemetry reporting, and anti-tamper protection. T
 ```mermaid
 sequenceDiagram
     participant K as Kythia.start()
-    participant OPT as KythiaOptimizer
+    participant OPTIMIZER as KythiaOptimizer
     participant LS as License Server
     participant P as Process
 
-    K->>OPT: optimize()
-    OPT->>OPT: _sSpec() — collect HWID\n(CPU, RAM, hostname, platform)
-    OPT->>LS: POST /license/verify\n{ key, clientId, hwid, config }
-    LS-->>OPT: 200 { valid: true } → OPTIMAL
+    K->>OPTIMIZER: optimize()
+    OPTIMIZER->>OPTIMIZER: _sSpec() — collect HWID\n(CPU, RAM, hostname, platform)
+    OPTIMIZER->>LS: POST /license/verify\n{ key, clientId, hwid, config }
+    LS-->>OPTIMIZER: 200 { valid: true } → OPTIMAL
     alt License Invalid (401/403)
-        LS-->>OPT: 401/403 → SUBOPTIMAL
-        OPT-->>K: null token
+        LS-->>OPTIMIZER: 401/403 → SUBOPTIMAL
+        OPTIMIZER-->>K: null token
         K->>P: _terminateUnauthorizedProcess()
     else Network Error
-        LS-->>OPT: NET_ERR (allows 6 failures)
+        LS-->>OPTIMIZER: NET_ERR (allows 6 failures)
     end
-    OPT-->>K: encrypted token (AES-256-CBC)
-    K->>OPT: startPulse() — heartbeat every 10–20 min
-    K->>OPT: startAutoOptimization() — flush telemetry every 5 min
+    OPTIMIZER-->>K: encrypted token (AES-256-CBC)
+    K->>OPTIMIZER: startPulse() — heartbeat every 10–20 min
+    K->>OPTIMIZER: startAutoOptimization() — flush telemetry every 5 min
 ```
 
 **Telemetry:** Events (startup, errors, crashes) are queued and flushed in batches to the telemetry server. This data is linked to your license key.

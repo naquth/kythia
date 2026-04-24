@@ -45,6 +45,36 @@ const buildComponentRows = (images, userNsfwFav = [], disabled = false) => {
 	return [favRow, actionRow].filter((row) => row.components.length > 0);
 };
 
+const extractInteractionData = async (interaction, container) => {
+	let category = 'neko';
+	let images = [];
+
+	const { redis } = container;
+	if (redis && interaction.message) {
+		const msgId = interaction.message.id;
+		const cachedCat = await redis.get(`nsfw:msg:${msgId}:cat`);
+		if (cachedCat) category = cachedCat;
+
+		const cachedImages = await redis.get(`nsfw:msg:${msgId}:img`);
+		if (cachedImages) {
+			try {
+				images = JSON.parse(cachedImages);
+			} catch (_e) {}
+		}
+	}
+
+	if (category === 'neko' && interaction.message?.embeds?.length > 0) {
+		category = interaction.message.embeds[0]?.title ?? 'neko';
+	}
+	if (images.length === 0 && interaction.message?.embeds?.length > 0) {
+		images = interaction.message.embeds
+			.map((e) => e.image?.url)
+			.filter(Boolean);
+	}
+
+	return { category, images };
+};
+
 const handleFavorite = async (interaction, container, index) => {
 	const { t, helpers, models } = container;
 	const { NsfwUser } = models;
@@ -68,10 +98,10 @@ const handleFavorite = async (interaction, container, index) => {
 		});
 	}
 
-	const category = interaction.message.embeds[0]?.title ?? 'neko';
-	const currentImages = interaction.message.embeds
-		.map((e) => e.image?.url)
-		.filter(Boolean);
+	const { category, images: currentImages } = await extractInteractionData(
+		interaction,
+		container,
+	);
 	const imageUrl = currentImages[index];
 
 	if (!imageUrl) return;
@@ -102,4 +132,5 @@ const handleFavorite = async (interaction, container, index) => {
 module.exports = {
 	buildComponentRows,
 	handleFavorite,
+	extractInteractionData,
 };

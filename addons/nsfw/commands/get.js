@@ -6,7 +6,7 @@
  * @version 1.0.0-rc
  */
 
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const { buildComponentRows } = require('../helpers/buttons.js');
 const { fetchContent } = require('../helpers/api.js');
 
@@ -39,35 +39,40 @@ const ALLOWED_CATEGORIES = [
 ];
 
 module.exports = {
-	slashCommand: new SlashCommandBuilder()
-		.setName('nsfw')
-		.setDescription('🔞 NSFW random content (only in nsfw channel)')
-		.setNSFW(true)
-		.addStringOption((option) =>
-			option
-				.setName('category')
-				.setDescription('Content category')
-				.setRequired(true)
-				.addChoices(
-					...ALLOWED_CATEGORIES.map((cat) => ({ name: cat, value: cat })),
-				),
-		)
-		.addBooleanOption((option) =>
-			option
-				.setName('private')
-				.setDescription('Make the message private?')
-				.setRequired(true),
-		)
-		.addIntegerOption((option) =>
-			option
-				.setName('amount')
-				.setDescription('Amount of images to send (1-3)')
-				.setMinValue(1)
-				.setMaxValue(3)
-				.setRequired(false),
-		),
+	subcommand: true,
+	slashCommand: (subcommand) =>
+		subcommand
+			.setName('get')
+			.setDescription('🔞 NSFW random content (only in nsfw channel)')
+			.addStringOption((option) =>
+				option
+					.setName('category')
+					.setDescription('Content category')
+					.setRequired(true)
+					.addChoices(
+						...ALLOWED_CATEGORIES.map((cat) => ({ name: cat, value: cat })),
+					),
+			)
+			.addBooleanOption((option) =>
+				option
+					.setName('private')
+					.setDescription('Make the message private?')
+					.setRequired(true),
+			)
+			.addIntegerOption((option) =>
+				option
+					.setName('amount')
+					.setDescription('Amount of images to send (1-3)')
+					.setMinValue(1)
+					.setMaxValue(3)
+					.setRequired(false),
+			),
 	voteLocked: true,
 
+	/**
+	 * @param {import('discord.js').ChatInputCommandInteraction} interaction
+	 * @param {KythiaDI.Container} container
+	 */
 	async execute(interaction, container) {
 		const { helpers, models, logger } = container;
 		const { NsfwUser } = models;
@@ -124,6 +129,24 @@ module.exports = {
 				components: [containerBody],
 				flags: MessageFlags.IsComponentsV2,
 			});
+
+			try {
+				const replyMsg = await interaction.fetchReply();
+				if (replyMsg && container.redis) {
+					await container.redis.set(
+						`nsfw:msg:${replyMsg.id}:cat`,
+						category,
+						'EX',
+						86400 * 3,
+					);
+					await container.redis.set(
+						`nsfw:msg:${replyMsg.id}:img`,
+						JSON.stringify(currentImages),
+						'EX',
+						86400 * 3,
+					);
+				}
+			} catch (_e) {}
 		};
 
 		// Send initial content

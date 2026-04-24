@@ -101,8 +101,9 @@ async function resolvePlaceholders(container, str, data, locale) {
 	 * {tag}
 	 * {username}
 	 * {memberstotal}
-	 * {members}
+	 * {membercount}
 	 * {boosts}
+	 * {boostcount}
 	 * {boost_level}
 	 * {channels}
 	 * {text_channels}
@@ -147,6 +148,7 @@ async function resolvePlaceholders(container, str, data, locale) {
 		'{membercount}': data.members ?? 0, // alias for {members}
 
 		'{boosts}': data.boosts ?? 0,
+		'{boostcount}': data.boosts ?? 0, // alias for {boosts}
 		'{boost_level}': data.boostLevel ?? 0,
 		'{channels}': data.channels ?? 0,
 		'{text_channels}': data.textChannels ?? 0,

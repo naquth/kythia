@@ -58,11 +58,15 @@ module.exports = {
 		}
 
 		try {
-			const userRecord = await User.getCache({
-				userId: targetUser.id,
-				guildId: interaction.guild.id,
+			const [userRecord] = await User.findOrCreateWithCache({
+				where: { userId: targetUser.id, guildId: interaction.guild.id },
+				defaults: {
+					userId: targetUser.id,
+					guildId: interaction.guild.id,
+					warnings: [],
+				},
 			});
-			if (!userRecord.warnings) userRecord.warnings = [];
+			if (!Array.isArray(userRecord.warnings)) userRecord.warnings = [];
 			userRecord.warnings.push({
 				moderator: interaction.user.id,
 				reason,

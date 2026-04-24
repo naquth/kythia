@@ -25,8 +25,12 @@ module.exports = {
 
 		await interaction.deferUpdate();
 
-		const category = interaction.message.embeds[0]?.title ?? 'neko';
-		const amount = interaction.message.embeds.length || 1;
+		const { extractInteractionData } = require('../helpers/buttons.js');
+		const { category, images } = await extractInteractionData(
+			interaction,
+			container,
+		);
+		const amount = images.length || 1;
 
 		let user = await NsfwUser.getCache({ userId: interaction.user.id });
 		if (!user) {
@@ -65,5 +69,14 @@ module.exports = {
 		await interaction.editReply({
 			components: [containerBody],
 		});
+
+		if (container.redis) {
+			await container.redis.set(
+				`nsfw:msg:${interaction.message.id}:img`,
+				JSON.stringify(currentImages),
+				'EX',
+				86400 * 3,
+			);
+		}
 	},
 };

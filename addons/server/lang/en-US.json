@@ -47,13 +47,13 @@
 				},
 				"dm": {
 					"content": "Here is your backup for **{name}**!",
-					"failed": "❌ Failed to send backup to your DM. Please enable DMs from server members."
+					"failed": "## ❌ Failed!\nFailed to send backup to your DM. Please enable DMs from server members."
 				},
-				"success": "✅ Server backup completed and sent to your DM!",
-				"failed": "❌ Server backup failed.",
+				"success": "## ✅ Complete!\nServer backup completed and sent to your DM!",
+				"failed": "## ❌ Failed!\nServer backup failed.",
 				"start": "⏳ Creating backup for this server...",
 				"too": {
-					"large": "⚠️ Backup file is too large to send via DM. Please contact support."
+					"large": "## ⚠️ Too Large!\nBackup file is too large to send via DM. Please contact support."
 				}
 			},
 			"restore": {

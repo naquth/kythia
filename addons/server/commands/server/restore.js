@@ -63,10 +63,26 @@ module.exports = {
 
 		const fetchAssetBuffer = async (url) => {
 			if (!url) return null;
-			const { default: fetch } = await import('node-fetch');
-			const res = await fetch(url);
-			if (!res.ok) throw new Error(`Failed to download asset from ${url}`);
-			return Buffer.from(await res.arrayBuffer());
+			try {
+				const { default: fetch } = await import('node-fetch');
+				const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+				if (!res.ok) return null;
+				return Buffer.from(await res.arrayBuffer());
+			} catch {
+				return null;
+			}
+		};
+
+		const updateStatus = async (text) => {
+			const comps = await simpleContainer(interaction, `## ${text}`, {
+				color: kythiaConfig.bot.color,
+			});
+			await interaction
+				.editReply({
+					components: comps,
+					flags: MessageFlags.IsComponentsV2,
+				})
+				.catch(() => {});
 		};
 
 		try {
@@ -75,7 +91,7 @@ module.exports = {
 			const backup = await res.json();
 			const clearBefore = interaction.options.getBoolean('clear') ?? false;
 
-			if (!backup) {
+			if (!backup || !backup.metadata) {
 				components = await simpleContainer(
 					interaction,
 					`## ${await t(interaction, 'server.server.restore.data.invalid')}`,
@@ -87,44 +103,62 @@ module.exports = {
 				});
 			}
 
+			// ─────────────────────────── CLEAR ───────────────────────────
 			if (clearBefore) {
-				await simpleContainer(
-					interaction,
-					`## ${await t(interaction, 'server.server.restore.clearing')}`,
-					{ color: kythiaConfig.bot.color, editReply: true },
+				await updateStatus(
+					await t(interaction, 'server.server.restore.clearing'),
 				);
-				await Promise.all(
-					guild.channels.cache.map((c) => c.delete().catch(() => {})),
+
+				// Delete channels
+				const channelsToDelete = [...guild.channels.cache.values()];
+				for (const c of channelsToDelete) {
+					await c.delete('Restore: clearing before restore').catch(() => {});
+				}
+
+				// Delete editable roles (not managed/bot roles)
+				const rolesToDelete = [...guild.roles.cache.values()].filter(
+					(r) => r.editable && r.name !== '@everyone' && !r.managed,
 				);
-				await Promise.all(
-					guild.roles.cache
-						.filter((r) => r.editable && r.name !== '@everyone')
-						.map((r) => r.delete().catch(() => {})),
-				);
-				await Promise.all(
-					guild.emojis.cache.map((e) => e.delete().catch(() => {})),
-				);
-				await guild.stickers
-					.fetch()
-					.then((stickers) =>
-						Promise.all(stickers.map((s) => s.delete().catch(() => {}))),
-					);
+				for (const r of rolesToDelete) {
+					await r.delete('Restore: clearing before restore').catch(() => {});
+				}
+
+				// Delete emojis
+				for (const e of [...guild.emojis.cache.values()]) {
+					await e.delete('Restore: clearing before restore').catch(() => {});
+				}
+
+				// Delete stickers
+				const existingStickers = await guild.stickers.fetch().catch(() => null);
+				if (existingStickers) {
+					for (const s of [...existingStickers.values()]) {
+						await s.delete('Restore: clearing before restore').catch(() => {});
+					}
+				}
 			}
 
-			await simpleContainer(
-				interaction,
-				`## ${await t(interaction, 'server.server.restore.settings')}`,
-				{ color: kythiaConfig.bot.color, editReply: true },
+			// ────────────────────────── SETTINGS ─────────────────────────
+			await updateStatus(
+				await t(interaction, 'server.server.restore.settings'),
 			);
 			const settings = backup.settings;
+			const iconBuffer = await fetchAssetBuffer(settings.iconURL);
+			const bannerBuffer = await fetchAssetBuffer(settings.bannerURL);
+			const splashBuffer = await fetchAssetBuffer(settings.splashURL);
+
 			await guild
 				.edit({
 					name: settings.name,
 					verificationLevel: settings.verificationLevel,
 					explicitContentFilter: settings.explicitContentFilter,
 					defaultMessageNotifications: settings.defaultMessageNotifications,
-					icon: await fetchAssetBuffer(settings.iconURL),
-					banner: await fetchAssetBuffer(settings.bannerURL),
+					preferredLocale: settings.preferredLocale,
+					...(iconBuffer && { icon: iconBuffer }),
+					...(bannerBuffer && { banner: bannerBuffer }),
+					...(splashBuffer && { splash: splashBuffer }),
+					afkTimeout: settings.afkTimeout,
+					premiumProgressBarEnabled: settings.premiumProgressBarEnabled,
+					description: settings.description ?? null,
 				})
 				.catch((e) =>
 					logger.warn(`Failed to update server settings: ${e.message}`, {
@@ -132,15 +166,27 @@ module.exports = {
 					}),
 				);
 
-			await simpleContainer(
-				interaction,
-				`## ${await t(interaction, 'server.server.restore.roles.text')}`,
-				{ color: kythiaConfig.bot.color, editReply: true },
+			// ─────────────────────────── ROLES ───────────────────────────
+			await updateStatus(
+				await t(interaction, 'server.server.restore.roles.text'),
 			);
+
+			// roleMap: oldId → new Role
 			const roleMap = new Map();
+			const roleList = (backup.roles ?? []).slice().reverse(); // lowest position first
+
 			let roleIdx = 0;
-			for (const roleData of backup.roles.slice().reverse()) {
-				const role = await guild.roles
+			for (const roleData of roleList) {
+				// Skip managed/integrated roles (bots etc.)
+				if (roleData.managed) {
+					roleIdx++;
+					continue;
+				}
+
+				// Try to download role icon
+				const roleIconBuffer = await fetchAssetBuffer(roleData.icon);
+
+				const created = await guild.roles
 					.create({
 						name: roleData.name,
 						color: roleData.color,
@@ -148,135 +194,186 @@ module.exports = {
 						permissions: BigInt(roleData.permissions),
 						mentionable: roleData.mentionable,
 						reason: 'Restore backup',
+						...(roleIconBuffer && { icon: roleIconBuffer }),
+						...(roleData.unicodeEmoji &&
+							!roleIconBuffer && { unicodeEmoji: roleData.unicodeEmoji }),
 					})
 					.catch(() => null);
-				if (role) roleMap.set(roleData.id, role);
+
+				if (created) roleMap.set(roleData.id, created);
 				roleIdx++;
-				if (roleIdx % 5 === 0 || roleIdx === backup.roles.length) {
-					await simpleContainer(
-						interaction,
-						`## ${await t(interaction, 'server.server.restore.roles.progress', { current: roleIdx, total: backup.roles.length })}`,
-						{ color: kythiaConfig.bot.color, editReply: true },
+
+				if (roleIdx % 5 === 0 || roleIdx === roleList.length) {
+					await updateStatus(
+						await t(interaction, 'server.server.restore.roles.progress', {
+							current: roleIdx,
+							total: roleList.length,
+						}),
 					);
 				}
 			}
 
-			await simpleContainer(
-				interaction,
-				`## ${await t(interaction, 'server.server.restore.channels.text')}`,
-				{ color: kythiaConfig.bot.color, editReply: true },
+			// ────────────────────────── CHANNELS ─────────────────────────
+			await updateStatus(
+				await t(interaction, 'server.server.restore.channels.text'),
 			);
-			const categoryMap = new Map();
-			let catIdx = 0;
-			const categories = backup.channels.filter(
+
+			// channelMap: oldId → new Channel
+			const channelMap = new Map();
+
+			// Pass 1: Create categories
+			const categories = (backup.channels ?? []).filter(
 				(c) => c.type === ChannelType.GuildCategory,
 			);
+
+			let catIdx = 0;
 			for (const catData of categories) {
-				const category = await guild.channels.create({
-					name: catData.name,
-					type: ChannelType.GuildCategory,
-					position: catData.position,
-				});
-				categoryMap.set(catData.name, category);
+				const permOverwrites = buildPermOverwrites(
+					catData.permissionOverwrites,
+					roleMap,
+				);
+				const created = await guild.channels
+					.create({
+						name: catData.name,
+						type: ChannelType.GuildCategory,
+						position: catData.rawPosition ?? catData.position,
+						permissionOverwrites: permOverwrites,
+					})
+					.catch(() => null);
+
+				if (created) channelMap.set(catData.id, created);
 				catIdx++;
-				if (catIdx % 2 === 0 || catIdx === categories.length) {
-					await simpleContainer(
-						interaction,
-						`## ${await t(interaction, 'server.server.restore.categories.progress', { current: catIdx, total: categories.length })}`,
-						{ color: kythiaConfig.bot.color, editReply: true },
+
+				if (catIdx % 3 === 0 || catIdx === categories.length) {
+					await updateStatus(
+						await t(interaction, 'server.server.restore.categories.progress', {
+							current: catIdx,
+							total: categories.length,
+						}),
 					);
 				}
 			}
 
-			let chIdx = 0;
-			const nonCatChannels = backup.channels.filter(
+			// Pass 2: Create non-category channels
+			const nonCatChannels = (backup.channels ?? []).filter(
 				(c) => c.type !== ChannelType.GuildCategory,
 			);
+
+			let chIdx = 0;
 			for (const chanData of nonCatChannels) {
-				const parent = chanData.parent
-					? categoryMap.get(chanData.parent)?.id
+				// Resolve parent category
+				const parentChannel = chanData.parentId
+					? channelMap.get(chanData.parentId)
 					: null;
-				await guild.channels.create({
+
+				const permOverwrites = buildPermOverwrites(
+					chanData.permissionOverwrites,
+					roleMap,
+				);
+
+				const createOptions = {
 					name: chanData.name,
 					type: chanData.type,
-					topic: chanData.topic,
-					nsfw: chanData.nsfw,
-					rateLimitPerUser: chanData.rateLimitPerUser,
-					position: chanData.position,
-					parent,
-					permissionOverwrites: chanData.permissionOverwrites?.map((po) => ({
-						id: roleMap.get(po.id)?.id || po.id,
-						allow: BigInt(po.allow),
-						deny: BigInt(po.deny),
-						type:
-							po.type === 'role' ? OverwriteType.Role : OverwriteType.Member,
-					})),
-				});
+					position: chanData.rawPosition ?? chanData.position,
+					parent: parentChannel?.id ?? null,
+					permissionOverwrites: permOverwrites,
+				};
+
+				// Text-like channels
+				if (
+					chanData.type === ChannelType.GuildText ||
+					chanData.type === ChannelType.GuildAnnouncement
+				) {
+					createOptions.topic = chanData.topic;
+					createOptions.nsfw = chanData.nsfw;
+					createOptions.rateLimitPerUser = chanData.rateLimitPerUser;
+					createOptions.defaultAutoArchiveDuration =
+						chanData.defaultAutoArchiveDuration;
+				}
+
+				// Voice channels
+				if (
+					chanData.type === ChannelType.GuildVoice ||
+					chanData.type === ChannelType.GuildStageVoice
+				) {
+					createOptions.bitrate = chanData.bitrate;
+					createOptions.userLimit = chanData.userLimit;
+					createOptions.rtcRegion = chanData.rtcRegion;
+					createOptions.videoQualityMode = chanData.videoQualityMode;
+				}
+
+				// Forum / Media channels
+				if (
+					chanData.type === ChannelType.GuildForum ||
+					chanData.type === ChannelType.GuildMedia
+				) {
+					createOptions.rateLimitPerUser = chanData.rateLimitPerUser;
+					createOptions.defaultThreadRateLimitPerUser =
+						chanData.defaultThreadRateLimitPerUser;
+					if (chanData.availableTags?.length) {
+						createOptions.availableTags = chanData.availableTags.map((tag) => ({
+							name: tag.name,
+							moderated: tag.moderated,
+							emoji: tag.emoji ?? null,
+						}));
+					}
+				}
+
+				const created = await guild.channels
+					.create(createOptions)
+					.catch(() => null);
+				if (created) channelMap.set(chanData.id, created);
+
 				chIdx++;
 				if (chIdx % 5 === 0 || chIdx === nonCatChannels.length) {
-					await simpleContainer(
-						interaction,
-						`## ${await t(interaction, 'server.server.restore.channels.progress', { current: chIdx, total: nonCatChannels.length })}`,
-						{ color: kythiaConfig.bot.color, editReply: true },
+					await updateStatus(
+						await t(interaction, 'server.server.restore.channels.progress', {
+							current: chIdx,
+							total: nonCatChannels.length,
+						}),
 					);
 				}
 			}
 
-			await simpleContainer(
-				interaction,
-				`## ${await t(interaction, 'server.server.restore.assets')}`,
-				{ color: kythiaConfig.bot.color, editReply: true },
-			);
-			const assetPromises = [];
-			backup.emojis?.forEach((emoji) => {
-				assetPromises.push(
-					fetchAssetBuffer(emoji.url)
-						.then((buffer) =>
-							guild.emojis.create({ name: emoji.name, attachment: buffer }),
-						)
-						.catch((e) =>
-							logger.warn(`Failed to restore emoji: ${e.message}`, {
-								label: 'restore',
-							}),
-						),
-				);
-			});
-			backup.stickers?.forEach((sticker) => {
-				assetPromises.push(
-					fetchAssetBuffer(sticker.url)
-						.then((buffer) =>
-							guild.stickers.create({
-								name: sticker.name,
-								tags: sticker.tags.split(',')[0],
-								file: buffer,
-							}),
-						)
-						.catch((e) =>
-							logger.warn(`Failed to restore sticker: ${e.message}`, {
-								label: 'restore',
-							}),
-						),
-				);
-			});
-			backup.soundboard?.forEach((sound) => {
-				assetPromises.push(
-					fetchAssetBuffer(sound.url)
-						.then((buffer) =>
-							guild.soundboard.sounds.create({
-								name: sound.name,
-								sound: buffer,
-								emoji: sound.emoji,
-							}),
-						)
-						.catch((e) =>
-							logger.warn(`Failed to restore sound: ${e.message}`, {
-								label: 'restore',
-							}),
-						),
-				);
-			});
-			await Promise.allSettled(assetPromises);
+			// Restore special channels on the guild after channels are created
+			await restoreSpecialChannels(guild, backup.settings, channelMap, logger);
 
+			// ──────────────────────────── EMOJIS & STICKERS ──────────────────────────
+			await updateStatus(await t(interaction, 'server.server.restore.assets'));
+
+			for (const emoji of backup.emojis ?? []) {
+				const buffer = await fetchAssetBuffer(emoji.url);
+				if (!buffer) continue;
+				await guild.emojis
+					.create({ name: emoji.name, attachment: buffer })
+					.catch((e) =>
+						logger.warn(`Failed to restore emoji ${emoji.name}: ${e.message}`, {
+							label: 'restore',
+						}),
+					);
+			}
+
+			for (const sticker of backup.stickers ?? []) {
+				const buffer = await fetchAssetBuffer(sticker.url);
+				if (!buffer) continue;
+				await guild.stickers
+					.create({
+						name: sticker.name,
+						description: sticker.description ?? sticker.name,
+						tags: sticker.tags?.split(',')[0]?.trim() || sticker.name,
+						file: buffer,
+					})
+					.catch((e) =>
+						logger.warn(
+							`Failed to restore sticker ${sticker.name}: ${e.message}`,
+							{
+								label: 'restore',
+							},
+						),
+					);
+			}
+
+			// ─────────────────────────── DONE ─────────────────────────
 			components = await simpleContainer(
 				interaction,
 				`## ${await t(interaction, 'server.server.restore.success', { name: backup.metadata.guildName })}`,
@@ -287,8 +384,8 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (err) {
-			logger.error(`Error: ${err.message || err}`, {
-				label: 'server',
+			logger.error(`Restore error: ${err.message || err}`, {
+				label: 'server:restore',
 			});
 			components = await simpleContainer(
 				interaction,
@@ -302,3 +399,54 @@ module.exports = {
 		}
 	},
 };
+
+/**
+ * Build permissionOverwrites array for guild.channels.create,
+ * mapping old role IDs to newly created roles via roleMap.
+ */
+function buildPermOverwrites(overwrites, roleMap) {
+	if (!overwrites || overwrites.length === 0) return [];
+	return overwrites.map((po) => ({
+		id: (po.type === 'role' ? roleMap.get(po.id)?.id : null) ?? po.id,
+		type: po.type === 'role' ? OverwriteType.Role : OverwriteType.Member,
+		allow: BigInt(po.allow),
+		deny: BigInt(po.deny),
+	}));
+}
+
+/**
+ * After channels are created, set special guild channels
+ * (system, rules, public updates, AFK) by matching names.
+ */
+async function restoreSpecialChannels(guild, settings, _channelMap, logger) {
+	const findChannelByName = (name) => {
+		if (!name) return null;
+		return (
+			[...guild.channels.cache.values()].find((c) => c.name === name) ?? null
+		);
+	};
+
+	const updates = {};
+
+	const systemCh = findChannelByName(settings.systemChannelName);
+	if (systemCh) updates.systemChannel = systemCh.id;
+
+	const rulesCh = findChannelByName(settings.rulesChannelName);
+	if (rulesCh) updates.rulesChannel = rulesCh.id;
+
+	const updatesCh = findChannelByName(settings.publicUpdatesChannelName);
+	if (updatesCh) updates.publicUpdatesChannel = updatesCh.id;
+
+	const afkCh = findChannelByName(settings.afkChannelName);
+	if (afkCh) updates.afkChannel = afkCh.id;
+
+	if (Object.keys(updates).length > 0) {
+		await guild
+			.edit(updates)
+			.catch((e) =>
+				logger.warn(`Failed to restore special channels: ${e.message}`, {
+					label: 'restore',
+				}),
+			);
+	}
+}

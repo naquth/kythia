@@ -78,7 +78,7 @@ module.exports = {
 			.filter((v) => v.length > 0);
 
 		if (apiUrls.length === 0) {
-			logger.error(`No API URLs configured!`, { label: 'questnotifier' });
+			logger.warn(`No API URLs configured!`, { label: 'questnotifier' });
 			return;
 		}
 
@@ -86,7 +86,7 @@ module.exports = {
 			const apiQuests = await fetchQuestsFromAny(apiUrls, logger);
 
 			if (!apiQuests) {
-				logger.error(`All API quest endpoints failed. No quests retrieved.`, {
+				logger.warn(`All API quest endpoints failed. No quests retrieved.`, {
 					label: 'questnotifier',
 				});
 				return;
@@ -120,6 +120,51 @@ module.exports = {
 
 			const validQuestIds = validQuests.map((q) => q.id);
 
+			const handleMissingAccess = async (configObj) => {
+				try {
+					await QuestConfig.destroy({ where: { guildId: configObj.guildId } });
+					logger.info(
+						`Deleted QuestConfig for guild ${configObj.guildId} due to missing permissions.`,
+						{ label: 'questnotifier' },
+					);
+					const guild = await client.guilds
+						.fetch(configObj.guildId)
+						.catch(() => null);
+					if (guild) {
+						const targetChannel =
+							guild.systemChannel ||
+							guild.channels.cache.find(
+								(c) =>
+									c.isTextBased() &&
+									c.permissionsFor(client.user)?.has('SendMessages'),
+							);
+						if (targetChannel) {
+							const mockInteraction = {
+								client,
+								guildId: configObj.guildId,
+								guild,
+							};
+							const { simpleContainer } = container.helpers.discord;
+							const content = await container.t(
+								mockInteraction,
+								'questnotifier.unset.disabled_no_perms',
+							);
+							const components = await simpleContainer(
+								mockInteraction,
+								content,
+								{ color: 'Red' },
+							);
+							await targetChannel.send({ components }).catch(() => {});
+						}
+					}
+				} catch (e) {
+					logger.error(
+						`Failed to handle missing access for guild ${configObj.guildId}: ${e.message}`,
+						{ label: 'questnotifier' },
+					);
+				}
+			};
+
 			for (const config of allGuildConfigs) {
 				try {
 					const channel = await client.channels
@@ -127,9 +172,10 @@ module.exports = {
 						.catch(() => null);
 					if (!channel) {
 						logger.warn(
-							`Channel ${config.channelId} not found for guild ${config.guildId}. Skipping.`,
+							`Channel ${config.channelId} not found for guild ${config.guildId}. Removing config.`,
 							{ label: 'questnotifier' },
 						);
+						await handleMissingAccess(config);
 						continue;
 					}
 
@@ -173,6 +219,14 @@ module.exports = {
 						`Failed to process guild ${config.guildId}: ${guildError.message}`,
 						{ label: 'questnotifier' },
 					);
+					if (
+						guildError.code === 50013 ||
+						guildError.code === 50001 ||
+						guildError.message.includes('Missing Permissions') ||
+						guildError.message.includes('Missing Access')
+					) {
+						await handleMissingAccess(config);
+					}
 				}
 			}
 			logger.info(`Cron job finished.`, { label: 'questnotifier' });

@@ -6,7 +6,8 @@
 		},
 		"unset": {
 			"not_setup": "ℹ️ Quest Notifier system has not been set up yet.",
-			"success": "🗑️ **Quest Notifier Disabled.** You will no longer receive notifications."
+			"success": "🗑️ **Quest Notifier Disabled.** You will no longer receive notifications.",
+			"disabled_no_perms": "⚠️ **Quest Notifier Disabled**\nI don't have permission to send Quest Notifications to the configured channel. I have automatically disabled the Quest Notifier for this server. Please re-enable it by setting a new channel with `/quest setup`."
 		},
 		"trigger": {}
 	}

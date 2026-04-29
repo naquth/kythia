@@ -235,6 +235,11 @@ module.exports = {
 				)
 				.addSubcommand((subcommand) =>
 					subcommand
+						.setName('karaoke')
+						.setDescription('🎤 Toggle live synced karaoke lyrics'),
+				)
+				.addSubcommand((subcommand) =>
+					subcommand
 						.setName('history')
 						.setDescription('📜 Show the history of played songs'),
 				)
@@ -741,6 +746,7 @@ module.exports = {
 
 				if (sub === 'grab') return musicHandlers.handleGrab(i, p);
 				if (sub === 'lyrics') return musicHandlers.handleLyrics(i, p);
+				if (sub === 'karaoke') return musicHandlers.handleKaraoke(i, p);
 				if (sub === 'history')
 					return musicHandlers.handleHistory(i, p, music.guildStates);
 

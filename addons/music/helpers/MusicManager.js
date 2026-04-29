@@ -26,6 +26,7 @@ const {
 const { createProgressBar, hasControlPermission } = require('.');
 const { Spotify } = require('poru-spotify');
 const { Poru } = require('poru');
+const KaraokeManager = require('./KaraokeManager');
 
 const MASTER_TITLE_CLEAN_REGEX =
 	/[[\]()]|(?:\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])|\s{2,}/g;
@@ -144,9 +145,14 @@ class MusicManager {
 		// Register Poru Events & Listeners
 		this.registerPoruEvents();
 
+		// Init Karaoke Manager
+		this.karaokeManager = new KaraokeManager(this.container);
+
 		// Start UI ticker
 		this.client.once('clientReady', () => {
 			this.client.poru.init(this.client);
+			// Attach karaoke WS listeners AFTER poru nodes are up
+			this.karaokeManager.attachNodeListeners(this.client.poru);
 			this.logger.info(
 				`🎵 Music UI Ticker started (${this.TICKER_INTERVAL}ms)`,
 				{ label: 'music' },
@@ -163,6 +169,19 @@ class MusicManager {
 
 		// Clean player setup
 		poru.on('playerCreate', (player) => {
+			// Patch player.eventHandler to prevent unknown event crash for LavaLyrics
+			const originalEventHandler = player.eventHandler.bind(player);
+			player.eventHandler = (data) => {
+				if (
+					data.type === 'LyricsFoundEvent' ||
+					data.type === 'LyricsNotFoundEvent' ||
+					data.type === 'LyricsLineEvent'
+				) {
+					return; // Safely ignored by Poru, handled by KaraokeManager
+				}
+				return originalEventHandler(data);
+			};
+
 			player.autoplay = false;
 			player.nowPlayingMessage = null;
 			player.updateInterval = null;
@@ -174,6 +193,9 @@ class MusicManager {
 			player._latestSuggestionRow = null;
 			player.disconnectTimeout = null;
 			player._isGoingBack = false;
+			// 🎤 Karaoke state
+			player.lyricsSubscribed = false;
+			player.lyricsMessage = null;
 
 			this.broadcastUpdate(player, 'playerCreate');
 		});
@@ -201,6 +223,10 @@ class MusicManager {
 		 * ▶️ Handles when a new track starts playing.
 		 */
 		poru.on('trackStart', async (player, track) => {
+			// 🎤 Stop any karaoke session from the previous track
+			if (this.karaokeManager?.hasSession(player.guildId)) {
+				await this.karaokeManager.stopSession(player).catch(() => {});
+			}
 			// Handle disconnect timeout
 			if (player.disconnectTimeout) {
 				clearTimeout(player.disconnectTimeout);
@@ -297,7 +323,11 @@ class MusicManager {
 		/**
 		 * ⏭️ Handles when a track ends (either naturally or by skip/stop).
 		 */
-		poru.on('trackEnd', (player, track) => {
+		poru.on('trackEnd', async (player, track) => {
+			// 🎤 Stop karaoke session on track end
+			if (this.karaokeManager?.hasSession(player.guildId)) {
+				await this.karaokeManager.stopSession(player).catch(() => {});
+			}
 			let state = this.guildStates.get(player.guildId);
 
 			if (!state) {
@@ -590,6 +620,10 @@ class MusicManager {
 		 * 🛑 Handles when the player is destroyed (e.g., bot leaves voice channel).
 		 */
 		poru.on('playerDestroy', async (player) => {
+			// 🎤 Stop karaoke session on player destroy
+			if (this.karaokeManager?.hasSession(player.guildId)) {
+				await this.karaokeManager.stopSession(player).catch(() => {});
+			}
 			if (player.updateInterval) clearInterval(player.updateInterval);
 			if (player.buttonCollector) {
 				try {
@@ -1051,6 +1085,10 @@ class MusicManager {
 							await this.handlers.handleLyrics(interaction, player);
 							break;
 						}
+						case 'music_karaoke': {
+							await this.handlers.handleKaraoke(interaction, player);
+							break;
+						}
 						case 'music_queue': {
 							await this.handlers.handleQueue(interaction, player);
 							break;
@@ -1302,15 +1340,19 @@ class MusicManager {
 		kythia = kythia || this.config;
 		return new ActionRowBuilder().addComponents(
 			new ButtonBuilder()
-				.setCustomId('music_lyrics')
+				.setCustomId('music_karaoke')
 				[
-					typeof kythia.emojis.music.lyrics !== 'undefined'
+					typeof kythia.emojis.music.karaoke !== 'undefined'
 						? 'setEmoji'
-						: 'setLabel'
+						: typeof kythia.emojis.music.lyrics !== 'undefined'
+							? 'setEmoji'
+							: 'setLabel'
 				](
-					typeof kythia.emojis.music.lyrics !== 'undefined'
-						? kythia.emojis.music.lyrics
-						: 'Lyrics',
+					typeof kythia.emojis.music.karaoke !== 'undefined'
+						? kythia.emojis.music.karaoke
+						: typeof kythia.emojis.music.lyrics !== 'undefined'
+							? kythia.emojis.music.lyrics
+							: '🎤',
 				)
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(disabled),

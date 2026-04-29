@@ -130,7 +130,7 @@ dist
 .pnp.*
 
 *.zip
-lavalink/
+# lavalink/
 kythia.config.js
 private_key.pem
 temp/

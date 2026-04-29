@@ -986,9 +986,10 @@ class MusicHandlers {
 	}
 
 	async handlePauseResume(interaction, player) {
-		player.pause(!player.isPaused);
+		const isPaused = !player.isPaused;
+		player.pause(isPaused);
 
-		const state = player.isPaused
+		const state = isPaused
 			? await this.t(interaction, 'music.helpers.handlers.manager.paused')
 			: await this.t(interaction, 'music.helpers.handlers.manager.resumed');
 
@@ -2210,6 +2211,111 @@ class MusicHandlers {
 			components: [container],
 			flags: MessageFlags.IsComponentsV2,
 		});
+	}
+
+	/**
+	 * 🎤 Handles the karaoke (live lyrics) mode toggle.
+	 *
+	 * First press  → subscribe to LavaLyrics, send a SEPARATE karaoke message.
+	 * Second press → unsubscribe, auto-delete the karaoke message.
+	 *
+	 * The karaoke message is intentionally separate from the Now Playing embed
+	 * to avoid hitting Discord's edit rate limit (~5 edits/5s) on the main UI.
+	 *
+	 * @param {import('discord.js').ButtonInteraction} interaction
+	 * @param {object} player - Poru Player
+	 */
+	async handleKaraoke(interaction, player) {
+		const track = player.currentTrack;
+
+		if (!track) {
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.lyrics.music.not.found',
+				),
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		const karaokeManager = this.container.music?.karaokeManager;
+		if (!karaokeManager) {
+			const components = await this.simpleContainer(
+				interaction,
+				'❌ Karaoke manager not available.',
+				{ color: 'Red' },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		// ── Toggle OFF ──────────────────────────────────────────────────────────
+		if (player.lyricsSubscribed && karaokeManager.hasSession(player.guildId)) {
+			await karaokeManager.stopSession(player).catch(() => {});
+
+			const components = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.karaoke.stopped',
+				),
+				{ color: this.config.bot.color },
+			);
+			return interaction.reply({
+				components,
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+
+		// ── Toggle ON ───────────────────────────────────────────────────────────
+		const channel = interaction.channel;
+		if (!channel) {
+			return interaction.reply({
+				content: '❌ Could not find text channel.',
+				flags: MessageFlags.Ephemeral,
+			});
+		}
+
+		// Acknowledge immediately before the async subscribe call
+		const components = await this.simpleContainer(
+			interaction,
+			await this.t(
+				interaction,
+				'music.helpers.handlers.music.karaoke.starting',
+			),
+			{ color: this.config.bot.color },
+		);
+		await interaction.reply({
+			components,
+			flags: MessageFlags.IsComponentsV2,
+		});
+
+		const ok = await karaokeManager.startSession(player, channel);
+
+		if (!ok) {
+			// LavaLyrics plugin not installed / node error — show graceful failure
+			const fallbackComponents = await this.simpleContainer(
+				interaction,
+				await this.t(
+					interaction,
+					'music.helpers.handlers.music.karaoke.failed',
+				),
+				{ color: 'Orange' },
+			);
+			try {
+				await interaction.editReply({
+					components: fallbackComponents,
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (_e) {}
+		}
 	}
 
 	async handlePlaylist(interaction, player) {

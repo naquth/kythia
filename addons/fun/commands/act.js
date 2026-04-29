@@ -32,17 +32,13 @@ const VALID_ACTIONS = [
 	'dance',
 	'poke',
 	'wink',
-	'lick',
 	'smile',
 	'blush',
 	'happy',
 	'cry',
 	'nom',
-	'kill',
 	'kick',
 	'smug',
-	'cringe',
-	'bully',
 ];
 
 module.exports = {
@@ -69,17 +65,13 @@ module.exports = {
 					{ name: 'Dance', value: 'dance' },
 					{ name: 'Poke', value: 'poke' },
 					{ name: 'Wink', value: 'wink' },
-					{ name: 'Lick', value: 'lick' },
 					{ name: 'Smile', value: 'smile' },
 					{ name: 'Blush', value: 'blush' },
 					{ name: 'Happy', value: 'happy' },
 					{ name: 'Cry', value: 'cry' },
 					{ name: 'Nom', value: 'nom' },
-					{ name: 'Kill', value: 'kill' },
 					{ name: 'Kick', value: 'kick' },
 					{ name: 'Smug', value: 'smug' },
-					{ name: 'Cringe', value: 'cringe' },
-					{ name: 'Bully', value: 'bully' },
 				),
 		)
 		.addUserOption((option) =>
@@ -103,8 +95,21 @@ module.exports = {
 			});
 		}
 
-		const response = await axios.get(`https://api.waifu.pics/sfw/${action}`);
-		const gifUrl = response.data?.url;
+		const apis = [
+			async () =>
+				(await axios.get(`https://api.waifu.pics/sfw/${action}`)).data?.url,
+			async () =>
+				(await axios.get(`https://nekos.best/api/v2/${action}`)).data
+					?.results?.[0]?.url,
+		];
+
+		let gifUrl;
+		for (const fetchApi of apis) {
+			try {
+				gifUrl = await fetchApi();
+				if (gifUrl) break;
+			} catch (_e) {}
+		}
 
 		if (!gifUrl) {
 			throw new Error('No GIF URL received from API');

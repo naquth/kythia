@@ -193,6 +193,18 @@
 						"connect_failed": "❌ Failed to reconnect to the voice channel: {error}",
 						"success": "🔧 **Repair complete!** Reconnected to {channel}. The queue was empty — use `/music play` to start fresh.",
 						"success_with_track": "🔧 **Repair complete!** Reconnected to {channel} and resumed **{title}**."
+					},
+					"karaoke": {
+						"starting": "🎤 **Karaoke Mode** starting! Lyrics will appear in a moment...",
+						"stopped": "🎤 **Karaoke Mode** stopped.",
+						"failed": "⚠️ Could not start Karaoke Mode. Please contact developer.",
+						"mode": "### 🎤 Karaoke Mode\n-# {title}{author_divider}{author}",
+						"powered": "-# Powered by LavaLyrics",
+						"powered_ends": "-# Powered by LavaLyrics | Ends with track",
+						"loading": "> *⏳ Loading lyrics...*",
+						"waiting": "> *⏳ Waiting for lyrics to start...*",
+						"not_found_title": "### 🎤 Karaoke — {title}\n-# by {author}",
+						"not_found_desc": "> ❌ **No synced lyrics found for this track.**\n> Karaoke mode requires timed lyrics from the LavaLyrics plugin."
 					}
 				},
 				"filter": {

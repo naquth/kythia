@@ -66,12 +66,29 @@ module.exports = {
 					warnings: [],
 				},
 			});
-			if (!Array.isArray(userRecord.warnings)) userRecord.warnings = [];
-			userRecord.warnings.push({
-				moderator: interaction.user.id,
-				reason,
-				date: new Date(),
-			});
+			let currentWarnings = userRecord.warnings;
+			if (typeof currentWarnings === 'string') {
+				try {
+					currentWarnings = JSON.parse(currentWarnings);
+				} catch (_e) {
+					currentWarnings = [];
+				}
+			}
+			if (!Array.isArray(currentWarnings)) {
+				currentWarnings = [];
+			}
+
+			const newWarnings = [
+				...currentWarnings,
+				{
+					moderator: interaction.user.id,
+					reason,
+					date: new Date(),
+				},
+			];
+
+			userRecord.warnings = newWarnings;
+			userRecord.changed('warnings', true);
 			await userRecord.save();
 
 			try {

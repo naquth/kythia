@@ -232,7 +232,24 @@ module.exports = {
 					a.contentType?.startsWith('image/'),
 				);
 
-				if (!attachment) {
+				let url;
+				let fallbackName;
+
+				if (attachment) {
+					url = attachment.url;
+					fallbackName = (
+						attachment.name?.split('.')[0] || 'grabbed_image'
+					).slice(0, 30);
+				} else {
+					const urlRegex = /(https?:\/\/[^\s]+)/g;
+					const urls = targetMessage?.content?.match?.(urlRegex);
+					if (urls && urls.length > 0) {
+						url = urls[0];
+						fallbackName = 'grabbed_link';
+					}
+				}
+
+				if (!url) {
 					const components = await simpleContainer(
 						interaction,
 						await t(interaction, 'core.utils.grab.image.not_found'),
@@ -244,10 +261,6 @@ module.exports = {
 					});
 				}
 
-				const url = attachment.url;
-				const fallbackName = (
-					attachment.name?.split('.')[0] || 'grabbed_image'
-				).slice(0, 30);
 				const finalName = (stickerName || fallbackName).slice(0, 30);
 
 				try {
@@ -381,19 +394,34 @@ module.exports = {
 				}
 			}
 
-			// Opsi 3: Cek Attachment (Image)
+			// Opsi 3: Cek Attachment (Image) atau Link di Content
 			const attachment = message?.attachments?.find((a) =>
 				a.contentType?.startsWith('image/'),
 			);
+
+			let imageUrl;
+			let imageFileName;
+
 			if (attachment) {
-				const url = attachment.url;
+				imageUrl = attachment.url;
+				imageFileName = `grabbed_${attachment.name.split('.')[0]}`.slice(0, 30);
+			} else {
+				const urlRegex = /(https?:\/\/[^\s]+)/g;
+				const urls = message?.content?.match?.(urlRegex);
+				if (urls && urls.length > 0) {
+					imageUrl = urls[0];
+					imageFileName = 'grabbed_link';
+				}
+			}
+
+			if (imageUrl) {
 				try {
 					if (!interaction.guild?.stickers?.create)
 						throw new Error('No permission');
 
 					const created = await interaction.guild.stickers.create({
-						file: url,
-						name: `grabbed_${attachment.name.split('.')[0]}`.slice(0, 30),
+						file: imageUrl,
+						name: imageFileName,
 						tags: 'grabbed',
 					});
 
@@ -411,7 +439,7 @@ module.exports = {
 				} catch (_e) {
 					return interaction.editReply({
 						content: await t(interaction, 'core.utils.grab.sticker.manual'),
-						files: [url],
+						files: [imageUrl],
 					});
 				}
 			}

@@ -9,11 +9,18 @@
 const fetch = require('node-fetch');
 const { handleFailedGlobalChat } = require('./handleFailedGlobalChat');
 
+const processedMessageIds = new Set();
+
 async function handleGlobalChat(message, container) {
 	const { logger, kythiaConfig } = container;
 
 	if (message.author.bot) return;
 	if (!message.guild) return;
+
+	// Prevent duplicate processing
+	if (processedMessageIds.has(message.id)) return;
+	processedMessageIds.add(message.id);
+	setTimeout(() => processedMessageIds.delete(message.id), 60000);
 
 	try {
 		// Resolve the referenced message — Discord.js only populates message.referencedMessage

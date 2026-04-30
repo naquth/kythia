@@ -9,12 +9,16 @@
 /**
  * Tracks active voice sessions for activity stats.
  * Key: `${guildId}-${userId}`
- * Value: { joinedAt: number } — timestamp (ms) when the user joined.
+ * Value: { joinedAt: number, intervalId: NodeJS.Timeout } — timestamp (ms)
+ *        when the current flush window started, plus the periodic flush timer.
  *
- * We only write to the DB on state change (leave / move to AFK),
- * never on a per-second tick, keeping writes minimal.
+ * We flush to the DB both on state change (leave / move) AND every
+ * VOICE_FLUSH_INTERVAL_MS so long sessions are never lost mid-session.
  */
 const voiceSessions = new Map();
+
+/** How often (ms) to auto-flush voice time for users still in a channel. */
+const VOICE_FLUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Flush accumulated voice time (in seconds) to the DB.
@@ -64,6 +68,51 @@ const flushVoiceTime = async (bot, guildId, userId, durationSeconds) => {
 };
 
 /**
+ * Start a tracked voice session for a user, including a periodic auto-flush
+ * that saves accumulated time every VOICE_FLUSH_INTERVAL_MS without waiting
+ * for the user to leave.
+ *
+ * @param {import('kythia-core').Kythia} bot
+ * @param {string} guildId
+ * @param {string} userId
+ * @param {string} key  — Map key (`${guildId}-${userId}`)
+ * @param {number} now  — Current timestamp in ms
+ */
+const startSession = (bot, guildId, userId, key, now) => {
+	const intervalId = setInterval(() => {
+		const session = voiceSessions.get(key);
+		if (!session) return;
+
+		const tick = Date.now();
+		const elapsedSeconds = Math.floor((tick - session.joinedAt) / 1000);
+
+		// Reset the window so the next tick only counts NEW time
+		session.joinedAt = tick;
+
+		// Fire-and-forget periodic flush
+		flushVoiceTime(bot, guildId, userId, elapsedSeconds);
+	}, VOICE_FLUSH_INTERVAL_MS);
+
+	voiceSessions.set(key, { joinedAt: now, intervalId });
+};
+
+/**
+ * Clear the periodic flush interval and remove the session from the map.
+ * Returns the session so the caller can flush remaining elapsed time.
+ *
+ * @param {string} key
+ * @returns {{ joinedAt: number, intervalId: NodeJS.Timeout } | undefined}
+ */
+const endSession = (key) => {
+	const session = voiceSessions.get(key);
+	if (session) {
+		clearInterval(session.intervalId);
+		voiceSessions.delete(key);
+	}
+	return session;
+};
+
+/**
  * @param {import('kythia-core').Kythia} bot
  * @param {import('discord.js').VoiceState} oldState
  * @param {import('discord.js').VoiceState} newState
@@ -94,18 +143,17 @@ module.exports = async (bot, oldState, newState) => {
 		oldState.channelId !== newState.channelId;
 
 	if (isJoin) {
-		// Start tracking: record join timestamp
-		voiceSessions.set(key, { joinedAt: now });
+		// Start tracking: record join timestamp + set periodic auto-flush
+		startSession(bot, guildId, userId, key, now);
 		return;
 	}
 
-	// On leave or channel move: flush elapsed time and (for a move) restart the session
+	// On leave or channel move: flush remaining time and (for a move) restart the session
 	if (isLeave || isMove) {
-		const session = voiceSessions.get(key);
+		const session = endSession(key); // also clears the interval
 
 		if (session) {
 			const elapsedSeconds = Math.floor((now - session.joinedAt) / 1000);
-			voiceSessions.delete(key);
 
 			// Fire-and-forget flush (non-blocking for the event loop)
 			flushVoiceTime(bot, guildId, userId, elapsedSeconds);
@@ -113,7 +161,7 @@ module.exports = async (bot, oldState, newState) => {
 
 		if (isMove) {
 			// Continue tracking in the new channel
-			voiceSessions.set(key, { joinedAt: now });
+			startSession(bot, guildId, userId, key, now);
 		}
 	}
 };

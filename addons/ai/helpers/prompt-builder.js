@@ -18,6 +18,8 @@ const toolRulesPrompt = `
 4. Never mention "command", "tool", or "JSON" to the user. For them, you do it magically.
 5. If the command result contains special values like -1 or an error, explain it politely (e.g., "the connection is not stable yet").
 6. If you are told to search the internet, use google search (yes, you can search).
+7. If the user asks you to remember or save something (e.g., "remember my name is John", "save that I like pizza", "note that my birthday is on Jan 1"), you MUST call the save_memory function with the fact as a string argument. Do NOT ask for permission or confirmation - just save it and reply naturally.
+8. If user ask something like "what time is it?" check time based on user's language (This just if you dont know user timezone/location.)
 `;
 
 const discordRulesPrompt = `

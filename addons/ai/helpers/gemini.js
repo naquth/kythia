@@ -215,7 +215,7 @@ async function generateContent(promptOrContents) {
 		});
 		return null;
 	}
-	const GEMINI_MODEL = _aiConfig.model || 'gemini-pro';
+	const GEMINI_MODEL = _aiConfig.model || 'gemini-3-flash';
 
 	try {
 		const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });

@@ -3,7 +3,7 @@
  * @type: Module
  * @copyright © 2026 kenndeclouv
  * @assistant graa & chaa
- * @version 1.0.0-rc
+ * @version 2.0.0-rc
  */
 
 const {
@@ -16,14 +16,44 @@ const { utils } = require('kythia-core');
 const { buildSystemInstruction } = require('../prompt-builder');
 const { getAndUseNextAvailableToken } = require('../gemini');
 
+/** Minimum supported model for tool context circulation. */
+const MINIMUM_MODEL = 'gemini-3-flash-preview';
+
+/** Safety settings applied to every request. */
+const SAFETY_SETTINGS = [
+	HarmCategory.HARM_CATEGORY_HARASSMENT,
+	HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+	HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+	HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_NONE }));
+
 /**
- * AIMessageHandler
- * Main handler for AI message processing with all dependencies injected.
+ * save_memory function declaration — always present alongside command tools.
+ * The model decides when to call it; no regex pre-checks needed.
  */
+const SAVE_MEMORY_DECLARATION = {
+	name: 'save_memory',
+	description:
+		'Save an important fact or personal detail about the user to long-term memory. ' +
+		'Call this when the user explicitly asks to remember/save something, or when they ' +
+		'share clearly personal information worth preserving (name, birthday, hobby, ' +
+		'preference, job, location, etc.). Do NOT call this for trivial or temporary context.',
+	parameters: {
+		type: 'object',
+		properties: {
+			fact: {
+				type: 'string',
+				description:
+					'A concise, self-contained fact. ' +
+					'E.g. "User\'s name is Andi", "User loves spicy food", "Birthday is March 15".',
+			},
+		},
+		required: ['fact'],
+	},
+};
+
 class AIMessageHandler {
-	/**
-	 * @param {Object} container - Full DI container
-	 */
+	/** @param {Object} container - Full DI container */
 	constructor(container) {
 		this.container = container;
 		this.logger = container.logger;
@@ -33,11 +63,11 @@ class AIMessageHandler {
 		this.config = container.kythiaConfig;
 		this.aiConfig = this.config.addons.ai;
 
-		// Initialize helper classes
 		const AIResponseFilter = require('../AIResponseFilter');
 		const UserFactsManager = require('../UserFactsManager');
 		const ConversationManager = require('../ConversationManager');
 		const MediaProcessor = require('../MediaProcessor');
+		const path = require('node:path');
 
 		this.responseFilter = new AIResponseFilter();
 		this.factsManager = new UserFactsManager({
@@ -50,29 +80,23 @@ class AIMessageHandler {
 			cleanupInterval: 5 * 60 * 1000,
 			maxHistoryLength: 12,
 		});
-
-		const path = require('node:path');
 		this.mediaProcessor = new MediaProcessor({
 			tempDir: path.join(__dirname, '..', 'temp'),
 			logger: this.logger,
 			geminiApiKey: this.aiConfig.geminiApiKeys.split(',')[0],
 		});
 
-		// Per-user cooldown: Map<userId, number[]> (timestamps of recent requests)
 		this.userCooldowns = new Map();
 	}
 
-	/**
-	 * Safe reply helper to avoid Unknown Message errors
-	 * @param {import('discord.js').Message} message
-	 * @param {string|Object} payload
-	 */
+	// ─── Helpers ──────────────────────────────────────────────────────────────
+
 	async safeReply(message, payload) {
 		const options =
 			typeof payload === 'string' ? { content: payload } : { ...payload };
 		options.failIfNotExists = false;
 		return message.reply(options).catch((err) => {
-			this.logger.warn(`SafeReply fallback used due to: ${err.message}`, {
+			this.logger.warn(`SafeReply fallback: ${err.message}`, {
 				label: 'AIMessageHandler',
 			});
 			return message.channel.send(options).catch(() => {});
@@ -80,29 +104,46 @@ class AIMessageHandler {
 	}
 
 	/**
-	 * Main message handler entry point
-	 * @param {Object} bot - Bot instance
-	 * @param {import('discord.js').Message} message - Discord message
+	 * Extract text string from a Gemini response object (handles both
+	 * function-style and string-style `.text` across SDK versions).
 	 */
+	_extractText(response) {
+		if (!response) return '';
+		const raw =
+			typeof response.text === 'function'
+				? response.text()
+				: (response.text ?? '');
+		return typeof raw === 'string' ? raw.trim() : '';
+	}
+
+	/** Build the unified tools array for every request. */
+	_buildTools(bot) {
+		const commandDeclarations =
+			Array.isArray(bot.aiCommandSchema) && bot.aiCommandSchema.length > 0
+				? bot.aiCommandSchema
+				: [];
+		return [
+			{ googleSearch: {} },
+			{
+				functionDeclarations: [...commandDeclarations, SAVE_MEMORY_DECLARATION],
+			},
+		];
+	}
+
+	// ─── Entry point ──────────────────────────────────────────────────────────
+
 	async handleMessage(bot, message) {
 		const client = bot.client;
-
-		// Ignore bots and system messages
 		if (message.author?.bot || message.system) return;
 
-		// Ignore messages starting with bot prefix
 		const content =
 			typeof message.content === 'string' ? message.content.trim() : '';
 		if (
 			Array.isArray(this.config?.bot?.prefixes) &&
-			this.config.bot.prefixes.some(
-				(prefix) => prefix && content.startsWith(prefix),
-			)
-		) {
+			this.config.bot.prefixes.some((p) => p && content.startsWith(p))
+		)
 			return;
-		}
 
-		// Check if should respond (DM, mention, or AI enabled channel)
 		const isDm =
 			message.channel.type === ChannelType.DM || message.channel.type === 1;
 		const isMentioned =
@@ -110,188 +151,82 @@ class AIMessageHandler {
 			!message.mentions.everyone &&
 			(!message.mentions.roles || message.mentions.roles.size === 0);
 
-		// ── Modmail collision guard ──────────────────────────────────────────
-		// If the user DMs the bot while having an active modmail session (or
-		// while the modmail addon is routing them to pick a server), skip AI
-		// entirely so modmail has exclusive handling of the DM.
 		if (isDm) {
 			const activeDMs = client.modmailActiveDMs;
-			if (activeDMs instanceof Set && activeDMs.has(message.author.id)) {
-				return;
-			}
+			if (activeDMs instanceof Set && activeDMs.has(message.author.id)) return;
 		}
-		// ───────────────────────────────────────────────────────────────────
 
 		let isAiChannel = false;
 		if (message.guild) {
 			try {
-				const serverSetting = await this.ServerSetting.getCache({
+				const ss = await this.ServerSetting.getCache({
 					guildId: message.guild.id,
 				});
-				if (serverSetting?.aiChannelIds?.includes(message.channel.id)) {
-					isAiChannel = true;
-				}
+				if (ss?.aiChannelIds?.includes(message.channel.id)) isAiChannel = true;
 			} catch (e) {
-				this.logger.error(`Error getting ServerSetting: ${e.message || e}`, {
+				this.logger.error(`Error getting ServerSetting: ${e.message}`, {
 					label: 'ai',
 				});
 			}
 		}
 
-		if (!(isAiChannel || isDm || isMentioned)) {
-			return;
-		}
+		if (!(isAiChannel || isDm || isMentioned)) return;
 
-		// Check per-user cooldown (owners can bypass if ownerBypassFilter is true)
 		const isOwnerUser = this.isOwner(message.author.id);
 		if (!isOwnerUser || !this.aiConfig.ownerBypassFilter) {
-			const cooldownResult = this.checkUserCooldown(message.author.id);
-			if (cooldownResult.limited) {
-				const seconds = Math.ceil(cooldownResult.resetIn / 1000);
-				const cooldownMsg = (
+			const cooldown = this.checkUserCooldown(message.author.id);
+			if (cooldown.limited) {
+				const secs = Math.ceil(cooldown.resetIn / 1000);
+				const msg = (
 					await this.t(message, 'ai.events.messageCreate.cooldown')
-				).replace('{seconds}', seconds);
-				await this.safeReply(message, cooldownMsg).catch(() => {});
+				).replace('{seconds}', secs);
+				await this.safeReply(message, msg).catch(() => {});
 				return;
 			}
 		}
 
-		// Check for memory command
-		const memoryResult = await this.checkMemoryCommand(content, message);
-		if (memoryResult) return;
-
-		// Process AI request
 		await this.processAIRequest(bot, message, client);
 	}
 
-	/**
-	 * Check and enforce per-user AI request cooldown.
-	 * Records the current timestamp and evicts old ones outside the window.
-	 * @param {string} userId - Discord user ID
-	 * @returns {{ limited: boolean, resetIn?: number }} Result with ms until reset if limited
-	 */
+	// ─── Cooldown ─────────────────────────────────────────────────────────────
+
 	checkUserCooldown(userId) {
 		const maxRequests = this.aiConfig.userCooldownRequests ?? 2;
 		const windowMs = (this.aiConfig.userCooldownWindowSec ?? 60) * 1000;
 		const now = Date.now();
-
-		let timestamps = this.userCooldowns.get(userId) || [];
-
-		// Evict timestamps outside the window
-		timestamps = timestamps.filter((ts) => now - ts < windowMs);
-
+		const timestamps = (this.userCooldowns.get(userId) || []).filter(
+			(ts) => now - ts < windowMs,
+		);
 		if (timestamps.length >= maxRequests) {
-			// Time until the oldest request expires
-			const resetIn = windowMs - (now - timestamps[0]);
 			this.userCooldowns.set(userId, timestamps);
-			return { limited: true, resetIn };
+			return { limited: true, resetIn: windowMs - (now - timestamps[0]) };
 		}
-
 		timestamps.push(now);
 		this.userCooldowns.set(userId, timestamps);
 		return { limited: false };
 	}
 
-	/**
-	 * Check if message is a memory/remember command
-	 * @param {string} content - Message content
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @returns {Promise<boolean>} True if was memory command
-	 */
-	async checkMemoryCommand(_content, message) {
-		const cleanContent =
-			typeof message.content === 'string'
-				? message.content
-						.replace(/<@!?\d+>/g, '')
-						.trim()
-						.slice(0, 1500)
-				: '';
+	// ─── Pre-flight ───────────────────────────────────────────────────────────
 
-		const memoryKeywords = [
-			'ingat(?: ya)?',
-			'catat',
-			'simpan',
-			'tambahkan',
-			'tulis',
-			'remember',
-			'note',
-			'save',
-			'store',
-			'add',
-			'keep',
-		].join('|');
-
-		const memoryRegex = new RegExp(
-			`^(?:<@!?\\d+>|kythia)?[\\s,.]*?(?:tolong\\s+)?(?:${memoryKeywords})[\\s,.:]+(.+)$`,
-			'i',
-		);
-		const memoryMatch = cleanContent.match(memoryRegex);
-
-		if (memoryMatch?.[1]) {
-			let fact = memoryMatch[1].trim();
-			fact = fact.replace(/^(<@!?\d+>|kythia)[\s,.:]*/i, '').trim();
-
-			if (fact.length > 0) {
-				const status = await this.factsManager.appendFact(
-					message.author.id,
-					fact,
-				);
-				if (status === 'added') {
-					await this.safeReply(
-						message,
-						await this.t(message, 'ai.events.messageCreate.memory.added'),
-					);
-				} else if (status === 'duplicate') {
-					await this.safeReply(
-						message,
-						await this.t(message, 'ai.events.messageCreate.memory.duplicate'),
-					);
-				}
-			} else {
-				await this.safeReply(
-					message,
-					await this.t(message, 'ai.events.messageCreate.memory.empty'),
-				);
-			}
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Process AI request with typing indicator and error handling
-	 * @param {Object} bot - Bot instance
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @param {Object} client - Discord client
-	 */
 	async processAIRequest(bot, message, client) {
 		let typingInterval;
-
 		try {
 			await message.channel.sendTyping();
 			typingInterval = setInterval(() => {
 				message.channel.sendTyping().catch((err) => {
-					this.logger.warn(
-						`Error sending typing indicator: ${err.message || err}`,
-						{
-							label: 'AIMessageHandler',
-						},
-					);
+					this.logger.warn(`Typing indicator error: ${err.message}`, {
+						label: 'AIMessageHandler',
+					});
 					clearInterval(typingInterval);
 				});
 			}, 8000);
 
-			// Build context for AI
 			const context = await this.buildContext(message, client);
 			const cleanContent = this.cleanMessageContent(message.content);
-
-			// Check for empty content
 			const mediaParts = await this.mediaProcessor.processAttachments(message);
-			const youtubeParts = this.mediaProcessor.extractYouTubeUrls(
-				message.content,
+			mediaParts.push(
+				...this.mediaProcessor.extractYouTubeUrls(message.content),
 			);
-			mediaParts.push(...youtubeParts);
 
 			if (!cleanContent && mediaParts.length === 0) {
 				if (message.mentions.users.has(client.user.id)) {
@@ -300,80 +235,44 @@ class AIMessageHandler {
 						await this.t(message, 'ai.events.messageCreate.mention'),
 					);
 				}
-				if (typingInterval) clearInterval(typingInterval);
+				clearInterval(typingInterval);
 				return;
 			}
 
-			// Get or load conversation
+			// Restore or seed conversation history
 			const userConv = this.conversationManager.getConversation(
 				message.author.id,
 			);
 			if (userConv.history.length === 0) {
 				await this.loadConversationHistory(message, client, userConv);
 			}
-
 			this.conversationManager.updateActivity(message.author.id);
-			this.conversationManager.addToHistory(
-				message.author.id,
-				'user',
-				cleanContent,
-			);
 
-			// Build contents array
-			const contents = this.conversationManager.buildContentsArray(
-				message.author.id,
-			);
+			// Build the initial user turn (with optional media)
+			const userParts =
+				mediaParts.length > 0
+					? [...mediaParts, { text: cleanContent || 'Describe this.' }]
+					: [{ text: cleanContent }];
 
-			// Append media to last user message
-			if (mediaParts.length > 0) {
-				let lastUserIdx = -1;
-				for (let i = contents.length - 1; i >= 0; i--) {
-					if (contents[i].role === 'user') {
-						lastUserIdx = i;
-						break;
-					}
-				}
-				if (lastUserIdx !== -1) {
-					contents[lastUserIdx].parts = [
-						...mediaParts,
-						{ text: cleanContent || 'Describe this image/video.' },
-					];
-				} else {
-					contents.push({
-						role: 'user',
-						parts: [
-							...mediaParts,
-							{ text: cleanContent || 'Describe this image/video.' },
-						],
-					});
-				}
-			}
-
-			// Determine pathway and execute AI request
-			const pathway = this.determinePathway(cleanContent);
 			const success = await this.executeAIRequest(
 				message,
 				context,
-				contents,
-				pathway,
+				userParts,
 				bot,
 				client,
 			);
 
-			if (typingInterval) clearInterval(typingInterval);
+			clearInterval(typingInterval);
 
 			if (!success) {
-				this.logger.error(
-					'❌ All AI tokens failed (likely 429). Informing user.',
-					{ label: 'ai' },
-				);
+				this.logger.error('❌ All AI tokens exhausted.', { label: 'ai' });
 				await this.safeReply(
 					message,
 					await this.t(message, 'ai.events.messageCreate.memory.token.limit'),
 				).catch(() => {});
 			}
 		} catch (err) {
-			this.logger.error(`AI Pre-flight Error: ${err.message || err}`, {
+			this.logger.error(`AI Pre-flight Error: ${err.message}`, {
 				label: 'AIMessageHandler',
 			});
 			await message.channel
@@ -383,12 +282,288 @@ class AIMessageHandler {
 		}
 	}
 
+	// ─── Core AI execution (stateful chat + unified tools) ────────────────────
+
 	/**
-	 * Build context object for AI
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @param {Object} client - Discord client
-	 * @returns {Promise<Object>} Context object
+	 * Executes the AI request using a stateful chat session.
+	 * Tools are always combined: googleSearch + functionDeclarations.
+	 * includeServerSideToolInvocations enables tool context circulation.
 	 */
+	async executeAIRequest(message, context, userParts, bot, client) {
+		const systemInstruction = buildSystemInstruction(context);
+		const GEMINI_MODEL = this.aiConfig.model || MINIMUM_MODEL;
+		const tools = this._buildTools(bot);
+		const userId = message.author.id;
+
+		// History for chat initialization (exclude the current user turn —
+		// we'll send it via chat.sendMessage so the chat tracks it internally)
+		const priorHistory = this.conversationManager
+			.buildContentsArray(userId)
+			.slice(0, -1); // drop the last entry if it was speculatively added
+
+		const totalTokens = (this.aiConfig.geminiApiKeys || '')
+			.split(',')
+			.map((k) => k.trim())
+			.filter(Boolean).length;
+
+		for (let attempt = 0; attempt < totalTokens; attempt++) {
+			this.logger.info(`🧠 AI attempt ${attempt + 1}/${totalTokens}...`, {
+				label: 'ai',
+			});
+
+			const tokenIdx = await getAndUseNextAvailableToken();
+			if (tokenIdx === -1) {
+				this.logger.warn('⚠️ All tokens rate-limited.', { label: 'ai' });
+				break;
+			}
+
+			const apiKey = this.aiConfig.geminiApiKeys.split(',')[tokenIdx]?.trim();
+			if (!apiKey) continue;
+
+			const genAI = new GoogleGenAI({ apiKey });
+
+			try {
+				// Create a stateful chat seeded with conversation history
+				const chat = genAI.chats.create({
+					model: GEMINI_MODEL,
+					history: priorHistory,
+					config: {
+						systemInstruction: { parts: [{ text: systemInstruction }] },
+						tools,
+						toolConfig: { includeServerSideToolInvocations: true },
+						safetySettings: SAFETY_SETTINGS,
+					},
+				});
+
+				// Send the current user message
+				const response = await chat.sendMessage({ message: userParts });
+
+				this.logger.info(`✅ AI request successful on attempt ${attempt + 1}`, {
+					label: 'ai',
+				});
+
+				// Store user turn in our history cache
+				this.conversationManager.addToHistory(
+					userId,
+					'user',
+					userParts
+						.map((p) => p.text || '')
+						.join(' ')
+						.trim(),
+				);
+
+				await this.handleAIResponse(response, chat, message, bot, client);
+				return true;
+			} catch (err) {
+				const is429 =
+					err.message?.includes('429') ||
+					err.toString().includes('RESOURCE_EXHAUSTED');
+				if (is429) {
+					this.logger.warn(
+						`Token ${tokenIdx} hit 429. Retrying with next token...`,
+						{ label: 'AIMessageHandler' },
+					);
+				} else {
+					this.logger.error(`AI Error (non-429): ${err.message}`, {
+						label: 'AIMessageHandler',
+					});
+					await message.channel
+						.send(await this.t(message, 'ai.events.messageCreate.error'))
+						.catch(() => {});
+					return false;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	// ─── Response routing ─────────────────────────────────────────────────────
+
+	async handleAIResponse(response, chat, message, bot, client) {
+		const functionCalls = response.functionCalls;
+		if (functionCalls && functionCalls.length > 0) {
+			await this.handleFunctionCall(
+				functionCalls[0],
+				chat,
+				message,
+				bot,
+				client,
+			);
+			return;
+		}
+
+		const replyText = this._extractText(response);
+		const filterResult = this.responseFilter.filterResponse(
+			replyText,
+			message.author?.id,
+			this.isOwner,
+			this.aiConfig,
+		);
+
+		if (!filterResult.allowed) {
+			await this.safeReply(
+				message,
+				await this.t(message, 'ai.events.messageCreate.filter.blocked'),
+			);
+			return;
+		}
+
+		await this.sendSplitMessage(message, replyText);
+		this.conversationManager.addToHistory(
+			message.author.id,
+			'model',
+			replyText,
+		);
+	}
+
+	// ─── Function call handler ────────────────────────────────────────────────
+
+	/**
+	 * Handles a function call returned by the model.
+	 * Uses the stateful `chat` object for the follow-up turn, and includes
+	 * the cryptographically bound `call.id` in the function response.
+	 */
+	async handleFunctionCall(call, chat, message, _bot, client) {
+		const { name: fnName, args: fnArgs, id: fnId } = call;
+
+		// ── save_memory ────────────────────────────────────────────────────────
+		if (fnName === 'save_memory') {
+			this.logger.info(
+				`🧠 [DEBUG] AI triggered 'save_memory' function call! Args: ${JSON.stringify(fnArgs)}`,
+				{ label: 'ai' },
+			);
+
+			const fact = typeof fnArgs?.fact === 'string' ? fnArgs.fact.trim() : '';
+
+			if (!fact) {
+				await this.safeReply(
+					message,
+					await this.t(message, 'ai.events.messageCreate.memory.empty'),
+				);
+				return;
+			}
+
+			const status = await this.factsManager.appendFact(
+				message.author.id,
+				fact,
+			);
+			this.logger.info(`🧠 save_memory: "${fact}" → ${status}`, {
+				label: 'ai',
+			});
+
+			try {
+				const followUp = await chat.sendMessage({
+					message: [
+						{
+							functionResponse: {
+								id: fnId,
+								name: fnName,
+								response: { content: JSON.stringify({ status, fact }) },
+							},
+						},
+					],
+				});
+				const confirmReply = this._extractText(followUp);
+				if (confirmReply) {
+					await this.sendSplitMessage(message, confirmReply);
+					this.conversationManager.addToHistory(
+						message.author.id,
+						'model',
+						confirmReply,
+					);
+				}
+			} catch (err) {
+				this.logger.error(`save_memory follow-up error: ${err.message}`, {
+					label: 'ai',
+				});
+			}
+			return;
+		}
+
+		// ── Discord command function calls ─────────────────────────────────────
+		const baseCommandName = fnName.split('_')[0];
+		const command = client.commands.get(baseCommandName);
+
+		if (!command) {
+			await this.safeReply(
+				message,
+				await this.t(message, 'ai.events.messageCreate.command.not.found'),
+			);
+			return;
+		}
+
+		this.logger.info(
+			`🧠 Executing /${baseCommandName} (from "${fnName}") args: ${JSON.stringify(fnArgs)}`,
+			{ label: 'ai' },
+		);
+
+		const fakeInteraction = utils.InteractionFactory.create(
+			message,
+			fnName,
+			fnArgs,
+		);
+
+		try {
+			const executionResult = await command.execute(
+				fakeInteraction,
+				client.container,
+			);
+
+			let resultStr = JSON.stringify({
+				success: true,
+				result: executionResult,
+			});
+			if (resultStr.length > 80000) {
+				resultStr = `${resultStr.substring(0, 80000)}... [TRUNCATED]`;
+			}
+
+			const followUp = await chat.sendMessage({
+				message: [
+					{
+						functionResponse: {
+							id: fnId,
+							name: fnName,
+							response: { content: resultStr },
+						},
+					},
+				],
+			});
+
+			const finalReply = this._extractText(followUp);
+
+			const filterResult = this.responseFilter.filterResponse(
+				finalReply,
+				message.author?.id,
+				this.isOwner,
+				this.aiConfig,
+			);
+			if (!filterResult.allowed) {
+				await this.safeReply(
+					message,
+					await this.t(message, 'ai.events.messageCreate.filter.blocked'),
+				);
+				return;
+			}
+
+			await this.sendSplitMessage(message, finalReply);
+			this.conversationManager.addToHistory(
+				message.author.id,
+				'model',
+				finalReply,
+			);
+		} catch (err) {
+			this.logger.error(`Error running "${fnName}": ${err.message}`, {
+				label: 'ai',
+			});
+			await message.channel.send(
+				await this.t(message, 'ai.events.messageCreate.command.error'),
+			);
+		}
+	}
+
+	// ─── Context builders ─────────────────────────────────────────────────────
+
 	async buildContext(message, client) {
 		const userDisplayName =
 			message.member?.displayName || message.author.username;
@@ -402,12 +577,8 @@ class AIMessageHandler {
 		const guildName = message.guild?.name || 'Direct Message';
 		const channelName = message.channel.name || 'Direct Message';
 
-		// Get user personality preference
 		const { KythiaUser } = this.container.sequelize.models;
-		const user = await KythiaUser.getCache({
-			userId: message.author.id,
-		});
-		// Fallback to config default, then 'friendly' if not set in config
+		const user = await KythiaUser.getCache({ userId: message.author.id });
 		const userPersonality =
 			user?.aiPersonality || this.aiConfig.defaultPersonality || 'friendly';
 
@@ -423,12 +594,6 @@ class AIMessageHandler {
 		};
 	}
 
-	/**
-	 * Get user's bio from Discord profile
-	 * @param {string} userId - User ID
-	 * @param {Object} client - Discord client
-	 * @returns {Promise<string>} User bio
-	 */
 	async getUserBio(userId, client) {
 		try {
 			const user = await client.users.fetch(userId, { force: true });
@@ -438,11 +603,6 @@ class AIMessageHandler {
 		}
 	}
 
-	/**
-	 * Clean message content
-	 * @param {string} content - Raw content
-	 * @returns {string} Cleaned content
-	 */
 	cleanMessageContent(content) {
 		return typeof content === 'string'
 			? content
@@ -452,24 +612,14 @@ class AIMessageHandler {
 			: '';
 	}
 
-	/**
-	 * Load conversation history from channel
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @param {Object} client - Discord client
-	 * @param {Object} userConv - User conversation object
-	 */
 	async loadConversationHistory(message, client, userConv) {
 		this.logger.info(
 			`🧠 Cache miss for ${message.author.tag}. Reconstructing history...`,
 			{ label: 'ai' },
 		);
 
-		const CONTEXT_MESSAGES_TO_FETCH =
-			this.aiConfig.getMessageHistoryLength || 10;
-		const lastMessages = await message.channel.messages.fetch({
-			limit: CONTEXT_MESSAGES_TO_FETCH,
-		});
-
+		const limit = this.aiConfig.getMessageHistoryLength || 10;
+		const lastMessages = await message.channel.messages.fetch({ limit });
 		const relevantMessages = Array.from(lastMessages.values())
 			.filter(
 				(msg) =>
@@ -489,352 +639,24 @@ class AIMessageHandler {
 					? msg.content.replace(/<@!?\d+>/g, '').trim()
 					: '';
 			if (!c && msg.attachments.size === 0) continue;
-			const role = msg.author.id === client.user.id ? 'model' : 'user';
-			userConv.history.push({ role, content: c });
+			userConv.history.push({
+				role: msg.author.id === client.user.id ? 'model' : 'user',
+				content: c,
+			});
 		}
 	}
 
-	/**
-	 * Determine AI pathway (function calling vs search)
-	 * @param {string} content - Message content
-	 * @returns {'function_calling'|'google_search'} Pathway
-	 */
-	determinePathway(content) {
-		const clean = content.toLowerCase();
-		const additionalCommandKeywords =
-			this.aiConfig?.additionalCommandKeywords || [];
-		const safeCommands = this.aiConfig?.safeCommands || [];
+	// ─── Message splitter ─────────────────────────────────────────────────────
 
-		const commandKeywords = Array.isArray(safeCommands)
-			? [...safeCommands, ...additionalCommandKeywords]
-			: additionalCommandKeywords;
-
-		const commandRegex = new RegExp(
-			`\\b(${commandKeywords.join('|')})\\b`,
-			'i',
-		);
-
-		if (commandRegex.test(clean)) {
-			this.logger.info(
-				`🧠 Intent detected as Command. Using Function Calling pathway.`,
-				{ label: 'ai' },
-			);
-			return 'function_calling';
-		}
-
-		this.logger.info(
-			`🧠 Intent not specific. Using Google Search pathway (Default).`,
-			{ label: 'ai' },
-		);
-		return 'google_search';
-	}
-
-	/**
-	 * Execute AI request with token rotation
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @param {Object} context - AI context
-	 * @param {Array} contents - Contents array
-	 * @param {string} pathway - AI pathway
-	 * @param {Object} bot - Bot instance
-	 * @param {Object} client - Discord client
-	 * @returns {Promise<boolean>} Success status
-	 */
-	async executeAIRequest(message, context, contents, pathway, bot, client) {
-		const systemInstruction = buildSystemInstruction(context);
-		const GEMINI_MODEL = this.aiConfig.model;
-
-		const toolsConfig = [];
-		if (pathway === 'google_search') {
-			this.logger.info(`🧠 Using Google Search pathway.`, { label: 'ai' });
-			toolsConfig.push({ googleSearch: {} });
-		} else {
-			this.logger.info(`🧠 Using Function Calling pathway (Default).`, {
-				label: 'ai',
-			});
-			if (bot.aiCommandSchema && bot.aiCommandSchema.length > 0) {
-				toolsConfig.push({
-					functionDeclarations: bot.aiCommandSchema,
-				});
-			}
-		}
-
-		const totalTokens = (this.aiConfig.geminiApiKeys || '')
-			.split(',')
-			.map((k) => k.trim())
-			.filter(Boolean).length;
-
-		for (let attempt = 0; attempt < totalTokens; attempt++) {
-			this.logger.info(`🧠 AI attempt ${attempt + 1}/${totalTokens}...`, {
-				label: 'ai',
-			});
-
-			const tokenIdx = await getAndUseNextAvailableToken();
-			if (tokenIdx === -1) {
-				this.logger.warn(
-					'⚠️ All tokens are locally rate-limited. Stopping retries.',
-					{ label: 'ai' },
-				);
-				break;
-			}
-
-			const GEMINI_API_KEY = this.aiConfig.geminiApiKeys.split(',')[tokenIdx];
-			if (!GEMINI_API_KEY) {
-				this.logger.warn(`Token index ${tokenIdx} is invalid. Skipping.`, {
-					label: 'ai',
-				});
-				continue;
-			}
-
-			const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-
-			try {
-				const response = await genAI.models.generateContent({
-					model: GEMINI_MODEL,
-					contents: contents,
-					config: {
-						systemInstruction: {
-							parts: [{ text: systemInstruction }],
-						},
-						tools: toolsConfig,
-						safetySettings: [
-							HarmCategory.HARM_CATEGORY_HARASSMENT,
-							HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-							HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-							HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-						].map((category) => ({
-							category,
-							threshold: HarmBlockThreshold.BLOCK_NONE,
-						})),
-					},
-				});
-
-				this.logger.info(`✅ AI request successful on attempt ${attempt + 1}`, {
-					label: 'ai',
-				});
-				await this.handleAIResponse(response, message, contents, bot, client);
-				return true;
-			} catch (err) {
-				if (
-					err.message &&
-					(err.message.includes('429') ||
-						err.toString().includes('RESOURCE_EXHAUSTED'))
-				) {
-					this.logger.warn(
-						`Token index ${tokenIdx} hit 429 limit. Retrying with next token...`,
-						{ label: 'AIMessageHandler' },
-					);
-				} else {
-					this.logger.error(
-						`AI Message Error (non-429): ${err.message || err}`,
-						{
-							label: 'AIMessageHandler',
-						},
-					);
-					await message.channel
-						.send(await this.t(message, 'ai.events.messageCreate.error'))
-						.catch(() => {});
-					return false;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Handle AI response (function call or normal reply)
-	 * @param {Object} response - AI response
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @param {Array} contents - Contents array
-	 * @param {Object} bot - Bot instance
-	 * @param {Object} client - Discord client
-	 */
-	async handleAIResponse(response, message, contents, bot, client) {
-		let replyText = '';
-		if (response && typeof response.text === 'function') {
-			replyText = response.text();
-		} else if (response && typeof response.text === 'string') {
-			replyText = response.text;
-		}
-		replyText = typeof replyText === 'string' ? replyText.trim() : '';
-
-		if (response.functionCalls && response.functionCalls.length > 0) {
-			await this.handleFunctionCall(
-				response.functionCalls[0],
-				message,
-				contents,
-				bot,
-				client,
-			);
-		} else {
-			// Normal reply
-			const filterResult = this.responseFilter.filterResponse(
-				replyText,
-				message.author?.id,
-				this.isOwner,
-				this.aiConfig,
-			);
-
-			if (!filterResult.allowed) {
-				await this.safeReply(
-					message,
-					await this.t(message, 'ai.events.messageCreate.filter.blocked'),
-				);
-				return;
-			}
-
-			await this.sendSplitMessage(message, replyText);
-			this.conversationManager.addToHistory(
-				message.author.id,
-				'model',
-				replyText,
-			);
-		}
-	}
-
-	/**
-	 * Handle AI function call
-	 * @param {Object} call - Function call object
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @param {Array} contents - Contents array
-	 * @param {Object} bot - Bot instance
-	 * @param {Object} client - Discord client
-	 */
-	async handleFunctionCall(call, message, contents, _bot, client) {
-		const fullFunctionName = call.name;
-		const argsFromAi = call.args;
-
-		const nameParts = fullFunctionName.split('_');
-		const baseCommandName = nameParts[0];
-
-		const command = client.commands.get(baseCommandName);
-
-		if (!command) {
-			await this.safeReply(
-				message,
-				await this.t(message, 'ai.events.messageCreate.command.not.found'),
-			);
-			return;
-		}
-
-		this.logger.info(
-			`🧠 Executing command '/${baseCommandName}' (interpreted from '${fullFunctionName}') with args: ${JSON.stringify(argsFromAi)}`,
-			{ label: 'ai' },
-		);
-
-		const fakeInteraction = utils.InteractionFactory.create(
-			message,
-			fullFunctionName,
-			argsFromAi,
-		);
-
-		try {
-			const executionResult = await command.execute(
-				fakeInteraction,
-				client.container,
-			);
-
-			let functionResultStr = JSON.stringify({
-				success: true,
-				result: executionResult,
-			});
-			if (functionResultStr.length > 80000) {
-				functionResultStr = `${functionResultStr.substring(0, 80000)}... [TRUNCATED]`;
-			}
-
-			const genAI = new GoogleGenAI({
-				apiKey: this.aiConfig.geminiApiKeys.split(',')[0],
-			});
-			const followUpResponse = await genAI.models.generateContent({
-				model: this.aiConfig.model,
-				contents: [
-					...contents,
-					{ role: 'model', parts: [{ functionCall: call }] },
-					{
-						role: 'function',
-						parts: [
-							{
-								functionResponse: {
-									name: fullFunctionName,
-									response: {
-										content: functionResultStr,
-									},
-								},
-							},
-						],
-					},
-				],
-				config: {
-					safetySettings: [
-						HarmCategory.HARM_CATEGORY_HARASSMENT,
-						HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-						HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-						HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-					].map((category) => ({
-						category,
-						threshold: HarmBlockThreshold.BLOCK_NONE,
-					})),
-				},
-			});
-
-			let finalReply;
-			if (followUpResponse && typeof followUpResponse.text === 'function') {
-				finalReply = followUpResponse.text();
-			} else if (
-				followUpResponse &&
-				typeof followUpResponse.text === 'string'
-			) {
-				finalReply = followUpResponse.text;
-			}
-			finalReply = typeof finalReply === 'string' ? finalReply.trim() : '';
-
-			const filterResult = this.responseFilter.filterResponse(
-				finalReply,
-				message.author?.id,
-				this.isOwner,
-				this.aiConfig,
-			);
-
-			if (!filterResult.allowed) {
-				await this.safeReply(
-					message,
-					await this.t(message, 'ai.events.messageCreate.filter.blocked'),
-				);
-				return;
-			}
-
-			await this.sendSplitMessage(message, finalReply);
-			this.conversationManager.addToHistory(
-				message.author.id,
-				'model',
-				finalReply,
-			);
-		} catch (err) {
-			this.logger.error(
-				`🧠 Error running '${fullFunctionName}': ${err.message || err}`,
-				{ label: 'ai' },
-			);
-			await message.channel.send(
-				await this.t(message, 'ai.events.messageCreate.command.error'),
-			);
-		}
-	}
-
-	/**
-	 * Send AI response with [SPLIT] support
-	 * @param {import('discord.js').Message} message - Discord message
-	 * @param {string} text - Response text
-	 */
 	async sendSplitMessage(message, text) {
 		const CHUNK_SIZE = 2000;
 		text = typeof text === 'string' ? text : '';
 		const parts = text.split('[SPLIT]');
-
 		let hasReplied = false;
 
 		for (const part of parts) {
 			const chunk = part.trim();
-			if (chunk.length === 0) continue;
+			if (!chunk) continue;
 
 			const filterResult = this.responseFilter.filterResponse(
 				chunk,
@@ -842,7 +664,6 @@ class AIMessageHandler {
 				this.isOwner,
 				this.aiConfig,
 			);
-
 			if (!filterResult.allowed) {
 				await this.safeReply(
 					message,
@@ -854,27 +675,25 @@ class AIMessageHandler {
 			if (chunk.length > CHUNK_SIZE) {
 				const subChunks =
 					chunk.match(new RegExp(`.{1,${CHUNK_SIZE}}`, 'gs')) || [];
-				for (const subChunk of subChunks) {
-					const filterResultSub = this.responseFilter.filterResponse(
-						subChunk,
+				for (const sub of subChunks) {
+					const f = this.responseFilter.filterResponse(
+						sub,
 						message.author?.id,
 						this.isOwner,
 						this.aiConfig,
 					);
-
-					if (!filterResultSub.allowed) {
+					if (!f.allowed) {
 						await this.safeReply(
 							message,
 							await this.t(message, 'ai.events.messageCreate.filter.blocked'),
 						);
 						return;
 					}
-
 					if (!hasReplied) {
-						await this.safeReply(message, { content: subChunk });
+						await this.safeReply(message, { content: sub });
 						hasReplied = true;
 					} else {
-						await message.channel.send(subChunk);
+						await message.channel.send(sub);
 					}
 				}
 			} else {

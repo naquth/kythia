@@ -19,8 +19,9 @@ module.exports = {
 					.setDescription('The message to say')
 					.setRequired(true),
 			),
-	permissions: PermissionFlagsBits.ManageMessages,
+	permissions: PermissionFlagsBits.Administrator,
 	botPermissions: PermissionFlagsBits.ManageMessages,
+	isOwner: true,
 
 	/**
 	 * @param {import('discord.js').ChatInputCommandInteraction} interaction

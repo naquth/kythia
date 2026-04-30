@@ -213,7 +213,10 @@ function loadKythiaConfig() {
 				active: true,
 				// gemini ai model
 				// list of models: https://ai.google.dev/gemini-api/docs/models
-				model: 'gemini-2.5-flash',
+				// ! IMPORTANT!
+				// USE AT LEAST GEMINI 3 flash preview
+				// as the google search and function calling is supported in gemini 3 flash preview above
+				model: 'gemini-3-flash-preview',
 				// Comma-separated list of Gemini API keys (example: your_api_key_1,your_api_key_2,your_api_key_3)
 				geminiApiKeys: process.env.GEMINI_API_KEYS,
 				// ai read message history length

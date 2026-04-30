@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://kythia.xyz">
-    <img src="https://cdn.kythia.my.id/kythia_logo_rounded.png" alt="Kythia Logo" height="150" style="border-radius: 10px;">
+    <img src="https://github.com/kythia.png" alt="Kythia Logo" height="150">
   </a>
 </p>
 

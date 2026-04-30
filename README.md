@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kythia/kythia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-CC%20BYNC%204.0-blue?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/kythia/kythia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-CC%20BYNC%204.0-blue?style=flat" alt="License"></a>
 </p>
 
 <p align="center">
@@ -265,7 +265,7 @@ Need help or want to connect with other Kythia users? Join our community!
 *   **📧 Email:** [kenndeclouv@gmail.com](mailto:kenndeclouv@gmail.com)
 
 
-## Special Thanks
+## 🫶 Special Thanks
 
 * **One and only GOD**
 * **Contributors**
@@ -276,3 +276,14 @@ Need help or want to connect with other Kythia users? Join our community!
    - [Aryandita](https://github.com/Aryandita)
 * **Special Mention**
    - [Colly](https://github.com/collygit1)
+ 
+
+## 🌟 Star History
+
+<a href="https://www.star-history.com/?repos=kythia%2Fkythia&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=kythia/kythia&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=kythia/kythia&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=kythia/kythia&type=date&legend=top-left" />
+ </picture>
+</a>
